@@ -1,3 +1,184 @@
+
+// ================= SISTEM MISI HARIAN (DAILY QUESTS) =================
+const DAILY_QUESTS = [
+  {
+    id: "visit_gasibu",
+    title: "Nongkrong di Lapangan Gasibu",
+    target: { x: 0, z: -10 },
+    radius: 6.0,
+    xpReward: 50,
+    color: 0x3b82f6,
+    stayDuration: 4,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  },
+  {
+    id: "visit_gedung_sate",
+    title: "Apel di Gerbang Gedung Sate",
+    target: { x: 0, z: 10 },
+    radius: 7.0,
+    xpReward: 75,
+    color: 0x10b981,
+    stayDuration: 0,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  },
+  {
+    id: "under_pasupati",
+    title: "Menjelajah Kolong Pasupati",
+    target: { x: -27, z: -26 },
+    radius: 6.5,
+    xpReward: 60,
+    color: 0xf59e0b,
+    stayDuration: 0,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  }
+];
+
+class QuestSystem {
+  constructor(sceneInstance, supabaseInst, userData) {
+    this.scene = sceneInstance;
+    this.supabase = supabaseInst;
+    this.warga = userData;
+    this.quests = DAILY_QUESTS;
+    this.init();
+  }
+
+  async init() {
+    const hud = document.getElementById("player-profile-hud");
+    if (hud) hud.style.display = "block";
+    this.updateHUD();
+    await this.fetchCompletedQuests();
+    this.spawnCheckpointMarkers();
+  }
+
+  async fetchCompletedQuests() {
+    if (!this.warga || !this.warga.id || !this.supabase) return;
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const { data, error } = await this.supabase
+        .from("warga_daily_quests")
+        .select("quest_id")
+        .eq("warga_id", this.warga.id)
+        .eq("completed_date", today);
+
+      if (data && !error) {
+        const completedIds = data.map(q => q.quest_id);
+        this.quests.forEach(quest => {
+          if (completedIds.includes(quest.id)) {
+            quest.isCompleted = true;
+            if (quest.mesh) quest.mesh.visible = false;
+          }
+        });
+      }
+    } catch(e) {}
+  }
+
+  spawnCheckpointMarkers() {
+    this.quests.forEach(quest => {
+      const markerGroup = new THREE.Group();
+      const ringGeo = new THREE.RingGeometry(quest.radius - 0.4, quest.radius, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.12;
+      markerGroup.add(ringMesh);
+
+      const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.9, quest.radius * 0.9, 3.5, 32, 1, true);
+      const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+      const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+      beaconMesh.position.y = 1.8;
+      markerGroup.add(beaconMesh);
+
+      markerGroup.position.set(quest.target.x, 0, quest.target.z);
+      if (quest.isCompleted) markerGroup.visible = false;
+      quest.mesh = markerGroup;
+      this.scene.add(markerGroup);
+    });
+  }
+
+  update(delta, playerPos) {
+    if (!playerPos) return;
+    this.quests.forEach(quest => {
+      if (quest.isCompleted) return;
+      if (quest.mesh) quest.mesh.rotation.y += delta * 0.75;
+      const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
+      if (distance <= quest.radius) {
+        if (quest.stayDuration > 0) {
+          quest.timer += delta;
+          if (quest.timer >= quest.stayDuration) this.completeQuest(quest);
+        } else {
+          this.completeQuest(quest);
+        }
+      } else {
+        quest.timer = Math.max(0, quest.timer - delta * 2);
+      }
+    });
+  }
+
+  async completeQuest(quest) {
+    quest.isCompleted = true;
+    if (quest.mesh) {
+      gsap.to(quest.mesh.scale, { x: 0, y: 0, z: 0, duration: 0.5, onComplete: () => { quest.mesh.visible = false; } });
+    }
+    this.showQuestToast(quest.title, quest.xpReward);
+    playSynthTone(1050, "sine", 0.4);
+    await this.applyReward(quest);
+  }
+
+  async applyReward(quest) {
+    if (!this.warga) return;
+    const currentXP = (this.warga.xp || 0) + quest.xpReward;
+    const currentLvl = Math.floor(currentXP / 100) + 1;
+    this.warga.xp = currentXP;
+    this.warga.level = currentLvl;
+    localStorage.setItem("piraku_my_level", currentLvl);
+    this.updateHUD();
+    updateAutoDetectButton();
+
+    if (this.supabase && this.warga.id) {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        await this.supabase.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
+        await this.supabase.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
+      } catch (err) {}
+    }
+  }
+
+  updateHUD() {
+    const xp = this.warga?.xp || 0;
+    const lvl = this.warga?.level || 1;
+    const currentLvlProgress = xp % 100;
+    const badge = document.getElementById("hud-level-badge");
+    const text = document.getElementById("hud-xp-text");
+    const fill = document.getElementById("hud-xp-fill");
+    if (badge) badge.innerText = `LVL ${lvl}`;
+    if (text) text.innerText = `${currentLvlProgress} / 100 XP`;
+    if (fill) fill.style.width = `${currentLvlProgress}%`;
+  }
+
+  showQuestToast(name, xp) {
+    const toast = document.getElementById("quest-toast");
+    const nameEl = document.getElementById("toast-quest-name");
+    const xpEl = document.getElementById("toast-quest-xp");
+    if (!toast) return;
+    nameEl.innerText = name;
+    xpEl.innerText = xp;
+    toast.style.opacity = "1";
+    toast.style.transform = "translateX(-50%) translateY(0px)";
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%) translateY(-20px)";
+    }, 3200);
+  }
+}
+
+let activeQuestSystem = null;
+
 // ================= KUNCI SUPABASE =================
 const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
@@ -780,6 +961,7 @@ if (SUPABASE_URL.startsWith('http')) {
     gsap.to(cam.position, { x: mesh.position.x - 3.5, y: 3.2, z: mesh.position.z - 5.5, duration: 1.5, ease: 'power2.out' });
     controls.target.copy(mesh.position);
     showToast('Mode Kontrol Aktif! Gerakkan dengan WASD / Joystick 🎮');
+    if (!activeQuestSystem) { activeQuestSystem = new QuestSystem(scene, supabaseClient, c); }
   }
 
   // Walkot
@@ -1668,6 +1850,7 @@ if (SUPABASE_URL.startsWith('http')) {
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    if (activeQuestSystem && myPlayerMesh) { activeQuestSystem.update(0.016, myPlayerMesh.position); }
 
     animC.forEach(g => {
       if (g === myPlayerMesh) return;
