@@ -1,5 +1,3 @@
-window.clockTime = 0;
-let clockTime = 0;
 // ================= KUNCI SUPABASE =================
 const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
@@ -9,7 +7,9 @@ if (typeof window !== 'undefined' && window.supabase && SUPABASE_URL.startsWith(
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
-// ================= SISTEM MISI HARIAN (DAILY QUESTS) =================
+// Variabel waktu global
+window.clockTime = 0;
+
 // ================= POOL MASTER MISI HARIAN (ROTASI ACAK) =================
 const ALL_QUEST_POOL = [
   {
@@ -99,7 +99,6 @@ const ALL_QUEST_POOL = [
 ];
 
 function getDailyRotatedQuests(dateStr) {
-  // Hash tanggal YYYY-MM-DD jadi seed angka agar semua pemain dapat rotasi yang sama tiap hari
   let hash = 0;
   for (let i = 0; i < dateStr.length; i++) {
     hash = (hash << 5) - hash + dateStr.charCodeAt(i);
@@ -107,18 +106,13 @@ function getDailyRotatedQuests(dateStr) {
   }
   hash = Math.abs(hash);
 
-  // Buat salinan independen
   const poolCopy = ALL_QUEST_POOL.map(q => ({ ...q }));
-  
-  // Shuffle deterministik berdasarkan tanggal
   for (let i = poolCopy.length - 1; i > 0; i--) {
     const j = (hash + i * 17) % (i + 1);
     const temp = poolCopy[i];
     poolCopy[i] = poolCopy[j];
     poolCopy[j] = temp;
   }
-
-  // Ambil 3 misi teratas untuk hari ini
   return poolCopy.slice(0, 3);
 }
 
@@ -132,8 +126,7 @@ class QuestSystem {
     this.init();
   }
 
-    async init() {
-    this.todayStr = new Date().toISOString().split("T")[0];
+  async init() {
     this.loadLocalCompleted();
     await this.fetchCompletedQuests();
     this.spawnCheckpointMarkers();
@@ -184,7 +177,6 @@ class QuestSystem {
     this.quests.forEach(quest => {
       const markerGroup = new THREE.Group();
 
-      // Lingkaran luar tebal
       const ringGeo = new THREE.RingGeometry(quest.radius - 0.6, quest.radius, 32);
       const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
@@ -192,7 +184,6 @@ class QuestSystem {
       ringMesh.position.y = 0.15;
       markerGroup.add(ringMesh);
 
-      // Lingkaran denyut dalam
       const innerRingGeo = new THREE.RingGeometry(0.2, quest.radius * 0.4, 32);
       const innerRingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
       const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
@@ -200,14 +191,12 @@ class QuestSystem {
       innerRing.position.y = 0.16;
       markerGroup.add(innerRing);
 
-      // Pilar cahaya vertikal tinggi (Beam of Light)
       const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.7, quest.radius * 0.85, 12, 32, 1, true);
       const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false });
       const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
       beaconMesh.position.y = 6.0;
       markerGroup.add(beaconMesh);
 
-      // Berlian/Intan 3D melayang di atas checkpoint
       const diamondGeo = new THREE.OctahedronGeometry(1.0, 0);
       const diamondMat = new THREE.MeshBasicMaterial({ color: quest.color });
       const diamondMesh = new THREE.Mesh(diamondGeo, diamondMat);
@@ -223,27 +212,29 @@ class QuestSystem {
     });
 
     const card = document.getElementById("quest-tracker-card");
-    if (card) card.style.display = "block";
-    this.updateTrackerCard(null);
+    if (card && this.quests.some(q => !q.isCompleted)) card.style.display = "block";
   }
 
   update(delta, playerPos) {
     if (!playerPos) return;
-    this.time = (this.time || 0) + delta;
     this.updateTrackerCard(playerPos);
+
+    const nowSec = performance.now() * 0.001;
+
     this.quests.forEach(quest => {
       if (quest.isCompleted) return;
-            if (quest.mesh) {
+      if (quest.mesh) {
         quest.mesh.rotation.y += delta * 0.75;
         if (quest.innerRing) {
-          const sc = 1.0 + Math.sin(this.time * 4) * 0.25;
+          const sc = 1.0 + Math.sin(nowSec * 4) * 0.25;
           quest.innerRing.scale.set(sc, sc, sc);
         }
         if (quest.diamond) {
           quest.diamond.rotation.y += delta * 2;
-          quest.diamond.position.y = 4.2 + Math.sin(this.time * 3) * 0.35;
+          quest.diamond.position.y = 4.2 + Math.sin(nowSec * 3) * 0.35;
         }
       }
+
       const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
       if (distance <= quest.radius + 1.5) {
         if (quest.stayDuration > 0) {
@@ -258,151 +249,7 @@ class QuestSystem {
     });
   }
 
-  async completeQuest(quest) {
-    quest.isCompleted = true;
-    if (quest.mesh) {
-      gsap.to(quest.mesh.scale, { 
-        x: 0.001, y: 0.001, z: 0.001, duration: 0.45, 
-        onComplete: () => { 
-          quest.mesh.visible = false;
-          if (quest.mesh.parent) quest.mesh.parent.remove(quest.mesh);
-        } 
-      });
-    }
-    // Simpan permanen ke cache lokal hari ini
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + today) || "[]");
-      if (!localSaved.includes(quest.id)) {
-        localSaved.push(quest.id);
-        localStorage.setItem("piraku_quests_" + today, JSON.stringify(localSaved));
-      }
-    } catch(e) {}
-    this.showQuestToast(quest.title, quest.xpReward);
-    if (typeof window.playSynthTone === 'function') window.playSynthTone(1050, "sine", 0.4);
-    await this.applyReward(quest);
-  }
-
-  async applyReward(quest) {
-    if (!this.warga) return;
-    const prevXP = parseInt(this.warga.xp, 10) || 0;
-    const currentXP = prevXP + quest.xpReward;
-    const currentLvl = Math.floor(currentXP / 100) + 1;
-
-    this.warga.xp = currentXP;
-    this.warga.level = currentLvl;
-    localStorage.setItem("piraku_my_level", currentLvl);
-    localStorage.setItem("piraku_my_xp", currentXP);
-
-    this.updateHUD();
-    if (typeof updateAutoDetectButton === "function") updateAutoDetectButton();
-
-    const client = this.supabase || supabaseClient;
-    if (client && this.warga.id) {
-      try {
-        const today = new Date().toISOString().split("T")[0];
-        await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
-        await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
-      } catch (err) {}
-    }
-  }
-
-  updateHUD() {
-    if (typeof 
-  // ================= SISTEM WARDROBE / GANTI KARAKTER =================
-  let editRole = "Barista", editEmoji = "☕", editAcc = "none", editColor = 0x1e3a8a;
-
-  window.openWardrobeModal = function() {
-    if (!myPlayerMesh) {
-      showToast("Masuk atau daftar warga dulu untuk ganti karakter! 👤");
-      openJoinModal();
-      return;
-    }
-    const c = myPlayerMesh.userData.a.c;
-    editRole = c.role || "Barista";
-    editAcc = c.acc || "none";
-    editColor = c.color || 0x1e3a8a;
-
-    const modal = document.getElementById("wardrobe-modal");
-    if (modal) {
-      modal.style.display = "flex";
-      setTimeout(() => modal.querySelector(".modal-card").style.transform = "translateY(0)", 10);
-    }
-  };
-
-  window.closeWardrobeModal = function() {
-    const modal = document.getElementById("wardrobe-modal");
-    if (modal) {
-      modal.querySelector(".modal-card").style.transform = "translateY(100%)";
-      setTimeout(() => modal.style.display = "none", 280);
-    }
-  };
-
-  window.pickWardrobeRole = (el, r, e) => {
-    document.querySelectorAll(".role-chip-edit").forEach(c => c.classList.remove("selected"));
-    el.classList.add("selected");
-    editRole = r; editEmoji = e;
-  };
-  window.pickWardrobeAcc = (el, a) => {
-    document.querySelectorAll(".acc-chip-edit").forEach(c => c.classList.remove("selected"));
-    el.classList.add("selected");
-    editAcc = a;
-  };
-  window.pickWardrobeColor = (el, hex) => {
-    document.querySelectorAll(".color-swatch-edit").forEach(s => s.classList.remove("selected"));
-    el.classList.add("selected");
-    editColor = hex;
-  };
-
-  window.saveWardrobeCustomization = async function() {
-    if (!myPlayerMesh) return;
-    const btn = document.getElementById("btn-save-wardrobe");
-    if (btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; }
-
-    const oldPos = myPlayerMesh.position.clone();
-    const oldRot = myPlayerMesh.rotation.y;
-    const cData = myPlayerMesh.userData.a.c;
-
-    cData.role = editRole;
-    cData.acc = editAcc;
-    cData.color = editColor;
-
-    const animIdx = animC.indexOf(myPlayerMesh);
-    if (animIdx > -1) animC.splice(animIdx, 1);
-    citizensGroup.remove(myPlayerMesh);
-
-    const newMesh = createCitizenMesh(cData);
-    newMesh.position.copy(oldPos);
-    newMesh.rotation.y = oldRot;
-    setupActivePlayer(newMesh, cData);
-
-    const ktpRole = document.getElementById("ktp-avatar-role");
-    const ktpEmoji = document.getElementById("ktp-avatar-emoji");
-    if (ktpRole) ktpRole.innerText = editRole.toUpperCase();
-    if (ktpEmoji) ktpEmoji.innerText = editEmoji;
-
-    if (supabaseClient && cData.id) {
-      try {
-        await supabaseClient.from("warga_piraku").update({
-          role: editRole,
-          acc: editAcc,
-          color: editColor
-        }).eq("id", cData.id);
-      } catch(err) {}
-    }
-
-    if (btn) { btn.disabled = false; btn.innerText = "Simpan Penampilan Baru ✨"; }
-    closeWardrobeModal();
-    if (typeof window.playSynthTone === "function") window.playSynthTone(780, "sine", 0.25);
-    showToast("Karakter & outfit berhasil diperbarui! ✨");
-  };
-
-  window.updateAutoDetectButton === "function") {
-      window.updateAutoDetectButton();
-    }
-  }
-
-    updateTrackerCard(playerPos) {
+  updateTrackerCard(playerPos) {
     const card = document.getElementById("quest-tracker-card");
     if (!card) return;
 
@@ -426,7 +273,6 @@ class QuestSystem {
       return;
     }
 
-    // Cari misi terdekat
     let nearest = uncompleted[0];
     let minDistance = 9999;
 
@@ -454,6 +300,53 @@ class QuestSystem {
     }
     if (distEl) distEl.innerText = playerPos ? `📍 Jarak: ${Math.round(minDistance * 2)}m` : "📍 Ikuti pilar cahaya";
     if (rewEl) rewEl.innerText = `+${nearest.xpReward} XP`;
+  }
+
+  async completeQuest(quest) {
+    quest.isCompleted = true;
+    if (quest.mesh) {
+      gsap.to(quest.mesh.scale, { 
+        x: 0.001, y: 0.001, z: 0.001, duration: 0.45, 
+        onComplete: () => { 
+          quest.mesh.visible = false;
+          if (quest.mesh.parent) quest.mesh.parent.remove(quest.mesh);
+        } 
+      });
+    }
+
+    try {
+      const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + this.todayStr) || "[]");
+      if (!localSaved.includes(quest.id)) {
+        localSaved.push(quest.id);
+        localStorage.setItem("piraku_quests_" + this.todayStr, JSON.stringify(localSaved));
+      }
+    } catch(e) {}
+
+    this.showQuestToast(quest.title, quest.xpReward);
+    if (typeof window.playSynthTone === 'function') window.playSynthTone(1050, "sine", 0.4);
+    await this.applyReward(quest);
+  }
+
+  async applyReward(quest) {
+    if (!this.warga) return;
+    const prevXP = parseInt(this.warga.xp, 10) || 0;
+    const currentXP = prevXP + quest.xpReward;
+    const currentLvl = Math.floor(currentXP / 100) + 1;
+
+    this.warga.xp = currentXP;
+    this.warga.level = currentLvl;
+    localStorage.setItem("piraku_my_level", currentLvl);
+    localStorage.setItem("piraku_my_xp", currentXP);
+
+    if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+
+    const client = this.supabase || supabaseClient;
+    if (client && this.warga.id) {
+      try {
+        await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: this.todayStr }]);
+        await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
+      } catch (err) {}
+    }
   }
 
   showQuestToast(name, xp) {
@@ -560,7 +453,7 @@ let activeQuestSystem = null;
   window.toggleHudMenu = function(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById('hud-dropdown');
-    menu.classList.toggle('show');
+    if (menu) menu.classList.toggle('show');
     window.updateAudioMenuLabel();
   };
 
@@ -622,7 +515,7 @@ let activeQuestSystem = null;
   }));
   scene.add(sky);
 
-  // Material & Primitif Dunia
+  // Material & Helpers
   const mats = {};
   const M = c => mats[c] || (mats[c] = new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: .92, metalness: 0 }));
   const MAT = c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: .92, metalness: 0 });
@@ -1140,12 +1033,12 @@ let activeQuestSystem = null;
     const panel = document.getElementById('bottom-control-panel');
     const fabBtn = document.getElementById('btn-show-panel');
     if (show) {
-      panel.classList.remove('hidden');
-      fabBtn.style.display = 'none';
+      if (panel) panel.classList.remove('hidden');
+      if (fabBtn) fabBtn.style.display = 'none';
       showToast('Panel simulasi dibuka 🏙️');
     } else {
-      panel.classList.add('hidden');
-      fabBtn.style.display = 'block';
+      if (panel) panel.classList.add('hidden');
+      if (fabBtn) fabBtn.style.display = 'block';
       showToast('Menikmati pemandangan kota Bandung ✨');
     }
   };
@@ -1176,9 +1069,10 @@ let activeQuestSystem = null;
 
     const cg = new THREE.Group(), skin = SKIN[Math.floor(rnd() * 4)];
     const body = new THREE.Group(); cg.add(body);
+
     const mkLeg = (sd) => {
       const legGroup = new THREE.Group();
-      legGroup.position.set(sd * 0.11, 0.34, 0); // Poros sendi paha
+      legGroup.position.set(sd * 0.11, 0.34, 0);
       cg.add(legGroup);
 
       cyl(0.085, 0.07, 0.34, 8, 0, -0.17, 0, 0x273449, legGroup);
@@ -1188,6 +1082,7 @@ let activeQuestSystem = null;
     };
     const legL = mkLeg(-1);
     const legR = mkLeg(1);
+
     cyl(.2, .25, .5, 14, 0, .32, 0, c.color, body);
     const head = new THREE.Group(); head.position.y = 1.1; body.add(head);
     mk(SP(.3, 16, 12), skin, 0, 0, 0, head);
@@ -1237,7 +1132,7 @@ let activeQuestSystem = null;
     citizensGroup.add(cg); 
 
     const myIg = localStorage.getItem('piraku_my_ig');
-    if (myIg && c.ig && (c?.ig || '').toLowerCase() === (myIg || '').toLowerCase()) {
+    if (myIg && (c?.ig || '').toLowerCase() === myIg.toLowerCase()) {
       setupActivePlayer(cg, c);
     }
 
@@ -1265,7 +1160,7 @@ let activeQuestSystem = null;
     }
   }
 
-  // Pak Walkot
+  // Walkot
   const WALKOT = new THREE.Group(); WALKOT.position.set(-10, .12, -2.5); WALKOT.scale.setScalar(1.25); WALKOT.rotation.y = 2.45; scene.add(WALKOT);
   box(.9, .07, .8, 0, .31, -.05, 0x2563eb, WALKOT);
   cyl(.46, .46, .05, 16, 1.15, .58, .2, 0x9a6b43, WALKOT);
@@ -1303,7 +1198,7 @@ let activeQuestSystem = null;
       const counterEl = document.getElementById('warga-counter');
       if (counterEl) counterEl.innerText = totalWarga + ' WARGA';
       updateCityMilestones(totalWarga); 
-      updateAutoDetectButton();
+      window.updateAutoDetectButton();
       initCitizenTicker();
     } catch (err) {
       const counterEl = document.getElementById('warga-counter');
@@ -1377,7 +1272,7 @@ let activeQuestSystem = null;
   // Emotes
   window.triggerEmote = function(type) {
     if (!activeCitizenTarget) return;
-    const animObj = animC.find(a => a.userData.a.c.ig === activeCitizenTarget.ig);
+    const animObj = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === ((activeCitizenTarget.ig || '')).toLowerCase());
 
     if (type === 'kopi') {
       window.playSynthTone(580, 'sine', 0.25);
@@ -1394,7 +1289,7 @@ let activeQuestSystem = null;
     }
   };
 
-  // Upvotes
+  // Upvote
   window.upvoteCurrentCitizen = async function() {
     if (!activeCitizenTarget) return;
     const cleanIg = (activeCitizenTarget.ig || '').trim().toLowerCase();
@@ -1436,7 +1331,7 @@ let activeQuestSystem = null;
   // Overhead Chat Bubbles
   const activeWorldBubbles = [];
   function showOverheadBubbleOnAvatar(senderIg, text) {
-    const avatar = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === (senderIg || '').toLowerCase());
+    const avatar = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === ((senderIg || '')).toLowerCase());
     if (!avatar) return;
 
     const el = document.createElement('div');
@@ -1623,7 +1518,7 @@ let activeQuestSystem = null;
   window.takeCitizenSelfiePoster = function() {
     closeKTP();
     const myIg = localStorage.getItem('piraku_my_ig');
-    const myCitizen = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === (myIg || '').toLowerCase());
+    const myCitizen = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === (myIg || '').toLowerCase());
     
     const targetX = myCitizen ? myCitizen.x : -10;
     const targetZ = myCitizen ? myCitizen.z : -2.5;
@@ -1675,17 +1570,19 @@ let activeQuestSystem = null;
     const formSignup = document.getElementById('auth-form-signup');
 
     if (tab === 'login') {
-      tabLogin.classList.add('active');
-      tabSignup.classList.remove('active');
-      formLogin.style.display = 'block';
-      formSignup.style.display = 'none';
-      document.getElementById('auth-modal-title').innerText = 'Masuk Akun Warga 🔑';
+      if (tabLogin) tabLogin.classList.add('active');
+      if (tabSignup) tabSignup.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'block';
+      if (formSignup) formSignup.style.display = 'none';
+      const t = document.getElementById('auth-modal-title');
+      if (t) t.innerText = 'Masuk Akun Warga 🔑';
     } else {
-      tabSignup.classList.add('active');
-      tabLogin.classList.remove('active');
-      formLogin.style.display = 'none';
-      formSignup.style.display = 'block';
-      document.getElementById('auth-modal-title').innerText = 'Daftar Akun Warga Baru 📜';
+      if (tabSignup) tabSignup.classList.add('active');
+      if (tabLogin) tabLogin.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'none';
+      if (formSignup) formSignup.style.display = 'block';
+      const t = document.getElementById('auth-modal-title');
+      if (t) t.innerText = 'Daftar Akun Warga Baru 📜';
     }
   };
 
@@ -1753,15 +1650,16 @@ let activeQuestSystem = null;
 
         localStorage.setItem('piraku_my_ig', user.ig);
         localStorage.setItem('piraku_my_level', user.level || 1);
+        localStorage.setItem('piraku_my_xp', user.xp || 0);
         localStorage.setItem('piraku_my_kec', user.kecamatan || 'Bandung Wetan');
 
-        let foundMesh = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === (user?.ig || '').toLowerCase());
+        let foundMesh = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === user.ig.toLowerCase());
         if (!foundMesh) {
           foundMesh = createCitizenMesh(user);
         }
         setupActivePlayer(foundMesh, user);
 
-        updateAutoDetectButton();
+        window.updateAutoDetectButton();
         btn.disabled = false; btn.innerText = 'Masuk & Mainkan Karakter 🎮';
         closeJoinModal();
         showToast('Selamat datang kembali, ' + user.ig + '! 🎮');
@@ -1845,8 +1743,9 @@ let activeQuestSystem = null;
 
         localStorage.setItem('piraku_my_ig', newCit.ig);
         localStorage.setItem('piraku_my_level', 1);
+        localStorage.setItem('piraku_my_xp', 0);
         localStorage.setItem('piraku_my_kec', newCit.kecamatan);
-        updateAutoDetectButton();
+        window.updateAutoDetectButton();
 
         btn.disabled = false; btn.innerText = 'Daftar Jadi Warga Resmi 📜';
         closeJoinModal();
@@ -1871,6 +1770,7 @@ let activeQuestSystem = null;
     if (m) m.style.display = 'none'; 
   };
 
+  // Header AutoDetect Button
   window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem("piraku_my_ig");
     const savedLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
@@ -1901,7 +1801,7 @@ let activeQuestSystem = null;
   window.handleCitizenButtonClick = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     if (savedIg) {
-      const found = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
+      const found = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
       if (found) { 
         showCitizenSpeech(found); 
         showToast('Kamera menyorot kamu! ✨'); 
@@ -1919,9 +1819,11 @@ let activeQuestSystem = null;
       activeQuestSystem = null;
       const joyZone = document.getElementById('joystick-zone');
       if (joyZone) joyZone.style.display = 'none';
-      const hud = document.getElementById('player-profile-hud');
-      if (hud) hud.style.display = 'none';
-      updateAutoDetectButton(); 
+      const jumpBtn = document.getElementById('btn-jump-mobile');
+      if (jumpBtn) jumpBtn.style.display = 'none';
+      const card = document.getElementById('quest-tracker-card');
+      if (card) card.style.display = 'none';
+      window.updateAutoDetectButton(); 
       closeKTP(); 
       showToast('Berhasil keluar akun!'); 
     }
@@ -1995,18 +1897,18 @@ let activeQuestSystem = null;
     let curLvl = parseInt(localStorage.getItem('piraku_my_level') || '1');
     curLvl += 1;
     localStorage.setItem('piraku_my_level', curLvl);
-    updateAutoDetectButton();
+    window.updateAutoDetectButton();
     
     if (s === 7) {
       showToast('🎉 SELAMAT H-7! Rumah kamu terbit di perumahan Bandung!');
       window.playSynthTone(1050, 'sine', 0.5);
 
-      const targetCitizen = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === cleanIg);
+      const targetCitizen = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === cleanIg);
       if (targetCitizen) {
         targetCitizen.has_house = true;
         const hData = spawnCitizenHouse(targetCitizen, registeredCitizensList.length);
         
-        const animObj = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === cleanIg);
+        const animObj = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === cleanIg);
         if (animObj) {
           gsap.to(animObj.position, { x: hData.porchX, z: hData.porchZ, duration: 1.5, ease: 'power2.out' });
           animObj.userData.a.tx = hData.porchX;
@@ -2033,11 +1935,19 @@ let activeQuestSystem = null;
 
   window.applyMode = function(m) {
     const isR = m === 'reborn'; curMode = m; setVitals(m, totalWarga);
-    document.getElementById('btn-mode-reborn').className = 'btn-mode g ' + (isR ? 'active' : '');
-    document.getElementById('btn-mode-now').className = 'btn-mode r ' + (!isR ? 'active' : '');
-    document.getElementById('badge-status').textContent = isR ? 'Mode Reborn' : 'Darurat macet';
-    document.getElementById('badge-status').style.color = isR ? '#6fe3a3' : '#ff8a7a';
-    document.getElementById('status-title').textContent = isR ? 'Bandung Reborn: Trem Listrik & Plaza Hijau' : 'Kondisi Sekarang: Macet & Polusi Knalpot';
+    const btnR = document.getElementById('btn-mode-reborn');
+    const btnN = document.getElementById('btn-mode-now');
+    const badge = document.getElementById('badge-status');
+    const title = document.getElementById('status-title');
+    if (btnR) btnR.className = 'btn-mode g ' + (isR ? 'active' : '');
+    if (btnN) btnN.className = 'btn-mode r ' + (!isR ? 'active' : '');
+    if (badge) {
+      badge.textContent = isR ? 'Mode Reborn' : 'Darurat macet';
+      badge.style.color = isR ? '#6fe3a3' : '#ff8a7a';
+    }
+    if (title) {
+      title.textContent = isR ? 'Bandung Reborn: Trem Listrik & Plaza Hijau' : 'Kondisi Sekarang: Macet & Polusi Knalpot';
+    }
     gsap.to(rebornGroup.scale, { y: isR ? 1 : 0.001, duration: 0.5 });
     gsap.to(LM, { opacity: isR ? 0 : 0.75, duration: 0.5 });
   };
@@ -2092,16 +2002,99 @@ let activeQuestSystem = null;
 
   window.handleSearchCitizen = function(q) {
     q = q.trim().toLowerCase(); if (!q) { hideCitizenSpeech(); return; }
-    const f = registeredCitizensList.find(c => (c.ig && (c?.ig || '').toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
+    const f = registeredCitizensList.find(c => (c.ig && c.ig.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
     if (f) showCitizenSpeech(f);
   };
 
-  // ================= KONTROL PEMAIN & KAMERA CHASE SMOOTH =================
-  
-  
+  // ================= SISTEM WARDROBE / GANTI KARAKTER =================
+  let editRole = "Barista", editEmoji = "☕", editAcc = "none", editColor = 0x1e3a8a;
 
-  
-  // Sistem Fisika Gravitasi & Lompat
+  window.openWardrobeModal = function() {
+    if (!myPlayerMesh) {
+      showToast("Masuk atau daftar warga dulu untuk ganti karakter! 👤");
+      openJoinModal();
+      return;
+    }
+    const c = myPlayerMesh.userData.a.c;
+    editRole = c.role || "Barista";
+    editAcc = c.acc || "none";
+    editColor = c.color || 0x1e3a8a;
+
+    const modal = document.getElementById("wardrobe-modal");
+    if (modal) {
+      modal.style.display = "flex";
+      setTimeout(() => modal.querySelector(".modal-card").style.transform = "translateY(0)", 10);
+    }
+  };
+
+  window.closeWardrobeModal = function() {
+    const modal = document.getElementById("wardrobe-modal");
+    if (modal) {
+      modal.querySelector(".modal-card").style.transform = "translateY(100%)";
+      setTimeout(() => modal.style.display = "none", 280);
+    }
+  };
+
+  window.pickWardrobeRole = (el, r, e) => {
+    document.querySelectorAll(".role-chip-edit").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    editRole = r; editEmoji = e;
+  };
+  window.pickWardrobeAcc = (el, a) => {
+    document.querySelectorAll(".acc-chip-edit").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    editAcc = a;
+  };
+  window.pickWardrobeColor = (el, hex) => {
+    document.querySelectorAll(".color-swatch-edit").forEach(s => s.classList.remove("selected"));
+    el.classList.add("selected");
+    editColor = hex;
+  };
+
+  window.saveWardrobeCustomization = async function() {
+    if (!myPlayerMesh) return;
+    const btn = document.getElementById("btn-save-wardrobe");
+    if (btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; }
+
+    const oldPos = myPlayerMesh.position.clone();
+    const oldRot = myPlayerMesh.rotation.y;
+    const cData = myPlayerMesh.userData.a.c;
+
+    cData.role = editRole;
+    cData.acc = editAcc;
+    cData.color = editColor;
+
+    const animIdx = animC.indexOf(myPlayerMesh);
+    if (animIdx > -1) animC.splice(animIdx, 1);
+    citizensGroup.remove(myPlayerMesh);
+
+    const newMesh = createCitizenMesh(cData);
+    newMesh.position.copy(oldPos);
+    newMesh.rotation.y = oldRot;
+    setupActivePlayer(newMesh, cData);
+
+    const ktpRole = document.getElementById("ktp-avatar-role");
+    const ktpEmoji = document.getElementById("ktp-avatar-emoji");
+    if (ktpRole) ktpRole.innerText = editRole.toUpperCase();
+    if (ktpEmoji) ktpEmoji.innerText = editEmoji;
+
+    if (supabaseClient && cData.id) {
+      try {
+        await supabaseClient.from("warga_piraku").update({
+          role: editRole,
+          acc: editAcc,
+          color: editColor
+        }).eq("id", cData.id);
+      } catch(err) {}
+    }
+
+    if (btn) { btn.disabled = false; btn.innerText = "Simpan Penampilan Baru ✨"; }
+    closeWardrobeModal();
+    if (typeof window.playSynthTone === "function") window.playSynthTone(780, "sine", 0.25);
+    showToast("Karakter & outfit berhasil diperbarui! ✨");
+  };
+
+  // ================= KONTROL PEMAIN & FISIKA LOMPAT =================
   let playerVelY = 0;
   let isGrounded = true;
   const gravity = -32.0;
@@ -2119,7 +2112,6 @@ let activeQuestSystem = null;
     if (typeof window.playSynthTone === "function") window.playSynthTone(580, "sine", 0.18);
   };
 
-  // Bind klik & touch langsung ke tombol lompat mobile
   function initJumpButton() {
     const jumpBtn = document.getElementById("btn-jump-mobile");
     if (!jumpBtn) return;
@@ -2188,7 +2180,7 @@ let activeQuestSystem = null;
     });
   }
 
-    const moveForwardVec = new THREE.Vector3();
+  const moveForwardVec = new THREE.Vector3();
   const moveRightVec = new THREE.Vector3();
   const moveFinalVec = new THREE.Vector3();
 
@@ -2236,7 +2228,7 @@ let activeQuestSystem = null;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
       if (isGrounded) {
-        const s = Math.sin(clockTime * 15);
+        const s = Math.sin(window.clockTime * 15);
         a.body.position.y = Math.abs(s) * 0.08;
         a.armL.rotation.x = s * 0.85;
         a.armR.rotation.x = -s * 0.85;
@@ -2252,7 +2244,6 @@ let activeQuestSystem = null;
       if (a.armR) a.armR.rotation.x *= 0.6;
     }
 
-    // Fisika Gravitasi & Lompat
     if (!isGrounded) {
       playerVelY += gravity * delta;
       myPlayerMesh.position.y += playerVelY * delta;
@@ -2271,7 +2262,6 @@ let activeQuestSystem = null;
       }
     }
 
-    // Kamera mengikuti posisi X, Y (saat lompat), dan Z karakter
     const curTarget = controls.target;
     const diffX = myPlayerMesh.position.x - curTarget.x;
     const diffY = (myPlayerMesh.position.y + 1.3) - curTarget.y;
@@ -2297,6 +2287,7 @@ let activeQuestSystem = null;
 
     clockTime += 0.016;
     window.clockTime = clockTime;
+
     controls.update();
     applyGrowth();
     updTrees(clockTime);
@@ -2304,7 +2295,6 @@ let activeQuestSystem = null;
 
     updatePlayerMovement(0.016);
 
-    // Update Deteksi Quest terhadap Posisi Pemain
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
     }
