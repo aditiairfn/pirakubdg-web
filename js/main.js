@@ -4,7 +4,7 @@ const DAILY_QUESTS = [
   {
     id: "visit_gasibu",
     title: "Nongkrong di Lapangan Gasibu",
-    target: { x: 0, z: -10 },
+    target: { x: 0, z: -8 },
     radius: 6.0,
     xpReward: 50,
     color: 0x3b82f6,
@@ -16,7 +16,7 @@ const DAILY_QUESTS = [
   {
     id: "visit_gedung_sate",
     title: "Apel di Gerbang Gedung Sate",
-    target: { x: 0, z: 10 },
+    target: { x: 0, z: 13.5 },
     radius: 7.0,
     xpReward: 75,
     color: 0x10b981,
@@ -68,54 +68,27 @@ class QuestSystem {
 
       if (data && !error) {
         const completedIds = data.map(q => q.quest_id);
-        this.quests.forEach(quest => {
-          if (completedIds.includes(quest.id)) {
-            quest.isCompleted = true;
-            if (quest.mesh) quest.mesh.visible = false;
-          }
-        });
-      }
-    } catch(e) {}
-  }
-
-  spawnCheckpointMarkers() {
-    this.quests.forEach(quest => {
-      const markerGroup = new THREE.Group();
-      const ringGeo = new THREE.RingGeometry(quest.radius - 0.4, quest.radius, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
-      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-      ringMesh.rotation.x = -Math.PI / 2;
-      ringMesh.position.y = 0.12;
-      markerGroup.add(ringMesh);
-
-      const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.9, quest.radius * 0.9, 3.5, 32, 1, true);
-      const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
-      const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
-      beaconMesh.position.y = 1.8;
-      markerGroup.add(beaconMesh);
-
-      markerGroup.position.set(quest.target.x, 0, quest.target.z);
-      if (quest.isCompleted) markerGroup.visible = false;
-      quest.mesh = markerGroup;
-      this.scene.add(markerGroup);
-    });
-  }
-
-  update(delta, playerPos) {
-    if (!playerPos) return;
-    this.quests.forEach(quest => {
+            this.quests.forEach(quest => {
       if (quest.isCompleted) return;
       if (quest.mesh) quest.mesh.rotation.y += delta * 0.75;
-      const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
-      if (distance <= quest.radius) {
+      
+      const distance = Math.hypot(
+        playerPos.x - quest.target.x,
+        playerPos.z - quest.target.z
+      );
+
+      // Radius diperbesar agar gampang terpicu
+      if (distance <= (quest.radius + 1.5)) {
         if (quest.stayDuration > 0) {
           quest.timer += delta;
-          if (quest.timer >= quest.stayDuration) this.completeQuest(quest);
+          if (quest.timer >= quest.stayDuration) {
+            this.completeQuest(quest);
+          }
         } else {
           this.completeQuest(quest);
         }
       } else {
-        quest.timer = Math.max(0, quest.timer - delta * 2);
+        quest.timer = Math.max(0, quest.timer - delta);
       }
     });
   }
