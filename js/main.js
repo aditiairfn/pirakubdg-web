@@ -13,6 +13,18 @@ window.clockTime = 0;
 // ================= POOL MASTER MISI HARIAN (ROTASI ACAK) =================
 const ALL_QUEST_POOL = [
   {
+    id: "skate_cikapayang", title: "Main Skateboard di Cikapayang", target: { x: -55, z: -40 }, radius: 7.5, xpReward: 85, color: 0x06b6d4,
+    stayDuration: 2.0, timer: 0, isCompleted: false, mesh: null
+  },
+  {
+    id: "jogging_saparua", title: "Lari Keliling Trek Saparua", target: { x: 50, z: 25 }, radius: 8.0, xpReward: 90, color: 0xef4444,
+    stayDuration: 2.5, timer: 0, isCompleted: false, mesh: null
+  },
+  {
+    id: "kuliner_cisangkuy", title: "Jajan Kuliner di Cisangkuy", target: { x: 38, z: -10 }, radius: 7.0, xpReward: 75, color: 0x10b981,
+    stayDuration: 1.5, timer: 0, isCompleted: false, mesh: null
+  },
+  {
     id: "halte_cilaki", title: "Naik Trem ke Halte Cilaki", target: { x: 31, z: 16 }, radius: 7.0, xpReward: 70, color: 0x06b6d4,
     stayDuration: 0, timer: 0, isCompleted: false, mesh: null
   },
@@ -492,7 +504,7 @@ let activeQuestSystem = null;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xd9e7ee, 180, 750);
+  scene.fog = new THREE.Fog(0xd9e7ee, 260, 950);
 
   const cam = new THREE.PerspectiveCamera(40, W / H, 0.5, 1600);
   cam.position.set(-26, 26, -55);
@@ -502,7 +514,7 @@ let activeQuestSystem = null;
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = PI / 2.08;
   controls.minDistance = 3;
-  controls.maxDistance = 240;
+  controls.maxDistance = 380;
   controls.target.set(0, 3, 5);
 
   // Pencahayaan
@@ -616,6 +628,10 @@ let activeQuestSystem = null;
   const Rcil = road([[18, 5], [31, 16], [44, 27], [60, 38]], 4);
   const RriauW = road([[-60, 16], [-24, 16]], 5.5), RriauE = road([[24, 16], [60, 16]], 5.5);
   const Rdago = road([[-42, -50], [-42, 3], [-42, 35]], 5.5);
+  // Jalan Ekspansi Baru
+  const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
+  const Rcisangkuy = road([[21, -3], [38, -10], [42, -28]], 5.0);
+  const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 5]], 4.8);
 
   const LM = new THREE.MeshBasicMaterial({ color: 0xe11d1d, transparent: true, opacity: 0, depthWrite: false });
   roads.forEach(r => {
@@ -772,6 +788,55 @@ let activeQuestSystem = null;
   mk(new THREE.PlaneGeometry(8.8, 4.4), new THREE.MeshBasicMaterial({ map: billboardTex }), 0, 6.9, 0.22, billboardGroup, false, false);
 
   // Kavling Perumahan Warga
+  
+  // ================= LANDMARK DISTRIK EKSPANSI =================
+  const expansionGroup = new THREE.Group();
+  scene.add(expansionGroup);
+
+  // 1. DAGO / CIKAPAYANG SKATEPARK (Barat: X: -55, Z: -40)
+  {
+    box(16, 0.12, 12, -55, 0.06, -40, 0x334155, expansionGroup, false, true);
+    // Halfpipe Ramp
+    box(3.5, 0.9, 8, -60, 0.45, -40, 0x94a3b8, expansionGroup);
+    box(3.5, 0.9, 8, -50, 0.45, -40, 0x94a3b8, expansionGroup);
+    // Rail grind & Box obstacle
+    box(0.12, 0.5, 6, -55, 0.25, -40, 0xfacc15, expansionGroup);
+    box(2.2, 0.45, 3.2, -55, 0.22, -43, 0x0284c7, expansionGroup);
+  }
+
+  // 2. TAMAN LANSIA & KULINER CISANGKUY (Tenggara: X: 38, Z: -10)
+  {
+    // Kolam & rumput rindang Lansia
+    box(18, 0.08, 14, 38, 0.04, -10, 0x2d5a27, expansionGroup, false, true);
+    box(8, 0.05, 5, 38, 0.06, -10, 0x38bdf8, expansionGroup, false, true);
+    // Jembatan Lengkung Merah Mini
+    box(2.4, 0.35, 6.2, 38, 0.2, -10, 0xd92626, expansionGroup);
+    box(0.15, 0.7, 6.2, 36.9, 0.45, -10, 0xb91c1c, expansionGroup);
+    box(0.15, 0.7, 6.2, 39.1, 0.45, -10, 0xb91c1c, expansionGroup);
+    // Tenda Kuliner Cisangkuy Pastel (Yoghurt / Surabi)
+    const stallColors = [0xf43f5e, 0x0ea5e9, 0xeab308, 0x10b981];
+    [-3.5, 0, 3.5].forEach((offset, idx) => {
+      box(2.2, 1.4, 2.0, 32 + offset * 1.5, 0.1, -16, 0xf8fafc, expansionGroup);
+      hip(2.6, 2.4, 0.9, 32 + offset * 1.5, 1.5, -16, stallColors[idx % stallColors.length], expansionGroup);
+    });
+  }
+
+  // 3. GOR SAPARUA (Timur: X: 50, Z: 25)
+  {
+    // Lapangan & Trek Lari Bata Merah Oval
+    box(18, 0.06, 22, 50, 0.03, 25, 0xb91c1c, expansionGroup, false, true);
+    box(12, 0.08, 16, 50, 0.05, 25, 0x4d7c0f, expansionGroup, false, true);
+    // Panggung Gigs Komunitas
+    box(7.5, 0.75, 4.2, 50, 0.38, 33, 0x1e293b, expansionGroup);
+    box(7.8, 0.18, 4.5, 50, 3.0, 33, 0x475569, expansionGroup);
+    [-3.6, 3.6].forEach(px => cyl(0.1, 0.1, 2.8, 6, 50 + px, 0.75, 33, 0x0f172a, expansionGroup));
+    // Ruko Distro & Kafe Komunitas Saparua
+    for (let r = 0; r < 3; r++) {
+      box(4.5, 3.4, 4.5, 62, 0.1, 16 + r * 6.5, 0xe2e8f0, expansionGroup);
+      box(4.8, 0.8, 4.8, 62, 3.5, 16 + r * 6.5, 0x0f172a, expansionGroup);
+    }
+  }
+
   const citizenHousesGroup = new THREE.Group(); scene.add(citizenHousesGroup);
   const houseOwnersRegistry = {};
 
@@ -2394,8 +2459,8 @@ let activeQuestSystem = null;
       myPlayerMesh.position.x += moveFinalVec.x * speed;
       myPlayerMesh.position.z += moveFinalVec.z * speed;
 
-      myPlayerMesh.position.x = Math.max(-45, Math.min(45, myPlayerMesh.position.x));
-      myPlayerMesh.position.z = Math.max(-40, Math.min(30, myPlayerMesh.position.z));
+      myPlayerMesh.position.x = Math.max(-75, Math.min(75, myPlayerMesh.position.x));
+      myPlayerMesh.position.z = Math.max(-65, Math.min(55, myPlayerMesh.position.z));
 
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
