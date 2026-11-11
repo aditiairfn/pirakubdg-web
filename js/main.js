@@ -1,3 +1,4 @@
+let clockTime = 0;
 // ================= KUNCI SUPABASE =================
 const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
@@ -134,18 +135,19 @@ class QuestSystem {
 
   update(delta, playerPos) {
     if (!playerPos) return;
+    this.time = (this.time || 0) + delta;
     this.updateTrackerCard(playerPos);
     this.quests.forEach(quest => {
       if (quest.isCompleted) return;
             if (quest.mesh) {
         quest.mesh.rotation.y += delta * 0.75;
         if (quest.innerRing) {
-          const sc = 1.0 + Math.sin(clockTime * 4) * 0.25;
+          const sc = 1.0 + Math.sin(this.time * 4) * 0.25;
           quest.innerRing.scale.set(sc, sc, sc);
         }
         if (quest.diamond) {
           quest.diamond.rotation.y += delta * 2;
-          quest.diamond.position.y = 4.2 + Math.sin(clockTime * 3) * 0.35;
+          quest.diamond.position.y = 4.2 + Math.sin(this.time * 3) * 0.35;
         }
       }
       const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
