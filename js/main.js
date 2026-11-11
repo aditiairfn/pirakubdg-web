@@ -163,15 +163,9 @@ class QuestSystem {
   }
 
   updateHUD() {
-    const xp = parseInt(this.warga?.xp, 10) || 0;
-    const lvl = parseInt(this.warga?.level, 10) || 1;
-    const currentLvlProgress = xp % 100;
-    const badge = document.getElementById("hud-level-badge");
-    const text = document.getElementById("hud-xp-text");
-    const fill = document.getElementById("hud-xp-fill");
-    if (badge) badge.innerText = `LVL ${lvl}`;
-    if (text) text.innerText = `${currentLvlProgress} / 100 XP`;
-    if (fill) fill.style.width = `${currentLvlProgress}%`;
+    if (typeof window.updateAutoDetectButton === "function") {
+      window.updateAutoDetectButton();
+    }
   }
 
   showQuestToast(name, xp) {
@@ -1591,12 +1585,23 @@ let activeQuestSystem = null;
 
   window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
-    const savedLvl = localStorage.getItem('piraku_my_level') || 1;
+    const savedLvl = parseInt(localStorage.getItem('piraku_my_level') || '1', 10);
+    const savedXp = parseInt(localStorage.getItem('piraku_my_xp') || '0', 10);
+    const xpProgress = savedXp % 100;
     const btn = document.getElementById('btn-citizen-status');
     if (!btn) return;
+
     if (savedIg) { 
       btn.className = 'btn-my-citizen'; 
-      btn.innerHTML = `<span>👤 ${savedIg}</span><span class="player-level-badge">LEVEL ${savedLvl}</span>`; 
+      btn.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:8px;">
+          <span style="font-weight:800; font-size:11px;">👤 ${savedIg}</span>
+          <span class="player-level-badge" style="background:rgba(255,207,74,0.2); padding:1px 5px; border-radius:4px;">LVL ${savedLvl}</span>
+        </div>
+        <div style="width:100%; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; margin-top:3px; overflow:hidden;">
+          <div style="width:${xpProgress}%; height:100%; background:linear-gradient(90deg, #4ade80, #ffcf4a); transition:width 0.3s;"></div>
+        </div>
+      `; 
     } else { 
       btn.className = 'btn-join'; 
       btn.innerHTML = '<span>+</span> Masuk / Daftar'; 
