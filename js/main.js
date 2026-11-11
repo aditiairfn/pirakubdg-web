@@ -88,31 +88,66 @@ class QuestSystem {
   spawnCheckpointMarkers() {
     this.quests.forEach(quest => {
       const markerGroup = new THREE.Group();
-      const ringGeo = new THREE.RingGeometry(quest.radius - 0.4, quest.radius, 32);
-      const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+
+      // Lingkaran luar tebal
+      const ringGeo = new THREE.RingGeometry(quest.radius - 0.6, quest.radius, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.85 });
       const ringMesh = new THREE.Mesh(ringGeo, ringMat);
       ringMesh.rotation.x = -Math.PI / 2;
-      ringMesh.position.y = 0.14;
+      ringMesh.position.y = 0.15;
       markerGroup.add(ringMesh);
 
-      const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.9, quest.radius * 0.9, 3.5, 32, 1, true);
-      const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+      // Lingkaran denyut dalam
+      const innerRingGeo = new THREE.RingGeometry(0.2, quest.radius * 0.4, 32);
+      const innerRingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+      const innerRing = new THREE.Mesh(innerRingGeo, innerRingMat);
+      innerRing.rotation.x = -Math.PI / 2;
+      innerRing.position.y = 0.16;
+      markerGroup.add(innerRing);
+
+      // Pilar cahaya vertikal tinggi (Beam of Light)
+      const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.7, quest.radius * 0.85, 12, 32, 1, true);
+      const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false });
       const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
-      beaconMesh.position.y = 1.8;
+      beaconMesh.position.y = 6.0;
       markerGroup.add(beaconMesh);
+
+      // Berlian/Intan 3D melayang di atas checkpoint
+      const diamondGeo = new THREE.OctahedronGeometry(1.0, 0);
+      const diamondMat = new THREE.MeshBasicMaterial({ color: quest.color });
+      const diamondMesh = new THREE.Mesh(diamondGeo, diamondMat);
+      diamondMesh.position.y = 4.2;
+      markerGroup.add(diamondMesh);
 
       markerGroup.position.set(quest.target.x, 0, quest.target.z);
       if (quest.isCompleted) markerGroup.visible = false;
       quest.mesh = markerGroup;
+      quest.innerRing = innerRing;
+      quest.diamond = diamondMesh;
       this.scene.add(markerGroup);
     });
+
+    const card = document.getElementById("quest-tracker-card");
+    if (card) card.style.display = "block";
+    this.updateTrackerCard(null);
   }
 
   update(delta, playerPos) {
     if (!playerPos) return;
+    this.updateTrackerCard(playerPos);
     this.quests.forEach(quest => {
       if (quest.isCompleted) return;
-      if (quest.mesh) quest.mesh.rotation.y += delta * 0.75;
+            if (quest.mesh) {
+        quest.mesh.rotation.y += delta * 0.75;
+        if (quest.innerRing) {
+          const sc = 1.0 + Math.sin(clockTime * 4) * 0.25;
+          quest.innerRing.scale.set(sc, sc, sc);
+        }
+        if (quest.diamond) {
+          quest.diamond.rotation.y += delta * 2;
+          quest.diamond.position.y = 4.2 + Math.sin(clockTime * 3) * 0.35;
+        }
+      }
       const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
       if (distance <= quest.radius + 1.5) {
         if (quest.stayDuration > 0) {
@@ -165,6 +200,52 @@ class QuestSystem {
     if (typeof window.updateAutoDetectButton === "function") {
       window.updateAutoDetectButton();
     }
+  }
+
+    updateTrackerCard(playerPos) {
+    const card = document.getElementById("quest-tracker-card");
+    if (!card) return;
+
+    const uncompleted = this.quests.filter(q => !q.isCompleted);
+    const completedCount = this.quests.length - uncompleted.length;
+    const countEl = document.getElementById("quest-progress-count");
+    if (countEl) countEl.innerText = `${completedCount}/${this.quests.length}`;
+
+    if (uncompleted.length === 0) {
+      document.getElementById("quest-current-title").innerHTML = "🎉 Semua Misi Hari Ini Beres!";
+      document.getElementById("quest-distance-text").innerText = "Wilujeng wargi!";
+      document.getElementById("quest-reward-text").innerText = "100%";
+      return;
+    }
+
+    // Cari misi terdekat
+    let nearest = uncompleted[0];
+    let minDistance = 9999;
+
+    if (playerPos) {
+      uncompleted.forEach(q => {
+        const d = Math.hypot(playerPos.x - q.target.x, playerPos.z - q.target.z);
+        if (d < minDistance) {
+          minDistance = d;
+          nearest = q;
+        }
+      });
+    }
+
+    const titleEl = document.getElementById("quest-current-title");
+    const distEl = document.getElementById("quest-distance-text");
+    const rewEl = document.getElementById("quest-reward-text");
+
+    if (titleEl) {
+      if (nearest.stayDuration > 0 && nearest.timer > 0) {
+        const remaining = Math.max(0, nearest.stayDuration - nearest.timer).toFixed(1);
+        titleEl.innerHTML = `⏳ Tunggu ${remaining}s di ${nearest.title}`;
+      } else {
+        titleEl.innerText = nearest.title;
+      }
+    }
+    if (distEl) distEl.innerText = playerPos ? `📍 Jarak: ${Math.round(minDistance * 2)}m` : "📍 Ikuti pilar cahaya";
+    if (rewEl) rewEl.innerText = `+${nearest.xpReward} XP`;
   }
 
   showQuestToast(name, xp) {
