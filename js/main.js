@@ -999,7 +999,7 @@ let activeQuestSystem = null;
       return; 
     }
     try {
-      const { data, error } = await supabaseClient.from('warga_piraku').select('*').order('id', { ascending: true });
+      const { data, error } = await supabaseClient.from('warga_publik').select('*').order('id', { ascending: true });
       if (error) throw error;
       if (data && data.length > 0) {
         data.forEach(c => createCitizenMesh(c)); 
