@@ -2204,7 +2204,7 @@ let activeQuestSystem = null;
 
   window.handleSearchCitizen = function(q) {
     q = q.trim().toLowerCase(); if (!q) { hideCitizenSpeech(); return; }
-    const f = registeredCitizensList.find(c => (c.ig && c.ig.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
+    const f = registeredCitizensList.find(c => (c.ig && String(c?.ig || "").toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
     if (f) showCitizenSpeech(f);
   };
 
