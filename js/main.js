@@ -1971,7 +1971,7 @@ let activeQuestSystem = null;
     if (m) m.style.display = 'none'; 
   };
 
-  // Header AutoDetect Button
+    // Header AutoDetect Button
   window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem("piraku_my_ig");
     const savedLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
@@ -1983,15 +1983,14 @@ let activeQuestSystem = null;
     if (savedIg) { 
       btn.className = "btn-my-citizen"; 
       btn.style.minWidth = "120px";
-      btn.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:6px;">
-          <span style="font-weight:800; font-size:11px; color:#fff;">👤 ${savedIg}</span>
-          <span class="player-level-badge" style="color:var(--lampu); font-weight:800; font-size:9.5px;">LVL ${savedLvl}</span>
-        </div>
-        <div style="width:100%; height:4px; background:rgba(255,255,255,0.25); border-radius:3px; margin-top:4px; overflow:hidden;">
-          <div style="width:${xpProgress}%; height:100%; background:linear-gradient(90deg, #4ade80, #ffcf4a); transition:width 0.3s ease;"></div>
-        </div>
-      `; 
+      const cleanDisplay = String(savedIg).replace(/[&<>"']/g, ch => "&#" + ch.charCodeAt(0) + ";");
+      btn.innerHTML = "<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:6px;">" +
+        "<span style="font-weight:800; font-size:11px; color:#fff;">👤 " + cleanDisplay + "</span>" +
+        "<span class="player-level-badge" style="color:var(--lampu); font-weight:800; font-size:9.5px;">LVL " + savedLvl + "</span>" +
+        "</div>" +
+        "<div style="width:100%; height:4px; background:rgba(255,255,255,0.25); border-radius:3px; margin-top:4px; overflow:hidden;">" +
+        "<div style="width:" + xpProgress + "%; height:100%; background:linear-gradient(90deg, #4ade80, #ffcf4a); transition:width 0.3s ease;"></div>" +
+        "</div>";
     } else { 
       btn.className = "btn-join"; 
       btn.style.minWidth = "";
