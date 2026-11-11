@@ -971,6 +971,54 @@ let activeQuestSystem = null;
   }
 
   // Trem Listrik
+
+  // ================= 3D MODEL LOADER ALA BRUNO SIMON =================
+  const gltfLoader = new THREE.GLTFLoader();
+  
+  // Model Low-Poly Streetcar / Tram (CC0 Open Asset)
+  const TRAM_MODEL_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/SheenChair.glb"; // Placeholder test URL / custom low-poly tram
+  
+  // Gunakan model eksternal untuk menggantikan gerbong primitif
+  function loadCustomTramModel() {
+    // URL aset low-poly train / tram open source
+    const modelUrl = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb";
+    
+    // Kita coba load model 3D kendaraan
+    gltfLoader.load(
+      modelUrl,
+      (gltf) => {
+        const loadedMesh = gltf.scene;
+        loadedMesh.scale.set(1.4, 1.4, 1.4);
+        loadedMesh.position.set(0, 0, 0);
+        loadedMesh.rotation.y = Math.PI / 2;
+        
+        loadedMesh.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            // Terapkan material pastel clay ala Bruno Simon
+            if (child.material) {
+              child.material.roughness = 0.85;
+              child.material.metalness = 0.1;
+            }
+          }
+        });
+
+        // Sembunyikan gerbong kotak bawaan jika model eksternal berhasil masuk
+        tram.children.forEach(c => {
+          if (c !== loadedMesh) c.visible = false;
+        });
+        tram.add(loadedMesh);
+        console.log("3D Model trem berhasil dimuat!");
+      },
+      undefined,
+      (err) => {
+        console.log("Fallback: Tetap menggunakan mesh procedural bawaan.", err);
+      }
+    );
+  }
+  loadCustomTramModel();
+
   const rebornGroup = new THREE.Group(); scene.add(rebornGroup);
   const tram = new THREE.Group();
   [-3.15, 0, 3.15].forEach(x => {
