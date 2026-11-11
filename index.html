@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Simulasi Tata Kota Bandung - @pirakubdg</title>
+<meta name="theme-color" content="#0e2f2a">
+<meta property="og:title" content="Simulasi Tata Kota Bandung">
+<meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
+<!-- Three.js + OrbitControls + GSAP -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<link rel="stylesheet" href="./css/style.css">
+</head>
+<body>
+
+  <!-- Toast Notif -->
+  <div id="toast-notif">Link Profil berhasil disalin! 📋</div>
+
+  <!-- Header HUD Responsif -->
+  <div class="top-hud">
+    <div class="brand-row">
+      <div class="brand-tag">
+        @pirakubdg <span id="warga-counter">MEMUAT...</span>
+      </div>
+
+      <div class="top-actions">
+        <!-- Tombol Masuk / Daftar -->
+        <button class="btn-join" id="btn-citizen-status" onclick="handleCitizenButtonClick()">
+          <span>+</span> Masuk / Daftar
+        </button>
+
+        <!-- Tombol Menu Ringkas "⋯" -->
+        <button class="btn-menu-toggle" id="btn-main-menu" onclick="toggleHudMenu(event)" title="Menu Kota">
+          ⋯
+        </button>
+
+        <!-- Dropdown Menu -->
+        <div class="hud-dropdown-menu" id="hud-dropdown">
+          <button class="menu-item-btn" onclick="openCheckinModal(); closeHudMenu();">
+            <span>📅</span> Absen Warga
+          </button>
+          <button class="menu-item-btn" onclick="openPollingModal(); closeHudMenu();">
+            <span>📊</span> Polling Kebijakan
+          </button>
+          <button class="menu-item-btn" onclick="openLeaderboardModal(); closeHudMenu();">
+            <span>🏆</span> Peringkat Warga
+          </button>
+          <button class="menu-item-btn" id="btn-menu-audio" onclick="toggleAmbienceAudio(); updateAudioMenuLabel();">
+            <span id="menu-audio-icon">🔇</span> Suara Ambience
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sub HUD -->
+    <div class="sub-hud">
+      <div class="time-badge" id="time-badge" onclick="cycleTime()" title="Ketuk untuk pratinjau waktu">🕒 Waktu...</div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="search-warga" placeholder="Cari IG..." oninput="handleSearchCitizen(this.value)">
+      </div>
+      <button class="view-chip active" id="chip-overview" onclick="moveCam('overview')">🏙️ Overview</button>
+      <button class="view-chip" id="chip-sate" onclick="moveCam('sate')">🏛️ Gedung Sate</button>
+      <button class="view-chip" id="chip-pasupati" onclick="moveCam('pasupati')">🌉 Pasupati</button>
+      <button class="view-chip" id="chip-walkot" onclick="moveCam('walkot')">☕ Pak Walkot</button>
+      <button class="view-chip" onclick="snapCity()">📷 Foto kota</button>
+    </div>
+
+    <!-- Ticker Aspirasi -->
+    <div class="citizen-ticker-bar" onclick="focusCurrentTickerCitizen()">
+      <span class="ticker-badge">CURHAT WARGA</span>
+      <span class="ticker-content" id="ticker-text">Memuat aspirasi wargi Bandung...</span>
+    </div>
+  </div>
+
+  <!-- Speech Bubble Aspirasi -->
+  <div id="citizen-bubble">
+    <div class="bubble-card">
+      <div class="bubble-header">
+        <span class="bubble-ig" id="b-ig">@user</span>
+        <span class="bubble-role" id="b-role">WARGA</span>
+      </div>
+      <span class="bubble-kec" id="b-kec">Kec. Bandung Wetan</span>
+      <p class="bubble-quote" id="b-wish">"Pesan aspirasi warga..."</p>
+      
+      <div class="bubble-emotes">
+        <button class="btn-emote-action" onclick="triggerEmote('kopi')">☕ Ngopi</button>
+        <button class="btn-emote-action" onclick="triggerEmote('lambai')">👋 Lambai</button>
+        <button class="btn-emote-action" onclick="triggerEmote('bel')">🚲 Bel</button>
+      </div>
+
+      <div class="bubble-actions">
+        <button class="btn-upvote" onclick="upvoteCurrentCitizen()">
+          ❤️ <span id="b-upvotes">0</span> Setuju
+        </button>
+        <button class="btn-copy-link" onclick="copyCitizenLink()">Salin Link 🔗</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overhead Chat Container -->
+  <div id="overhead-chat-container"></div>
+
+  <!-- Virtual Joystick Touch Zone HP -->
+  <div id="joystick-zone">
+    <div id="joystick-knob"></div>
+  </div>
+
+  <!-- Live Chat FAB -->
+  <button class="btn-chat-fab" onclick="openChatModal()" title="Buka Balai Obrolan">
+    💬
+    <span class="chat-unread-badge" id="chat-unread-count">0</span>
+  </button>
+
+  <!-- Tombol Skenario FAB -->
+  <button class="btn-show-panel-fab" id="btn-show-panel" onclick="toggleBottomPanel(true)">
+    🏙️ Skenario Kota
+  </button>
+
+  <!-- Bottom Panel Skenario -->
+  <div class="control-card" id="bottom-control-panel">
+    <div class="card-label">
+      <span>Simulasi tata kota</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span id="badge-status" style="color:#6fe3a3;font-weight:700">Mode Reborn</span>
+        <button class="btn-hide-panel" onclick="toggleBottomPanel(false)">⌄ Sembunyikan</button>
+      </div>
+    </div>
+    <div class="card-title" id="status-title">Bandung Reborn: Trem Listrik & Plaza Hijau</div>
+
+    <div class="mode-toggle">
+      <button class="btn-mode r" id="btn-mode-now" onclick="applyMode('now')">Macet & Polusi</button>
+      <button class="btn-mode g active" id="btn-mode-reborn" onclick="applyMode('reborn')">Reborn Hijau</button>
+    </div>
+
+    <div class="vitals">
+      <div class="vit" style="--c:#6fe3a3"><span>Udara</span><i id="v-udara"></i><b></b></div>
+      <div class="vit" style="--c:#a6dc6b"><span>Ruang hijau</span><i id="v-hijau"></i><b></b></div>
+      <div class="vit" style="--c:#ff8a7a"><span>Kemacetan</span><i id="v-macet"></i><b></b></div>
+    </div>
+
+    <div class="milestone-bar">
+      <span>Status: <b id="milestone-text">Level 1 - Titik Awal</b></span>
+      <span id="milestone-next">Target: 15 Warga</span>
+    </div>
+  </div>
+
+  <!-- Modal Balai Obrolan -->
+  <div class="modal-overlay" id="chat-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Balai Obrolan Warga 💬</h3>
+        <button class="btn-close" onclick="closeChatModal()">✕</button>
+      </div>
+      <div class="chat-stream" id="chat-messages" style="display:flex;flex-direction:column;gap:8px;height:240px;overflow-y:auto;padding:8px 0;">
+        <div style="background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan! Pesan di sini dibroadcast langsung ke semua warga kota.</div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <input type="text" class="form-input" id="inp-chat-msg" placeholder="Tulis pesan warga..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <button class="btn-join" id="btn-send-chat" onclick="sendChatMessage()">Kirim</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Polling Kebijakan -->
+  <div class="modal-overlay" id="polling-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Musyawarah Kebijakan Kota 📊</h3>
+        <button class="btn-close" onclick="closePollingModal()">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--sub);margin-bottom:12px;">Satu akun satu suara. Tentukan prioritas renovasi Bandung Reborn:</div>
+
+      <div class="poll-card-box">
+        <button class="poll-option-btn" id="btn-poll-opt_trem" onclick="votePolicy('opt_trem')">
+          <span>🚊 Ganti Angkot Jadi Trem Listrik Penuh</span>
+          <b id="poll-count-opt_trem">0</b>
+        </button>
+        <div class="poll-bar"><div class="poll-bar-fill" id="poll-fill-opt_trem"></div></div>
+      </div>
+
+      <div class="poll-card-box">
+        <button class="poll-option-btn" id="btn-poll-opt_pohon" onclick="votePolicy('opt_pohon')">
+          <span>🌳 Perlebar Trotoar & 1.000 Kiara Payung</span>
+          <b id="poll-count-opt_pohon">0</b>
+        </button>
+        <div class="poll-bar"><div class="poll-bar-fill" id="poll-fill-opt_pohon"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Leaderboard -->
+  <div class="modal-overlay" id="leaderboard-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Top Warga Berpengaruh 🏆</h3>
+        <button class="btn-close" onclick="closeLeaderboardModal()">✕</button>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Aspirasi dengan dukungan ❤️ terbanyak dari wargi:</div>
+      <div class="leaderboard-list" id="leaderboard-items">
+        <div style="text-align:center;font-size:11px;color:#94a3b8;padding:20px;">Memuat peringkat...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Check-in -->
+  <div class="modal-overlay" id="checkin-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Absen Warga Bandung 🏡</h3>
+        <button class="btn-close" onclick="closeCheckinModal()">✕</button>
+      </div>
+      <div style="background:#eff6ff;border-left:3px solid #3b82f6;padding:8px 10px;border-radius:8px;font-size:10.5px;color:#1e40af;margin-bottom:12px;line-height:1.35;">
+        <b>Misi Harian:</b> Absen tiap hari untuk menambah XP level warga kamu. Capai <b>Streak 7 Hari</b> untuk mendirikan <b>Kavling Rumah 3D</b> di distrik kecamatanmu!
+      </div>
+      <div class="streak-container">
+        <div class="day-card" id="streak-1"><div class="day-title">H-1</div><div class="day-icon">📜</div><div class="day-status">+50 XP</div></div>
+        <div class="day-card" id="streak-2"><div class="day-title">H-2</div><div class="day-icon">☕</div><div class="day-status">+Kopi</div></div>
+        <div class="day-card" id="streak-3"><div class="day-title">H-3</div><div class="day-icon">👓</div><div class="day-status">Gold</div></div>
+        <div class="day-card" id="streak-4"><div class="day-title">H-4</div><div class="day-icon">🚲</div><div class="day-status">Sepeda</div></div>
+        <div class="day-card" id="streak-5"><div class="day-title">H-5</div><div class="day-icon">🪑</div><div class="day-status">Kursi</div></div>
+        <div class="day-card" id="streak-6"><div class="day-title">H-6</div><div class="day-icon">🌳</div><div class="day-status">Taman</div></div>
+        <div class="day-card jackpot" id="streak-7"><div class="day-title">H-7</div><div class="day-icon">🏠</div><div class="day-status">RUMAH</div></div>
+      </div>
+      <div class="form-group" style="margin-top:10px;">
+        <label>Handle Instagram Kamu</label>
+        <input type="text" class="form-input" id="checkin-ig-inp" placeholder="@username_kamu">
+      </div>
+      <button class="btn-submit" onclick="processDailyCheckin()">Klaim Absen Hari Ini ☀️</button>
+    </div>
+  </div>
+
+  <!-- Modal Auth (Tab Switcher: Masuk vs Daftar) -->
+  <div class="modal-overlay" id="join-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="auth-modal-title">Masuk Akun Warga 🔑</h3>
+        <button class="btn-close" onclick="closeJoinModal()">✕</button>
+      </div>
+
+      <!-- Tab Masuk vs Daftar -->
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-btn-login" onclick="switchAuthTab('login')">Masuk Akun</button>
+        <button class="auth-tab-btn" id="tab-btn-signup" onclick="switchAuthTab('signup')">Daftar Baru</button>
+      </div>
+
+      <!-- FORM 1: MASUK (CUKUP IG + PIN) -->
+      <div id="auth-form-login">
+        <div class="form-group">
+          <label>Username Instagram</label>
+          <input type="text" class="form-input" id="login-ig" placeholder="@username_kamu">
+        </div>
+        <div class="form-group">
+          <label>PIN Rahasia (4 Angka)</label>
+          <input type="password" class="form-input" id="login-pin" maxlength="4" placeholder="4 angka PIN saat kamu daftar">
+        </div>
+        <button class="btn-submit" id="btn-submit-login" onclick="processUserLogin()">Masuk & Mainkan Karakter 🎮</button>
+        <div style="text-align:center;margin-top:12px;font-size:11.5px;color:var(--sub);">
+          Belum punya akun warga? <span style="color:var(--biru);font-weight:700;cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('signup')">Daftar di sini</span>
+        </div>
+      </div>
+
+      <!-- FORM 2: DAFTAR BARU (LENGKAP) -->
+      <div id="auth-form-signup" style="display:none;">
+        <div class="form-group">
+          <label>Username Instagram</label>
+          <input type="text" class="form-input" id="signup-ig" placeholder="@username_kamu">
+        </div>
+
+        <div class="form-group">
+          <label>Buat PIN Rahasia (4 Angka)</label>
+          <input type="password" class="form-input" id="signup-pin" maxlength="4" placeholder="Misal: 1234">
+        </div>
+
+        <div class="form-group">
+          <label>Nama Panggilan</label>
+          <input type="text" class="form-input" id="signup-name" placeholder="Nama panggilan kamu">
+        </div>
+
+        <div class="form-group">
+          <label>Kecamatan Domisili Bandung</label>
+          <select class="form-select" id="signup-kecamatan">
+            <option value="Bandung Wetan" selected>Bandung Wetan</option>
+            <option value="Coblong">Coblong</option>
+            <option value="Sumur Bandung">Sumur Bandung</option>
+            <option value="Cidadap">Cidadap</option>
+            <option value="Sukasari">Sukasari</option>
+            <option value="Sukajadi">Sukajadi</option>
+            <option value="Cicendo">Cicendo</option>
+            <option value="Andir">Andir</option>
+            <option value="Lengkong">Lengkong</option>
+            <option value="Regol">Regol</option>
+            <option value="Batununggal">Batununggal</option>
+            <option value="Kiaracondong">Kiaracondong</option>
+            <option value="Antapani">Antapani</option>
+            <option value="Arcamanik">Arcamanik</option>
+            <option value="Cibiru">Cibiru</option>
+            <option value="Ujungberung">Ujungberung</option>
+            <option value="Cinambo">Cinambo</option>
+            <option value="Panyileukan">Panyileukan</option>
+            <option value="Gedebage">Gedebage</option>
+            <option value="Rancasari">Rancasari</option>
+            <option value="Buahbatu">Buahbatu</option>
+            <option value="Bandung Kidul">Bandung Kidul</option>
+            <option value="Bojongloa Kaler">Bojongloa Kaler</option>
+            <option value="Bojongloa Kidul">Bojongloa Kidul</option>
+            <option value="Astana Anyar">Astana Anyar</option>
+            <option value="Babakan Ciparay">Babakan Ciparay</option>
+            <option value="Bandung Kulon">Bandung Kulon</option>
+            <option value="Mandalajati">Mandalajati</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Peran di Kota</label>
+          <div class="chip-grid">
+            <div class="role-chip selected" onclick="pickRole(this, 'Barista', '☕')">☕ Akang Barista</div>
+            <div class="role-chip" onclick="pickRole(this, 'Indie', '🎸')">🎸 Anak Indie</div>
+            <div class="role-chip" onclick="pickRole(this, 'Gowes', '🚲')">🚲 Wargi Gowes</div>
+            <div class="role-chip" onclick="pickRole(this, 'Santai', '🚶')">🚶 Warga Santai</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Aksesoris Skena Bandung</label>
+          <div class="chip-grid">
+            <div class="acc-chip selected" onclick="pickAcc(this, 'none')">Polos Santai</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'glasses')">🕶️ Kacamata Hitam</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'peci')">🎩 Peci / Kupluk</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'cat')">🐈 Bawa Si Oyen</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Warna Outfit</label>
+          <div class="color-row">
+            <div class="color-swatch selected" style="background:#1e3a8a" onclick="pickColor(this, 0x1e3a8a)"></div>
+            <div class="color-swatch" style="background:#dc2626" onclick="pickColor(this, 0xdc2626)"></div>
+            <div class="color-swatch" style="background:#16a34a" onclick="pickColor(this, 0x16a34a)"></div>
+            <div class="color-swatch" style="background:#f59e0b" onclick="pickColor(this, 0xf59e0b)"></div>
+            <div class="color-swatch" style="background:#475569" onclick="pickColor(this, 0x475569)"></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Aspirasi Tata Kota (Maks 60 Karakter)</label>
+          <input type="text" class="form-input" id="signup-wish" maxlength="60" placeholder="Misal: Perbanyak trotoar rindang Braga!">
+        </div>
+
+        <button class="btn-submit" id="btn-submit-signup" onclick="processUserSignup()">Daftar Jadi Warga Resmi 📜</button>
+        <div style="text-align:center;margin-top:12px;font-size:11.5px;color:var(--sub);">
+          Sudah pernah daftar? <span style="color:var(--biru);font-weight:700;cursor:pointer;text-decoration:underline;" onclick="switchAuthTab('login')">Masuk di sini</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KTP Modal -->
+  <div class="ktp-overlay" id="ktp-modal">
+    <div class="ktp-box" id="ktp-card-export">
+      <div class="ktp-head">
+        <h4>E-KTP SIMULASI BANDUNG</h4>
+        <span class="ktp-num" id="ktp-reg-num">NO: BDG-001</span>
+      </div>
+      <div class="ktp-chip-icon"></div>
+      <div class="ktp-body">
+        <div class="ktp-avatar-box">
+          <span id="ktp-avatar-emoji">☕</span>
+          <span style="font-size:9px;font-weight:800;color:var(--lampu);margin-top:4px" id="ktp-avatar-role">BARISTA</span>
+        </div>
+        <div class="ktp-info">
+          <div class="ktp-field">Nama Warga</div>
+          <div class="ktp-val" id="ktp-name">Aditia Irfansyah</div>
+          <div class="ktp-field">Kecamatan Domisili</div>
+          <div class="ktp-val" id="ktp-kec">Bandung Wetan</div>
+          <div class="ktp-field">Akun Instagram</div>
+          <div class="ktp-val" id="ktp-ig">@aditiairfn</div>
+        </div>
+      </div>
+      <div class="ktp-quote" id="ktp-quote">"Perbanyak jalur sepeda dan trotoar rindang!"</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
+        <span style="font-size:8.5px;color:#9fb8af;">LEVEL WARGA: <b id="ktp-level-text" style="color:var(--lampu)">Lv. 1</b></span>
+        <span style="font-size:9px;color:#9fb8af;">@pirakubdg</span>
+      </div>
+    </div>
+    <div class="ktp-action" style="width:100%;max-width:350px">
+      <div class="ktp-btn-row">
+        <button class="btn-ktp btn-ktp-main" onclick="takeCitizenSelfiePoster()">📸 Selfie di Bandung</button>
+        <button class="btn-ktp btn-ktp-dl" onclick="downloadKTPScreenshot()">🖼️ Unduh KTP</button>
+      </div>
+      <div class="ktp-btn-row">
+        <button class="btn-ktp btn-ktp-share" onclick="copyCurrentCitizenLink()">🔗 Salin Link</button>
+        <button class="btn-ktp btn-ktp-close" onclick="closeKTP()">Tutup</button>
+      </div>
+      <button style="background:transparent;border:none;color:#9fb8af;font-size:10px;text-decoration:underline;cursor:pointer;margin-top:4px;" onclick="resetMyDeviceCitizen()">
+        Keluar / Ganti Akun di Perangkat Ini
+      </button>
+    </div>
+  </div>
+
+  <div id="webgl-canvas"></div>
+
+<script src="./js/main.js"></script>
+</body>
+</html>
