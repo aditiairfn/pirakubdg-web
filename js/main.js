@@ -58,31 +58,50 @@ class QuestSystem {
     this.init();
   }
 
-  async init() {
-    // hud lama dihapus
-    this.updateHUD();
+    async init() {
+    this.todayStr = new Date().toISOString().split("T")[0];
+    this.loadLocalCompleted();
     await this.fetchCompletedQuests();
     this.spawnCheckpointMarkers();
+    this.updateTrackerCard(null);
+  }
+
+  loadLocalCompleted() {
+    try {
+      const saved = localStorage.getItem("piraku_quests_" + this.todayStr);
+      if (saved) {
+        const completedIds = JSON.parse(saved);
+        this.quests.forEach(quest => {
+          if (completedIds.includes(quest.id)) {
+            quest.isCompleted = true;
+          }
+        });
+      }
+    } catch(e) {}
   }
 
   async fetchCompletedQuests() {
     if (!this.warga || !this.warga.id || !this.supabase) return;
-    const today = new Date().toISOString().split("T")[0];
     try {
       const { data, error } = await this.supabase
         .from("warga_daily_quests")
         .select("quest_id")
         .eq("warga_id", this.warga.id)
-        .eq("completed_date", today);
+        .eq("completed_date", this.todayStr);
 
-      if (data && !error) {
+      if (data && !error && data.length > 0) {
         const completedIds = data.map(q => q.quest_id);
+        const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + this.todayStr) || "[]");
+        const merged = Array.from(new Set([...localSaved, ...completedIds]));
+        localStorage.setItem("piraku_quests_" + this.todayStr, JSON.stringify(merged));
+
         this.quests.forEach(quest => {
-          if (completedIds.includes(quest.id)) {
+          if (merged.includes(quest.id)) {
             quest.isCompleted = true;
             if (quest.mesh) quest.mesh.visible = false;
           }
         });
+        this.updateTrackerCard(null);
       }
     } catch(e) {}
   }
@@ -168,8 +187,23 @@ class QuestSystem {
   async completeQuest(quest) {
     quest.isCompleted = true;
     if (quest.mesh) {
-      gsap.to(quest.mesh.scale, { x: 0, y: 0, z: 0, duration: 0.5, onComplete: () => { quest.mesh.visible = false; } });
+      gsap.to(quest.mesh.scale, { 
+        x: 0.001, y: 0.001, z: 0.001, duration: 0.45, 
+        onComplete: () => { 
+          quest.mesh.visible = false;
+          if (quest.mesh.parent) quest.mesh.parent.remove(quest.mesh);
+        } 
+      });
     }
+    // Simpan permanen ke cache lokal hari ini
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + today) || "[]");
+      if (!localSaved.includes(quest.id)) {
+        localSaved.push(quest.id);
+        localStorage.setItem("piraku_quests_" + today, JSON.stringify(localSaved));
+      }
+    } catch(e) {}
     this.showQuestToast(quest.title, quest.xpReward);
     if (typeof window.playSynthTone === 'function') window.playSynthTone(1050, "sine", 0.4);
     await this.applyReward(quest);
@@ -215,9 +249,17 @@ class QuestSystem {
     if (countEl) countEl.innerText = `${completedCount}/${this.quests.length}`;
 
     if (uncompleted.length === 0) {
-      document.getElementById("quest-current-title").innerHTML = "🎉 Semua Misi Hari Ini Beres!";
-      document.getElementById("quest-distance-text").innerText = "Wilujeng wargi!";
-      document.getElementById("quest-reward-text").innerText = "100%";
+      const titleEl = document.getElementById("quest-current-title");
+      if (titleEl) titleEl.innerHTML = "🎉 Semua Misi Hari Ini Selesai!";
+      const distEl = document.getElementById("quest-distance-text");
+      if (distEl) distEl.innerText = "Sampai jumpa besok!";
+      const rewEl = document.getElementById("quest-reward-text");
+      if (rewEl) rewEl.innerText = "100%";
+      setTimeout(() => {
+        if (card && this.quests.every(q => q.isCompleted)) {
+          card.style.display = "none";
+        }
+      }, 4000);
       return;
     }
 
