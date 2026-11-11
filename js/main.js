@@ -132,20 +132,30 @@ class QuestSystem {
 
   async applyReward(quest) {
     if (!this.warga) return;
-    const currentXP = (this.warga.xp || 0) + quest.xpReward;
+    const prevXP = parseInt(this.warga.xp, 10) || 0;
+    const currentXP = prevXP + quest.xpReward;
     const currentLvl = Math.floor(currentXP / 100) + 1;
+
     this.warga.xp = currentXP;
     this.warga.level = currentLvl;
     localStorage.setItem("piraku_my_level", currentLvl);
-    this.updateHUD();
-    updateAutoDetectButton();
+    localStorage.setItem("piraku_my_xp", currentXP);
 
-    if (this.supabase && this.warga.id) {
+    this.updateHUD();
+    if (typeof updateAutoDetectButton === "function") updateAutoDetectButton();
+
+    const client = this.supabase || window.supabaseClient;
+    if (client && this.warga.id) {
       try {
         const today = new Date().toISOString().split("T")[0];
-        await this.supabase.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
-        await this.supabase.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
-      } catch (err) {}
+        const resQuest = await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
+        if (resQuest.error) console.warn("Supabase warga_daily_quests:", resQuest.error.message);
+
+        const resWarga = await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
+        if (resWarga.error) console.warn("Supabase update XP:", resWarga.error.message);
+      } catch (err) {
+        console.error("Gagal sinkron XP:", err);
+      }
     }
   }
 
