@@ -1,3 +1,4 @@
+window.clockTime = 0;
 let clockTime = 0;
 // ================= KUNCI SUPABASE =================
 const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
@@ -1031,7 +1032,7 @@ let activeQuestSystem = null;
     citizensGroup.add(cg); 
 
     const myIg = localStorage.getItem('piraku_my_ig');
-    if (myIg && c.ig && c.ig.toLowerCase() === myIg.toLowerCase()) {
+    if (myIg && c.ig && (c?.ig || '').toLowerCase() === (myIg || '').toLowerCase()) {
       setupActivePlayer(cg, c);
     }
 
@@ -1230,7 +1231,7 @@ let activeQuestSystem = null;
   // Overhead Chat Bubbles
   const activeWorldBubbles = [];
   function showOverheadBubbleOnAvatar(senderIg, text) {
-    const avatar = animC.find(a => a.userData.a.c.ig.toLowerCase() === senderIg.toLowerCase());
+    const avatar = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === (senderIg || '').toLowerCase());
     if (!avatar) return;
 
     const el = document.createElement('div');
@@ -1417,7 +1418,7 @@ let activeQuestSystem = null;
   window.takeCitizenSelfiePoster = function() {
     closeKTP();
     const myIg = localStorage.getItem('piraku_my_ig');
-    const myCitizen = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === (myIg || '').toLowerCase());
+    const myCitizen = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === (myIg || '').toLowerCase());
     
     const targetX = myCitizen ? myCitizen.x : -10;
     const targetZ = myCitizen ? myCitizen.z : -2.5;
@@ -1549,7 +1550,7 @@ let activeQuestSystem = null;
         localStorage.setItem('piraku_my_level', user.level || 1);
         localStorage.setItem('piraku_my_kec', user.kecamatan || 'Bandung Wetan');
 
-        let foundMesh = animC.find(a => a.userData.a.c.ig.toLowerCase() === user.ig.toLowerCase());
+        let foundMesh = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === (user?.ig || '').toLowerCase());
         if (!foundMesh) {
           foundMesh = createCitizenMesh(user);
         }
@@ -1695,7 +1696,7 @@ let activeQuestSystem = null;
   window.handleCitizenButtonClick = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     if (savedIg) {
-      const found = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === savedIg.toLowerCase());
+      const found = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
       if (found) { 
         showCitizenSpeech(found); 
         showToast('Kamera menyorot kamu! ✨'); 
@@ -1795,12 +1796,12 @@ let activeQuestSystem = null;
       showToast('🎉 SELAMAT H-7! Rumah kamu terbit di perumahan Bandung!');
       window.playSynthTone(1050, 'sine', 0.5);
 
-      const targetCitizen = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === cleanIg);
+      const targetCitizen = registeredCitizensList.find(c => c.ig && (c?.ig || '').toLowerCase() === cleanIg);
       if (targetCitizen) {
         targetCitizen.has_house = true;
         const hData = spawnCitizenHouse(targetCitizen, registeredCitizensList.length);
         
-        const animObj = animC.find(a => a.userData.a.c.ig.toLowerCase() === cleanIg);
+        const animObj = animC.find(a => (a.userData?.a?.c?.ig || '').toLowerCase() === cleanIg);
         if (animObj) {
           gsap.to(animObj.position, { x: hData.porchX, z: hData.porchZ, duration: 1.5, ease: 'power2.out' });
           animObj.userData.a.tx = hData.porchX;
@@ -1886,7 +1887,7 @@ let activeQuestSystem = null;
 
   window.handleSearchCitizen = function(q) {
     q = q.trim().toLowerCase(); if (!q) { hideCitizenSpeech(); return; }
-    const f = registeredCitizensList.find(c => (c.ig && c.ig.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
+    const f = registeredCitizensList.find(c => (c.ig && (c?.ig || '').toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
     if (f) showCitizenSpeech(f);
   };
 
@@ -2090,6 +2091,7 @@ let activeQuestSystem = null;
     if (isTabHidden) return;
 
     clockTime += 0.016;
+    window.clockTime = clockTime;
     controls.update();
     applyGrowth();
     updTrees(clockTime);
