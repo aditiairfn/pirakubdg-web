@@ -10,7 +10,8 @@ if (typeof window !== 'undefined' && window.supabase && SUPABASE_URL.startsWith(
 }
 
 // ================= SISTEM MISI HARIAN (DAILY QUESTS) =================
-const DAILY_QUESTS = [
+// ================= POOL MASTER MISI HARIAN (ROTASI ACAK) =================
+const ALL_QUEST_POOL = [
   {
     id: "visit_gasibu",
     title: "Nongkrong di Lapangan Gasibu",
@@ -46,15 +47,88 @@ const DAILY_QUESTS = [
     timer: 0,
     isCompleted: false,
     mesh: null
+  },
+  {
+    id: "visit_pilon",
+    title: "Foto di Pilon Merah Putih",
+    target: { x: -27, z: -23.5 },
+    radius: 6.5,
+    xpReward: 65,
+    color: 0xef4444,
+    stayDuration: 2.0,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  },
+  {
+    id: "visit_kafe_dutch",
+    title: "Ngopi di Vila Kolonial",
+    target: { x: -32, z: -14 },
+    radius: 7.0,
+    xpReward: 55,
+    color: 0x8b5cf6,
+    stayDuration: 2.0,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  },
+  {
+    id: "visit_perumahan",
+    title: "Sapa Warga di Perumahan Baru",
+    target: { x: 26, z: -16 },
+    radius: 7.5,
+    xpReward: 70,
+    color: 0xec4899,
+    stayDuration: 1.5,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
+  },
+  {
+    id: "visit_billboard",
+    title: "Baca Berita di Megatron LED",
+    target: { x: -16, z: -18 },
+    radius: 6.5,
+    xpReward: 50,
+    color: 0x06b6d4,
+    stayDuration: 0,
+    timer: 0,
+    isCompleted: false,
+    mesh: null
   }
 ];
+
+function getDailyRotatedQuests(dateStr) {
+  // Hash tanggal YYYY-MM-DD jadi seed angka agar semua pemain dapat rotasi yang sama tiap hari
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = (hash << 5) - hash + dateStr.charCodeAt(i);
+    hash |= 0;
+  }
+  hash = Math.abs(hash);
+
+  // Buat salinan independen
+  const poolCopy = ALL_QUEST_POOL.map(q => ({ ...q }));
+  
+  // Shuffle deterministik berdasarkan tanggal
+  for (let i = poolCopy.length - 1; i > 0; i--) {
+    const j = (hash + i * 17) % (i + 1);
+    const temp = poolCopy[i];
+    poolCopy[i] = poolCopy[j];
+    poolCopy[j] = temp;
+  }
+
+  // Ambil 3 misi teratas untuk hari ini
+  return poolCopy.slice(0, 3);
+}
 
 class QuestSystem {
   constructor(sceneInstance, supabaseInst, userData) {
     this.scene = sceneInstance;
     this.supabase = supabaseInst;
     this.warga = userData;
-    this.quests = DAILY_QUESTS;
+    this.todayStr = new Date().toISOString().split("T")[0];
+    this.quests = getDailyRotatedQuests(this.todayStr);
     this.init();
   }
 
