@@ -2065,7 +2065,7 @@ let activeQuestSystem = null;
   };
 
   window.saveWardrobeCustomization = async function() {
-    if (!myPlayerMesh) return;
+    if (!myPlayerMesh || isRidingTram) return;
     const btn = document.getElementById("btn-save-wardrobe");
     if (btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; }
 
@@ -2106,6 +2106,92 @@ let activeQuestSystem = null;
     if (typeof window.playSynthTone === "function") window.playSynthTone(780, "sine", 0.25);
     showToast("Karakter & outfit berhasil diperbarui! ✨");
   };
+
+  
+  // ================= SISTEM INTERAKSI NAIK TREM =================
+  let isRidingTram = false;
+
+  window.toggleRideTram = function() {
+    if (!myPlayerMesh) {
+      showToast("Masuk atau daftar warga dulu untuk naik trem! 🚊");
+      return;
+    }
+
+    isRidingTram = !isRidingTram;
+    const btnText = document.getElementById("tram-action-text");
+    const btnIcon = document.getElementById("tram-action-icon");
+    const btn = document.getElementById("btn-tram-action");
+
+    if (isRidingTram) {
+      if (btnText) btnText.innerText = "Turun di Sini";
+      if (btnIcon) btnIcon.innerText = "🚶";
+      if (btn) btn.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
+
+      // Reset animasi gerak kaki
+      const a = myPlayerMesh.userData.a;
+      if (a.legL) a.legL.rotation.x = 0;
+      if (a.legR) a.legR.rotation.x = 0;
+      if (a.armL) a.armL.rotation.x = 0;
+      if (a.armR) a.armR.rotation.x = 0;
+
+      if (typeof window.playSynthTone === "function") window.playSynthTone(750, "sine", 0.3);
+      showToast("Menikmati perjalanan keliling Diponegoro di atas trem 🚊✨");
+    } else {
+      if (btnText) btnText.innerText = "Naik Trem";
+      if (btnIcon) btnIcon.innerText = "🚊";
+      if (btn) btn.style.background = "linear-gradient(135deg, #2563eb, #1d4ed8)";
+
+      // Turunkan karakter ke trotoar aman
+      myPlayerMesh.position.z = 0.5;
+      myPlayerMesh.position.y = 0.1;
+
+      if (typeof window.playSynthTone === "function") window.playSynthTone(480, "sine", 0.2);
+      showToast("Turun dari trem. Wilujeng jalan-jalan kembali!");
+    }
+  };
+
+  function updateTramInteraction(delta) {
+    if (!myPlayerMesh || isRidingTram) return;
+
+    // Koordinat posisi trem saat ini
+    const tramX = tram.position.x;
+    const tramZ = tram.position.z;
+    const distToTram = Math.hypot(myPlayerMesh.position.x - tramX, myPlayerMesh.position.z - tramZ);
+    const tramBtn = document.getElementById("btn-tram-action");
+
+    if (isRidingTram) {
+      // Pasang posisi karakter di dalam gerbong tengah trem
+      myPlayerMesh.position.x = tramX;
+      myPlayerMesh.position.y = 0.65;
+      myPlayerMesh.position.z = tramZ;
+      myPlayerMesh.rotation.y = (Math.cos(window.clockTime * 0.6) >= 0) ? (Math.PI / 2) : (-Math.PI / 2);
+
+      myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
+      myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
+
+      // Kamera Sinematik Penumpang
+      const targetCamX = tramX - 8.5;
+      const targetCamY = 5.0;
+      const targetCamZ = tramZ - 10.5;
+
+      cam.position.x += (targetCamX - cam.position.x) * 0.05;
+      cam.position.y += (targetCamY - cam.position.y) * 0.05;
+      cam.position.z += (targetCamZ - cam.position.z) * 0.05;
+
+      controls.target.x += (tramX - controls.target.x) * 0.1;
+      controls.target.y += (1.8 - controls.target.y) * 0.1;
+      controls.target.z += (tramZ - controls.target.z) * 0.1;
+
+      if (tramBtn) tramBtn.style.display = "flex";
+    } else {
+      // Munculkan tombol jika pemain berdiri dekat rel saat trem melintas
+      if (distToTram <= 7.0 && Math.abs(myPlayerMesh.position.z - 2.7) < 5.0) {
+        if (tramBtn) tramBtn.style.display = "flex";
+      } else {
+        if (tramBtn) tramBtn.style.display = "none";
+      }
+    }
+  }
 
   // ================= KONTROL PEMAIN & FISIKA LOMPAT =================
   let playerVelY = 0;
@@ -2198,7 +2284,7 @@ let activeQuestSystem = null;
   const moveFinalVec = new THREE.Vector3();
 
   function updatePlayerMovement(delta) {
-    if (!myPlayerMesh) return;
+    if (!myPlayerMesh || isRidingTram) return;
 
     let inputForward = 0;
     let inputRight = 0;
@@ -2307,6 +2393,7 @@ let activeQuestSystem = null;
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    updateTramInteraction(0.016);
 
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
