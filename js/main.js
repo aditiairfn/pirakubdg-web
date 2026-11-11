@@ -894,7 +894,18 @@ let activeQuestSystem = null;
 
     const cg = new THREE.Group(), skin = SKIN[Math.floor(rnd() * 4)];
     const body = new THREE.Group(); cg.add(body);
-    [-.11, .11].forEach(x => { cyl(.085, .07, .34, 8, x, 0, 0, 0x273449, cg); mk(SP(.1, 8, 6), 0x111827, x, .06, .05, cg).scale.set(1, .6, 1.4); });
+    const mkLeg = (sd) => {
+      const legGroup = new THREE.Group();
+      legGroup.position.set(sd * 0.11, 0.34, 0); // Poros sendi paha
+      cg.add(legGroup);
+
+      cyl(0.085, 0.07, 0.34, 8, 0, -0.17, 0, 0x273449, legGroup);
+      const shoe = mk(SP(0.1, 8, 6), 0x111827, 0, -0.28, 0.05, legGroup);
+      shoe.scale.set(1, 0.6, 1.4);
+      return legGroup;
+    };
+    const legL = mkLeg(-1);
+    const legR = mkLeg(1);
     cyl(.2, .25, .5, 14, 0, .32, 0, c.color, body);
     const head = new THREE.Group(); head.position.y = 1.1; body.add(head);
     mk(SP(.3, 16, 12), skin, 0, 0, 0, head);
@@ -929,7 +940,7 @@ let activeQuestSystem = null;
     cg.scale.setScalar(1.25); cg.position.set(posX, 0.1, posZ);
 
     cg.userData.a = { 
-      body, head, armL, armR, ph: rnd() * 6.28, c, 
+      body, head, armL, armR, legL, legR, ph: rnd() * 6.28, c, 
       tx: posX, tz: posZ, 
       walk: !isResidentAtHouse,
       isAtHouse: isResidentAtHouse
@@ -959,6 +970,8 @@ let activeQuestSystem = null;
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
       const joyZone = document.getElementById('joystick-zone');
       if (joyZone) joyZone.style.display = 'block';
+      const jumpBtn = document.getElementById('btn-jump-mobile');
+      if (jumpBtn) jumpBtn.style.display = 'flex';
     }
 
     gsap.to(cam.position, { x: mesh.position.x - 3.5, y: 3.2, z: mesh.position.z - 5.5, duration: 1.5, ease: 'power2.out' });
@@ -1789,6 +1802,28 @@ let activeQuestSystem = null;
   };
 
   // ================= KONTROL PEMAIN & KAMERA CHASE SMOOTH =================
+  
+  // Sistem Fisika Gravitasi & Lompat
+  let playerVelY = 0;
+  let isGrounded = true;
+  const gravity = -28.0;
+  const jumpForce = 9.2;
+
+  window.playerJump = function() {
+    if (!myPlayerMesh || !isGrounded) return;
+    playerVelY = jumpForce;
+    isGrounded = false;
+    if (typeof window.playSynthTone === "function") window.playSynthTone(520, "sine", 0.15);
+  };
+
+  window.addEventListener("keydown", e => {
+    if (e.code === "Space" || e.key === " ") {
+      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+      e.preventDefault();
+      window.playerJump();
+    }
+  });
+
   const keys = { w: false, a: false, s: false, d: false };
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
@@ -1891,10 +1926,14 @@ let activeQuestSystem = null;
 
       // Animasi ayunan tangan & langkah kaki
       const a = myPlayerMesh.userData.a;
-      const s = Math.sin(clockTime * 14);
-      a.body.position.y = Math.abs(s) * 0.09;
+      const s = Math.sin(clockTime * 15);
+      a.body.position.y = Math.abs(s) * 0.08;
       a.armL.rotation.x = s * 0.85;
       a.armR.rotation.x = -s * 0.85;
+      if (a.legL && a.legR) {
+        a.legL.rotation.x = -s * 0.95;
+        a.legR.rotation.x = s * 0.95;
+      }
     }
 
     // 3. Kamera Chase Mengikuti Karakter Tanpa Bentrok OrbitControls
@@ -1958,6 +1997,10 @@ let activeQuestSystem = null;
       a.body.position.y = Math.abs(s) * (isWalking ? 0.07 : 0.035);
       a.armL.rotation.x = s * (isWalking ? 0.8 : 0.4);
       a.armR.rotation.x = -s * (isWalking ? 0.8 : 0.4);
+      if (a.legL && a.legR) {
+        a.legL.rotation.x = -s * (isWalking ? 0.85 : 0.2);
+        a.legR.rotation.x = s * (isWalking ? 0.85 : 0.2);
+      }
     });
 
     headW.rotation.y = Math.sin(clockTime * 0.8) * 0.15;
