@@ -2020,10 +2020,23 @@ let activeQuestSystem = null;
     editAcc = c.acc || "none";
     editColor = c.color || 0x1e3a8a;
 
+    // Sinkronisasi status selected pada tombol chip
+    document.querySelectorAll(".role-chip-edit").forEach(el => {
+      const isMatch = el.getAttribute("onclick") && el.getAttribute("onclick").includes(" + editRole + ");
+      el.classList.toggle("selected", !!isMatch);
+    });
+    document.querySelectorAll(".acc-chip-edit").forEach(el => {
+      const isMatch = el.getAttribute("onclick") && el.getAttribute("onclick").includes(" + editAcc + ");
+      el.classList.toggle("selected", !!isMatch);
+    });
+
     const modal = document.getElementById("wardrobe-modal");
     if (modal) {
       modal.style.display = "flex";
-      setTimeout(() => modal.querySelector(".modal-card").style.transform = "translateY(0)", 10);
+      setTimeout(() => {
+        const card = modal.querySelector(".modal-card");
+        if (card) card.style.transform = "translateY(0)";
+      }, 10);
     }
   };
 

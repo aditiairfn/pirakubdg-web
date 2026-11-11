@@ -356,3 +356,50 @@
 /* Aksesibilitas */
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--lampu); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Styling Khusus Modal Wardrobe */
+#wardrobe-modal {
+  z-index: 99 !important;
+  pointer-events: auto !important;
+}
+#wardrobe-modal .modal-card {
+  pointer-events: auto !important;
+}
+.role-chip-edit, .acc-chip-edit {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.role-chip-edit:hover, .acc-chip-edit:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+.role-chip-edit.selected, .acc-chip-edit.selected {
+  background: var(--lampu, #ffcf4a) !important;
+  color: #0e2f2a !important;
+  border-color: #fff !important;
+  font-weight: 800;
+}
+.color-swatch-edit {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.color-swatch-edit:hover {
+  transform: scale(1.1);
+}
+.color-swatch-edit.selected {
+  border-color: #fff !important;
+  transform: scale(1.18);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
