@@ -16,7 +16,7 @@ const DAILY_QUESTS = [
     radius: 7.0,
     xpReward: 50,
     color: 0x3b82f6,
-    stayDuration: 3,
+    stayDuration: 2.5,
     timer: 0,
     isCompleted: false,
     mesh: null
@@ -134,7 +134,7 @@ class QuestSystem {
       gsap.to(quest.mesh.scale, { x: 0, y: 0, z: 0, duration: 0.5, onComplete: () => { quest.mesh.visible = false; } });
     }
     this.showQuestToast(quest.title, quest.xpReward);
-    if (typeof playSynthTone === 'function') playSynthTone(1050, "sine", 0.4);
+    if (typeof window.playSynthTone === 'function') window.playSynthTone(1050, "sine", 0.4);
     await this.applyReward(quest);
   }
 
@@ -163,8 +163,8 @@ class QuestSystem {
   }
 
   updateHUD() {
-    const xp = this.warga?.xp || 0;
-    const lvl = this.warga?.level || 1;
+    const xp = parseInt(this.warga?.xp, 10) || 0;
+    const lvl = parseInt(this.warga?.level, 10) || 1;
     const currentLvlProgress = xp % 100;
     const badge = document.getElementById("hud-level-badge");
     const text = document.getElementById("hud-xp-text");
@@ -274,7 +274,7 @@ let activeQuestSystem = null;
     } catch(e){}
   };
 
-  // Menu Dropdown "⋯"
+  // Dropdown Menu
   window.toggleHudMenu = function(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById('hud-dropdown');
@@ -340,7 +340,7 @@ let activeQuestSystem = null;
   }));
   scene.add(sky);
 
-  // Material & Helpers
+  // Material & Primitif Dunia
   const mats = {};
   const M = c => mats[c] || (mats[c] = new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: .92, metalness: 0 }));
   const MAT = c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: .92, metalness: 0 });
@@ -375,7 +375,7 @@ let activeQuestSystem = null;
   }
   const setC = (m, i, c) => m.setColorAt(i, CC.setHex(c));
 
-  // Tanah & Hamparan
+  // Tanah
   box(1400, .5, 1400, 0, -.5, 0, 0xdde1d0, null, false, true);
   box(160, .08, 140, 0, -.04, 0, MAT(0x567e51), null, false, true);
   {
@@ -387,7 +387,7 @@ let activeQuestSystem = null;
     }
   }
 
-  // Atlas Aspal Jalan
+  // Jalanan
   const atlas = (() => {
     const c = document.createElement('canvas'); c.width = 512; c.height = 256; const g = c.getContext('2d');
     g.fillStyle = '#21252d'; g.fillRect(0, 0, 256, 256);
@@ -436,7 +436,7 @@ let activeQuestSystem = null;
     m.position.y = .7; scene.add(m);
   });
 
-  // Plaza Gasibu
+  // Lapangan Gasibu
   box(42, .08, 14, 0, 0, -5, MAT(0x4a7345), null, false, true);
   box(10, .12, 12, 0, 0, -4.5, MAT(0xd4cbb9), null, false, true);
   const gg = new THREE.RingGeometry(3.4, 5.6, 40); gg.rotateX(-PI / 2);
@@ -492,7 +492,7 @@ let activeQuestSystem = null;
     FLY.add(medM);
   }
 
-  // Gedung Sate & Vila
+  // Gedung Sate Detail
   const G = new THREE.Group(); G.position.set(0, 0, 13.5); G.rotation.y = PI; scene.add(G);
   const CREAM = 0xeee6cf;
   const ROOFMAT = new THREE.MeshStandardMaterial({ color: 0x17171b, emissive: 0x000000, flatShading: true, roughness: .92, metalness: 0 });
@@ -584,7 +584,7 @@ let activeQuestSystem = null;
   box(9.2, 4.8, 0.4, 0, 4.5, 0, 0x0f172a, billboardGroup);
   mk(new THREE.PlaneGeometry(8.8, 4.4), new THREE.MeshBasicMaterial({ map: billboardTex }), 0, 6.9, 0.22, billboardGroup, false, false);
 
-  // Perumahan Warga
+  // Kavling Perumahan Warga
   const citizenHousesGroup = new THREE.Group(); scene.add(citizenHousesGroup);
   const houseOwnersRegistry = {};
 
@@ -610,7 +610,7 @@ let activeQuestSystem = null;
     return houseData;
   }
 
-  // Gedung Kota Berjendela
+  // Gedung Bertingkat
   const WALLS = [0xeae3d5, 0xdfd6c6, 0xd4cbb9, 0xd97757, 0x576574, 0x475569];
   const ROOF_COLORS = [0xba5232, 0xa84425, 0x96391d, 0x475569, 0x334155, 0xc26241];
   const bl = [];
@@ -718,7 +718,7 @@ let activeQuestSystem = null;
     VM.forEach(m => { m.instanceMatrix.needsUpdate = true; });
   }
 
-  // Trem
+  // Trem Listrik
   const rebornGroup = new THREE.Group(); scene.add(rebornGroup);
   const tram = new THREE.Group();
   [-3.15, 0, 3.15].forEach(x => {
@@ -744,7 +744,7 @@ let activeQuestSystem = null;
   });
   [bnM, lpM, lhM].forEach(m => m.instanceMatrix.needsUpdate = true);
 
-  // Awan & Kunang-kunang
+  // Awan & Atmosfer
   const clouds = new THREE.Group(); scene.add(clouds);
   const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .85, fog: false, depthWrite: false });
   const cloudG = new THREE.SphereGeometry(1, 12, 8);
@@ -970,7 +970,7 @@ let activeQuestSystem = null;
     }
   }
 
-  // Walkot
+  // Pak Walkot
   const WALKOT = new THREE.Group(); WALKOT.position.set(-10, .12, -2.5); WALKOT.scale.setScalar(1.25); WALKOT.rotation.y = 2.45; scene.add(WALKOT);
   box(.9, .07, .8, 0, .31, -.05, 0x2563eb, WALKOT);
   cyl(.46, .46, .05, 16, 1.15, .58, .2, 0x9a6b43, WALKOT);
@@ -1099,7 +1099,7 @@ let activeQuestSystem = null;
     }
   };
 
-  // Upvote
+  // Upvotes
   window.upvoteCurrentCitizen = async function() {
     if (!activeCitizenTarget) return;
     const cleanIg = (activeCitizenTarget.ig || '').trim().toLowerCase();
@@ -1324,7 +1324,7 @@ let activeQuestSystem = null;
     }
   };
 
-  // Selfie Mode
+  // Selfie
   window.takeCitizenSelfiePoster = function() {
     closeKTP();
     const myIg = localStorage.getItem('piraku_my_ig');
@@ -1370,7 +1370,7 @@ let activeQuestSystem = null;
     }});
   };
 
-  // ================= AUTH: SWITCH TAB MASUK VS DAFTAR =================
+  // Auth Tabs
   let currentAuthTab = 'login';
   window.switchAuthTab = function(tab) {
     currentAuthTab = tab;
@@ -1414,7 +1414,7 @@ let activeQuestSystem = null;
   window.pickAcc = (el, a) => { document.querySelectorAll('.acc-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedAcc = a; };
   window.pickColor = (el, hex) => { document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); selectedColor = hex; };
 
-  // PROSES 1: LOGIN CEPAT
+  // Login
   window.processUserLogin = async function() {
     const rawIg = document.getElementById('login-ig').value.trim();
     const pin = document.getElementById('login-pin').value.trim();
@@ -1476,7 +1476,7 @@ let activeQuestSystem = null;
     btn.disabled = false; btn.innerText = 'Masuk & Mainkan Karakter 🎮';
   };
 
-  // PROSES 2: DAFTAR WARGA BARU
+  // Signup
   window.processUserSignup = async function() {
     const rawIg = document.getElementById('signup-ig').value.trim();
     const pin = document.getElementById('signup-pin').value.trim();
@@ -1576,7 +1576,6 @@ let activeQuestSystem = null;
     if (m) m.style.display = 'none'; 
   };
 
-  // HUD Handlers
   window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     const savedLvl = localStorage.getItem('piraku_my_level') || 1;
@@ -1606,6 +1605,7 @@ let activeQuestSystem = null;
     if (confirm('Keluar dari akun di perangkat ini?')) { 
       localStorage.removeItem('piraku_my_ig'); 
       localStorage.removeItem('piraku_my_level');
+      localStorage.removeItem('piraku_my_xp');
       myPlayerMesh = null;
       isControlledByPlayer = false;
       activeQuestSystem = null;
@@ -1788,7 +1788,7 @@ let activeQuestSystem = null;
     if (f) showCitizenSpeech(f);
   };
 
-  // ================= KONTROL PEMAIN (WASD & VIRTUAL JOYSTICK) =================
+  // ================= KONTROL PEMAIN & KAMERA CHASE SMOOTH =================
   const keys = { w: false, a: false, s: false, d: false };
   window.addEventListener('keydown', e => {
     const k = e.key.toLowerCase();
@@ -1843,21 +1843,19 @@ let activeQuestSystem = null;
     let moveX = 0, moveZ = 0;
     const speed = 8.5 * delta;
 
-    if (keys.w) moveZ += 1;
-    if (keys.s) moveZ -= 1;
-    if (keys.a) moveX += 1;
-    if (keys.d) moveX -= 1;
+    if (keys.w) moveZ -= 1;
+    if (keys.s) moveZ += 1;
+    if (keys.a) moveX -= 1;
+    if (keys.d) moveX += 1;
 
     if (joyActive) {
-      moveX -= joyVector.x;
-      moveZ -= joyVector.y;
+      moveX += joyVector.x;
+      moveZ += joyVector.y;
     }
 
     const hasInput = (moveX !== 0 || moveZ !== 0);
 
     if (hasInput) {
-      controls.enabled = false;
-
       const angle = Math.atan2(moveX, moveZ);
       myPlayerMesh.rotation.y = angle;
 
@@ -1871,25 +1869,24 @@ let activeQuestSystem = null;
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
-      // Smooth Follow Camera
-      const camTargetX = myPlayerMesh.position.x;
-      const camTargetZ = myPlayerMesh.position.z;
-      
-      controls.target.x += (camTargetX - controls.target.x) * 0.12;
-      controls.target.y += (1.4 - controls.target.y) * 0.12;
-      controls.target.z += (camTargetZ - controls.target.z) * 0.12;
-      
-      cam.position.x += (camTargetX - 3.5 - cam.position.x) * 0.08;
-      cam.position.y += (4.5 - cam.position.y) * 0.08;
-      cam.position.z += (camTargetZ - 7.5 - cam.position.z) * 0.08;
+      // Kamera Chase Mulus mengikuti karakter
+      const targetCamX = myPlayerMesh.position.x - 3.8;
+      const targetCamZ = myPlayerMesh.position.z - 6.2;
+      const targetCamY = 4.2;
+
+      cam.position.x += (targetCamX - cam.position.x) * 0.08;
+      cam.position.y += (targetCamY - cam.position.y) * 0.08;
+      cam.position.z += (targetCamZ - cam.position.z) * 0.08;
+
+      controls.target.x += (myPlayerMesh.position.x - controls.target.x) * 0.12;
+      controls.target.y += (1.3 - controls.target.y) * 0.12;
+      controls.target.z += (myPlayerMesh.position.z - controls.target.z) * 0.12;
 
       const a = myPlayerMesh.userData.a;
       const s = Math.sin(clockTime * 12);
       a.body.position.y = Math.abs(s) * 0.09;
       a.armL.rotation.x = s * 0.85;
       a.armR.rotation.x = -s * 0.85;
-    } else {
-      controls.enabled = true;
     }
   }
 
@@ -1902,14 +1899,14 @@ let activeQuestSystem = null;
     if (isTabHidden) return;
 
     clockTime += 0.016;
-    if (controls.enabled) controls.update();
+    controls.update();
     applyGrowth();
     updTrees(clockTime);
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
 
-    // Update Deteksi Quest
+    // Update Deteksi Quest terhadap Posisi Pemain
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
     }
