@@ -1,3 +1,11 @@
+// ================= KUNCI SUPABASE =================
+const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
+
+let supabaseClient = null;
+if (typeof window !== 'undefined' && window.supabase && SUPABASE_URL.startsWith('http')) {
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
 
 // ================= SISTEM MISI HARIAN (DAILY QUESTS) =================
 const DAILY_QUESTS = [
@@ -5,10 +13,10 @@ const DAILY_QUESTS = [
     id: "visit_gasibu",
     title: "Nongkrong di Lapangan Gasibu",
     target: { x: 0, z: -8 },
-    radius: 6.0,
+    radius: 7.0,
     xpReward: 50,
     color: 0x3b82f6,
-    stayDuration: 4,
+    stayDuration: 3,
     timer: 0,
     isCompleted: false,
     mesh: null
@@ -17,7 +25,7 @@ const DAILY_QUESTS = [
     id: "visit_gedung_sate",
     title: "Apel di Gerbang Gedung Sate",
     target: { x: 0, z: 13.5 },
-    radius: 7.0,
+    radius: 8.0,
     xpReward: 75,
     color: 0x10b981,
     stayDuration: 0,
@@ -29,7 +37,7 @@ const DAILY_QUESTS = [
     id: "under_pasupati",
     title: "Menjelajah Kolong Pasupati",
     target: { x: -27, z: -26 },
-    radius: 6.5,
+    radius: 7.5,
     xpReward: 60,
     color: 0xf59e0b,
     stayDuration: 0,
@@ -49,8 +57,8 @@ class QuestSystem {
   }
 
   async init() {
-    const hud = document.getElementById("player-profile-hud");
-    if (hud) hud.style.display = "block";
+    const hud = document.getElementById('player-profile-hud');
+    if (hud) hud.style.display = 'block';
     this.updateHUD();
     await this.fetchCompletedQuests();
     this.spawnCheckpointMarkers();
@@ -68,22 +76,49 @@ class QuestSystem {
 
       if (data && !error) {
         const completedIds = data.map(q => q.quest_id);
-            this.quests.forEach(quest => {
+        this.quests.forEach(quest => {
+          if (completedIds.includes(quest.id)) {
+            quest.isCompleted = true;
+            if (quest.mesh) quest.mesh.visible = false;
+          }
+        });
+      }
+    } catch(e) {}
+  }
+
+  spawnCheckpointMarkers() {
+    this.quests.forEach(quest => {
+      const markerGroup = new THREE.Group();
+      const ringGeo = new THREE.RingGeometry(quest.radius - 0.4, quest.radius, 32);
+      const ringMat = new THREE.MeshBasicMaterial({ color: quest.color, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.14;
+      markerGroup.add(ringMesh);
+
+      const beaconGeo = new THREE.CylinderGeometry(quest.radius * 0.9, quest.radius * 0.9, 3.5, 32, 1, true);
+      const beaconMat = new THREE.MeshBasicMaterial({ color: quest.color, transparent: true, opacity: 0.18, side: THREE.DoubleSide, depthWrite: false });
+      const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat);
+      beaconMesh.position.y = 1.8;
+      markerGroup.add(beaconMesh);
+
+      markerGroup.position.set(quest.target.x, 0, quest.target.z);
+      if (quest.isCompleted) markerGroup.visible = false;
+      quest.mesh = markerGroup;
+      this.scene.add(markerGroup);
+    });
+  }
+
+  update(delta, playerPos) {
+    if (!playerPos) return;
+    this.quests.forEach(quest => {
       if (quest.isCompleted) return;
       if (quest.mesh) quest.mesh.rotation.y += delta * 0.75;
-      
-      const distance = Math.hypot(
-        playerPos.x - quest.target.x,
-        playerPos.z - quest.target.z
-      );
-
-      // Radius diperbesar agar gampang terpicu
-      if (distance <= (quest.radius + 1.5)) {
+      const distance = Math.hypot(playerPos.x - quest.target.x, playerPos.z - quest.target.z);
+      if (distance <= quest.radius + 1.5) {
         if (quest.stayDuration > 0) {
           quest.timer += delta;
-          if (quest.timer >= quest.stayDuration) {
-            this.completeQuest(quest);
-          }
+          if (quest.timer >= quest.stayDuration) this.completeQuest(quest);
         } else {
           this.completeQuest(quest);
         }
@@ -99,7 +134,7 @@ class QuestSystem {
       gsap.to(quest.mesh.scale, { x: 0, y: 0, z: 0, duration: 0.5, onComplete: () => { quest.mesh.visible = false; } });
     }
     this.showQuestToast(quest.title, quest.xpReward);
-    playSynthTone(1050, "sine", 0.4);
+    if (typeof playSynthTone === 'function') playSynthTone(1050, "sine", 0.4);
     await this.applyReward(quest);
   }
 
@@ -117,18 +152,13 @@ class QuestSystem {
     this.updateHUD();
     if (typeof updateAutoDetectButton === "function") updateAutoDetectButton();
 
-    const client = this.supabase || window.supabaseClient;
+    const client = this.supabase || supabaseClient;
     if (client && this.warga.id) {
       try {
         const today = new Date().toISOString().split("T")[0];
-        const resQuest = await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
-        if (resQuest.error) console.warn("Supabase warga_daily_quests:", resQuest.error.message);
-
-        const resWarga = await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
-        if (resWarga.error) console.warn("Supabase update XP:", resWarga.error.message);
-      } catch (err) {
-        console.error("Gagal sinkron XP:", err);
-      }
+        await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: today }]);
+        await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
+      } catch (err) {}
     }
   }
 
@@ -161,15 +191,6 @@ class QuestSystem {
 }
 
 let activeQuestSystem = null;
-
-// ================= KUNCI SUPABASE =================
-const SUPABASE_URL = "https://myilyqnawceobqedjbfa.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
-
-let supabaseClient = null;
-if (SUPABASE_URL.startsWith('http')) {
-  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-}
 
 (function () {
   'use strict';
@@ -237,7 +258,7 @@ if (SUPABASE_URL.startsWith('http')) {
     }
   };
 
-  function playSynthTone(freq, type, duration) {
+  window.playSynthTone = function(freq, type, duration) {
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
@@ -251,7 +272,7 @@ if (SUPABASE_URL.startsWith('http')) {
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
     } catch(e){}
-  }
+  };
 
   // Menu Dropdown "⋯"
   window.toggleHudMenu = function(e) {
@@ -271,9 +292,7 @@ if (SUPABASE_URL.startsWith('http')) {
     if (icon) icon.innerText = isAmbiencePlaying ? '🔊' : '🔇';
   };
 
-  window.addEventListener('click', () => {
-    closeHudMenu();
-  });
+  window.addEventListener('click', () => { closeHudMenu(); });
 
   // Renderer & Scene
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
@@ -779,28 +798,28 @@ if (SUPABASE_URL.startsWith('http')) {
     const badge = document.getElementById('time-badge');
 
     if (hour >= 5 && hour < 10) {
-      badge.innerHTML = '🌅 Pagi (' + hour + ':' + mins + ')';
+      if (badge) badge.innerHTML = '🌅 Pagi (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(DAY[0]); skyU.bot.value.setHex(DAY[1]);
       scene.fog.color.copy(skyU.bot.value);
       sun.color.setHex(0xfff3db); sun.intensity = 1.15; sun.position.set(-60, 45, 30);
       amb.intensity = 0.55;
       LAMPM.emissiveIntensity = 0; GLASSM.emissiveIntensity = 0; HeadlightMaterial.color.setHex(0x555555);
     } else if (hour >= 10 && hour < 15) {
-      badge.innerHTML = '☀️ Siang (' + hour + ':' + mins + ')';
+      if (badge) badge.innerHTML = '☀️ Siang (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(DAY[0]); skyU.bot.value.setHex(DAY[1]);
       scene.fog.color.copy(skyU.bot.value);
       sun.color.setHex(0xfff1de); sun.intensity = 1.35; sun.position.set(-40, 75, 45);
       amb.intensity = 0.65;
       LAMPM.emissiveIntensity = 0; GLASSM.emissiveIntensity = 0; HeadlightMaterial.color.setHex(0x555555);
     } else if (hour >= 15 && hour < 18) {
-      badge.innerHTML = '🌇 Senja (' + hour + ':' + mins + ')';
+      if (badge) badge.innerHTML = '🌇 Senja (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(SUNSET[0]); skyU.bot.value.setHex(SUNSET[1]);
       scene.fog.color.copy(skyU.bot.value);
       sun.color.setHex(0xff8c42); sun.intensity = 1.0; sun.position.set(-70, 30, 20);
       amb.intensity = 0.45;
       LAMPM.emissiveIntensity = 0.8; GLASSM.emissiveIntensity = 0.6; HeadlightMaterial.color.setHex(0xfff7c2);
     } else {
-      badge.innerHTML = '🌙 Malam (' + hour + ':' + mins + ')';
+      if (badge) badge.innerHTML = '🌙 Malam (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(NIGHT[0]); skyU.bot.value.setHex(NIGHT[1]);
       scene.fog.color.setHex(0x0a1424); scene.fog.near = 100; scene.fog.far = 520;
       sun.color.setHex(0x38bdf8); sun.intensity = 0.25; sun.position.set(-40, 60, -40);
@@ -870,8 +889,8 @@ if (SUPABASE_URL.startsWith('http')) {
     c.upvotes = c.upvotes || 0; 
     c.acc = c.acc || 'none';
     c.kecamatan = c.kecamatan || 'Bandung Wetan';
-    c.level = c.level || 1;
-    c.xp = c.xp || 0;
+    c.level = parseInt(c.level, 10) || 1;
+    c.xp = parseInt(c.xp, 10) || 0;
 
     const cg = new THREE.Group(), skin = SKIN[Math.floor(rnd() * 4)];
     const body = new THREE.Group(); cg.add(body);
@@ -925,7 +944,7 @@ if (SUPABASE_URL.startsWith('http')) {
     citizensGroup.add(cg); 
 
     const myIg = localStorage.getItem('piraku_my_ig');
-    if (myIg && c.ig.toLowerCase() === myIg.toLowerCase()) {
+    if (myIg && c.ig && c.ig.toLowerCase() === myIg.toLowerCase()) {
       setupActivePlayer(cg, c);
     }
 
@@ -938,13 +957,17 @@ if (SUPABASE_URL.startsWith('http')) {
     mesh.userData.a.walk = false;
 
     if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-      document.getElementById('joystick-zone').style.display = 'block';
+      const joyZone = document.getElementById('joystick-zone');
+      if (joyZone) joyZone.style.display = 'block';
     }
 
     gsap.to(cam.position, { x: mesh.position.x - 3.5, y: 3.2, z: mesh.position.z - 5.5, duration: 1.5, ease: 'power2.out' });
     controls.target.copy(mesh.position);
     showToast('Mode Kontrol Aktif! Gerakkan dengan WASD / Joystick 🎮');
-    if (!activeQuestSystem) { activeQuestSystem = new QuestSystem(scene, supabaseClient, c); }
+
+    if (!activeQuestSystem) {
+      activeQuestSystem = new QuestSystem(scene, supabaseClient, c);
+    }
   }
 
   // Walkot
@@ -969,18 +992,27 @@ if (SUPABASE_URL.startsWith('http')) {
   let totalWarga = 1;
 
   async function loadCitizensFromDB() {
-    if (!supabaseClient) { document.getElementById('warga-counter').innerText = '1 WARGA'; updateCityMilestones(1); return; }
+    if (!supabaseClient) { 
+      const counterEl = document.getElementById('warga-counter');
+      if (counterEl) counterEl.innerText = '1 WARGA'; 
+      updateCityMilestones(1); 
+      return; 
+    }
     try {
       const { data, error } = await supabaseClient.from('warga_piraku').select('*').order('id', { ascending: true });
       if (error) throw error;
       if (data && data.length > 0) {
-        data.forEach(c => createCitizenMesh(c)); totalWarga = 1 + data.length;
+        data.forEach(c => createCitizenMesh(c)); 
+        totalWarga = 1 + data.length;
       }
-      document.getElementById('warga-counter').innerText = totalWarga + ' WARGA';
-      updateCityMilestones(totalWarga); updateAutoDetectButton();
+      const counterEl = document.getElementById('warga-counter');
+      if (counterEl) counterEl.innerText = totalWarga + ' WARGA';
+      updateCityMilestones(totalWarga); 
+      updateAutoDetectButton();
       initCitizenTicker();
     } catch (err) {
-      document.getElementById('warga-counter').innerText = '1 WARGA';
+      const counterEl = document.getElementById('warga-counter');
+      if (counterEl) counterEl.innerText = '1 WARGA';
     }
   }
   loadCitizensFromDB();
@@ -1024,7 +1056,7 @@ if (SUPABASE_URL.startsWith('http')) {
   function showCitizenSpeech(data) {
     activeCitizenTarget = data;
     document.getElementById('b-ig').innerText = data.ig;
-    document.getElementById('b-role').innerText = data.role.toUpperCase();
+    document.getElementById('b-role').innerText = (data.role || 'WARGA').toUpperCase();
     document.getElementById('b-kec').innerText = 'Kec. ' + (data.kecamatan || 'Bandung Wetan');
     document.getElementById('b-wish').innerText = '“' + data.wish + '”';
     document.getElementById('b-upvotes').innerText = data.upvotes || 0;
@@ -1037,9 +1069,9 @@ if (SUPABASE_URL.startsWith('http')) {
     gsap.to(cam.position, { x: curX - 3.5, y: 3.2, z: curZ - 5.5, duration: 1.2, ease: 'power2.inOut' });
   }
 
-  function hideCitizenSpeech() { activeCitizenTarget = null; bubbleEl.style.display = 'none'; }
+  function hideCitizenSpeech() { activeCitizenTarget = null; if (bubbleEl) bubbleEl.style.display = 'none'; }
   function updateBubblePos() {
-    if (!activeCitizenTarget) return;
+    if (!activeCitizenTarget || !bubbleEl) return;
     tempV.set(activeCitizenTarget.x, 2.3, activeCitizenTarget.z).project(cam);
     if (tempV.z > 1) { bubbleEl.style.display = 'none'; return; }
     bubbleEl.style.display = 'block';
@@ -1053,16 +1085,16 @@ if (SUPABASE_URL.startsWith('http')) {
     const animObj = animC.find(a => a.userData.a.c.ig === activeCitizenTarget.ig);
 
     if (type === 'kopi') {
-      playSynthTone(580, 'sine', 0.25);
+      window.playSynthTone(580, 'sine', 0.25);
       showToast(activeCitizenTarget.ig + ' lagi nyeruput kopi santai ☕');
       if (animObj) gsap.to(animObj.userData.a.armR.rotation, { x: -2.2, duration: 0.4, yoyo: true, repeat: 1 });
     } else if (type === 'lambai') {
-      playSynthTone(750, 'triangle', 0.2);
+      window.playSynthTone(750, 'triangle', 0.2);
       showToast(activeCitizenTarget.ig + ' melambaikan tangan ke wargi! 👋');
       if (animObj) gsap.to(animObj.userData.a.armR.rotation, { z: -2.5, duration: 0.25, yoyo: true, repeat: 5 });
     } else if (type === 'bel') {
-      playSynthTone(1200, 'sine', 0.12);
-      setTimeout(() => playSynthTone(1500, 'sine', 0.2), 140);
+      window.playSynthTone(1200, 'sine', 0.12);
+      setTimeout(() => window.playSynthTone(1500, 'sine', 0.2), 140);
       showToast('🚲 Ting-ting! Sepeda wargi lewat!');
     }
   };
@@ -1102,9 +1134,7 @@ if (SUPABASE_URL.startsWith('http')) {
             .select();
         }
         if (resp && resp.error) console.error('Supabase update gagal:', resp.error);
-      } catch (err) {
-        console.error('Koneksi upvote error:', err);
-      }
+      } catch (err) {}
     }
   };
 
@@ -1149,23 +1179,31 @@ if (SUPABASE_URL.startsWith('http')) {
   let unreadChatCount = 0, isChatModalOpen = false;
   window.openChatModal = function() {
     isChatModalOpen = true; unreadChatCount = 0;
-    document.getElementById('chat-unread-count').style.display = 'none';
-    const m = document.getElementById('chat-modal'); m.style.display = 'flex';
-    setTimeout(() => {
-      m.querySelector('.modal-card').style.transform = 'translateY(0)';
-      const stream = document.getElementById('chat-messages');
-      stream.scrollTop = stream.scrollHeight;
-    }, 10);
+    const badge = document.getElementById('chat-unread-count');
+    if (badge) badge.style.display = 'none';
+    const m = document.getElementById('chat-modal'); 
+    if (m) {
+      m.style.display = 'flex';
+      setTimeout(() => {
+        m.querySelector('.modal-card').style.transform = 'translateY(0)';
+        const stream = document.getElementById('chat-messages');
+        if (stream) stream.scrollTop = stream.scrollHeight;
+      }, 10);
+    }
     loadRecentChats();
   };
   window.closeChatModal = function() {
     isChatModalOpen = false;
-    const m = document.getElementById('chat-modal'); m.querySelector('.modal-card').style.transform = 'translateY(100%)';
-    setTimeout(() => m.style.display = 'none', 280);
+    const m = document.getElementById('chat-modal'); 
+    if (m) {
+      m.querySelector('.modal-card').style.transform = 'translateY(100%)';
+      setTimeout(() => m.style.display = 'none', 280);
+    }
   };
 
   function appendChatToUI(sender, text) {
     const stream = document.getElementById('chat-messages');
+    if (!stream) return;
     const div = document.createElement('div');
     div.style.cssText = 'background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.06);';
     div.innerHTML = `<b>${esc(sender)}:</b> ${esc(text)}`;
@@ -1190,9 +1228,7 @@ if (SUPABASE_URL.startsWith('http')) {
         stream.innerHTML = '<div style="background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan! Pesan di sini dibroadcast langsung ke semua warga kota.</div>';
         data.reverse().forEach(row => appendChatToUI(row.sender_ig, row.message));
       }
-    } catch (e) {
-      console.warn('Gagal load chat:', e);
-    }
+    } catch (e) {}
   }
 
   window.sendChatMessage = async function() {
@@ -1207,9 +1243,7 @@ if (SUPABASE_URL.startsWith('http')) {
     if (supabaseClient) {
       try {
         await supabaseClient.from('chat_warga').insert([{ sender_ig: myIg, message: msg }]);
-      } catch (err) {
-        console.warn('Gagal kirim chat ke DB:', err);
-      }
+      } catch (err) {}
     }
   };
 
@@ -1223,8 +1257,10 @@ if (SUPABASE_URL.startsWith('http')) {
           if (!isChatModalOpen) {
             unreadChatCount++;
             const badge = document.getElementById('chat-unread-count');
-            badge.innerText = unreadChatCount;
-            badge.style.display = 'flex';
+            if (badge) {
+              badge.innerText = unreadChatCount;
+              badge.style.display = 'flex';
+            }
           }
           showToast('💬 ' + payload.new.sender_ig + ': ' + payload.new.message.substring(0, 24));
         }
@@ -1234,13 +1270,19 @@ if (SUPABASE_URL.startsWith('http')) {
 
   // Polling
   window.openPollingModal = function() {
-    const m = document.getElementById('polling-modal'); m.style.display = 'flex';
-    setTimeout(() => m.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    const m = document.getElementById('polling-modal'); 
+    if (m) {
+      m.style.display = 'flex';
+      setTimeout(() => m.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    }
     loadPollingResults();
   };
   window.closePollingModal = function() {
-    const m = document.getElementById('polling-modal'); m.querySelector('.modal-card').style.transform = 'translateY(100%)';
-    setTimeout(() => m.style.display = 'none', 280);
+    const m = document.getElementById('polling-modal'); 
+    if (m) {
+      m.querySelector('.modal-card').style.transform = 'translateY(100%)';
+      setTimeout(() => m.style.display = 'none', 280);
+    }
   };
 
   async function loadPollingResults() {
@@ -1270,7 +1312,7 @@ if (SUPABASE_URL.startsWith('http')) {
     }
     localStorage.setItem('voted_policy', policyId);
     showToast('Suara kamu sah tercatat! +1 🗳️');
-    playSynthTone(880, 'sine', 0.2);
+    window.playSynthTone(880, 'sine', 0.2);
 
     if (supabaseClient) {
       try {
@@ -1286,7 +1328,7 @@ if (SUPABASE_URL.startsWith('http')) {
   window.takeCitizenSelfiePoster = function() {
     closeKTP();
     const myIg = localStorage.getItem('piraku_my_ig');
-    const myCitizen = registeredCitizensList.find(c => c.ig.toLowerCase() === (myIg || '').toLowerCase());
+    const myCitizen = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === (myIg || '').toLowerCase());
     
     const targetX = myCitizen ? myCitizen.x : -10;
     const targetZ = myCitizen ? myCitizen.z : -2.5;
@@ -1355,20 +1397,24 @@ if (SUPABASE_URL.startsWith('http')) {
   let selectedRole = 'Barista', selectedEmoji = '☕', selectedColor = 0x1e3a8a, selectedAcc = 'none';
   window.openJoinModal = function() { 
     const m = document.getElementById('join-modal'); 
-    m.style.display = 'flex'; 
-    switchAuthTab('login');
-    setTimeout(() => m.querySelector('.modal-card').style.transform = 'translateY(0)', 10); 
+    if (m) {
+      m.style.display = 'flex'; 
+      switchAuthTab('login');
+      setTimeout(() => m.querySelector('.modal-card').style.transform = 'translateY(0)', 10); 
+    }
   };
   window.closeJoinModal = function() { 
     const m = document.getElementById('join-modal'); 
-    m.querySelector('.modal-card').style.transform = 'translateY(100%)'; 
-    setTimeout(() => m.style.display = 'none', 280); 
+    if (m) {
+      m.querySelector('.modal-card').style.transform = 'translateY(100%)'; 
+      setTimeout(() => m.style.display = 'none', 280); 
+    }
   };
   window.pickRole = (el, r, e) => { document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedRole = r; selectedEmoji = e; };
   window.pickAcc = (el, a) => { document.querySelectorAll('.acc-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedAcc = a; };
   window.pickColor = (el, hex) => { document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); selectedColor = hex; };
 
-  // PROSES 1: LOGIN CEPAT (CUMA IG + PIN)
+  // PROSES 1: LOGIN CEPAT
   window.processUserLogin = async function() {
     const rawIg = document.getElementById('login-ig').value.trim();
     const pin = document.getElementById('login-pin').value.trim();
@@ -1425,9 +1471,7 @@ if (SUPABASE_URL.startsWith('http')) {
         closeJoinModal();
         showToast('Selamat datang kembali, ' + user.ig + '! 🎮');
         return;
-      } catch (err) {
-        console.error('Login error:', err);
-      }
+      } catch (err) {}
     }
     btn.disabled = false; btn.innerText = 'Masuk & Mainkan Karakter 🎮';
   };
@@ -1498,7 +1542,8 @@ if (SUPABASE_URL.startsWith('http')) {
         if (data && data[0]) newCit.id = data[0].id;
 
         totalWarga++;
-        document.getElementById('warga-counter').innerText = totalWarga + ' WARGA';
+        const counterEl = document.getElementById('warga-counter');
+        if (counterEl) counterEl.innerText = totalWarga + ' WARGA';
         
         const createdMesh = createCitizenMesh(newCit);
         setupActivePlayer(createdMesh, newCit);
@@ -1521,20 +1566,22 @@ if (SUPABASE_URL.startsWith('http')) {
         document.getElementById('ktp-quote').innerText = '“' + wish + '”'; 
         document.getElementById('ktp-modal').style.display = 'flex';
         return;
-      } catch (err) {
-        console.error('Fatal signup error:', err);
-      }
+      } catch (err) {}
     }
     btn.disabled = false; btn.innerText = 'Daftar Jadi Warga Resmi 📜';
   };
 
-  window.closeKTP = () => document.getElementById('ktp-modal').style.display = 'none';
+  window.closeKTP = () => { 
+    const m = document.getElementById('ktp-modal');
+    if (m) m.style.display = 'none'; 
+  };
 
   // HUD Handlers
   window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     const savedLvl = localStorage.getItem('piraku_my_level') || 1;
     const btn = document.getElementById('btn-citizen-status');
+    if (!btn) return;
     if (savedIg) { 
       btn.className = 'btn-my-citizen'; 
       btn.innerHTML = `<span>👤 ${savedIg}</span><span class="player-level-badge">LEVEL ${savedLvl}</span>`; 
@@ -1547,7 +1594,7 @@ if (SUPABASE_URL.startsWith('http')) {
   window.handleCitizenButtonClick = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     if (savedIg) {
-      const found = registeredCitizensList.find(c => c.ig.toLowerCase() === savedIg.toLowerCase());
+      const found = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === savedIg.toLowerCase());
       if (found) { 
         showCitizenSpeech(found); 
         showToast('Kamera menyorot kamu! ✨'); 
@@ -1561,7 +1608,11 @@ if (SUPABASE_URL.startsWith('http')) {
       localStorage.removeItem('piraku_my_level');
       myPlayerMesh = null;
       isControlledByPlayer = false;
-      document.getElementById('joystick-zone').style.display = 'none';
+      activeQuestSystem = null;
+      const joyZone = document.getElementById('joystick-zone');
+      if (joyZone) joyZone.style.display = 'none';
+      const hud = document.getElementById('player-profile-hud');
+      if (hud) hud.style.display = 'none';
       updateAutoDetectButton(); 
       closeKTP(); 
       showToast('Berhasil keluar akun!'); 
@@ -1569,23 +1620,33 @@ if (SUPABASE_URL.startsWith('http')) {
   };
 
   function showToast(msg) {
-    const t = document.getElementById('toast-notif'); t.innerText = msg; t.classList.add('show');
+    const t = document.getElementById('toast-notif'); 
+    if (!t) return;
+    t.innerText = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
   window.openLeaderboardModal = function() {
-    const modal = document.getElementById('leaderboard-modal'); modal.style.display = 'flex';
-    setTimeout(() => modal.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    const modal = document.getElementById('leaderboard-modal'); 
+    if (modal) {
+      modal.style.display = 'flex';
+      setTimeout(() => modal.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    }
     renderLeaderboard();
   };
   window.closeLeaderboardModal = function() {
-    const modal = document.getElementById('leaderboard-modal'); modal.querySelector('.modal-card').style.transform = 'translateY(100%)';
-    setTimeout(() => modal.style.display = 'none', 280);
+    const modal = document.getElementById('leaderboard-modal'); 
+    if (modal) {
+      modal.querySelector('.modal-card').style.transform = 'translateY(100%)';
+      setTimeout(() => modal.style.display = 'none', 280);
+    }
   };
   const esc = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   function renderLeaderboard() {
     const sorted = [...registeredCitizensList].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 5);
-    document.getElementById('leaderboard-items').innerHTML = sorted.map((c, idx) => `
+    const containerEl = document.getElementById('leaderboard-items');
+    if (!containerEl) return;
+    containerEl.innerHTML = sorted.map((c, idx) => `
       <div class="leader-item" onclick="teleportToCitizen('${esc(c.ig)}')">
         <div class="leader-rank">${['🥇','🥈','🥉'][idx] || '#' + (idx + 1)}</div>
         <div class="leader-info">
@@ -1602,11 +1663,17 @@ if (SUPABASE_URL.startsWith('http')) {
   window.openCheckinModal = function() {
     const modal = document.getElementById('checkin-modal'), myIg = localStorage.getItem('piraku_my_ig');
     if (myIg) document.getElementById('checkin-ig-inp').value = myIg;
-    modal.style.display = 'flex'; setTimeout(() => modal.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    if (modal) {
+      modal.style.display = 'flex'; 
+      setTimeout(() => modal.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
+    }
   };
   window.closeCheckinModal = function() {
-    const modal = document.getElementById('checkin-modal'); modal.querySelector('.modal-card').style.transform = 'translateY(100%)';
-    setTimeout(() => modal.style.display = 'none', 280);
+    const modal = document.getElementById('checkin-modal'); 
+    if (modal) {
+      modal.querySelector('.modal-card').style.transform = 'translateY(100%)';
+      setTimeout(() => modal.style.display = 'none', 280);
+    }
   };
 
   window.processDailyCheckin = async function() {
@@ -1624,9 +1691,9 @@ if (SUPABASE_URL.startsWith('http')) {
     
     if (s === 7) {
       showToast('🎉 SELAMAT H-7! Rumah kamu terbit di perumahan Bandung!');
-      playSynthTone(1050, 'sine', 0.5);
+      window.playSynthTone(1050, 'sine', 0.5);
 
-      const targetCitizen = registeredCitizensList.find(c => c.ig.toLowerCase() === cleanIg);
+      const targetCitizen = registeredCitizensList.find(c => c.ig && c.ig.toLowerCase() === cleanIg);
       if (targetCitizen) {
         targetCitizen.has_house = true;
         const hData = spawnCitizenHouse(targetCitizen, registeredCitizensList.length);
@@ -1648,7 +1715,7 @@ if (SUPABASE_URL.startsWith('http')) {
       }
     } else {
       showToast('Absen H-' + s + ' berhasil! +50 XP (Naik ke Lv. ' + curLvl + ') 🚀');
-      playSynthTone(620, 'sine', 0.2);
+      window.playSynthTone(620, 'sine', 0.2);
       if (supabaseClient) {
         await supabaseClient.from('warga_piraku').update({ level: curLvl }).ilike('ig', cleanIg);
       }
@@ -1717,7 +1784,7 @@ if (SUPABASE_URL.startsWith('http')) {
 
   window.handleSearchCitizen = function(q) {
     q = q.trim().toLowerCase(); if (!q) { hideCitizenSpeech(); return; }
-    const f = registeredCitizensList.find(c => c.ig.toLowerCase().includes(q) || c.name.toLowerCase().includes(q) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
+    const f = registeredCitizensList.find(c => (c.ig && c.ig.toLowerCase().includes(q)) || (c.name && c.name.toLowerCase().includes(q)) || (c.kecamatan && c.kecamatan.toLowerCase().includes(q)));
     if (f) showCitizenSpeech(f);
   };
 
@@ -1732,48 +1799,49 @@ if (SUPABASE_URL.startsWith('http')) {
     if (keys.hasOwnProperty(k)) keys[k] = false;
   });
 
-  // Touch Virtual Joystick Listener
   const joystickZone = document.getElementById('joystick-zone');
   const joystickKnob = document.getElementById('joystick-knob');
   let joyVector = { x: 0, y: 0 };
   let joyActive = false;
   let joyCenter = { x: 0, y: 0 };
 
-  joystickZone.addEventListener('touchstart', e => {
-    joyActive = true;
-    const touch = e.touches[0];
-    const rect = joystickZone.getBoundingClientRect();
-    joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-  }, { passive: false });
+  if (joystickZone) {
+    joystickZone.addEventListener('touchstart', e => {
+      joyActive = true;
+      const touch = e.touches[0];
+      const rect = joystickZone.getBoundingClientRect();
+      joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+    }, { passive: false });
 
-  window.addEventListener('touchmove', e => {
-    if (!joyActive) return;
-    const touch = e.touches[0];
-    let dx = touch.clientX - joyCenter.x;
-    let dy = touch.clientY - joyCenter.y;
-    const dist = Math.hypot(dx, dy);
-    const maxR = 36;
+    window.addEventListener('touchmove', e => {
+      if (!joyActive) return;
+      const touch = e.touches[0];
+      let dx = touch.clientX - joyCenter.x;
+      let dy = touch.clientY - joyCenter.y;
+      const dist = Math.hypot(dx, dy);
+      const maxR = 36;
 
-    if (dist > maxR) {
-      dx = (dx / dist) * maxR;
-      dy = (dy / dist) * maxR;
-    }
+      if (dist > maxR) {
+        dx = (dx / dist) * maxR;
+        dy = (dy / dist) * maxR;
+      }
 
-    joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-    joyVector = { x: dx / maxR, y: dy / maxR };
-  }, { passive: false });
+      if (joystickKnob) joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+      joyVector = { x: dx / maxR, y: dy / maxR };
+    }, { passive: false });
 
-  window.addEventListener('touchend', () => {
-    joyActive = false;
-    joystickKnob.style.transform = 'translate(0, 0)';
-    joyVector = { x: 0, y: 0 };
-  });
+    window.addEventListener('touchend', () => {
+      joyActive = false;
+      if (joystickKnob) joystickKnob.style.transform = 'translate(0, 0)';
+      joyVector = { x: 0, y: 0 };
+    });
+  }
 
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh) return;
 
     let moveX = 0, moveZ = 0;
-    const speed = 7.0 * delta;
+    const speed = 8.5 * delta;
 
     if (keys.w) moveZ += 1;
     if (keys.s) moveZ -= 1;
@@ -1788,6 +1856,8 @@ if (SUPABASE_URL.startsWith('http')) {
     const hasInput = (moveX !== 0 || moveZ !== 0);
 
     if (hasInput) {
+      controls.enabled = false;
+
       const angle = Math.atan2(moveX, moveZ);
       myPlayerMesh.rotation.y = angle;
 
@@ -1795,26 +1865,31 @@ if (SUPABASE_URL.startsWith('http')) {
       myPlayerMesh.position.x += (moveX / len) * speed;
       myPlayerMesh.position.z += (moveZ / len) * speed;
 
-      myPlayerMesh.position.x = Math.max(-20, Math.min(20, myPlayerMesh.position.x));
-      myPlayerMesh.position.z = Math.max(-24, Math.min(2, myPlayerMesh.position.z));
+      myPlayerMesh.position.x = Math.max(-45, Math.min(45, myPlayerMesh.position.x));
+      myPlayerMesh.position.z = Math.max(-40, Math.min(30, myPlayerMesh.position.z));
 
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
+      // Smooth Follow Camera
       const camTargetX = myPlayerMesh.position.x;
       const camTargetZ = myPlayerMesh.position.z;
       
-      controls.target.x += (camTargetX - controls.target.x) * 0.1;
-      controls.target.z += (camTargetZ - controls.target.z) * 0.1;
+      controls.target.x += (camTargetX - controls.target.x) * 0.12;
+      controls.target.y += (1.4 - controls.target.y) * 0.12;
+      controls.target.z += (camTargetZ - controls.target.z) * 0.12;
       
-      cam.position.x += (camTargetX - 3.5 - cam.position.x) * 0.05;
-      cam.position.z += (camTargetZ - 5.5 - cam.position.z) * 0.05;
+      cam.position.x += (camTargetX - 3.5 - cam.position.x) * 0.08;
+      cam.position.y += (4.5 - cam.position.y) * 0.08;
+      cam.position.z += (camTargetZ - 7.5 - cam.position.z) * 0.08;
 
       const a = myPlayerMesh.userData.a;
-      const s = Math.sin(clockTime * 10);
-      a.body.position.y = Math.abs(s) * 0.08;
-      a.armL.rotation.x = s * 0.9;
-      a.armR.rotation.x = -s * 0.9;
+      const s = Math.sin(clockTime * 12);
+      a.body.position.y = Math.abs(s) * 0.09;
+      a.armL.rotation.x = s * 0.85;
+      a.armR.rotation.x = -s * 0.85;
+    } else {
+      controls.enabled = true;
     }
   }
 
@@ -1827,13 +1902,17 @@ if (SUPABASE_URL.startsWith('http')) {
     if (isTabHidden) return;
 
     clockTime += 0.016;
-    controls.update();
+    if (controls.enabled) controls.update();
     applyGrowth();
     updTrees(clockTime);
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
-    if (activeQuestSystem && myPlayerMesh) { activeQuestSystem.update(0.016, myPlayerMesh.position); }
+
+    // Update Deteksi Quest
+    if (activeQuestSystem && myPlayerMesh) {
+      activeQuestSystem.update(0.016, myPlayerMesh.position);
+    }
 
     animC.forEach(g => {
       if (g === myPlayerMesh) return;
