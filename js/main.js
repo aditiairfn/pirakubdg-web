@@ -13,6 +13,18 @@ window.clockTime = 0;
 // ================= POOL MASTER MISI HARIAN (ROTASI ACAK) =================
 const ALL_QUEST_POOL = [
   {
+    id: "halte_cilaki", title: "Naik Trem ke Halte Cilaki", target: { x: 31, z: 16 }, radius: 7.0, xpReward: 70, color: 0x06b6d4,
+    stayDuration: 0, timer: 0, isCompleted: false, mesh: null
+  },
+  {
+    id: "halte_cimandiri", title: "Naik Trem ke Halte Cimandiri", target: { x: 0, z: 32 }, radius: 7.0, xpReward: 80, color: 0xa855f7,
+    stayDuration: 0, timer: 0, isCompleted: false, mesh: null
+  },
+  {
+    id: "halte_riau", title: "Naik Trem ke Halte Riau", target: { x: -36, z: 16 }, radius: 7.0, xpReward: 70, color: 0xf97316,
+    stayDuration: 0, timer: 0, isCompleted: false, mesh: null
+  },
+  {
     id: "visit_gasibu",
     title: "Nongkrong di Lapangan Gasibu",
     target: { x: 0, z: -8 },
@@ -902,7 +914,66 @@ let activeQuestSystem = null;
   box(9.5, .32, 1.75, 0, .55, 0, 0x0b3fb8, tram, false);
   [-4.8, 4.8].forEach(x => [-.55, .55].forEach(z => mk(new THREE.BoxGeometry(.1, .2, .3), new THREE.MeshBasicMaterial({ color: 0xfff7c2 }), x, .85, z, tram, false, false)));
   rebornGroup.add(tram);
-  [2.2, 3.1, 3.3, 4.2].forEach(z => box(100, .08, .14, 0, .22, z, 0x94a3b8, rebornGroup, false));
+    // Rute lingkar: Diponegoro > Cilaki > Cimandiri (belakang Gedung Sate) > Riau > Dago
+  const TRAMC = new THREE.CatmullRomCurve3([[-40, 3], [-21, 2.7], [0, 2.7], [18, 3.4], [25, 9], [31, 16], [37, 23], [34, 29], [18, 30.5], [0, 32], [-17, 29.5], [-25, 21], [-26, 17], [-32, 16], [-40, 15.5], [-42, 12], [-42, 6]].map(p => V3(p[0], 0, p[1])), true, 'centripetal');
+  const TRAM_LEN = TRAMC.getLength();
+  {
+    const N = 260, L = [], R = [];
+    for (let i = 0; i < N; i++) { const p = TRAMC.getPointAt(i / N), q = TRAMC.getTangentAt(i / N); L.push(V3(p.x - q.z * .8, .2, p.z + q.x * .8)); R.push(V3(p.x + q.z * .8, .2, p.z - q.x * .8)); }
+    const railM = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: .6, roughness: .4 });
+    [L, R].forEach(a => rebornGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(a, true), N, .07, 5, true), railM)));
+    const nS = Math.round(TRAM_LEN / 1.6), sl = IM(boxG, MAT(0x6b7280), nS, false, false); rebornGroup.add(sl);
+    for (let i = 0; i < nS; i++) { const p = TRAMC.getPointAt(i / nS), q = TRAMC.getTangentAt(i / nS); dum.position.set(p.x, .12, p.z); dum.lookAt(p.x + q.x, .12, p.z + q.z); dum.scale.set(2.2, .08, .3); dum.updateMatrix(); sl.setMatrixAt(i, dum.matrix); }
+    sl.instanceMatrix.needsUpdate = true; dum.quaternion.identity();
+  }
+  const STATIONS = [['Halte Gasibu', 0, 2.7], ['Halte Cilaki', 31, 16], ['Halte Cimandiri', 0, 32], ['Halte Riau', -36, 16]].map(s => {
+    let bt = 0, bd = 1e9;
+    for (let i = 0; i < 400; i++) { const p = TRAMC.getPointAt(i / 400), d = Math.hypot(p.x - s[1], p.z - s[2]); if (d < bd) { bd = d; bt = i / 400; } }
+    const p = TRAMC.getPointAt(bt), q = TRAMC.getTangentAt(bt);
+    let nx = -q.z, nz = q.x, flipped = false;
+    if (Math.hypot(p.x + nx * 3.4, p.z + nz * 3.4 - 13.5) < Math.hypot(p.x - nx * 3.4, p.z - nz * 3.4 - 13.5)) { nx = -nx; nz = -nz; flipped = true; }
+    const sh = new THREE.Group(); sh.position.set(p.x + nx * 3.4, 0, p.z + nz * 3.4); sh.rotation.y = Math.atan2(-q.z, q.x);
+    box(6, .18, 2.2, 0, 0, 0, 0xcbd5e1, sh); box(6.4, .14, 2.6, 0, 2.7, 0, 0x1f6bff, sh);
+    [-2.8, 2.8].forEach(x => box(.14, 2.6, .14, x, .18, 0, 0xf8fafc, sh));
+    const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d');
+    g.fillStyle = '#1f6bff'; g.fillRect(0, 0, 512, 96); g.fillStyle = '#fff'; g.font = '800 44px "Bricolage Grotesque", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🚊 ' + s[0], 256, 50);
+    const sg = new THREE.Mesh(new THREE.PlaneGeometry(5.2, .98), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), side: THREE.DoubleSide }));
+    sg.position.set(0, 3.5, 0); sg.rotation.y = flipped ? 0 : PI; sh.add(sg); rebornGroup.add(sh);
+    return { name: s[0], t: bt, sx: sh.position.x, sz: sh.position.z };
+  });
+  let tramT = STATIONS[0].t, tramDwell = 3, tramSt = STATIONS[0];
+  function updateTram(dt) {
+    if (tramDwell > 0) tramDwell -= dt;
+    else {
+      const prev = tramT, step = 7 * dt / TRAM_LEN; tramT = (tramT + step) % 1;
+      STATIONS.forEach(st => { const d = (st.t - prev + 1) % 1; if (d > 0 && d <= step) { tramT = st.t; tramDwell = 4; tramSt = st; if (window.onTramArrive) window.onTramArrive(st); } });
+    }
+    const p = TRAMC.getPointAt(tramT), q = TRAMC.getTangentAt(tramT);
+    tram.position.set(p.x, .26, p.z); tram.rotation.y = Math.atan2(-q.z, q.x);
+  }
+
+  // Koin Piraku
+  const coins = [], coinG = new THREE.CylinderGeometry(.55, .55, .12, 14);
+  const coinM = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xb45309, emissiveIntensity: .5, metalness: .6, roughness: .35 });
+  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); rebornGroup.add(h); coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
+  for (let i = 0; i < 16; i++) { const p = TRAMC.getPointAt((i + .5) / 16); addCoin(p.x, 1.7, p.z); }
+  for (let i = 0; i < 10; i++) addCoin((rnd() - .5) * 34, 1.1, -2 - rnd() * 8);
+  let coinCount = parseInt(localStorage.getItem('piraku_coins') || '0', 10) || 0;
+  const coinHud = document.createElement('div');
+  coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
+  coinHud.textContent = '🪙 ' + coinCount; document.body.appendChild(coinHud);
+  function updateCoins(dt) {
+    if (!isRidingTram && !myPlayerMesh) return;
+    const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0, reborn = curMode === 'reborn';
+    coins.forEach(c => {
+      if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
+      c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
+      if (!reborn || Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3 : 2.2)) return;
+      c.h.visible = false; c.back = 45; coinCount++; localStorage.setItem('piraku_coins', coinCount); coinHud.textContent = '🪙 ' + coinCount;
+      if (window.playSynthTone) window.playSynthTone(880 + (coinCount % 5) * 80, 'triangle', .12);
+      if (coinCount % 10 === 0) showToast('🪙 ' + coinCount + ' koin terkumpul! Warga teladan Bandung 👏');
+    });
+  }
 
   // Lampu Jalan
   const furn = [];
@@ -1309,6 +1380,10 @@ let activeQuestSystem = null;
 
     if (supabaseClient) {
       try {
+        if (activeCitizenTarget.id && Number(activeCitizenTarget.id) > 0) {
+          const rr = await supabaseClient.rpc('increment_upvote', { p_id: activeCitizenTarget.id });
+          if (!rr.error) return;
+        }
         let resp;
         if (activeCitizenTarget.id && Number(activeCitizenTarget.id) > 0) {
           resp = await supabaseClient
@@ -1320,7 +1395,7 @@ let activeQuestSystem = null;
           resp = await supabaseClient
             .from('warga_piraku')
             .update({ upvotes: nextCount })
-            .ilike('ig', activeCitizenTarget.ig)
+            .ilike('ig', likeEsc(activeCitizenTarget.ig))
             .select();
         }
         if (resp && resp.error) console.error('Supabase update gagal:', resp.error);
@@ -1616,6 +1691,7 @@ let activeQuestSystem = null;
 
     const cleanHandle = rawIg.replace(/^@+/, '').trim().toLowerCase();
     const formattedIg = '@' + cleanHandle;
+    if (!/^[a-z0-9._]{1,30}$/.test(cleanHandle)) { alert('Username Instagram hanya boleh huruf, angka, titik, dan garis bawah (maks 30 karakter).'); return; }
 
     const btn = document.getElementById('btn-submit-login');
     btn.disabled = true; btn.innerText = 'Memverifikasi akun...';
@@ -1625,7 +1701,7 @@ let activeQuestSystem = null;
         const { data: user, error } = await supabaseClient
           .from('warga_piraku')
           .select('*')
-          .or(`ig.ilike.${formattedIg},ig.ilike.${cleanHandle}`)
+          .or(`ig.ilike.${likeEsc(formattedIg)},ig.ilike.${likeEsc(cleanHandle)}`)
           .maybeSingle();
 
         if (error) {
@@ -1682,6 +1758,7 @@ let activeQuestSystem = null;
 
     const cleanHandle = rawIg.replace(/^@+/, '').trim().toLowerCase();
     const formattedIg = '@' + cleanHandle;
+    if (!/^[a-z0-9._]{1,30}$/.test(cleanHandle)) { alert('Username Instagram hanya boleh huruf, angka, titik, dan garis bawah (maks 30 karakter).'); return; }
 
     const btn = document.getElementById('btn-submit-signup');
     btn.disabled = true; btn.innerText = 'Mendaftarkan warga...';
@@ -1697,7 +1774,7 @@ let activeQuestSystem = null;
         const { data: exist } = await supabaseClient
           .from('warga_piraku')
           .select('id, ig')
-          .or(`ig.ilike.${formattedIg},ig.ilike.${cleanHandle}`)
+          .or(`ig.ilike.${likeEsc(formattedIg)},ig.ilike.${likeEsc(cleanHandle)}`)
           .maybeSingle();
 
         if (exist) {
@@ -1851,6 +1928,7 @@ let activeQuestSystem = null;
       setTimeout(() => modal.style.display = 'none', 280);
     }
   };
+  function likeEsc(s) { return String(s || '').replace(/[\\%_]/g, '\\$&amp;'); }
   const esc = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   function renderLeaderboard() {
     const sorted = [...registeredCitizensList].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 5);
@@ -1920,14 +1998,14 @@ let activeQuestSystem = null;
             has_house: true,
             house_index: registeredCitizensList.length,
             level: curLvl
-          }).ilike('ig', cleanIg);
+          }).ilike('ig', likeEsc(cleanIg));
         }
       }
     } else {
       showToast('Absen H-' + s + ' berhasil! +50 XP (Naik ke Lv. ' + curLvl + ') 🚀');
       window.playSynthTone(620, 'sine', 0.2);
       if (supabaseClient) {
-        await supabaseClient.from('warga_piraku').update({ level: curLvl }).ilike('ig', cleanIg);
+        await supabaseClient.from('warga_piraku').update({ level: curLvl }).ilike('ig', likeEsc(cleanIg));
       }
     }
     setTimeout(() => closeCheckinModal(), 1200);
@@ -2108,15 +2186,20 @@ let activeQuestSystem = null;
   };
 
   
-  // ================= SISTEM INTERAKSI NAIK TREM =================
+    // ================= SISTEM INTERAKSI NAIK TREM =================
   let isRidingTram = false;
 
-  window.toggleRideTram = function() {
+  window.toggleRideTram = function(force) {
     if (!myPlayerMesh) {
       showToast("Masuk atau daftar warga dulu untuk naik trem! 🚊");
       return;
     }
 
+    const dTr = Math.hypot(myPlayerMesh.position.x - tram.position.x, myPlayerMesh.position.z - tram.position.z);
+    if (force !== true) {
+      if (isRidingTram && tramDwell <= 0) { showToast('Trem masih jalan, turun di ' + nextTramStation().name + ' ya 🚊'); return; }
+      if (!isRidingTram && !(tramDwell > 0 && dTr <= 9)) { showToast('Tunggu trem berhenti di halte dulu 🚊'); return; }
+    }
     isRidingTram = !isRidingTram;
     const btnText = document.getElementById("tram-action-text");
     const btnIcon = document.getElementById("tram-action-icon");
@@ -2127,7 +2210,6 @@ let activeQuestSystem = null;
       if (btnIcon) btnIcon.innerText = "🚶";
       if (btn) btn.style.background = "linear-gradient(135deg, #ef4444, #dc2626)";
 
-      // Reset animasi gerak kaki
       const a = myPlayerMesh.userData.a;
       if (a.legL) a.legL.rotation.x = 0;
       if (a.legR) a.legR.rotation.x = 0;
@@ -2135,62 +2217,54 @@ let activeQuestSystem = null;
       if (a.armR) a.armR.rotation.x = 0;
 
       if (typeof window.playSynthTone === "function") window.playSynthTone(750, "sine", 0.3);
-      showToast("Menikmati perjalanan keliling Diponegoro di atas trem 🚊✨");
+      showToast("Keliling Gedung Sate, Cilaki, Cimandiri & Riau naik trem 🚊✨ Kumpulkan koin!");
     } else {
       if (btnText) btnText.innerText = "Naik Trem";
       if (btnIcon) btnIcon.innerText = "🚊";
       if (btn) btn.style.background = "linear-gradient(135deg, #2563eb, #1d4ed8)";
 
-      // Turunkan karakter ke trotoar aman
-      myPlayerMesh.position.z = 0.5;
-      myPlayerMesh.position.y = 0.1;
+      const dst = tramDwell > 0 ? { x: tramSt.sx, z: tramSt.sz } : { x: tram.position.x + Math.sin(tram.rotation.y) * 3.4, z: tram.position.z + Math.cos(tram.rotation.y) * 3.4 };
+      myPlayerMesh.position.set(dst.x, 0.1, dst.z);
+      if (myPlayerMesh.userData.a && myPlayerMesh.userData.a.c) { myPlayerMesh.userData.a.c.x = dst.x; myPlayerMesh.userData.a.c.z = dst.z; }
 
       if (typeof window.playSynthTone === "function") window.playSynthTone(480, "sine", 0.2);
       showToast("Turun dari trem. Wilujeng jalan-jalan kembali!");
     }
   };
 
+  function nextTramStation() {
+    let best = STATIONS[0], bd = 2;
+    STATIONS.forEach(st => { const d = (st.t - tramT + 1) % 1; if (d > 1e-4 && d < bd) { bd = d; best = st; } });
+    return best;
+  }
+  window.onTramArrive = st => {
+    if (!isRidingTram) return;
+    showToast('🚊 Tiba di ' + st.name + ' — ketuk "Turun" kalau mau keluar');
+    if (window.playSynthTone) window.playSynthTone(660, 'sine', 0.25);
+  };
+
   function updateTramInteraction(delta) {
-    if (!myPlayerMesh || isRidingTram) return;
-
-    // Koordinat posisi trem saat ini
-    const tramX = tram.position.x;
-    const tramZ = tram.position.z;
-    const distToTram = Math.hypot(myPlayerMesh.position.x - tramX, myPlayerMesh.position.z - tramZ);
-    const tramBtn = document.getElementById("btn-tram-action");
-
+    if (!myPlayerMesh) return;
+    const tramBtn = document.getElementById("btn-tram-action"), txt = document.getElementById("tram-action-text");
+    if (curMode !== 'reborn') { if (isRidingTram) window.toggleRideTram(true); if (tramBtn) tramBtn.style.display = "none"; return; }
     if (isRidingTram) {
-      // Pasang posisi karakter di dalam gerbong tengah trem
-      myPlayerMesh.position.x = tramX;
-      myPlayerMesh.position.y = 0.65;
-      myPlayerMesh.position.z = tramZ;
-      myPlayerMesh.rotation.y = (Math.cos(window.clockTime * 0.6) >= 0) ? (Math.PI / 2) : (-Math.PI / 2);
-
-      myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
-      myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
-
-      // Kamera Sinematik Penumpang
-      const targetCamX = tramX - 8.5;
-      const targetCamY = 5.0;
-      const targetCamZ = tramZ - 10.5;
-
-      cam.position.x += (targetCamX - cam.position.x) * 0.05;
-      cam.position.y += (targetCamY - cam.position.y) * 0.05;
-      cam.position.z += (targetCamZ - cam.position.z) * 0.05;
-
-      controls.target.x += (tramX - controls.target.x) * 0.1;
+      const a = myPlayerMesh.userData.a;
+      myPlayerMesh.position.set(tram.position.x, 0.65, tram.position.z);
+      myPlayerMesh.rotation.y = tram.rotation.y + Math.PI / 2;
+      if (a && a.c) { a.c.x = tram.position.x; a.c.z = tram.position.z; }
+      cam.position.x += (tram.position.x - 8.5 - cam.position.x) * 0.05;
+      cam.position.y += (5.0 - cam.position.y) * 0.05;
+      cam.position.z += (tram.position.z - 10.5 - cam.position.z) * 0.05;
+      controls.target.x += (tram.position.x - controls.target.x) * 0.1;
       controls.target.y += (1.8 - controls.target.y) * 0.1;
-      controls.target.z += (tramZ - controls.target.z) * 0.1;
-
-      if (tramBtn) tramBtn.style.display = "flex";
-    } else {
-      // Munculkan tombol jika pemain berdiri dekat rel saat trem melintas
-      if (distToTram <= 7.0 && Math.abs(myPlayerMesh.position.z - 2.7) < 5.0) {
-        if (tramBtn) tramBtn.style.display = "flex";
-      } else {
-        if (tramBtn) tramBtn.style.display = "none";
-      }
+      controls.target.z += (tram.position.z - controls.target.z) * 0.1;
+      if (txt) { const t = tramDwell > 0 ? 'Turun di ' + tramSt.name : 'Menuju ' + nextTramStation().name; if (txt.innerText !== t) txt.innerText = t; }
+      if (tramBtn) { tramBtn.style.display = "flex"; tramBtn.style.opacity = tramDwell > 0 ? "1" : "0.65"; }
+      return;
     }
+    if (txt && txt.innerText !== 'Naik Trem') txt.innerText = 'Naik Trem';
+    const d = Math.hypot(myPlayerMesh.position.x - tram.position.x, myPlayerMesh.position.z - tram.position.z);
+    if (tramBtn) { tramBtn.style.opacity = "1"; tramBtn.style.display = (tramDwell > 0 && d <= 9) ? "flex" : "none"; }
   }
 
   // ================= KONTROL PEMAIN & FISIKA LOMPAT =================
@@ -2393,7 +2467,9 @@ let activeQuestSystem = null;
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    updateTram(0.016);
     updateTramInteraction(0.016);
+    updateCoins(0.016);
 
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
@@ -2431,7 +2507,7 @@ let activeQuestSystem = null;
     });
 
     headW.rotation.y = Math.sin(clockTime * 0.8) * 0.15;
-    tram.position.set(Math.sin(clockTime * 0.6) * 18, .26, 2.7);
+    // posisi trem dikendalikan oleh updateTram()
 
     updateBubblePos();
     updateOverheadBubblesPos();
@@ -2444,3 +2520,7 @@ let activeQuestSystem = null;
 
   gsap.from(cam.position, { x: -120, y: 110, z: -170, duration: 3.4, ease: 'power3.out', delay: .2 });
 })();
+
+
+// Aksesibilitas: tombol ikon yang hanya punya title ikut dibaca screen reader
+document.querySelectorAll('[title]').forEach(el => { if (!el.getAttribute('aria-label')) el.setAttribute('aria-label', el.title); });
