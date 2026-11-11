@@ -1803,21 +1803,42 @@ let activeQuestSystem = null;
 
   // ================= KONTROL PEMAIN & KAMERA CHASE SMOOTH =================
   
+  
+
+  
   // Sistem Fisika Gravitasi & Lompat
   let playerVelY = 0;
   let isGrounded = true;
-  const gravity = -28.0;
-  const jumpForce = 9.2;
+  const gravity = -32.0;
+  const jumpForce = 11.5;
+  const BASE_Y = 0.1;
 
-  window.playerJump = function() {
+  window.playerJump = function(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (!myPlayerMesh || !isGrounded) return;
     playerVelY = jumpForce;
     isGrounded = false;
-    if (typeof window.playSynthTone === "function") window.playSynthTone(520, "sine", 0.15);
+    if (typeof window.playSynthTone === "function") window.playSynthTone(580, "sine", 0.18);
   };
 
+  // Bind klik & touch langsung ke tombol lompat mobile
+  function initJumpButton() {
+    const jumpBtn = document.getElementById("btn-jump-mobile");
+    if (!jumpBtn) return;
+    jumpBtn.addEventListener("touchstart", function(e) { window.playerJump(e); }, { passive: false });
+    jumpBtn.addEventListener("mousedown", function(e) { window.playerJump(e); });
+  }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initJumpButton);
+  } else {
+    initJumpButton();
+  }
+
   window.addEventListener("keydown", e => {
-    if (e.code === "Space" || e.key === " ") {
+    if (e.code === "Space" || e.key === " " || e.keyCode === 32) {
       if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
       e.preventDefault();
       window.playerJump();
@@ -1883,71 +1904,91 @@ let activeQuestSystem = null;
     let inputRight = 0;
     const speed = 8.5 * delta;
 
-    // Kontrol Keyboard WASD
     if (keys.w) inputForward += 1;
     if (keys.s) inputForward -= 1;
     if (keys.d) inputRight += 1;
     if (keys.a) inputRight -= 1;
 
-    // Kontrol Virtual Joystick Mobile
     if (joyActive) {
-      inputForward -= joyVector.y; // Tarik ke atas bernilai negatif, maka diminus agar maju (+)
-      inputRight += joyVector.x;   // Tarik ke kanan bernilai positif (+)
+      inputForward -= joyVector.y;
+      inputRight += joyVector.x;
     }
 
-    // 1. Ambil orientasi horizontal kamera
     cam.getWorldDirection(moveForwardVec);
     moveForwardVec.y = 0;
     moveForwardVec.normalize();
 
     moveRightVec.crossVectors(moveForwardVec, new THREE.Vector3(0, 1, 0)).normalize();
 
-    // 2. Gabungkan input ke arah kamera
     moveFinalVec.set(0, 0, 0);
     moveFinalVec.addScaledVector(moveForwardVec, inputForward);
     moveFinalVec.addScaledVector(moveRightVec, inputRight);
 
-    if (moveFinalVec.lengthSq() > 0.001) {
-      moveFinalVec.normalize();
+    const hasInput = (moveFinalVec.lengthSq() > 0.001);
+    const a = myPlayerMesh.userData.a;
 
-      // Putar arah hadap badan karakter mengikuti arah lari
+    if (hasInput) {
+      moveFinalVec.normalize();
       myPlayerMesh.rotation.y = Math.atan2(moveFinalVec.x, moveFinalVec.z);
 
-      // Gerakkan karakter
       myPlayerMesh.position.x += moveFinalVec.x * speed;
       myPlayerMesh.position.z += moveFinalVec.z * speed;
 
-      // Batasi area gerak Gasibu - Gedung Sate
       myPlayerMesh.position.x = Math.max(-45, Math.min(45, myPlayerMesh.position.x));
       myPlayerMesh.position.z = Math.max(-40, Math.min(30, myPlayerMesh.position.z));
 
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
-      // Animasi ayunan tangan & langkah kaki
-      const a = myPlayerMesh.userData.a;
-      const s = Math.sin(clockTime * 15);
-      a.body.position.y = Math.abs(s) * 0.08;
-      a.armL.rotation.x = s * 0.85;
-      a.armR.rotation.x = -s * 0.85;
+      if (isGrounded) {
+        const s = Math.sin(clockTime * 15);
+        a.body.position.y = Math.abs(s) * 0.08;
+        a.armL.rotation.x = s * 0.85;
+        a.armR.rotation.x = -s * 0.85;
+        if (a.legL && a.legR) {
+          a.legL.rotation.x = -s * 0.95;
+          a.legR.rotation.x = s * 0.95;
+        }
+      }
+    } else if (isGrounded) {
+      if (a.legL) a.legL.rotation.x *= 0.6;
+      if (a.legR) a.legR.rotation.x *= 0.6;
+      if (a.armL) a.armL.rotation.x *= 0.6;
+      if (a.armR) a.armR.rotation.x *= 0.6;
+    }
+
+    // Fisika Gravitasi & Lompat
+    if (!isGrounded) {
+      playerVelY += gravity * delta;
+      myPlayerMesh.position.y += playerVelY * delta;
+
       if (a.legL && a.legR) {
-        a.legL.rotation.x = -s * 0.95;
-        a.legR.rotation.x = s * 0.95;
+        a.legL.rotation.x = -0.55;
+        a.legR.rotation.x = 0.45;
+      }
+      a.armL.rotation.x = -0.6;
+      a.armR.rotation.x = -0.6;
+
+      if (myPlayerMesh.position.y <= BASE_Y) {
+        myPlayerMesh.position.y = BASE_Y;
+        playerVelY = 0;
+        isGrounded = true;
       }
     }
 
-    // 3. Kamera Chase Mengikuti Karakter Tanpa Bentrok OrbitControls
+    // Kamera mengikuti posisi X, Y (saat lompat), dan Z karakter
     const curTarget = controls.target;
     const diffX = myPlayerMesh.position.x - curTarget.x;
+    const diffY = (myPlayerMesh.position.y + 1.3) - curTarget.y;
     const diffZ = myPlayerMesh.position.z - curTarget.z;
     const lerpFactor = 0.12;
 
     curTarget.x += diffX * lerpFactor;
-    curTarget.y += (1.4 - curTarget.y) * lerpFactor;
+    curTarget.y += diffY * lerpFactor;
     curTarget.z += diffZ * lerpFactor;
 
-    // Geser kamera dengan delta yang sama agar sudut & jarak orbit tetap stabil
     cam.position.x += diffX * lerpFactor;
+    cam.position.y += diffY * lerpFactor;
     cam.position.z += diffZ * lerpFactor;
   }
 
