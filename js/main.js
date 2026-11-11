@@ -1837,57 +1837,79 @@ let activeQuestSystem = null;
     });
   }
 
+    const moveForwardVec = new THREE.Vector3();
+  const moveRightVec = new THREE.Vector3();
+  const moveFinalVec = new THREE.Vector3();
+
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh) return;
 
-    let moveX = 0, moveZ = 0;
+    let inputForward = 0;
+    let inputRight = 0;
     const speed = 8.5 * delta;
 
-    if (keys.w) moveZ -= 1;
-    if (keys.s) moveZ += 1;
-    if (keys.a) moveX -= 1;
-    if (keys.d) moveX += 1;
+    // Kontrol Keyboard WASD
+    if (keys.w) inputForward += 1;
+    if (keys.s) inputForward -= 1;
+    if (keys.d) inputRight += 1;
+    if (keys.a) inputRight -= 1;
 
+    // Kontrol Virtual Joystick Mobile
     if (joyActive) {
-      moveX += joyVector.x;
-      moveZ += joyVector.y;
+      inputForward -= joyVector.y; // Tarik ke atas bernilai negatif, maka diminus agar maju (+)
+      inputRight += joyVector.x;   // Tarik ke kanan bernilai positif (+)
     }
 
-    const hasInput = (moveX !== 0 || moveZ !== 0);
+    // 1. Ambil orientasi horizontal kamera
+    cam.getWorldDirection(moveForwardVec);
+    moveForwardVec.y = 0;
+    moveForwardVec.normalize();
 
-    if (hasInput) {
-      const angle = Math.atan2(moveX, moveZ);
-      myPlayerMesh.rotation.y = angle;
+    moveRightVec.crossVectors(moveForwardVec, new THREE.Vector3(0, 1, 0)).normalize();
 
-      const len = Math.hypot(moveX, moveZ);
-      myPlayerMesh.position.x += (moveX / len) * speed;
-      myPlayerMesh.position.z += (moveZ / len) * speed;
+    // 2. Gabungkan input ke arah kamera
+    moveFinalVec.set(0, 0, 0);
+    moveFinalVec.addScaledVector(moveForwardVec, inputForward);
+    moveFinalVec.addScaledVector(moveRightVec, inputRight);
 
+    if (moveFinalVec.lengthSq() > 0.001) {
+      moveFinalVec.normalize();
+
+      // Putar arah hadap badan karakter mengikuti arah lari
+      myPlayerMesh.rotation.y = Math.atan2(moveFinalVec.x, moveFinalVec.z);
+
+      // Gerakkan karakter
+      myPlayerMesh.position.x += moveFinalVec.x * speed;
+      myPlayerMesh.position.z += moveFinalVec.z * speed;
+
+      // Batasi area gerak Gasibu - Gedung Sate
       myPlayerMesh.position.x = Math.max(-45, Math.min(45, myPlayerMesh.position.x));
       myPlayerMesh.position.z = Math.max(-40, Math.min(30, myPlayerMesh.position.z));
 
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
-      // Kamera Chase Mulus mengikuti karakter
-      const targetCamX = myPlayerMesh.position.x - 3.8;
-      const targetCamZ = myPlayerMesh.position.z - 6.2;
-      const targetCamY = 4.2;
-
-      cam.position.x += (targetCamX - cam.position.x) * 0.08;
-      cam.position.y += (targetCamY - cam.position.y) * 0.08;
-      cam.position.z += (targetCamZ - cam.position.z) * 0.08;
-
-      controls.target.x += (myPlayerMesh.position.x - controls.target.x) * 0.12;
-      controls.target.y += (1.3 - controls.target.y) * 0.12;
-      controls.target.z += (myPlayerMesh.position.z - controls.target.z) * 0.12;
-
+      // Animasi ayunan tangan & langkah kaki
       const a = myPlayerMesh.userData.a;
-      const s = Math.sin(clockTime * 12);
+      const s = Math.sin(clockTime * 14);
       a.body.position.y = Math.abs(s) * 0.09;
       a.armL.rotation.x = s * 0.85;
       a.armR.rotation.x = -s * 0.85;
     }
+
+    // 3. Kamera Chase Mengikuti Karakter Tanpa Bentrok OrbitControls
+    const curTarget = controls.target;
+    const diffX = myPlayerMesh.position.x - curTarget.x;
+    const diffZ = myPlayerMesh.position.z - curTarget.z;
+    const lerpFactor = 0.12;
+
+    curTarget.x += diffX * lerpFactor;
+    curTarget.y += (1.4 - curTarget.y) * lerpFactor;
+    curTarget.z += diffZ * lerpFactor;
+
+    // Geser kamera dengan delta yang sama agar sudut & jarak orbit tetap stabil
+    cam.position.x += diffX * lerpFactor;
+    cam.position.z += diffZ * lerpFactor;
   }
 
   // ================= ANIMATION LOOP =================
