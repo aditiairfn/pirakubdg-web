@@ -518,9 +518,9 @@ let activeQuestSystem = null;
   controls.target.set(0, 3, 5);
 
   // Pencahayaan
-  const amb = new THREE.AmbientLight(0xfff2e6, 0.56);
-  const hemi = new THREE.HemisphereLight(0xe0edfb, 0x3d4b35, 0.38);
-  const sun = new THREE.DirectionalLight(0xfff1de, 1.15);
+  const amb = new THREE.AmbientLight(0xfff5ea, 0.78);
+  const hemi = new THREE.HemisphereLight(0xfff0db, 0x5a6e50, 0.45);
+  const sun = new THREE.DirectionalLight(0xffecd2, 0.95);
   sun.position.set(-40, 65, 45);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -2332,6 +2332,68 @@ let activeQuestSystem = null;
     if (tramBtn) { tramBtn.style.opacity = "1"; tramBtn.style.display = (tramDwell > 0 && d <= 9) ? "flex" : "none"; }
   }
 
+  
+  // ================= SISTEM TRIGGER ZONE ALA BRUNO SIMON =================
+  class DistrictTriggerZone {
+    constructor(id, title, subtitle, minX, maxX, minZ, maxZ, toneFreq) {
+      this.id = id;
+      this.title = title;
+      this.subtitle = subtitle;
+      this.minX = minX;
+      this.maxX = maxX;
+      this.minZ = minZ;
+      this.maxZ = maxZ;
+      this.toneFreq = toneFreq;
+      this.isInside = false;
+    }
+
+    check(pos) {
+      const inside = pos.x >= this.minX && pos.x <= this.maxX && pos.z >= this.minZ && pos.z <= this.maxZ;
+      if (inside && !this.isInside) {
+        this.isInside = true;
+        this.onEnter();
+      } else if (!inside && this.isInside) {
+        this.isInside = false;
+      }
+    }
+
+    onEnter() {
+      const banner = document.getElementById("district-banner");
+      const titleEl = document.getElementById("district-title");
+      const subEl = document.getElementById("district-subtitle");
+      if (!banner || !titleEl || !subEl) return;
+
+      titleEl.innerText = this.title;
+      subEl.innerText = this.subtitle;
+
+      banner.style.opacity = "1";
+      banner.style.transform = "translateX(-50%) translateY(0px)";
+
+      if (typeof window.playSynthTone === "function") {
+        window.playSynthTone(this.toneFreq || 620, "sine", 0.35);
+      }
+
+      clearTimeout(window.__districtTimer);
+      window.__districtTimer = setTimeout(() => {
+        banner.style.opacity = "0";
+        banner.style.transform = "translateX(-50%) translateY(-25px)";
+      }, 3500);
+    }
+  }
+
+  const DISTRICT_ZONES = [
+    new DistrictTriggerZone("gasibu", "Lapangan Gasibu & Gedung Sate", "Pusat Pemerintahan & Ruang Publik Hijau", -20, 20, -18, 20, 520),
+    new DistrictTriggerZone("pasupati", "Flyover Pasupati & Kolong", "Ikon Penghubung Kota & Koridor Silaturahmi", -45, -20, -32, -18, 580),
+    new DistrictTriggerZone("cikapayang", "Kawasan Kreatif Dago & Cikapayang", "Skatepark Kolong, Street Art & Distro Musik", -75, -45, -55, -25, 660),
+    new DistrictTriggerZone("lansia", "Taman Lansia & Jalur Cisangkuy", "Oase Teduh Kolam Air & Tenda Kuliner Khas", 20, 50, -25, 5, 740),
+    new DistrictTriggerZone("saparua", "Kompleks Olahraga & GOR Saparua", "Trek Lari Merah Bata, Komunitas & Panggung Indie", 35, 75, 8, 45, 820)
+  ];
+
+  function updateDistrictTriggers(playerPos) {
+    if (!playerPos) return;
+    DISTRICT_ZONES.forEach(zone => zone.check(playerPos));
+  }
+
   // ================= KONTROL PEMAIN & FISIKA LOMPAT =================
   let playerVelY = 0;
   let isGrounded = true;
@@ -2532,6 +2594,7 @@ let activeQuestSystem = null;
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    if (myPlayerMesh) updateDistrictTriggers(myPlayerMesh.position);
     updateTram(0.016);
     updateTramInteraction(0.016);
     updateCoins(0.016);
