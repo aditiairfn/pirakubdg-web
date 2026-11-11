@@ -1327,7 +1327,7 @@ let activeQuestSystem = null;
     citizensGroup.add(cg); 
 
     const myIg = localStorage.getItem('piraku_my_ig');
-    if (myIg && (c?.ig || '').toLowerCase() === myIg.toLowerCase()) {
+    if (myIg && (c?.ig || '').toLowerCase() === String(myIg || "").toLowerCase()) {
       setupActivePlayer(cg, c);
     }
 
@@ -1853,7 +1853,7 @@ let activeQuestSystem = null;
         localStorage.setItem('piraku_my_xp', user.xp || 0);
         localStorage.setItem('piraku_my_kec', user.kecamatan || 'Bandung Wetan');
 
-        let foundMesh = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === user.ig.toLowerCase());
+        let foundMesh = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === String(user.ig || \"\").toLowerCase());
         if (!foundMesh) {
           foundMesh = createCitizenMesh(user);
         }
