@@ -33,6 +33,7 @@
         <button class="btn-join" id="btn-citizen-status" onclick="handleCitizenButtonClick()"><span>+</span> Masuk / Daftar</button>
         <button class="btn-menu-toggle" id="btn-main-menu" onclick="toggleHudMenu(event)" title="Menu Kota">⋯</button>
         <div class="hud-dropdown-menu" id="hud-dropdown">
+          <button class="menu-item-btn" onclick="openWardrobeModal(); closeHudMenu();"><span>👕</span> Ganti Karakter & Outfit</button>
           <button class="menu-item-btn" onclick="openCheckinModal(); closeHudMenu();"><span>📅</span> Absen Warga</button>
           <button class="menu-item-btn" onclick="openPollingModal(); closeHudMenu();"><span>📊</span> Polling Kebijakan</button>
           <button class="menu-item-btn" onclick="openLeaderboardModal(); closeHudMenu();"><span>🏆</span> Peringkat Warga</button>
@@ -367,6 +368,51 @@
     <div style="display:flex; justify-content:space-between; align-items:center; font-size:9.5px; color:#9fb8af;">
       <span id="quest-distance-text">📍 Jarak: -- m</span>
       <span id="quest-reward-text" style="color:var(--lampu); font-weight:800;">+50 XP</span>
+    </div>
+  </div>
+
+  
+  <!-- Modal Ganti Karakter / Wardrobe -->
+  <div class="modal-overlay" id="wardrobe-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Lemari Outfit & Karakter 👕</h3>
+        <button class="btn-close" onclick="closeWardrobeModal()">✕</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--sub);margin-bottom:12px;">Sesuaikan persona dan outfit karaktermu di Bandung:</div>
+      
+      <div class="form-group">
+        <label>Pilih Peran Kota</label>
+        <div class="chip-grid">
+          <div class="role-chip-edit selected" onclick="pickWardrobeRole(this, 'Barista', '☕')">☕ Akang Barista</div>
+          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Indie', '🎸')">🎸 Anak Indie</div>
+          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Gowes', '🚲')">🚲 Wargi Gowes</div>
+          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Santai', '🚶')">🚶 Warga Santai</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Aksesoris Skena</label>
+        <div class="chip-grid">
+          <div class="acc-chip-edit selected" onclick="pickWardrobeAcc(this, 'none')">Polos Santai</div>
+          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'glasses')">🕶️ Kacamata Hitam</div>
+          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'peci')">🎩 Peci / Kupluk</div>
+          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'cat')">🐈 Bawa Si Oyen</div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Warna Outfit</label>
+        <div class="color-row">
+          <div class="color-swatch-edit selected" style="background:#1e3a8a" onclick="pickWardrobeColor(this, 0x1e3a8a)"></div>
+          <div class="color-swatch-edit" style="background:#dc2626" onclick="pickWardrobeColor(this, 0xdc2626)"></div>
+          <div class="color-swatch-edit" style="background:#16a34a" onclick="pickWardrobeColor(this, 0x16a34a)"></div>
+          <div class="color-swatch-edit" style="background:#f59e0b" onclick="pickWardrobeColor(this, 0xf59e0b)"></div>
+          <div class="color-swatch-edit" style="background:#475569" onclick="pickWardrobeColor(this, 0x475569)"></div>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="btn-save-wardrobe" onclick="saveWardrobeCustomization()">Simpan Penampilan Baru ✨</button>
     </div>
   </div>
 

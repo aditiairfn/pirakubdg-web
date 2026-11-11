@@ -308,7 +308,96 @@ class QuestSystem {
   }
 
   updateHUD() {
-    if (typeof window.updateAutoDetectButton === "function") {
+    if (typeof 
+  // ================= SISTEM WARDROBE / GANTI KARAKTER =================
+  let editRole = "Barista", editEmoji = "☕", editAcc = "none", editColor = 0x1e3a8a;
+
+  window.openWardrobeModal = function() {
+    if (!myPlayerMesh) {
+      showToast("Masuk atau daftar warga dulu untuk ganti karakter! 👤");
+      openJoinModal();
+      return;
+    }
+    const c = myPlayerMesh.userData.a.c;
+    editRole = c.role || "Barista";
+    editAcc = c.acc || "none";
+    editColor = c.color || 0x1e3a8a;
+
+    const modal = document.getElementById("wardrobe-modal");
+    if (modal) {
+      modal.style.display = "flex";
+      setTimeout(() => modal.querySelector(".modal-card").style.transform = "translateY(0)", 10);
+    }
+  };
+
+  window.closeWardrobeModal = function() {
+    const modal = document.getElementById("wardrobe-modal");
+    if (modal) {
+      modal.querySelector(".modal-card").style.transform = "translateY(100%)";
+      setTimeout(() => modal.style.display = "none", 280);
+    }
+  };
+
+  window.pickWardrobeRole = (el, r, e) => {
+    document.querySelectorAll(".role-chip-edit").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    editRole = r; editEmoji = e;
+  };
+  window.pickWardrobeAcc = (el, a) => {
+    document.querySelectorAll(".acc-chip-edit").forEach(c => c.classList.remove("selected"));
+    el.classList.add("selected");
+    editAcc = a;
+  };
+  window.pickWardrobeColor = (el, hex) => {
+    document.querySelectorAll(".color-swatch-edit").forEach(s => s.classList.remove("selected"));
+    el.classList.add("selected");
+    editColor = hex;
+  };
+
+  window.saveWardrobeCustomization = async function() {
+    if (!myPlayerMesh) return;
+    const btn = document.getElementById("btn-save-wardrobe");
+    if (btn) { btn.disabled = true; btn.innerText = "Menyimpan..."; }
+
+    const oldPos = myPlayerMesh.position.clone();
+    const oldRot = myPlayerMesh.rotation.y;
+    const cData = myPlayerMesh.userData.a.c;
+
+    cData.role = editRole;
+    cData.acc = editAcc;
+    cData.color = editColor;
+
+    const animIdx = animC.indexOf(myPlayerMesh);
+    if (animIdx > -1) animC.splice(animIdx, 1);
+    citizensGroup.remove(myPlayerMesh);
+
+    const newMesh = createCitizenMesh(cData);
+    newMesh.position.copy(oldPos);
+    newMesh.rotation.y = oldRot;
+    setupActivePlayer(newMesh, cData);
+
+    const ktpRole = document.getElementById("ktp-avatar-role");
+    const ktpEmoji = document.getElementById("ktp-avatar-emoji");
+    if (ktpRole) ktpRole.innerText = editRole.toUpperCase();
+    if (ktpEmoji) ktpEmoji.innerText = editEmoji;
+
+    if (supabaseClient && cData.id) {
+      try {
+        await supabaseClient.from("warga_piraku").update({
+          role: editRole,
+          acc: editAcc,
+          color: editColor
+        }).eq("id", cData.id);
+      } catch(err) {}
+    }
+
+    if (btn) { btn.disabled = false; btn.innerText = "Simpan Penampilan Baru ✨"; }
+    closeWardrobeModal();
+    if (typeof window.playSynthTone === "function") window.playSynthTone(780, "sine", 0.25);
+    showToast("Karakter & outfit berhasil diperbarui! ✨");
+  };
+
+  window.updateAutoDetectButton === "function") {
       window.updateAutoDetectButton();
     }
   }
