@@ -981,7 +981,7 @@ let activeQuestSystem = null;
   // Gunakan model eksternal untuk menggantikan gerbong primitif
   function loadCustomTramModel() {
     // URL aset low-poly train / tram open source
-    const modelUrl = "https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb";
+    const modelUrl = "models/tram.glb";
     
     // Kita coba load model 3D kendaraan
     gltfLoader.load(
