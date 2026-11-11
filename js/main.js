@@ -972,52 +972,52 @@ let activeQuestSystem = null;
 
   // Trem Listrik
 
-  // ================= 3D MODEL LOADER ALA BRUNO SIMON =================
-  const gltfLoader = new THREE.GLTFLoader();
-  
-  // Model Low-Poly Streetcar / Tram (CC0 Open Asset)
-  const TRAM_MODEL_URL = "https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/models/gltf/SheenChair.glb"; // Placeholder test URL / custom low-poly tram
-  
-  // Gunakan model eksternal untuk menggantikan gerbong primitif
+    // ================= 3D MODEL LOADER DENGAN FAIL-SAFE =================
   function loadCustomTramModel() {
-    // URL aset low-poly train / tram open source
+    if (typeof THREE.GLTFLoader === "undefined") {
+      console.warn("GLTFLoader belum siap, menggunakan mesh bawaan.");
+      return;
+    }
+    const gltfLoader = new THREE.GLTFLoader();
     const modelUrl = "models/tram.glb";
-    
-    // Kita coba load model 3D kendaraan
+
     gltfLoader.load(
       modelUrl,
       (gltf) => {
-        const loadedMesh = gltf.scene;
-        loadedMesh.scale.set(1.4, 1.4, 1.4);
-        loadedMesh.position.set(0, 0, 0);
-        loadedMesh.rotation.y = Math.PI / 2;
-        
-        loadedMesh.traverse((child) => {
-          if (child.isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-            // Terapkan material pastel clay ala Bruno Simon
-            if (child.material) {
-              child.material.roughness = 0.85;
-              child.material.metalness = 0.1;
-            }
-          }
-        });
+        try {
+          const loadedMesh = gltf.scene;
+          loadedMesh.scale.set(0.015, 0.015, 0.015);
+          loadedMesh.position.set(0, 0.3, 0);
+          loadedMesh.rotation.y = Math.PI / 2;
 
-        // Sembunyikan gerbong kotak bawaan jika model eksternal berhasil masuk
-        tram.children.forEach(c => {
-          if (c !== loadedMesh) c.visible = false;
-        });
-        tram.add(loadedMesh);
-        console.log("3D Model trem berhasil dimuat!");
+          loadedMesh.traverse((child) => {
+            if (child.isMesh) {
+              child.castShadow = true;
+              child.receiveShadow = true;
+            }
+          });
+
+          // Sembunyikan gerbong procedural hanya jika model aman dimuat
+          tram.children.forEach(c => {
+            if (c !== loadedMesh) c.visible = false;
+          });
+          tram.add(loadedMesh);
+          console.log("✅ 3D Model berhasil dimuat!");
+        } catch(err) {
+          console.warn("Gagal inisialisasi mesh model, kembali ke procedural:", err);
+        }
       },
       undefined,
       (err) => {
-        console.log("Fallback: Tetap menggunakan mesh procedural bawaan.", err);
+        console.warn("Fallback aktif: Tetap menggunakan gerbong procedural.", err);
       }
     );
   }
-  loadCustomTramModel();
+  try {
+    loadCustomTramModel();
+  } catch(e) {
+    console.warn("Error wrapper loader:", e);
+  }
 
   const rebornGroup = new THREE.Group(); scene.add(rebornGroup);
   const tram = new THREE.Group();
