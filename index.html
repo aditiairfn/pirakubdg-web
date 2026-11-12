@@ -8,7 +8,7 @@
   <meta property="og:title" content="Simulasi Tata Kota Bandung">
   <meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
-  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/style.css?v=20261112rpg">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -356,18 +356,53 @@
   </button>
 
   
-  <!-- Kartu Penunjuk Misi Warga -->
-  <div id="quest-tracker-card" style="position:fixed; top:120px; left:12px; z-index:25; background:rgba(14,47,42,0.92); border:1px solid rgba(255,207,74,0.4); backdrop-filter:blur(14px); padding:8px 12px; border-radius:14px; max-width:210px; color:#fff; font-size:11px; box-shadow:0 8px 24px rgba(0,0,0,0.35); pointer-events:auto; display:none;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:3px;">
-      <span style="font-weight:800; color:var(--lampu); font-size:10px; letter-spacing:0.5px;">🎯 MISI HARIAN</span>
-      <span id="quest-progress-count" style="font-size:9.5px; color:#cfe0d9; font-weight:700;">0/3</span>
+  <!-- Kartu Penunjuk Misi Warga (Mini Quest Tracker — pojok kiri atas) -->
+  <div id="quest-tracker-card" style="display:none;" role="status" aria-live="polite" aria-label="Pelacak misi aktif" title="Ketuk untuk lihat detail misi">
+    <div class="qt-head">
+      <span class="qt-label">🎯 <span id="qt-label-text">Quest Aktif</span></span>
+      <span class="qt-count" id="quest-progress-count">0/3</span>
     </div>
-    <div id="quest-current-title" style="font-weight:700; line-height:1.3; color:#fff; margin-bottom:4px;">
-      Memuat misi...
+    <div class="qt-title" id="qt-title">Memuat misi...</div>
+    <div class="qt-objective" id="qt-objective"></div>
+    <div class="qt-status-row">
+      <span class="qt-status" id="qt-status">🎯 Berjalan</span>
+      <span class="qt-meta" id="qt-meta">📍 Jarak: -- m</span>
     </div>
-    <div style="display:flex; justify-content:space-between; align-items:center; font-size:9.5px; color:#9fb8af;">
-      <span id="quest-distance-text">📍 Jarak: -- m</span>
-      <span id="quest-reward-text" style="color:var(--lampu); font-weight:800;">+50 XP</span>
+    <div class="qt-bar"><i id="qt-bar-fill"></i></div>
+    <!-- Jembatan ke main.js: QuestSystem.updateTrackerCard mengisi elemen tak-terlihat ini.
+         rpg-ui.js menyalinnya ke #qt-title / #qt-meta di atas agar tetap kompatibel. -->
+    <div id="quest-lawas-bridge" hidden>
+      <span id="quest-current-title"></span>
+      <span id="quest-distance-text"></span>
+      <span id="quest-reward-text"></span>
+    </div>
+  </div>
+
+  <!-- ================= UI RPG ================= -->
+  <!-- 1. Interaction Prompt melayang di tengah bawah -->
+  <div id="interaction-prompt" role="button" tabindex="0" aria-live="polite" aria-label="Aksi interaksi tersedia">
+    <span class="ip-key" id="ip-key">E</span>
+    <span class="ip-text">
+      <span class="ip-action" id="ip-action">Bicara</span>
+      <span class="ip-sub" id="ip-sub">Tekan E untuk bicara</span>
+    </span>
+    <span class="ip-icon" id="ip-icon">💬</span>
+  </div>
+
+  <!-- 2. RPG Dialog Box di bagian bawah layar -->
+  <div id="rpg-dialog" role="dialog" aria-modal="false" aria-labelledby="rpg-npc-name" aria-hidden="true">
+    <div class="rpg-dialog-inner">
+      <div class="rpg-name-plate">
+        <span class="npc-avatar" id="rpg-npc-avatar">🧑</span>
+        <span id="rpg-npc-name">Warga Bandung</span>
+      </div>
+      <div class="rpg-dialog-body" id="rpg-dialog-text">Wilujeng sumping di Bandung!</div>
+      <div class="rpg-dialog-foot">
+        <span class="rpg-dialog-hint" id="rpg-dialog-hint">Tekan E untuk lanjut</span>
+        <div class="rpg-dialog-dots" id="rpg-dialog-dots"></div>
+        <button class="btn-rpg-next" id="btn-rpg-next" type="button">Lanjut ▸</button>
+        <button class="btn-rpg-close" id="btn-rpg-close" type="button" aria-label="Tutup dialog">✕</button>
+      </div>
     </div>
   </div>
 
@@ -431,7 +466,9 @@
 
   <div id="webgl-canvas"></div>
 
-  <script src="./js/main.js?v=20261111b"></script>
-  <script src="js/multiplayer.js?v=1"></script>
+  <script src="./js/quests.js?v=20261112rpg"></script>
+  <script src="./js/main.js?v=20261112rpg"></script>
+  <script src="js/multiplayer.js?v=20261112rpg"></script>
+  <script src="./js/rpg-ui.js?v=20261112rpg"></script>
 </body>
 </html>

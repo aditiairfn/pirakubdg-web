@@ -1010,6 +1010,7 @@ let activeQuestSystem = null;
               if (c !== loadedMesh) c.visible = false;
             });
             tram.add(loadedMesh);
+            tram.userData.glbRoot = loadedMesh;
             console.log("3D Model trem berhasil dimuat!");
           } catch (e) {
             console.warn("Gagal set up mesh trem:", e);
@@ -2389,6 +2390,215 @@ let activeQuestSystem = null;
     if (tramBtn) { tramBtn.style.opacity = "1"; tramBtn.style.display = (tramDwell > 0 && d <= 9) ? "flex" : "none"; }
   }
 
+  // ================= INTERAKSI QUEST TREM 3D (tram.glb) =================
+  // Deteksi jarak pemain <-> objek trem.glb, tampilkan Interaction Prompt lewat
+  // window.PirakuRPG (js/rpg-ui.js), lalu saat E / prompt di-tap jalankan dialog
+  // window.PIRAKU_QUESTS dan perbarui Mini Quest Tracker (rpg-ui.js) + Supabase
+  // lewat window.PirakuQuestProgress (js/multiplayer.js).
+  const TRAM_TALK_RANGE = 9;      // meter (dunia simulasi) — cakupan trem + halte
+  const TRAM_BOARD_RANGE = 9;     // harus sama dengan ambang tombol "Naik Trem"
+
+  // Terbitkan jembatan ke sistem quest/save (dipakai js/rpg-ui.js & js/multiplayer.js).
+  window.PirakuGameBridge = {
+  /** Ambil teks status terkini untuk Mini Quest Tracker. */
+  getTrackerSnapshot: function () {
+    const t = document.getElementById("quest-current-title");
+    const d = document.getElementById("quest-distance-text");
+    const r = document.getElementById("quest-reward-text");
+    const c = document.getElementById("quest-progress-count");
+    return {
+      title: t ? t.textContent.trim() : "",
+      meta: [d && d.textContent.trim(), r && r.textContent.trim()].filter(Boolean).join(" · "),
+      count: c ? c.textContent.trim() : ""
+    };
+  },
+  /** Status quest harian aktif: progress ring (0..1) + jumlah selesai/total. */
+  getDailyProgress: function () {
+    if (!activeQuestSystem || !activeQuestSystem.quests) return null;
+    const qs = activeQuestSystem.quests;
+    const done = qs.filter(q => q.isCompleted).length;
+    return { done: done, total: qs.length, progress: qs.length ? done / qs.length : 0 };
+  },
+  /** Tandai quest harian selesai saat progres dimuat dari Supabase. */
+  markDailyCompleted: function (ids) {
+    if (!activeQuestSystem || !activeQuestSystem.quests || !Array.isArray(ids)) return 0;
+    let n = 0;
+    activeQuestSystem.quests.forEach(q => {
+      if (ids.indexOf(q.id) === -1 || q.isCompleted) return;
+      q.isCompleted = true;
+      q.timer = 0;
+      if (q.mesh) {
+        if (q.mesh.parent) q.mesh.parent.remove(q.mesh);
+        q.mesh = null;
+      }
+      n++;
+    });
+    if (n) activeQuestSystem.updateTrackerCard(myPlayerMesh ? myPlayerMesh.position : null);
+    return n;
+  },
+  /** Tambahkan koin hasil quest (dipanggil saat progres quest disinkronkan). */
+  addCoins: function (n) {
+    const add = Math.max(0, parseInt(n, 10) || 0);
+    if (!add) return coinCount;
+    coinCount += add;
+    localStorage.setItem('piraku_coins', coinCount);
+    if (coinHud) coinHud.textContent = '🪙 ' + coinCount;
+    return coinCount;
+  },
+  setCoins: function (n) {
+    const v = Math.max(0, parseInt(n, 10) || 0);
+    coinCount = v;
+    localStorage.setItem('piraku_coins', coinCount);
+    if (coinHud) coinHud.textContent = '🪙 ' + coinCount;
+    return coinCount;
+  },
+  getCoins: function () { return coinCount; },
+  /** Pemain sedang di dekat trem? */
+  isNearTram: function (range) {
+    if (!myPlayerMesh) return false;
+    const lim = typeof range === 'number' ? range : TRAM_TALK_RANGE;
+    return Math.hypot(myPlayerMesh.position.x - tram.position.x, myPlayerMesh.position.z - tram.position.z) <= lim;
+  },
+  /** Bawa pemain ke samping trem (muat progres: lanjutkan quest di halte). */
+  teleportToTram: function () {
+    if (!myPlayerMesh) return false;
+    const dst = tramDwell > 0
+      ? { x: tramSt.sx, z: tramSt.sz }
+      : { x: tram.position.x + Math.sin(tram.rotation.y) * 3.4, z: tram.position.z + Math.cos(tram.rotation.y) * 3.4 };
+    myPlayerMesh.position.set(dst.x, 0.1, dst.z);
+    if (myPlayerMesh.userData.a && myPlayerMesh.userData.a.c) {
+      myPlayerMesh.userData.a.c.x = dst.x;
+      myPlayerMesh.userData.a.c.z = dst.z;
+    }
+    return true;
+  },
+  getTramState: function () {
+    return { dwell: tramDwell, station: tramSt ? tramSt.name : null, riding: isRidingTram };
+  }
+  };
+
+  function questData() {
+    return (typeof window !== 'undefined' && window.PIRAKU_QUESTS) || null;
+  }
+
+  function questProgressStore() {
+    return (typeof window !== 'undefined' && window.PirakuQuestProgress) || null;
+  }
+
+  /**
+   * Sapa trem: dialog utama dari js/quests.js. Baris pertama sudah terbaca =
+   * quest diterima (accepted); sudah naik trem = in_progress (dihitung dari
+   * STATIONS[0] → STATIONS[3]); turun di halte tujuan = completed + hadiah.
+   */
+  function talkToTram() {
+    const Q = questData();
+    const rpg = (typeof window !== 'undefined' && window.PirakuRPG) || null;
+    if (!Q || !Q.mainQuest || !rpg || !rpg.dialog) {
+      if (typeof window.showToast === "function") window.showToast("Trem klasik Bandung keur ngaliwat! 🚊");
+      return;
+    }
+    const quest = Q.mainQuest;
+    const store = questProgressStore();
+    const prev = (store && store.getLocal && store.getLocal(quest.id)) || null;
+    const prevStatus = prev ? prev.status : "not_started";
+
+    rpg.dialog.openMainQuest();
+
+    if (prevStatus === "not_started" || prevStatus === "accepted") {
+      if (store && store.save) store.save(quest.id, "accepted");
+      if (typeof window.showToast === "function") {
+        window.showToast("Quest aktif: " + quest.title + " 🚊");
+      }
+    } else if (prevStatus === "completed") {
+      if (typeof window.showToast === "function") {
+        window.showToast("Quest ieu parantos réngsé — hatur nuhun tos naek trem! ✅");
+      }
+    } else if (prevStatus === "in_progress") {
+      if (typeof window.showToast === "function") {
+        window.showToast("Trem masih dina perjalanan — turun di " + quest.finishPoint.name + " 🚊");
+      }
+    }
+  }
+
+  function updateTramQuestInteraction(delta) {
+    // Hanya saat trem tampil (mode reborn) dan pemain bisa bergerak.
+    if (curMode !== 'reborn' || !myPlayerMesh) return;
+    const rpg = (typeof window !== 'undefined' && window.PirakuRPG) || null;
+    if (!rpg || !rpg.prompt) return;
+
+    const prompt = rpg.prompt;
+    const d = Math.hypot(myPlayerMesh.position.x - tram.position.x, myPlayerMesh.position.z - tram.position.z);
+    // Kehadiran objek trem.glb (bukan cuma titik rute) ikut diverifikasi bila model termuat.
+    const near = d <= TRAM_TALK_RANGE || isTramGlbNear();
+    const dialogOpen = rpg.dialog && rpg.dialog.open_;
+    // Jangan timpa prompt NPC/trem lain; hanya kelola prompt bertanda tremQuest milik kita.
+    const ownsPrompt = !prompt.current || prompt.current.tramQuest;
+
+    if (isRidingTram) {
+      const arrived = tramDwell > 0;
+      syncQuestFromRide(arrived);
+      prompt.showForTram(arrived ? "exit" : "riding", arrived ? (tramSt && tramSt.name) : nextTramStation().name);
+      if (prompt.current) prompt.current.tramQuest = true;
+      return;
+    }
+
+    if (dialogOpen) {
+      // Dialog trem sedang terbuka: sembunyikan prompt agar tidak menutupi dialog.
+      if (ownsPrompt && prompt.current && prompt.current.kind === "tram") prompt.hide();
+      return;
+    }
+
+    if (!near) {
+      if (ownsPrompt && prompt.current && prompt.current.kind === "tram") prompt.hide();
+      return;
+    }
+    if (!ownsPrompt) return;
+
+    prompt.showForTram("board", tramSt ? tramSt.name : "Halte Gasibu");
+    if (prompt.current) {
+      // Satu baris penjelas: E/TAP menjalankan dialog quest trem klasik.
+      prompt.current.sub = "Tekan " + rpg.keyLabel + " untuk ngobrol jeung Kang Undang & naik trem";
+      prompt.current.tramQuest = true;
+      prompt.current.onQuestAction = talkToTram;
+    }
+  }
+
+  /** Progres quest dari perjalanan trem: accepted → in_progress → completed. */
+  function syncQuestFromRide(arrived) {
+    if (!arrived) return;
+    const Q = questData();
+    const store = questProgressStore();
+    if (!Q || !Q.mainQuest || !store || !store.save) return;
+    const quest = Q.mainQuest;
+    const cur = store.getLocal(quest.id);
+    const status = cur ? cur.status : 'not_started';
+    if (status !== 'accepted' && status !== 'in_progress') return;
+    const atEnd = !!(tramSt && quest.finishPoint && tramSt.name === quest.finishPoint.name);
+    const reward = atEnd ? ((quest.reward && quest.reward.coins) || 0) : 0;
+    const next = atEnd ? 'completed' : 'in_progress';
+    if (cur && cur.status === next) return;
+    store.save(quest.id, next, reward);
+    if (atEnd && typeof window.showToast === 'function') {
+      window.showToast('🎉 Quest "' + quest.title + '" réngsé! +' + reward + ' koin & tiket kenangan');
+    }
+  }
+
+  // Opsional: cek bounding sphere objek GLB trem terhadap pemain.
+  function isTramGlbNear() {
+    try {
+      const glb = tram.userData && tram.userData.glbRoot;
+      if (!glb || typeof THREE === 'undefined' || typeof THREE.Box3 !== 'function') return false;
+      const box = new THREE.Box3().setFromObject(glb);
+      if (typeof box.isEmpty === 'function' && box.isEmpty()) return false;
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      const dx = myPlayerMesh.position.x - sphere.center.x;
+      const dz = myPlayerMesh.position.z - sphere.center.z;
+      return Math.sqrt(dx * dx + dz * dz) <= sphere.radius + 2.5;
+    } catch (e) { return false; }
+  }
+
+  window.talkToTramQuest = talkToTram;
+
   
   // ================= SISTEM TRIGGER ZONE ALA BRUNO SIMON =================
   class DistrictTriggerZone {
@@ -2654,6 +2864,7 @@ let activeQuestSystem = null;
     if (myPlayerMesh) updateDistrictTriggers(myPlayerMesh.position);
     updateTram(0.016);
     updateTramInteraction(0.016);
+    updateTramQuestInteraction(0.016);
     updateCoins(0.016);
 
     if (activeQuestSystem && myPlayerMesh) {
@@ -2705,6 +2916,19 @@ let activeQuestSystem = null;
 
   gsap.from(cam.position, { x: -120, y: 110, z: -170, duration: 3.4, ease: 'power3.out', delay: .2 });
 })();
+
+// ================= BRIDGE GLOBAL UNTUK SISTEM QUEST (rpg-ui.js / multiplayer.js) =================
+// showToast hidup di scope IIFE di atas, jadi diekspos agar rpg-ui.js & multiplayer.js
+// bisa memberitahu pemain. Fungsi quest trem memakai window.PirakuGameBridge (dideklarasikan
+// di dalam IIFE) untuk membaca tracker & menambah koin.
+window.showToast = function (msg) {
+  const t = document.getElementById('toast-notif');
+  if (!t) { try { console.log('[toast]', msg); } catch (e) {} return; }
+  t.innerText = msg;
+  t.classList.add('show');
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+};
 
 
 // Aksesibilitas: tombol ikon yang hanya punya title ikut dibaca screen reader

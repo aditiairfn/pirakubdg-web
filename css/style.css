@@ -403,3 +403,309 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   transform: scale(1.18);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
 }
+
+/* =========================================================
+   UI RPG PIRAKU BDG — Interaction Prompt, Dialog Box, Quest Tracker
+   Gaya playful "stiker": border tebal, sudut membulat besar,
+   bayangan keras, aksen kuning lampu (--lampu), emoji besar.
+   ========================================================= */
+
+:root {
+  --rpg-shadow: 0 10px 0 rgba(6,24,20,.35), 0 18px 40px rgba(4,16,14,.5);
+  --rpg-ink: #0b221d;
+  --rpg-rock: 4px;
+}
+
+/* ---------- 1. INTERACTION PROMPT (tengah bawah, melayang) ---------- */
+/* Posisi dasar: mengambang di atas tepi bawah. --prompt-lift dinaikkan oleh JS
+   saat panel "Simulasi tata kota" sedang terbuka, supaya tidak saling menimpa. */
+#interaction-prompt {
+  position: fixed;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--prompt-lift, 24px));
+  transform: translate(-50%, 18px) scale(.92);
+  z-index: 34;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  max-width: min(92vw, 420px);
+  padding: 9px 16px 9px 12px;
+  background: linear-gradient(180deg, #1d5b4f, var(--tea) 78%);
+  color: #fff;
+  border: 2.5px solid var(--lampu);
+  border-radius: 999px;
+  box-shadow: var(--rpg-shadow);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity .22s ease, transform .3s cubic-bezier(.34,1.56,.64,1),
+              bottom .3s cubic-bezier(.16,1,.3,1);
+  -webkit-user-select: none; user-select: none;
+}
+/* Sembunyikan saat dialog RPG terbuka atau saat peta ditutup modal penuh layar. */
+body.rpg-dialog-open #interaction-prompt,
+body.rpg-modal-open #interaction-prompt { display: none !important; }
+#interaction-prompt.show {
+  display: flex;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  animation: rpgPromptBob 2.1s ease-in-out infinite;
+}
+@keyframes rpgPromptBob {
+  0%, 100% { margin-bottom: 0; }
+  50%      { margin-bottom: 7px; }
+}
+#interaction-prompt:active { transform: translate(-50%, 0) scale(.96); }
+
+/* Key cap "E" ala stiker */
+.ip-key {
+  flex-shrink: 0;
+  min-width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #fff8e2, var(--lampu));
+  color: var(--rpg-ink);
+  border: 2.5px solid #fff;
+  border-radius: 10px;
+  font-size: 15px; font-weight: 900; line-height: 1;
+  box-shadow: 0 var(--rpg-rock) 0 rgba(0,0,0,.35), inset 0 -2px 0 rgba(0,0,0,.12);
+}
+.ip-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.ip-action { font-size: 13px; font-weight: 900; line-height: 1.15; }
+.ip-sub {
+  font-size: 10px; font-weight: 700; color: #bfe3d7;
+  letter-spacing: .04em; text-transform: uppercase;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ip-icon { flex-shrink: 0; font-size: 20px; line-height: 1; }
+#interaction-prompt.pulse { animation: ipPulse .45s cubic-bezier(.34,1.56,.64,1); }
+@keyframes ipPulse { 0% { transform: translate(-50%,0) scale(.9); } 60% { transform: translate(-50%,0) scale(1.06); } }
+
+/* ---------- 2. RPG DIALOG BOX (bawah layar) ---------- */
+#rpg-dialog {
+  position: fixed;
+  left: 50%; bottom: 0;
+  transform: translateX(-50%) translateY(115%);
+  width: min(100%, 720px);
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: transform .38s cubic-bezier(.16,1,.3,1), opacity .28s ease;
+  pointer-events: none;
+}
+#rpg-dialog.open {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.rpg-dialog-inner {
+  position: relative;
+  margin: 0 10px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: linear-gradient(180deg, #fdfaf0 0%, var(--mist) 100%);
+  border: 3px solid var(--tea);
+  border-radius: 22px;
+  padding: 16px 16px 13px;
+  box-shadow: 0 12px 0 rgba(6,24,20,.30), 0 26px 55px rgba(4,16,14,.55);
+  color: var(--ink);
+}
+/* Pita nama NPC ala stiker */
+.rpg-name-plate {
+  position: absolute;
+  top: -15px; left: 18px;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: linear-gradient(180deg, #ffe08a, var(--lampu));
+  color: var(--rpg-ink);
+  border: 2.5px solid #fff;
+  border-radius: 999px;
+  padding: 4px 14px 4px 8px;
+  font-size: 12.5px; font-weight: 900; letter-spacing: .02em;
+  box-shadow: 0 4px 0 rgba(6,24,20,.28), 0 8px 18px rgba(0,0,0,.28);
+  max-width: calc(100% - 110px);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rpg-name-plate .npc-avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--tea); color: var(--lampu);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0;
+  border: 1.5px solid #fff;
+}
+.rpg-dialog-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 8px; margin: 6px 0 8px;
+}
+.rpg-dialog-body {
+  font-size: 14px; font-weight: 600; line-height: 1.5;
+  color: var(--rpg-ink); min-height: 3em;
+  word-break: break-word;
+}
+.rpg-dialog-foot {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; margin-top: 12px;
+  border-top: 1.5px dashed rgba(16,35,31,.18);
+  padding-top: 10px;
+}
+.rpg-dialog-hint { font-size: 10px; font-weight: 700; color: var(--sub); letter-spacing: .02em; }
+.rpg-dialog-dots { display: flex; gap: 5px; align-items: center; }
+.rpg-dialog-dots i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(16,35,31,.2); display: block;
+  transition: all .2s ease;
+}
+.rpg-dialog-dots i.on { background: var(--biru); transform: scale(1.35); }
+.btn-rpg-next {
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #4a78ff, var(--biru));
+  color: #fff; border: 2.5px solid #fff;
+  border-radius: 13px; padding: 9px 16px;
+  font-family: inherit; font-size: 12.5px; font-weight: 900;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+  box-shadow: 0 var(--rpg-rock) 0 rgba(16,45,120,.55), 0 8px 18px rgba(36,80,230,.35);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.btn-rpg-next:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(16,45,120,.55), 0 4px 10px rgba(36,80,230,.3);
+}
+.btn-rpg-close {
+  flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: rgba(16,35,31,.08); border: none; color: var(--sub);
+  font-size: 14px; font-weight: 900; cursor: pointer; line-height: 1;
+}
+.btn-rpg-close:hover { background: rgba(16,35,31,.16); }
+
+/* ---------- 3. MINI QUEST TRACKER (kiri atas) ---------- */
+#quest-tracker-card {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 118px);
+  left: 12px;
+  z-index: 26;
+  width: 224px;
+  max-width: calc(100vw - 24px);
+  background: linear-gradient(180deg, rgba(29,91,79,.94), rgba(10,38,33,.96));
+  border: 2.5px solid rgba(255,207,74,.55);
+  border-radius: 16px;
+  padding: 9px 12px 10px;
+  color: #fff;
+  box-shadow: 0 6px 0 rgba(6,24,20,.30), 0 16px 34px rgba(4,16,14,.5);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  font-family: inherit;
+  pointer-events: auto;
+  transform-origin: top left;
+  animation: questCardIn .5s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes questCardIn { from { opacity: 0; transform: translateX(-16px) scale(.94); } }
+#quest-tracker-card.q-flash { animation: questFlash .6s cubic-bezier(.34,1.56,.64,1); }
+@keyframes questFlash {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.05); box-shadow: 0 0 0 5px rgba(255,207,74,.35), 0 6px 0 rgba(6,24,20,.3); }
+  100% { transform: scale(1); }
+}
+/* Header: judul + hitungan progres */
+.qt-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; padding-bottom: 5px; margin-bottom: 6px;
+  border-bottom: 1.5px dashed rgba(255,255,255,.16);
+}
+.qt-label {
+  font-size: 10px; font-weight: 900; letter-spacing: .07em;
+  color: var(--lampu); text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.qt-count {
+  font-size: 10px; font-weight: 900; color: var(--rpg-ink);
+  background: var(--lampu); border-radius: 999px;
+  padding: 2px 8px; flex-shrink: 0;
+  box-shadow: 0 2px 0 rgba(0,0,0,.28);
+}
+.qt-title {
+  font-size: 12.5px; font-weight: 800; line-height: 1.3;
+  color: #fff; margin-bottom: 5px;
+  word-break: break-word; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.qt-objective {
+  font-size: 10.5px; font-weight: 600; line-height: 1.35;
+  color: #b9d6cb; margin-bottom: 6px; word-break: break-word;
+}
+.qt-status-row {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 6px; font-size: 10px; font-weight: 800;
+}
+.qt-status {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 999px;
+  background: rgba(255,207,74,.16); color: var(--lampu);
+  border: 1px solid rgba(255,207,74,.4);
+  white-space: nowrap;
+}
+.qt-status.done {
+  background: rgba(111,227,163,.18); color: #6fe3a3;
+  border-color: rgba(111,227,163,.5);
+}
+.qt-meta { color: #9fb8af; font-weight: 700; white-space: nowrap; }
+.qt-bar {
+  height: 5px; border-radius: 99px; margin-top: 7px;
+  background: rgba(255,255,255,.13); overflow: hidden;
+}
+.qt-bar > i {
+  display: block; height: 100%; width: 0%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--lampu), #ffe9a8);
+  box-shadow: 0 0 8px rgba(255,207,74,.6);
+  transition: width .5s cubic-bezier(.16,1,.3,1);
+}
+
+/* ---------- RESPONSIF ---------- */
+@media (max-width: 600px) {
+  #interaction-prompt {
+    padding: 8px 14px 8px 10px;
+    font-size: 12px;
+    max-width: calc(100vw - 120px);
+  }
+  .ip-key { min-width: 30px; height: 30px; font-size: 13px; border-radius: 9px; }
+  .ip-action { font-size: 12px; }
+  .ip-sub { font-size: 9px; }
+  .ip-icon { font-size: 18px; }
+
+  #rpg-dialog { width: 100%; }
+  .rpg-dialog-inner { margin: 0 8px calc(env(safe-area-inset-bottom, 0px) + 8px); padding: 15px 13px 11px; border-radius: 19px; }
+  .rpg-dialog-body { font-size: 13px; min-height: 2.6em; }
+  .rpg-name-plate { top: -13px; left: 14px; font-size: 11.5px; padding: 3px 12px 3px 6px; max-width: calc(100% - 80px); }
+  .btn-rpg-next { padding: 9px 14px; font-size: 12px; }
+
+  #quest-tracker-card {
+    top: calc(env(safe-area-inset-top, 0px) + 108px);
+    left: 8px; width: 196px; padding: 8px 10px 9px; border-radius: 14px;
+  }
+  .qt-title { font-size: 11.5px; }
+  .qt-objective { display: none; }
+}
+
+/* Layar sangat kecil / HP miring: perkecil lagi agar tidak menutup dunia */
+@media (max-width: 380px) {
+  #quest-tracker-card { width: 168px; }
+  .qt-objective { display: none; }
+  #interaction-prompt { max-width: calc(100vw - 96px); }
+  .ip-sub { display: none; }
+}
+
+@media (max-height: 480px) and (orientation: landscape) {
+  #quest-tracker-card { top: calc(env(safe-area-inset-top, 0px) + 96px); width: 180px; }
+  .qt-objective { display: none; }
+  .rpg-dialog-body { min-height: 0; font-size: 12.5px; }
+}
+
+/* Desktop lebar: dialog tidak melebar berlebihan */
+@media (min-width: 900px) {
+  #rpg-dialog { width: min(100%, 760px); }
+  #quest-tracker-card { width: 240px; }
+}
