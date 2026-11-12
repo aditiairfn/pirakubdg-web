@@ -603,37 +603,171 @@ let activeQuestSystem = null;
     const t = new THREE.CanvasTexture(c); t.wrapT = THREE.RepeatWrapping; t.anisotropy = 8; return t;
   })();
   const RoadMaterial = new THREE.MeshStandardMaterial({ map: atlas, roughness: .95, side: THREE.DoubleSide });
+  // Tekstur paving trotoar dari bagian kanan atlas (u: 0.51..0.99)
+  const SidewalkMaterial = new THREE.MeshStandardMaterial({
+    map: atlas,
+    roughness: 0.92,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -1
+  });
+  const AsphaltPlainMat = new THREE.MeshStandardMaterial({
+    color: 0x22262e,
+    roughness: 0.94,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2
+  });
+  const CurbMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 });
+  const CrosswalkMat = new THREE.MeshStandardMaterial({
+    color: 0xf8fafc,
+    roughness: 0.8,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3
+  });
+
+  // Rapatkan radius pilar Pasupati agar proporsional di median jalan
+  if (typeof pilM !== "undefined") pilM.geometry = new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0);
+
   const roads = [], RP = [];
-  function road(pts, w) {
-    const c = new THREE.CatmullRomCurve3(pts.map(p => V3(p[0], 0, p[1])), false, 'centripetal'), len = c.getLength(), N = Math.max(4, Math.round(len / 2));
-    const P = [], I = [], WX = [], VV = [], y = .14 + roads.length * .002;
-    for (let i = 0; i <= N; i++) {
-      const t = i / N, p = c.getPointAt(t), q = c.getTangentAt(t), nx = -q.z, nz = q.x, h = Math.hypot(p.x, p.z - 13.5);
-      P.push(p.x + nx * w / 2, y, p.z + nz * w / 2, p.x - nx * w / 2, y, p.z - nz * w / 2);
-      WX.push(h, h); VV.push(t * len / 6, t * len / 6);
-      if (i < N) { const a = i * 2; I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  function road(pts, w, opts = {}) {
+    // Subdivide segmen lurus panjang agar tidak melengkung berlebihan di CatmullRom
+    const densePts = [];
+    for (let k = 0; k < pts.length; k++) {
+      densePts.push(pts[k]);
+      if (k < pts.length - 1) {
+        const dx = pts[k + 1][0] - pts[k][0], dz = pts[k + 1][1] - pts[k][1];
+        const dist = Math.hypot(dx, dz);
+        if (dist > 14) {
+          const steps = Math.floor(dist / 10);
+          for (let s = 1; s < steps; s++) {
+            densePts.push([pts[k][0] + (dx * s) / steps, pts[k][1] + (dz * s) / steps]);
+          }
+        }
+      }
     }
+
+    const c = new THREE.CatmullRomCurve3(densePts.map(p => V3(p[0], 0, p[1])), false, "centripetal");
+    const len = c.getLength(), N = Math.max(8, Math.round(len / 1.5));
+    const P = [], I = [], WX = [], VV = [];
+    const SP = [], SI = [], SUV = [];
+    const yRoad = 0.15 + roads.length * 0.0006;
+    const swW = opts.sidewalk ?? 1.45; // lebar trotoar kiri & kanan
+    const yWalk = 0.21;
+
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, p = c.getPointAt(t), q = c.getTangentAt(t);
+      const nx = -q.z, nz = q.x, h = Math.hypot(p.x, p.z - 13.5);
+      const hw = w / 2, ow = hw + swW;
+
+      // Aspal utama
+      P.push(p.x + nx * hw, yRoad, p.z + nz * hw, p.x - nx * hw, yRoad, p.z - nz * hw);
+      WX.push(h, h); VV.push((t * len) / 6, (t * len) / 6);
+
+      // Trotoar kiri & kanan (menggunakan UV kanan atlas: 0.52..0.98)
+      if (swW > 0) {
+        SP.push(
+          p.x + nx * ow, yWalk, p.z + nz * ow,
+          p.x + nx * hw, yWalk, p.z + nz * hw,
+          p.x - nx * hw, yWalk, p.z - nz * hw,
+          p.x - nx * ow, yWalk, p.z - nz * ow
+        );
+        const vTile = (t * len) / 4;
+        SUV.push(0.52, vTile, 0.98, vTile, 0.52, vTile, 0.98, vTile);
+      }
+
+      if (i < N) {
+        const a = i * 2;
+        I.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+        if (swW > 0) {
+          const b = i * 4;
+          // Trotoar sisi kiri
+          SI.push(b, b + 1, b + 4, b + 1, b + 5, b + 4);
+          // Trotoar sisi kanan
+          SI.push(b + 2, b + 3, b + 6, b + 3, b + 7, b + 6);
+        }
+      }
+    }
+
     const g = new THREE.BufferGeometry(), uvArray = new Float32Array(WX.length * 2);
-    for (let j = 0; j < WX.length; j++) { uvArray[j * 2] = .015 + (j % 2) * .47; uvArray[j * 2 + 1] = VV[j]; }
+    for (let j = 0; j < WX.length; j++) { uvArray[j * 2] = 0.015 + (j % 2) * 0.47; uvArray[j * 2 + 1] = VV[j]; }
     const uv = new THREE.BufferAttribute(uvArray, 2);
-    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); g.setAttribute('uv', uv); g.setIndex(I); g.computeVertexNormals();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(P, 3));
+    g.setAttribute("uv", uv); g.setIndex(I); g.computeVertexNormals();
     const m = new THREE.Mesh(g, RoadMaterial); m.receiveShadow = true; scene.add(m);
+
+    if (swW > 0) {
+      const sg = new THREE.BufferGeometry();
+      sg.setAttribute("position", new THREE.Float32BufferAttribute(SP, 3));
+      sg.setAttribute("uv", new THREE.Float32BufferAttribute(SUV, 2));
+      sg.setIndex(SI); sg.computeVertexNormals();
+      const sm = new THREE.Mesh(sg, SidewalkMaterial);
+      sm.receiveShadow = true; scene.add(sm);
+    }
+
     c.userData = { w, len }; roads.push({ g, uv, WX, VV, c });
-    c.getSpacedPoints(Math.round(len / 2)).forEach(p => RP.push(p)); return c;
+    c.getSpacedPoints(Math.round(len / 2)).forEach(p => RP.push(p));
+    return c;
   }
 
-  const Rsur = road([[-60, -52], [-32, -27.5], [-22, -26], [60, -26]], 8);
-  const RdipW = road([[-60, 3], [-21, 3]], 6), RdipE = road([[21, 3], [60, 3]], 6);
-  const Rmaj = road([[-21, -26], [-21, 3]], 5), Rsen = road([[21, -26], [21, 3]], 5);
-  const Rcla = road([[-22, 4], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4);
-  const Rcim = road([[-22, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4);
-  const Rcil = road([[18, 5], [31, 16], [44, 27], [60, 38]], 4);
-  const RriauW = road([[-60, 16], [-24, 16]], 5.5), RriauE = road([[24, 16], [60, 16]], 5.5);
-  const Rdago = road([[-42, -50], [-42, 3], [-42, 35]], 5.5);
-  // Jalan Ekspansi Baru
+  // Ruas jalan utama Bandung dengan sambungan rapat
+  const Rsur = road([[-60, -52], [-42, -36], [-32, -27.5], [-21, -26], [0, -26], [21, -26], [42, -26], [60, -26]], 8.4);
+  const RdipW = road([[-60, 3], [-42, 3], [-21, 3]], 6.2), RdipE = road([[21, 3], [42, 3], [60, 3]], 6.2);
+  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3]], 5.2), Rsen = road([[21, -26], [21, -12], [21, 3]], 5.2);
+  const Rcla = road([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
+  const Rcim = road([[-21, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4.4);
+  const Rcil = road([[18, 3], [31, 16], [44, 27], [60, 38]], 4.4);
+  const RriauW = road([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
+  const Rdago = road([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
+  // Jalan Ekspansi Baru (ujungnya disambungkan ke jalan utama agar tidak bolong)
   const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
-  const Rcisangkuy = road([[21, -3], [38, -10], [42, -28]], 5.0);
-  const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 5]], 4.8);
+  const Rcisangkuy = road([[21, 3], [24, -4], [38, -10], [42, -26]], 5.0);
+  const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 3]], 4.8);
+
+  // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross) agar garis marka tidak saling tabrak
+  function addJunction(x, z, w, d, cwDirs = []) {
+    const pad = new THREE.Mesh(new THREE.PlaneGeometry(w, d), AsphaltPlainMat);
+    pad.rotation.x = -PI / 2;
+    pad.position.set(x, 0.165, z);
+    pad.receiveShadow = true;
+    scene.add(pad);
+
+    // Tambah zebra cross di sisi yang diminta
+    cwDirs.forEach(dir => {
+      const isNS = dir === "N" || dir === "S";
+      const ox = dir === "E" ? w / 2 + 1.1 : dir === "W" ? -w / 2 - 1.1 : 0;
+      const oz = dir === "S" ? d / 2 + 1.1 : dir === "N" ? -d / 2 - 1.1 : 0;
+      const span = (isNS ? w : d) - 1.2;
+      const count = Math.max(3, Math.floor(span / 0.85));
+      for (let i = 0; i < count; i++) {
+        const off = -span / 2 + (i + 0.5) * (span / count);
+        const stripe = new THREE.Mesh(
+          new THREE.PlaneGeometry(isNS ? 0.42 : 1.5, isNS ? 1.5 : 0.42),
+          CrosswalkMat
+        );
+        stripe.rotation.x = -PI / 2;
+        stripe.position.set(x + ox + (isNS ? off : 0), 0.172, z + oz + (isNS ? 0 : off));
+        scene.add(stripe);
+      }
+    });
+  }
+
+  addJunction(-21, -26, 8.8, 8.8, ["E", "S"]);      // Simpang Surapati - Majapahit
+  addJunction(21, -26, 8.8, 8.8, ["W", "S"]);       // Simpang Surapati - Sentot
+  addJunction(-21, 3, 7.6, 7.6, ["N", "W", "S"]);   // Simpang Diponegoro - Majapahit - Cimanuk
+  addJunction(21, 3, 7.6, 7.6, ["N", "E"]);         // Simpang Diponegoro - Sentot - Cisangkuy
+  addJunction(-42, 3, 7.2, 7.2, ["N", "S", "E"]);   // Perempatan Dago - Diponegoro
+  addJunction(-42, 16, 7.0, 7.0, ["N", "S", "E", "W"]); // Perempatan Dago - Riau
+  addJunction(-42, -40, 6.8, 6.8, ["N", "S", "W"]); // Pertigaan Dago - Cikapayang
+  addJunction(44, 27, 6.4, 6.4, ["W", "S"]);        // Pertigaan Cimanuk - Cilamaya - Saparua
+  addJunction(44, 3, 6.6, 6.6, ["N", "W", "E"]);    // Pertigaan Diponegoro Timur - Saparua
+
+  // Median / Pulau Jalan di bawah pilar Flyover Pasupati (Surapati lurus)
+  const pasupatiMedian = new THREE.Mesh(new THREE.BoxGeometry(82, 0.24, 1.05), CurbMat);
+  pasupatiMedian.position.set(20, 0.14, -26);
+  pasupatiMedian.receiveShadow = true;
+  scene.add(pasupatiMedian);
 
   const LM = new THREE.MeshBasicMaterial({ color: 0xe11d1d, transparent: true, opacity: 0, depthWrite: false });
   roads.forEach(r => {
@@ -641,11 +775,32 @@ let activeQuestSystem = null;
     m.position.y = .7; scene.add(m);
   });
 
-  // Lapangan Gasibu
-  box(42, .08, 14, 0, 0, -5, MAT(0x4a7345), null, false, true);
-  box(10, .12, 12, 0, 0, -4.5, MAT(0xd4cbb9), null, false, true);
-  const gg = new THREE.RingGeometry(3.4, 5.6, 40); gg.rotateX(-PI / 2);
-  const gGasibu = mk(gg, 0xd97706, 0, .12, -13, null, false, true); gGasibu.scale.x = 2.4;
+  // Penutup Simpang Riau Timur - Cilaki (Halte Cilaki)
+  addJunction(31, 16, 6.4, 6.4, ["N", "S", "E", "W"]);
+
+  // Promenade Transit & Koridor Hijau Depan Gedung Sate (menyambung Diponegoro Barat - Timur)
+  box(36.8, 0.14, 6.2, 0, 0, 3, MAT(0xd6cfc2), null, false, true);      // Pelataran batu andesit
+  box(36.8, 0.165, 3.2, 0, 0, 3, MAT(0x3a424e), null, false, true);     // Koridor khusus trem & sepeda
+  box(36.8, 0.18, 0.28, 0, 0, 0.05, CurbMat, null, false, true);        // Kanstin utara
+  box(36.8, 0.18, 0.28, 0, 0, 5.95, CurbMat, null, false, true);        // Kanstin selatan
+
+  // Lapangan Gasibu (proporsional di antara Jl. Majapahit & Jl. Sentot, bebas z-fighting)
+  box(33.2, 0.09, 18.2, 0, 0, -9.2, MAT(0x4a7345), null, false, true);  // Hamparan rumput utama
+  box(33.6, 0.13, 0.35, 0, 0, -18.3, CurbMat, null, false, true);       // Bingkai kanstin utara
+  box(0.35, 0.13, 18.2, -16.6, 0, -9.2, CurbMat, null, false, true);    // Bingkai kanstin barat
+  box(0.35, 0.13, 18.2, 16.6, 0, -9.2, CurbMat, null, false, true);     // Bingkai kanstin timur
+
+  // Lintasan Lari (Jogging Track) Oval Gasibu
+  const gg = new THREE.RingGeometry(3.1, 4.7, 48); gg.rotateX(-PI / 2);
+  const gGasibu = mk(gg, 0xc86d1f, 0, 0.115, -11.4, null, false, true);
+  gGasibu.scale.x = 2.45;
+  const gInfield = new THREE.CircleGeometry(3.08, 40); gInfield.rotateX(-PI / 2);
+  const mInfield = mk(gInfield, 0x527d4c, 0, 0.12, -11.4, null, false, true);
+  mInfield.scale.x = 2.45;
+
+  // Plaza Upacara Selatan Gasibu & Jalur Penghubung ke Gerbang Gedung Sate
+  box(13.5, 0.135, 5.6, 0, 0, -2.9, MAT(0xd8d0c1), null, false, true);
+  box(6.4, 0.145, 4.2, 0, 0, 7.8, MAT(0xd8d0c1), null, false, true);
 
   // Flyover Pasupati
   const FLY = new THREE.Group(); scene.add(FLY);
@@ -845,8 +1000,8 @@ let activeQuestSystem = null;
   function spawnCitizenHouse(c, index) {
     if (houseOwnersRegistry[c.ig]) return houseOwnersRegistry[c.ig];
     const hg = new THREE.Group();
-    const hx = 26 + (index % 4) * 6;
-    const hz = -16 - Math.floor(index / 4) * 6;
+    const hx = 25 + (index % 4) * 6;
+    const hz = -34 - Math.floor(index / 4) * 6;
     hg.position.set(hx, 0, hz);
 
     box(3.4, 2.4, 3.4, 0, 0.1, 0, 0xf8fafc, hg);
@@ -868,7 +1023,14 @@ let activeQuestSystem = null;
   const WALLS = [0xeae3d5, 0xdfd6c6, 0xd4cbb9, 0xd97757, 0x576574, 0x475569];
   const ROOF_COLORS = [0xba5232, 0xa84425, 0x96391d, 0x475569, 0x334155, 0xc26241];
   const bl = [];
-  const SK = [[-36, 36, -26, 18], [-39, -27, -26, -5], [28, 40, -26, -3]];
+  const SK = [
+    [-36, 36, -26, 18],      // Poros Gasibu - Gedung Sate
+    [-39, -27, -26, -5],     // Koridor barat Gasibu
+    [27, 48, -20, -2],       // Taman Lansia & Kuliner Cisangkuy
+    [39, 66, 12, 38],        // GOR Saparua & Ruko Komunitas
+    [-65, -45, -48, -32],    // Dago / Cikapayang Skatepark
+    [22, 48, -48, -31]       // Kavling Perumahan Warga
+  ];
   const near = (x, z) => RP.some(p => (p.x - x) ** 2 + (p.z - z) ** 2 < 36) || SK.some(q => x > q[0] - 2.5 && x < q[1] + 2.5 && z > q[2] - 2.5 && z < q[3] + 2.5);
   for (let x = -38.6; x <= 44; x += 6.4) for (let z = -37.6; z <= 44; z += 6.4) {
     if (near(x, z)) continue; const u = rnd();
@@ -900,14 +1062,28 @@ let activeQuestSystem = null;
     [bodyM, roofM, parM, bandM].forEach(m => m.instanceMatrix.needsUpdate = true);
   }
 
-  // Pohon Kiara Payung
-  const trees = [];
-  for (let x = -16; x <= 16; x += 4) trees.push({ x, z: -22.2, s: 1.05 });
-  [[-9, 8], [9, 8], [-13, 9], [13, 9], [-17, 0], [17, 0], [-17, 5], [17, 5]].forEach(p => trees.push({ x: p[0], z: p[1], s: 1 }));
-  for (let x = -54; x <= 54; x += 4.2) if (Math.abs(Math.abs(x) - 21) > 4.2) {
-    if (Math.abs(x) > 30) trees.push({ x, z: -1.8, s: .95 });
-    if (Math.abs(x) > 17) trees.push({ x, z: 7.6, s: .95 });
+  // Pohon Kiara Payung (terfilter otomatis dari jalan, trotoar & simpangan)
+  const rawTrees = [];
+  const nearRoad = (x, z, r = 4.6) => RP.some(p => (p.x - x) ** 2 + (p.z - z) ** 2 < r * r);
+
+  // Barisan utara Gasibu & bingkai pelataran Gedung Sate
+  for (let x = -15.5; x <= 15.5; x += 3.85) rawTrees.push({ x, z: -20.6, s: 1.05 });
+  [[-9, 8.2], [9, 8.2], [-13.5, 9.2], [13.5, 9.2], [-15.2, -1.2], [15.2, -1.2], [-15.2, 6.8], [15.2, 6.8]]
+    .forEach(p => rawTrees.push({ x: p[0], z: p[1], s: 1.0 }));
+
+  // Peneduh koridor Diponegoro, Dago, Riau & Taman Lansia
+  for (let x = -54; x <= 54; x += 4.5) {
+    if (Math.abs(x) > 25) rawTrees.push({ x, z: -1.6, s: 0.95 });
+    if (Math.abs(x) > 18) rawTrees.push({ x, z: 7.6, s: 0.95 });
+    if (Math.abs(x) > 27) rawTrees.push({ x, z: 20.6, s: 0.9 });
   }
+  for (let z = -46; z <= 32; z += 5.2) {
+    rawTrees.push({ x: -46.8, z, s: 0.95 });
+    rawTrees.push({ x: -37.2, z, s: 0.95 });
+  }
+  [[31, -6], [35, -5.5], [42, -6.5], [44, -14]].forEach(p => rawTrees.push({ x: p[0], z: p[1], s: 1.0 }));
+
+  const trees = rawTrees.filter(t => !nearRoad(t.x, t.z, 4.7));
   const trunkM = IM(trunkG, MAT(0x7a5a40), trees.length), crownM = IM(crownG, clay, trees.length * 2);
   trees.forEach((t, i) => {
     const c = [0x4d7348, 0x5a8852, 0x3d6639, 0x66945c][i % 4];
@@ -1131,10 +1307,25 @@ let activeQuestSystem = null;
     });
   }
 
-  // Lampu Jalan
+  // Lampu Jalan & Bangku Taman (terfilter dari aspal & persimpangan)
   const furn = [];
-  for (let x = -40; x <= 40; x += 8) if (Math.abs(Math.abs(x) - 21) > 5) {
-    furn.push(['b', x + 2, -2.6]); if (Math.abs(x) > 4.5) furn.push(['l', x, 8.4]); if (Math.abs(x) > 6) furn.push(['l', x + 4, -.6]);
+  const onRoad = (x, z, r = 3.5) => RP.some(p => (p.x - x) ** 2 + (p.z - z) ** 2 < r * r);
+
+  // Bangku santai di tepi selatan & utara Lapangan Gasibu (di luar plaza upacara tengah)
+  [-14, -10.5, 10.5, 14].forEach(bx => {
+    furn.push(['b', bx, -2.2]);
+    furn.push(['b', bx, -17.2]);
+  });
+
+  // Lampu jalan sepanjang koridor Diponegoro, Dago & Riau
+  for (let x = -56; x <= 56; x += 8) {
+    if (!onRoad(x, 6.7, 3.3)) furn.push(['l', x, 6.7]);
+    if (Math.abs(x) > 18 && !onRoad(x + 4, -0.7, 3.3)) furn.push(['l', x + 4, -0.7]);
+    if (!onRoad(x, 19.6, 3.3)) furn.push(['l', x, 19.6]);
+  }
+  for (let z = -44; z <= 32; z += 9) {
+    if (!onRoad(-45.6, z, 3.3)) furn.push(['l', -45.6, z]);
+    if (!onRoad(-38.4, z + 4.5, 3.3)) furn.push(['l', -38.4, z + 4.5]);
   }
   const nB = furn.filter(f => f[0] === 'b').length, nL = furn.filter(f => f[0] === 'l').length;
   const LAMPM = new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffc861, emissiveIntensity: 0, roughness: .6 });
