@@ -20,40 +20,10 @@
 
   <div id="toast-notif">Link Profil berhasil disalin! 📋</div>
 
-  <!-- ============ Layar Pembuka (Title Overlay) ============ -->
-  <div id="title-overlay" role="dialog" aria-modal="true" aria-labelledby="title-hero-name">
-    <div class="to-sticker to-sticker-1" aria-hidden="true">🪙</div>
-    <div class="to-sticker to-sticker-2" aria-hidden="true">☕</div>
-    <div class="to-sticker to-sticker-3" aria-hidden="true">🚊</div>
-    <div class="to-sticker to-sticker-4" aria-hidden="true">🌳</div>
-
-    <div class="to-card">
-      <span class="to-kicker">Simulasi Tata Kota</span>
-      <h1 class="to-title" id="title-hero-name">Bandung <em>Reborn</em></h1>
-      <p class="to-tagline">Jajal jadi wargi Bandung: gowes, ngopi, naik trem, jeung bangun kota nu leuwih hirup! 🚲☕</p>
-
-      <div class="to-chips">
-        <span class="to-chip">🎯 Misi Harian</span>
-        <span class="to-chip">🪙 Kumpul Koin</span>
-        <span class="to-chip">👕 Ganti Outfit</span>
-      </div>
-
-      <button class="to-start" id="btn-start-game" type="button">
-        <span class="to-start-icon">🎮</span>
-        <span class="to-start-label">Mulai Main</span>
-      </button>
-      <button class="to-signin" id="btn-start-signin" type="button">Sudah punya akun? Masuk / Daftar</button>
-
-      <span class="to-hint" id="title-hint">Ketuk <b>Mulai Main</b> — pencét <b>E</b> atau <b>Enter</b> di desktop</span>
-    </div>
-
-    <div class="to-footer">@pirakubdg · Bandung Reborn</div>
-  </div>
-
   
 
-  <div id="quest-toast" role="status" aria-live="polite">
-    🎉 Misi Selesai: <span id="toast-quest-name"></span> (+<span id="toast-quest-xp"></span> XP)
+  <div id="quest-toast" style="position:fixed; top:75px; left:50%; transform:translateX(-50%) translateY(-20px); opacity:0; pointer-events:none; transition:all 0.3s cubic-bezier(0.16,1,0.3,1); z-index:100; background:var(--tea); color:#fff; border:1.5px solid var(--lampu); border-radius:30px; padding:8px 18px; font-size:12.5px; font-weight:700; box-shadow:0 12px 30px rgba(0,0,0,0.4); text-align:center;">
+    🎉 Misi Selesai: <span id="toast-quest-name" style="color:var(--lampu);"></span> (+<span id="toast-quest-xp"></span> XP)
   </div>
 
   <div class="top-hud">
@@ -72,34 +42,12 @@
       </div>
     </div>
 
-    <div class="hud-columns">
-      <!-- Kolom KIRI: Mini Quest Tracker (dipindah ke dalam alur HUD) -->
-      <div class="hud-col-left"></div>
-
-      <!-- Kolom KANAN: status pemain / koin + aksi cepat -->
-      <div class="hud-col-right">
-        <div class="player-status-card" id="player-status-card" role="status" aria-live="polite">
-          <span class="ps-row">
-            <span class="ps-level" id="ps-level">Lv. 1</span>
-            <span class="ps-name" id="ps-name">Wargi Bandung</span>
-          </span>
-          <span class="ps-row ps-row-sub">
-            <span class="ps-coins" id="ps-coins">🪙 0</span>
-            <span class="ps-quest" id="ps-quest">🎯 0/3</span>
-          </span>
-        </div>
-
-        <div class="hud-actions-row">
-          <div class="time-badge" id="time-badge" onclick="cycleTime()" title="Ketuk untuk pratinjau waktu">🕒 Waktu...</div>
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" id="search-warga" placeholder="Cari IG..." oninput="handleSearchCitizen(this.value)">
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="sub-hud">
+      <div class="time-badge" id="time-badge" onclick="cycleTime()" title="Ketuk untuk pratinjau waktu">🕒 Waktu...</div>
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="search-warga" placeholder="Cari IG..." oninput="handleSearchCitizen(this.value)">
+      </div>
       <button class="view-chip active" id="chip-overview" onclick="moveCam('overview')">🏙️ Overview</button>
       <button class="view-chip" id="chip-sate" onclick="moveCam('sate')">🏛️ Gedung Sate</button>
       <button class="view-chip" id="chip-pasupati" onclick="moveCam('pasupati')">🌉 Pasupati</button>
