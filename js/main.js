@@ -627,9 +627,6 @@ let activeQuestSystem = null;
     polygonOffsetUnits: -3
   });
 
-  // Rapatkan radius pilar Pasupati agar proporsional di median jalan
-  if (typeof pilM !== "undefined") pilM.geometry = new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0);
-
   const roads = [], RP = [];
   function road(pts, w, opts = {}) {
     // Subdivide segmen lurus panjang agar tidak melengkung berlebihan di CatmullRom
@@ -806,7 +803,7 @@ let activeQuestSystem = null;
   const FLY = new THREE.Group(); scene.add(FLY);
   const CFly = new THREE.CatmullRomCurve3([-85, -60, -35, 0, 35, 65, 85].map(x => V3(x, 6.2, -26 + 1.6 * Math.sin(x / 30))));
   CFly.userData = { w: 7.2, len: CFly.getLength() };
-  const NDK = 80, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(cylG, MAT(0x64748b), 15), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
+  const NDK = 80, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0), MAT(0x64748b), 15), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
   FLY.add(deckM, pilM, barrierM);
 
   for (let i = 0; i < NDK; i++) {
