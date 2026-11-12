@@ -504,7 +504,7 @@ let activeQuestSystem = null;
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(0xd9e7ee, 260, 950);
+  scene.fog = new THREE.FogExp2(0xd9e7ee, 0.00095);
 
   const cam = new THREE.PerspectiveCamera(40, W / H, 0.5, 1600);
   cam.position.set(-26, 26, -55);
@@ -517,15 +517,17 @@ let activeQuestSystem = null;
   controls.maxDistance = 380;
   controls.target.set(0, 3, 5);
 
-  // Pencahayaan
-  const amb = new THREE.AmbientLight(0xfff5ea, 0.78);
-  const hemi = new THREE.HemisphereLight(0xfff0db, 0x5a6e50, 0.45);
-  const sun = new THREE.DirectionalLight(0xffecd2, 0.95);
-  sun.position.set(-40, 65, 45);
+  // Pencahayaan — pagi cerah Bandung (langit biru lembut, matahari rendah, kabut tipis)
+  const amb = new THREE.AmbientLight(0xfff5ea, 0.48);            // pengisi lembut, diturunkan agar kontras matahari terasa
+  const hemi = new THREE.HemisphereLight(0xcfe9ff, 0x6b7d57, 0.62); // cahaya langit pagi ↔ pantulan tanah hijau Bandung
+  const sun = new THREE.DirectionalLight(0xfff0d6, 1.45);        // matahari pagi, hangat tapi tidak oranye
+  sun.position.set(-70, 55, 38);                                  // sudut matahari rendah → bayangan panjang khas pagi
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  sun.shadow.bias = -0.0003;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.radius = 4;                                          // bayangan lembut (PCFSoft)
   Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 1, far: 300 });
+  sun.shadow.camera.updateProjectionMatrix();
   scene.add(amb, hemi, sun, sun.target);
 
   const skyU = {
@@ -1066,12 +1068,41 @@ let activeQuestSystem = null;
     sg.position.set(0, 3.5, 0); sg.rotation.y = flipped ? 0 : PI; sh.add(sg); rebornGroup.add(sh);
     return { name: s[0], t: bt, sx: sh.position.x, sz: sh.position.z };
   });
-  let tramT = STATIONS[0].t, tramDwell = 3, tramSt = STATIONS[0];
+  // Gerak trem: melambat halus (ease-out) saat mendekati halte, berhenti 3 detik,
+  // lalu mempercepat halus (ease-in) saat berangkat. Kecepatan dasar tetap 7 unit/detik.
+  const TRAM_CRUISE = 7, TRAM_APPROACH = 6.5, TRAM_DWELL = 3;
+  let tramT = STATIONS[0].t, tramDwell = TRAM_DWELL, tramSt = STATIONS[0];
+  function tramEaseInOut(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
   function updateTram(dt) {
-    if (tramDwell > 0) tramDwell -= dt;
-    else {
-      const prev = tramT, step = 7 * dt / TRAM_LEN; tramT = (tramT + step) % 1;
-      STATIONS.forEach(st => { const d = (st.t - prev + 1) % 1; if (d > 0 && d <= step) { tramT = st.t; tramDwell = 4; tramSt = st; if (window.onTramArrive) window.onTramArrive(st); } });
+    if (tramDwell > 0) {
+      // Berhenti total di halte selama 3 detik.
+      tramDwell -= dt;
+    } else {
+      const prev = tramT;
+
+      // --- Profil kecepatan berbasis jarak, dihitung dalam satuan waktu (t ∈ [0,1]) ---
+      // Cari halte berikutnya di sepanjang kurva tertutup.
+      let bestD = 1e9;
+      STATIONS.forEach(st => { const d = (st.t - tramT + 1) % 1; if (d > 1e-4 && d < bestD) bestD = d; });
+      const aJ = Math.min(TRAM_APPROACH / TRAM_LEN, bestD * 0.45); // jarak lambat-berhenti (satuan t)
+      const aS = Math.min(5 / TRAM_LEN, bestD * 0.4);              // jarak percepatan berangkat
+
+      let speedT = TRAM_CRUISE / TRAM_LEN; // t per detik saat melaju normal
+      // Deret ease-out: makin dekat halte, makin lambat (turun mulus sampai ~0 di halte).
+      if (bestD <= aJ) {
+        const k = Math.abs(bestD - aJ) < 1e-6 ? 1 : tramEaseInOut(1 - bestD / aJ);
+        speedT = TRAM_CRUISE / TRAM_LEN * Math.max(0.06, k);
+      }
+      // Deret ease-in: tepat setelah berangkat, kecepatan naik mulus dari lambat ke jelajah.
+      let depDist = 1e9;
+      STATIONS.forEach(st => { const d = (tramT - st.t + 1) % 1; if (d < depDist && d < aS * 2) depDist = d; });
+      if (depDist < aS) {
+        const k = depDist / aS; // 0 saat tepat di halte → 1 saat keluar zona
+        speedT = Math.min(speedT, TRAM_CRUISE / TRAM_LEN * Math.max(0.06, tramEaseInOut(0.5 + k * 0.5)));
+      }
+
+      const step = speedT * dt; tramT = (tramT + step) % 1;
+      STATIONS.forEach(st => { const d = (st.t - prev + 1) % 1; if (d > 0 && d <= step) { tramT = st.t; tramDwell = TRAM_DWELL; tramSt = st; if (window.onTramArrive) window.onTramArrive(st); } });
     }
     const p = TRAMC.getPointAt(tramT), q = TRAMC.getTangentAt(tramT);
     tram.position.set(p.x, .26, p.z); tram.rotation.y = Math.atan2(-q.z, q.x);
@@ -1167,34 +1198,36 @@ let activeQuestSystem = null;
     const hour = window.__fh != null ? window.__fh : now.getHours();
     const mins = String(now.getMinutes()).padStart(2, '0');
     const badge = document.getElementById('time-badge');
+    // default HemisphereLight untuk semua fase (dihaluskan per waktu)
+    const hemiDay = 0.62, hemiDusk = 0.4, hemiNight = 0.22;
 
     if (hour >= 5 && hour < 10) {
       if (badge) badge.innerHTML = '🌅 Pagi (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(DAY[0]); skyU.bot.value.setHex(DAY[1]);
-      scene.fog.color.copy(skyU.bot.value);
-      sun.color.setHex(0xfff3db); sun.intensity = 1.15; sun.position.set(-60, 45, 30);
-      amb.intensity = 0.55;
+      scene.fog.color.copy(skyU.bot.value); scene.fog.density = 0.00095; // kabut tipis pagi
+      sun.color.setHex(0xfff3db); sun.intensity = 1.4; sun.position.set(-70, 50, 35); sun.shadow.radius = 4;
+      amb.intensity = 0.48; hemi.intensity = hemiDay;
       LAMPM.emissiveIntensity = 0; GLASSM.emissiveIntensity = 0; HeadlightMaterial.color.setHex(0x555555);
     } else if (hour >= 10 && hour < 15) {
       if (badge) badge.innerHTML = '☀️ Siang (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(DAY[0]); skyU.bot.value.setHex(DAY[1]);
-      scene.fog.color.copy(skyU.bot.value);
-      sun.color.setHex(0xfff1de); sun.intensity = 1.35; sun.position.set(-40, 75, 45);
-      amb.intensity = 0.65;
+      scene.fog.color.copy(skyU.bot.value); scene.fog.density = 0.0008; // siang sedikit lebih jernih
+      sun.color.setHex(0xfff1de); sun.intensity = 1.55; sun.position.set(-40, 75, 45); sun.shadow.radius = 3;
+      amb.intensity = 0.55; hemi.intensity = 0.66;
       LAMPM.emissiveIntensity = 0; GLASSM.emissiveIntensity = 0; HeadlightMaterial.color.setHex(0x555555);
     } else if (hour >= 15 && hour < 18) {
       if (badge) badge.innerHTML = '🌇 Senja (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(SUNSET[0]); skyU.bot.value.setHex(SUNSET[1]);
-      scene.fog.color.copy(skyU.bot.value);
-      sun.color.setHex(0xff8c42); sun.intensity = 1.0; sun.position.set(-70, 30, 20);
-      amb.intensity = 0.45;
+      scene.fog.color.copy(skyU.bot.value); scene.fog.density = 0.00115; // kabut senja sedikit menebal
+      sun.color.setHex(0xff8c42); sun.intensity = 1.05; sun.position.set(-70, 30, 20); sun.shadow.radius = 5;
+      amb.intensity = 0.45; hemi.intensity = hemiDusk;
       LAMPM.emissiveIntensity = 0.8; GLASSM.emissiveIntensity = 0.6; HeadlightMaterial.color.setHex(0xfff7c2);
     } else {
       if (badge) badge.innerHTML = '🌙 Malam (' + hour + ':' + mins + ')';
       skyU.top.value.setHex(NIGHT[0]); skyU.bot.value.setHex(NIGHT[1]);
-      scene.fog.color.setHex(0x0a1424); scene.fog.near = 100; scene.fog.far = 520;
-      sun.color.setHex(0x38bdf8); sun.intensity = 0.25; sun.position.set(-40, 60, -40);
-      amb.intensity = 0.25;
+      scene.fog.color.setHex(0x0a1424); scene.fog.density = 0.0032; // malam lebih pekat
+      sun.color.setHex(0x38bdf8); sun.intensity = 0.25; sun.position.set(-40, 60, -40); sun.shadow.radius = 3;
+      amb.intensity = 0.25; hemi.intensity = hemiNight;
       LAMPM.emissiveIntensity = 2.4; GLASSM.emissiveIntensity = 1.6; HeadlightMaterial.color.setHex(0xffffff);
     }
   }
@@ -2865,6 +2898,8 @@ let activeQuestSystem = null;
     updateTram(0.016);
     updateTramInteraction(0.016);
     updateTramQuestInteraction(0.016);
+    // Sinkronisasi posisi avatar pemain lain (js/multiplayer.js) — broadcast + interpolasi.
+    if (typeof window.updateMultiplayerFrame === 'function') window.updateMultiplayerFrame(0.016);
     updateCoins(0.016);
 
     if (activeQuestSystem && myPlayerMesh) {
