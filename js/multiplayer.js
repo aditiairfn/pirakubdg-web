@@ -1,4 +1,4 @@
-// ================ PIRAKUBDG REALTIME MULTIPLAYER & FLOATING CHAT =================
+// ================= PIRAKUBDG REALTIME MULTIPLAYER & FLOATING CHAT =================
 (function() {
   const SEND_INTERVAL_MS = 90;
   let mpChannel = null;
@@ -18,7 +18,7 @@
     const savedIg = localStorage.getItem('piraku_my_ig');
     const ig = savedIg ? savedIg : ('Tamu_' + mySessionId.slice(-4));
     const kec = localStorage.getItem('piraku_my_kec') || 'Bandung Wetan';
-    return { sessionId: mySessionId, ig: ig, kecamatan: kec, isGuest: !savedIg };
+    return { sessionId: mySessionId, ig: ig, kecamatan: kec, isGuest: Boolean(savedIg) === false };
   }
 
   function injectQuickChatAndHud() {
@@ -31,49 +31,15 @@
 
     const badge = document.createElement('div');
     badge.id = 'mp-online-badge';
-    badge.style.cssText = [
-      'position:fixed',
-      'top:62px',
-      'right:12px',
-      'z-index:995',
-      'background:rgba(15, 23, 42, 0.82)',
-      'backdrop-filter:blur(8px)',
-      'border:1px solid rgba(74, 222, 128, 0.45)',
-      'color:#f8fafc',
-      'padding:5px 10px',
-      'border-radius:999px',
-      'font-size:11px',
-      'font-weight:700',
-      'display:flex',
-      'align-items:center',
-      'gap:6px',
-      'box-shadow:0 4px 12px rgba(0,0,0,0.3)'
-    ].join(';');
+    badge.style.cssText = 'position:fixed;top:62px;right:12px;z-index:995;background:rgba(15,23,42,0.82);backdrop-filter:blur(8px);border:1px solid rgba(74,222,128,0.45);color:#f8fafc;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
     badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;"></span><span id="mp-online-count">1 Online</span>';
     document.body.appendChild(badge);
 
     const bar = document.createElement('div');
     bar.id = 'mp-quick-bar';
-    bar.style.cssText = [
-      'position:fixed',
-      'bottom:14px',
-      'left:50%',
-      'transform:translateX(-50%)',
-      'z-index:996',
-      'display:flex',
-      'align-items:center',
-      'gap:6px',
-      'background:rgba(15, 23, 42, 0.88)',
-      'backdrop-filter:blur(10px)',
-      'padding:6px 10px',
-      'border-radius:999px',
-      'border:1px solid rgba(255,255,255,0.16)',
-      'box-shadow:0 8px 24px rgba(0,0,0,0.4)',
-      'max-width:92vw'
-    ].join(';');
+    bar.style.cssText = 'position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:996;display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.16);box-shadow:0 8px 24px rgba(0,0,0,0.4);max-width:92vw;';
 
-    const emotes = ['\\u01F44B', '\\u2615', '\\u01F68B', '\\u01F525'];
-    emotes.forEach(em => {
+    ['👋', '☕', '🚋', '🔥'].forEach(em => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = em;
@@ -123,23 +89,7 @@
     }
 
     const el = document.createElement('div');
-    el.style.cssText = [
-      'position:absolute',
-      'left:0',
-      'top:0',
-      'transform:translate(-50%, -100%)',
-      'background:rgba(255, 255, 255, 0.96),',
-      'color:#0f172a',
-      'padding:5px 10px',
-      'border-radius:12px',
-      'font-size:11px',
-      'font-weight:700',
-      'box-shadow:0 4px 12px rgba(0,0,0,0.28)',
-      'max-width:170px',
-      'text-align:center',
-      'word-break:break-word',
-      'transition:opacity 0.25s ease'
-    ].join(';');
+    el.style.cssText = 'position:absolute;left:0;top:0;transform:translate(-50%,-100%);background:rgba(255,255,255,0.96);color:#0f172a;padding:5px 10px;border-radius:12px;font-size:11px;font-weight:700;box-shadow:0 4px 12px rgba(0,0,0,0.28);max-width:170px;text-align:center;word-break:break-word;transition:opacity 0.25s ease;';
     el.innerHTML = '<div style="font-size:9px;color:#16a34a;font-weight:800;">' + senderName + '</div><div>' + text + '</div>';
     layer.appendChild(el);
 
@@ -223,7 +173,6 @@
         lastSeen: Date.now(),
         walkPhase: 0
       };
-      remotePlayers.set(payload.sessionId, undefined);
       remotePlayers.set(payload.sessionId, entry);
     }
     return entry;
@@ -375,7 +324,7 @@
         }
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED'){
+        if (status === 'SUBSCRIBED') {
           await mpChannel.track({
             ig: myInfo.ig,
             kecamatan: targetKec,
@@ -402,3 +351,4 @@
     setTimeout(initPirakuMultiplayer, 300);
   }
 })();
+
