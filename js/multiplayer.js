@@ -31,7 +31,7 @@
 
     const badge = document.createElement('div');
     badge.id = 'mp-online-badge';
-    badge.style.cssText = 'position:fixed;top:62px;right:12px;z-index:995;background:rgba(15,23,42,0.82);backdrop-filter:blur(8px);border:1px solid rgba(74,222,128,0.45);color:#f8fafc;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    badge.style.cssText = 'position:fixed;top:128px;right:12px;z-index:995;background:rgba(15,23,42,0.82);backdrop-filter:blur(8px);border:1px solid rgba(74,222,128,0.45);color:#f8fafc;padding:5px 10px;border-radius:999px;font-size:11px;font-weight:700;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
     badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;"></span><span id="mp-online-count">1 Online</span>';
     document.body.appendChild(badge);
 

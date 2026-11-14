@@ -2922,11 +2922,11 @@ let activeQuestSystem = null;
 
   const keys = { w: false, a: false, s: false, d: false };
   window.addEventListener('keydown', e => {
-    const k = e.key.toLowerCase();
+    const k = (e.key || '').toLowerCase();
     if (keys.hasOwnProperty(k)) keys[k] = true;
   });
   window.addEventListener('keyup', e => {
-    const k = e.key.toLowerCase();
+    const k = (e.key || '').toLowerCase();
     if (keys.hasOwnProperty(k)) keys[k] = false;
   });
 
