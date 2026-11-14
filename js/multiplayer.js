@@ -1,53 +1,178 @@
-// ================= PIRAKUBDG REALTIME MULTIPLAYER (SUPABASE) =================
+// ================ PIRAKUBDG REALTIME MULTIPLAYER & FLOATING CHAT =================
 (function() {
-  const MP_CHANNEL_NAME = 'pirakubdg-live-city';
   const SEND_INTERVAL_MS = 90;
   let mpChannel = null;
-  let mySessionId = 'guest-' + Math.random().toString(36).substring(2, 9);
-  const remotePlayers = new Map(); // sessionId -> { mesh, targetX, targetZ, targetRotY, ig, lastSeen, isMoving }
+  let currentRoomKec = null;
+  let mySessionId = 'guest-' + Math.random().toString(36).substring(2, 8);
+  const remotePlayers = new Map();
+  const activeBubbles = [];
   let lastBroadcastTime = 0;
 
-  function createOnlineHudBadge() {
-    if (document.getElementById('mp-online-badge')) return;
+  function getActiveCamera() {
+    if (typeof cam !== 'undefined' && cam) return cam;
+    if (typeof camera !== 'undefined' && camera) return camera;
+    return null;
+  }
+
+  function getMyIdentity() {
+    const savedIg = localStorage.getItem('piraku_my_ig');
+    const ig = savedIg ? savedIg : ('Tamu_' + mySessionId.slice(-4));
+    const kec = localStorage.getItem('piraku_my_kec') || 'Bandung Wetan';
+    return { sessionId: mySessionId, ig: ig, kecamatan: kec, isGuest: !savedIg };
+  }
+
+  function injectQuickChatAndHud() {
+    if (document.getElementById('mp-quick-bar')) return;
+
+    const bubbleLayer = document.createElement('div');
+    bubbleLayer.id = 'mp-bubble-layer';
+    bubbleLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:990;overflow:hidden;';
+    document.body.appendChild(bubbleLayer);
+
     const badge = document.createElement('div');
     badge.id = 'mp-online-badge';
     badge.style.cssText = [
       'position:fixed',
-      'bottom:14px',
-      'right:14px',
-      'z-index:999',
-      'background:rgba(15, 23, 42, 0.85)',
+      'top:62px',
+      'right:12px',
+      'z-index:995',
+      'background:rgba(15, 23, 42, 0.82)',
       'backdrop-filter:blur(8px)',
       'border:1px solid rgba(74, 222, 128, 0.45)',
       'color:#f8fafc',
-      'padding:6px 12px',
+      'padding:5px 10px',
       'border-radius:999px',
-      'font-family:inherit',
       'font-size:11px',
       'font-weight:700',
       'display:flex',
       'align-items:center',
       'gap:6px',
-      'box-shadow:0 4px 14px rgba(0,0,0,0.35)',
-      'pointer-events:auto',
-      'cursor:pointer'
+      'box-shadow:0 4px 12px rgba(0,0,0,0.3)'
     ].join(';');
-    badge.innerHTML = '<span style="width:8px;height:8px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;display:inline-block;"></span><span id="mp-online-count">1 Wargi Online</span>';
-    badge.title = 'Wargi yang sedang aktif jalan-jalan di Bandung secara real-time';
+    badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;"></span><span id="mp-online-count">1 Online</span>';
     document.body.appendChild(badge);
+
+    const bar = document.createElement('div');
+    bar.id = 'mp-quick-bar';
+    bar.style.cssText = [
+      'position:fixed',
+      'bottom:14px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'z-index:996',
+      'display:flex',
+      'align-items:center',
+      'gap:6px',
+      'background:rgba(15, 23, 42, 0.88)',
+      'backdrop-filter:blur(10px)',
+      'padding:6px 10px',
+      'border-radius:999px',
+      'border:1px solid rgba(255,255,255,0.16)',
+      'box-shadow:0 8px 24px rgba(0,0,0,0.4)',
+      'max-width:92vw'
+    ].join(';');
+
+    const emotes = ['\\u01F44B', '\\u2615', '\\u01F68B', '\\u01F525'];
+    emotes.forEach(em => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = em;
+      btn.style.cssText = 'background:rgba(255,255,255,0.1);border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;';
+      btn.onclick = () => sendChatMessage(em);
+      bar.appendChild(btn);
+    });
+
+    const input = document.createElement('input');
+    input.id = 'mp-chat-input';
+    input.type = 'text';
+    input.maxLength = 80;
+    input.placeholder = 'Sapa wargi sekitar...';
+    input.style.cssText = 'background:transparent;border:none;outline:none;color:#fff;font-size:12px;width:130px;padding:0 4px;';
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && input.value.trim()) {
+        sendChatMessage(input.value.trim());
+        input.value = '';
+      }
+    });
+
+    const sendBtn = document.createElement('button');
+    sendBtn.type = 'button';
+    sendBtn.textContent = 'Kirim';
+    sendBtn.style.cssText = 'background:#22c55e;color:#052e16;border:none;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;';
+    sendBtn.onclick = () => {
+      if (input.value.trim()) {
+        sendChatMessage(input.value.trim());
+        input.value = '';
+      }
+    };
+
+    bar.appendChild(input);
+    bar.appendChild(sendBtn);
+    document.body.appendChild(bar);
   }
 
-  function updateOnlineCount(count) {
-    const el = document.getElementById('mp-online-count');
-    if (el) {
-      el.textContent = Math.max(1, count) + ' Wargi Online';
+  function spawnFloatingBubble(mesh, senderName, text) {
+    const layer = document.getElementById('mp-bubble-layer');
+    if (!layer || !mesh) return;
+
+    for (let i = activeBubbles.length - 1; i >= 0; i--) {
+      if (activeBubbles[i].mesh === mesh) {
+        activeBubbles[i].el.remove();
+        activeBubbles.splice(i, 1);
+      }
+    }
+
+    const el = document.createElement('div');
+    el.style.cssText = [
+      'position:absolute',
+      'left:0',
+      'top:0',
+      'transform:translate(-50%, -100%)',
+      'background:rgba(255, 255, 255, 0.96),',
+      'color:#0f172a',
+      'padding:5px 10px',
+      'border-radius:12px',
+      'font-size:11px',
+      'font-weight:700',
+      'box-shadow:0 4px 12px rgba(0,0,0,0.28)',
+      'max-width:170px',
+      'text-align:center',
+      'word-break:break-word',
+      'transition:opacity 0.25s ease'
+    ].join(';');
+    el.innerHTML = '<div style="font-size:9px;color:#16a34a;font-weight:800;">' + senderName + '</div><div>' + text + '</div>';
+    layer.appendChild(el);
+
+    activeBubbles.push({
+      mesh: mesh,
+      el: el,
+      expiresAt: Date.now() + 5000
+    });
+  }
+
+  function sendChatMessage(msg) {
+    const id = getMyIdentity();
+    if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh) {
+      spawnFloatingBubble(myPlayerMesh, id.ig, msg);
+    }
+    if (mpChannel) {
+      mpChannel.send({
+        type: 'broadcast',
+        event: 'chat',
+        payload: {
+          sessionId: id.sessionId,
+          ig: id.ig,
+          message: String(msg).slice(0, 80)
+        }
+      });
     }
   }
 
-  function getMyIdentity() {
-    const ig = localStorage.getItem('piraku_my_ig') || ('Tamu_' + mySessionId.slice(-4));
-    const kec = localStorage.getItem('piraku_my_kec') || 'Bandung Wetan';
-    return { sessionId: mySessionId, ig: ig, kecamatan: kec };
+  window.broadcastLiveChat = sendChatMessage;
+
+  function updateOnlineCount(count) {
+    const el = document.getElementById('mp-online-count');
+    if (el) el.textContent = Math.max(1, count) + ' Online';
   }
 
   function getOrCreateRemoteAvatar(payload) {
@@ -55,18 +180,15 @@
     if (typeof scene === 'undefined') return null;
 
     let entry = remotePlayers.get(payload.sessionId);
-    if (entry && entry.mesh) {
-      return entry;
-    }
+    if (entry && entry.mesh) return entry;
 
-    // Gunakan createCitizenMesh jika tersedia, atau fallback kapsul 3D low-poly
     let mesh = null;
     if (typeof createCitizenMesh === 'function') {
       try {
         mesh = createCitizenMesh({
           ig: payload.ig || 'Wargi',
           kecamatan: payload.kecamatan || 'Bandung',
-          pesan: 'Sedang online!',
+          pesan: 'Online di sekitar',
           isRemoteLive: true
         });
       } catch (e) {
@@ -77,28 +199,16 @@
     if (!mesh && typeof THREE !== 'undefined') {
       mesh = new THREE.Group();
       const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.28, 0.32, 0.9, 12),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.5 })
+        new THREE.CylinderGeometry(0.26, 0.3, 0.85, 10),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8 })
       );
-      body.position.y = 0.45;
-      body.castShadow = true;
-
+      body.position.y = 0.42;
       const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.24, 14, 14),
-        new THREE.MeshStandardMaterial({ color: 0xfde68a, roughness: 0.4 })
+        new THREE.SphereGeometry(0.22, 12, 12),
+        new THREE.MeshStandardMaterial({ color: 0xfde68a })
       );
-      head.position.y = 1.08;
-      head.castShadow = true;
-
-      // Ring hijau penanda live online di bawah kaki
-      const ring = new THREE.Mesh(
-        new THREE.RingGeometry(0.36, 0.46, 24),
-        new THREE.MeshBasicMaterial({ color: 0x4ade80, side: THREE.DoubleSide })
-      );
-      ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.03;
-
-      mesh.add(body, head, ring);
+      head.position.y = 1.02;
+      mesh.add(body, head);
       scene.add(mesh);
     }
 
@@ -113,6 +223,7 @@
         lastSeen: Date.now(),
         walkPhase: 0
       };
+      remotePlayers.set(payload.sessionId, undefined);
       remotePlayers.set(payload.sessionId, entry);
     }
     return entry;
@@ -126,23 +237,31 @@
     remotePlayers.delete(sessionId);
   }
 
-  // Dipanggil dari loop render (60 FPS) untuk interpolasi mulus
+  function ensureGuestPlayerSpawned() {
+    if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh) return;
+    if (typeof createCitizenMesh !== 'function' || typeof setupActivePlayer !== 'function') return;
+
+    const id = getMyIdentity();
+    const guestData = {
+      ig: id.ig,
+      kecamatan: id.kecamatan,
+      pesan: 'Wargi tamu baru mampir!',
+      warna: '#38bdf8',
+      isGuest: true
+    };
+    const guestMesh = createCitizenMesh(guestData);
+    if (guestMesh) {
+      guestMesh.position.set((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4);
+      setupActivePlayer(guestMesh, guestData);
+    }
+  }
+
   window.updateMultiplayerFrame = function(delta) {
     const now = Date.now();
     const dt = Math.min(delta || 0.016, 0.1);
 
-    // 1. Broadcast posisi karakter aktif kita ke pemain lain
     if (mpChannel && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
-      let activeObj = null;
-      if (typeof activePlayerMesh !== 'undefined' && activePlayerMesh) {
-        activeObj = activePlayerMesh;
-      } else if (typeof playerMesh !== 'undefined' && playerMesh) {
-        activeObj = playerMesh;
-      } else if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh) {
-        activeObj = myPlayerMesh;
-      }
-
-      if (activeObj && activeObj.position) {
+      if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh && myPlayerMesh.position) {
         lastBroadcastTime = now;
         const id = getMyIdentity();
         mpChannel.send({
@@ -152,33 +271,29 @@
             sessionId: id.sessionId,
             ig: id.ig,
             kecamatan: id.kecamatan,
-            x: Number(activeObj.position.x.toFixed(3)),
-            z: Number(activeObj.position.z.toFixed(3)),
-            rotY: Number((activeObj.rotation ? activeObj.rotation.y : 0).toFixed(3))
+            x: Number(myPlayerMesh.position.x.toFixed(3)),
+            z: Number(myPlayerMesh.position.z.toFixed(3)),
+            rotY: Number((myPlayerMesh.rotation ? myPlayerMesh.rotation.y : 0).toFixed(3))
           }
         });
       }
     }
 
-    // 2. Interpolasi (Lerp) pergerakan avatar pemain lain
     remotePlayers.forEach((entry, sid) => {
       if (now - entry.lastSeen > 20000) {
         removeRemoteAvatar(sid);
         return;
       }
       if (!entry.mesh) return;
-
       const dx = entry.targetX - entry.mesh.position.x;
       const dz = entry.targetZ - entry.mesh.position.z;
       const distSq = dx * dx + dz * dz;
 
-      entry.mesh.position.x += (entry.targetX - entry.mesh.position.x) * Math.min(1, dt * 10);
-      entry.mesh.position.z += (entry.targetZ - entry.mesh.position.z) * Math.min(1, dt * 10);
+      entry.mesh.position.x += dx * Math.min(1, dt * 10);
+      entry.mesh.position.z += dz * Math.min(1, dt * 10);
       if (entry.mesh.rotation) {
         entry.mesh.rotation.y += (entry.targetRotY - entry.mesh.rotation.y) * Math.min(1, dt * 12);
       }
-
-      // Efek memantul ringan saat bergerak
       if (distSq > 0.002) {
         entry.walkPhase += dt * 14;
         entry.mesh.position.y = Math.abs(Math.sin(entry.walkPhase)) * 0.08;
@@ -186,33 +301,49 @@
         entry.mesh.position.y *= 0.8;
       }
     });
-  };
 
-  // Fungsi helper untuk broadcast curhat/emote secara langsung
-  window.broadcastLiveChat = function(message) {
-    if (!mpChannel || !message) return;
-    const id = getMyIdentity();
-    mpChannel.send({
-      type: 'broadcast',
-      event: 'chat',
-      payload: {
-        sessionId: id.sessionId,
-        ig: id.ig,
-        message: String(message).slice(0, 140)
+    const activeCam = getActiveCamera();
+    if (activeCam && typeof THREE !== 'undefined' && activeBubbles.length > 0) {
+      const tempV = new THREE.Vector3();
+      for (let i = activeBubbles.length - 1; i >= 0; i--) {
+        const b = activeBubbles[i];
+        if (now > b.expiresAt || !b.mesh) {
+          b.el.remove();
+          activeBubbles.splice(i, 1);
+          continue;
+        }
+        b.mesh.getWorldPosition(tempV);
+        tempV.y += 1.75;
+        tempV.project(activeCam);
+
+        if (tempV.z > 1) {
+          b.el.style.display = 'none';
+        } else {
+          const x = (tempV.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight;
+          b.el.style.display = 'block';
+          b.el.style.left = x.toFixed(1) + 'px';
+          b.el.style.top = y.toFixed(1) + 'px';
+        }
       }
-    });
+    }
   };
 
-  function initPirakuMultiplayer() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
-      setTimeout(initPirakuMultiplayer, 500);
-      return;
+  window.switchMultiplayerDistrict = function(kecamatanName) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    const targetKec = kecamatanName || 'Bandung Wetan';
+    if (currentRoomKec === targetKec && mpChannel) return;
+
+    if (mpChannel) {
+      supabaseClient.removeChannel(mpChannel);
+      remotePlayers.forEach((_, sid) => removeRemoteAvatar(sid));
     }
 
-    createOnlineHudBadge();
+    currentRoomKec = targetKec;
+    const slug = targetKec.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const myInfo = getMyIdentity();
 
-    mpChannel = supabaseClient.channel(MP_CHANNEL_NAME, {
+    mpChannel = supabaseClient.channel('pirakubdg-kec-' + slug, {
       config: {
         presence: { key: mySessionId },
         broadcast: { self: false }
@@ -222,14 +353,9 @@
     mpChannel
       .on('presence', { event: 'sync' }, () => {
         const state = mpChannel.presenceState();
-        const activeKeys = Object.keys(state);
-        updateOnlineCount(activeKeys.length);
-
-        // Bersihkan avatar yang sudah disconnect
+        updateOnlineCount(Object.keys(state).length);
         remotePlayers.forEach((_, sid) => {
-          if (!state[sid]) {
-            removeRemoteAvatar(sid);
-          }
+          if (!state[sid]) removeRemoteAvatar(sid);
         });
       })
       .on('broadcast', { event: 'pos' }, ({ payload }) => {
@@ -244,416 +370,35 @@
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
         if (!payload || payload.sessionId === mySessionId) return;
         const entry = remotePlayers.get(payload.sessionId);
-        if (entry && entry.mesh && typeof showCitizenSpeech === 'function') {
-          showCitizenSpeech({
-            ig: payload.ig,
-            pesan: payload.message,
-            mesh: entry.mesh
-          });
+        if (entry && entry.mesh) {
+          spawnFloatingBubble(entry.mesh, payload.ig, payload.message);
         }
       })
       .subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
+        if (status === 'SUBSCRIBED'){
           await mpChannel.track({
             ig: myInfo.ig,
-            kecamatan: myInfo.kecamatan,
+            kecamatan: targetKec,
             online_at: new Date().toISOString()
           });
         }
       });
+  };
+
+  function initPirakuMultiplayer() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+      setTimeout(initPirakuMultiplayer, 400);
+      return;
+    }
+    injectQuickChatAndHud();
+    const myInfo = getMyIdentity();
+    window.switchMultiplayerDistrict(myInfo.kecamatan);
+    setTimeout(ensureGuestPlayerSpawned, 2500);
   }
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPirakuMultiplayer);
   } else {
-    setTimeout(initPirakuMultiplayer, 400);
+    setTimeout(initPirakuMultiplayer, 300);
   }
-})();
-
-// ================= PIRAKUBDG — SIMPAN & MUAT PROGRES QUEST (SUPABASE) =================
-// Bagian dari js/multiplayer.js. Dipasang sebagai window.PirakuQuestProgress dan dipakai oleh
-// js/main.js (interaksi trem 3D) dan js/rpg-ui.js (Mini Quest Tracker).
-//
-// Konfigurasi Supabase: klien dibuat di js/main.js (const supabaseClient, URL + anon key) dan
-// dipakai bersama. Skrip ini menunggu hingga klien tersedia, jadi urutan <script> aman.
-//   SUPABASE_URL      : https://myilyqnawceobqedjbfa.supabase.co
-//   SUPABASE_ANON_KEY : sb_publishable_...  (publishable key, aman di browser + RLS)
-//
-// Tabel target (buat sekali di SQL editor Supabase):
-//
-//   create table if not exists public.warga_quest_progress (
-//     id          bigint generated by default as identity primary key,
-//     player_key  text        not null,          -- ig warga atau device id anonim
-//     quest_id    text        not null,          -- id dari window.PIRAKU_QUESTS
-//     status      text        not null default 'not_started', -- not_started|accepted|in_progress|completed
-//     coins       integer     not null default 0, -- total koin yang dimiliki pemain untuk quest ini
-//     quest_date  date        not null default current_date, -- untuk quest harian
-//     updated_at  timestamptz not null default now(),
-//     unique (player_key, quest_id, quest_date)
-//   );
-//   alter table public.warga_quest_progress enable row level security;
-//   create policy "warga_quest_progress_anon_all" on public.warga_quest_progress
-//     for all to anon using (true) with check (true);
-//   -- indeks bantu
-//   create index if not exists warga_quest_progress_key_idx
-//     on public.warga_quest_progress (player_key, quest_date);
-//
-// Tanpa tabel/policy di atas, progres tetap tersimpan di localStorage (mode offline-first)
-// dan penulisan Supabase gagal dengan pesan konsol yang jelas — game tidak error.
-(function () {
-  'use strict';
-
-  const TABLE = 'warga_quest_progress';
-  const LS_PREFIX = 'piraku_quest_progress_v1:';
-  const LS_DEVICE = 'piraku_device_id';
-  const VALID = ['not_started', 'accepted', 'in_progress', 'completed'];
-
-  function todayStr() {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  function deviceId() {
-    try {
-      let id = localStorage.getItem(LS_DEVICE);
-      if (!id) {
-        id = 'guest-' + Math.random().toString(36).slice(2, 10);
-        localStorage.setItem(LS_DEVICE, id);
-      }
-      return id;
-    } catch (e) { return 'guest-anon'; }
-  }
-
-  /** Identitas pemain: ig warga (piraku_my_ig) atau id perangkat untuk tamu. */
-  function playerKey() {
-    try {
-      const ig = localStorage.getItem('piraku_my_ig');
-      if (ig && String(ig).trim()) return 'ig:' + String(ig).trim().toLowerCase();
-    } catch (e) {}
-    return 'dev:' + deviceId();
-  }
-
-  function client() {
-    if (typeof supabaseClient !== 'undefined' && supabaseClient) return supabaseClient;
-    if (window.supabaseClient) return window.supabaseClient;
-    return null;
-  }
-
-  /* ---------------- localStorage (cache + fallback) ---------------- */
-  function lsKey(qid) { return LS_PREFIX + playerKey() + ':' + qid; }
-
-  function getLocal(questId) {
-    try {
-      const raw = localStorage.getItem(lsKey(questId));
-      if (!raw) return null;
-      const obj = JSON.parse(raw);
-      if (!obj || typeof obj !== 'object') return null;
-      return {
-        quest_id: questId,
-        status: VALID.indexOf(obj.status) > -1 ? obj.status : 'not_started',
-        coins: Math.max(0, parseInt(obj.coins, 10) || 0),
-        quest_date: obj.quest_date || todayStr(),
-        dirty: !!obj.dirty
-      };
-    } catch (e) { return null; }
-  }
-
-  function setLocal(questId, record, dirty) {
-    try {
-      localStorage.setItem(lsKey(questId), JSON.stringify({
-        status: record.status, coins: record.coins,
-        quest_date: record.quest_date || todayStr(), dirty: !!dirty
-      }));
-    } catch (e) {}
-  }
-
-  const STATUS_LABEL = { accepted: 'Diterima', in_progress: 'Berjalan', completed: 'Selesai' };
-
-  /** Perbarui Mini Quest Tracker (rpg-ui.js) sesuai status quest utama. */
-  function notifyTracker(questId) {
-    if (typeof window === 'undefined' || !window.PirakuRPG) return;
-    const rpg = window.PirakuRPG;
-    if (!rpg.tracker) return;
-    const Q = window.PIRAKU_QUESTS;
-    if (!Q || !Q.mainQuest || Q.mainQuest.id !== questId) return; // kartu hanya quest utama
-    const quest = Q.mainQuest;
-
-    const rec = getLocal(questId);
-    const status = rec ? rec.status : 'not_started';
-    const reward = (quest.reward && quest.reward.coins) || 0;
-    const progress = status === 'completed' ? 1 : status === 'in_progress' ? 0.5 : 0;
-
-    rpg.tracker.setStatus(STATUS_LABEL[status] || 'Menunggu', progress);
-    if (status === 'completed') {
-      rpg.tracker.setMeta('🏆 +' + reward + ' koin · réngsé');
-    } else if (status === 'in_progress') {
-      rpg.tracker.setMeta('📍 Turun di ' + ((quest.finishPoint && quest.finishPoint.name) || 'Halte Riau'));
-    } else if (status === 'accepted') {
-      rpg.tracker.setMeta('📍 Naek trem di ' + ((quest.startPoint && quest.startPoint.name) || 'Halte Gasibu'));
-    }
-    rpg.tracker.show();
-    rpg.tracker.flash();
-  }
-
-  /** Snapshot misi harian dari main.js (null bila QuestSystem belum aktif). */
-  function dailySnapshot() {
-    const b = window.PirakuGameBridge;
-    if (!b || typeof b.getDailyProgress !== 'function') return null;
-    try {
-      const p = b.getDailyProgress();
-      return p && p.total ? p : null;
-    } catch (e) { return null; }
-  }
-
-  let lastDailyKey = '';
-  /**
-   * Simpan jumlah misi harian selesai sebagai baris quest_id='daily_quests'
-   * (kolom status diisi angka, coins diisi angka yang sama) agar progres harian
-   * ikut pulih saat halaman di-refresh.
-   */
-  function saveDailyProgress() {
-    const p = dailySnapshot();
-    if (!p) return;
-    const key = p.done + '/' + p.total;
-    if (key === lastDailyKey) return;
-    lastDailyKey = key;
-    const prev = getLocal('daily_quests');
-    setLocal('daily_quests', { status: String(p.done), coins: p.done, quest_date: todayStr() }, true);
-    if (!prev || prev.status !== String(p.done)) push(getLocal('daily_quests'));
-  }
-
-  /* ---------------- Supabase ---------------- */
-  async function push(record) {
-    const sb = client();
-    if (!sb) return { ok: false, reason: 'no-client' };
-    const row = {
-      player_key: playerKey(),
-      quest_id: record.quest_id,
-      status: record.status,
-      coins: record.coins,
-      quest_date: record.quest_date || todayStr(),
-      updated_at: new Date().toISOString()
-    };
-    try {
-      // Upsert pada unique (player_key, quest_id, quest_date).
-      const { error } = await sb.from(TABLE).upsert(row, {
-        onConflict: 'player_key,quest_id,quest_date'
-      });
-      if (error) {
-        // Fallback: tabel bisa saja tanpa unique constraint — update lalu insert.
-        const up = await sb.from(TABLE)
-          .update({ status: row.status, coins: row.coins, updated_at: row.updated_at })
-          .eq('player_key', row.player_key).eq('quest_id', row.quest_id).eq('quest_date', row.quest_date)
-          .select('id');
-        if (!up.error && up.data && up.data.length) return { ok: true };
-        const ins = await sb.from(TABLE).insert([row]);
-        if (ins.error) {
-          console.warn('[PirakuQuestProgress] gagal simpan ke Supabase:', ins.error.message || ins.error);
-          return { ok: false, reason: 'supabase', error: ins.error };
-        }
-      }
-      return { ok: true };
-    } catch (err) {
-      console.warn('[PirakuQuestProgress] error jaringan saat simpan:', err && err.message);
-      return { ok: false, reason: 'network', error: err };
-    }
-  }
-
-  async function flushDirty() {
-    const sb = client();
-    if (!sb) return 0;
-    let sent = 0;
-    const Q = window.PIRAKU_QUESTS;
-    const ids = (Q && Q.allQuests ? Q.allQuests : []).map(q => q.id);
-    ids.push('daily_quests');
-    for (let i = 0; i < ids.length; i++) {
-      const rec = getLocal(ids[i]);
-      if (!rec || !rec.dirty) continue;
-      // eslint-disable-next-line no-await-in-loop
-      const r = await push(rec);
-      if (r.ok) { setLocal(ids[i], rec, false); sent++; }
-    }
-    return sent;
-  }
-
-  /**
-   * Simpan progres quest. Ditulis ke localStorage lebih dulu (instan, tahan refresh),
-   * lalu di-push ke Supabase. coins: tambahan koin (0 = tak menambah).
-   * Urutan status hanya bisa maju (not_started < accepted < in_progress < completed)
-   * supaya progres tidak mundur akibat dua tab / refresh.
-   */
-  function save(questId, status, coinsDelta) {
-    if (!questId) return null;
-    const st = VALID.indexOf(status) > -1 ? status : 'not_started';
-    const prev = getLocal(questId) || { status: 'not_started', coins: 0, quest_date: todayStr() };
-    const add = Math.max(0, parseInt(coinsDelta, 10) || 0);
-
-    const rank = { not_started: 0, accepted: 1, in_progress: 2, completed: 3 };
-    if (rank[prev.status] > rank[st]) return null;               // jangan mundurkan status
-    const awarded = (add > 0 && st === 'completed' && prev.status !== 'completed') ? add : 0;
-
-    const record = {
-      quest_id: questId,
-      status: st,
-      coins: prev.coins + awarded,
-      quest_date: prev.quest_date || todayStr()
-    };
-    setLocal(questId, record, true);
-
-    // Koin pemain (HUD 🪙 di main.js) ikut naik saat hadiah diberikan.
-    if (awarded && window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === 'function') {
-      window.PirakuGameBridge.addCoins(awarded);
-    }
-    if (awarded && typeof window.playSynthTone === 'function') window.playSynthTone(1180, 'sine', 0.35);
-
-    notifyTracker(questId);
-    const syncPromise = push(record).then(r => {
-      if (r && r.ok) setLocal(questId, record, false);
-      return r;
-    });
-    return { record: record, awarded: awarded, synced: syncPromise };
-  }
-
-  /** Muat progres quest dari Supabase (setelah halaman di-refresh). */
-  async function load(options) {
-    const opts = options || {};
-    const sb = client();
-    const Q = window.PIRAKU_QUESTS;
-    const ids = (Q && Q.allQuests ? Q.allQuests : []).map(q => q.id);
-    const result = { source: 'local', quests: {}, daily: [], count: 0 };
-
-    // 1. Cache lokal dulu (tampil instan walau offline).
-    ids.forEach(id => {
-      const rec = getLocal(id);
-      if (rec && rec.status !== 'not_started') {
-        result.quests[id] = rec;
-      }
-    });
-
-    // 2. Coba Supabase.
-    if (sb) {
-      try {
-        const { data, error } = await sb.from(TABLE)
-          .select('quest_id,status,coins,quest_date,updated_at')
-          .eq('player_key', playerKey())
-          .order('updated_at', { ascending: false })
-          .limit(200);
-        if (!error && Array.isArray(data)) {
-          result.source = 'supabase';
-          let fetched = 0;
-          data.forEach(row => {
-            if (!row || !row.quest_id) return;
-            if (row.quest_id === 'daily_quests') return; // baris agregat, bukan quest
-            // Ambil baris terbaru per quest (data sudah urut updated_at desc).
-            if (result.quests[row.quest_id] && result.quests[row.quest_id]._fromDb) return;
-            const rec = {
-              quest_id: row.quest_id,
-              status: VALID.indexOf(row.status) > -1 ? row.status : 'not_started',
-              coins: Math.max(0, parseInt(row.coins, 10) || 0),
-              quest_date: row.quest_date || todayStr(),
-              _fromDb: true
-            };
-            const local = getLocal(row.quest_id);
-            // Baris lokal yang belum terkirim (dirty) menang agar tak kehilangan progres offline.
-            if (local && local.dirty) return;
-            result.quests[row.quest_id] = rec;
-            setLocal(row.quest_id, rec, false);
-            fetched++;
-          });
-          result.count = fetched;
-
-          // Progres misi harian: baris quest_id='daily_quests', kolom status = jumlah selesai.
-          const daily = data.find(r => r && r.quest_id === 'daily_quests');
-          if (daily && daily.status != null && !isNaN(parseInt(daily.status, 10))) {
-            result.dailyCount = parseInt(daily.status, 10) || 0;
-            lastDailyKey = result.dailyCount + '/' + result.dailyCount; // hindari tulis ulang
-          }
-        } else if (error) {
-          console.warn('[PirakuQuestProgress] gagal muat dari Supabase (' + TABLE + '):', error.message || error);
-          result.reason = 'supabase';
-        }
-        saveDailyProgress();
-      } catch (err) {
-        console.warn('[PirakuQuestProgress] error jaringan saat muat:', err && err.message);
-        result.reason = 'network';
-      }
-    } else {
-      result.reason = 'no-client';
-    }
-
-    // 3. Terapkan ke UI: tracker + koin.
-    Object.keys(result.quests).forEach(id => notifyTracker(id));
-
-    let questCoins = 0;
-    Object.keys(result.quests).forEach(id => {
-      questCoins = Math.max(questCoins, result.quests[id].coins || 0);
-    });
-    const bridge = window.PirakuGameBridge;
-    if (bridge && typeof bridge.setCoins === 'function' && questCoins > 0) {
-      // Hanya naikkan: koin yang dipungut di dunia bisa lebih besar dari catatan quest.
-      if (typeof bridge.getCoins === 'function' && bridge.getCoins() < questCoins) bridge.setCoins(questCoins);
-    }
-
-    // 4. Kirim balik progres yang belum tersimpan.
-    flushDirty();
-    return result;
-  }
-
-  /** Muat progres setelah refresh + beri tahu pemain status quest trem. */
-  async function resumeOnRefresh() {
-    const res = await load();
-    const Q = window.PIRAKU_QUESTS;
-    const mainId = Q && Q.mainQuest ? Q.mainQuest.id : null;
-    const rec = mainId ? res.quests[mainId] : null;
-    const toast = typeof window.showToast === 'function' ? window.showToast : null;
-    if (!toast) return res;
-    const finish = (Q.mainQuest.finishPoint && Q.mainQuest.finishPoint.name) || 'Halte Riau';
-    if (rec && rec.status === 'in_progress') {
-      toast('Progres quest dimuat — lanjutkan trem dan turun di ' + finish + ' 🚊');
-    } else if (rec && rec.status === 'accepted') {
-      toast('Quest trem klasik masih aktif — naik trem di Halte Gasibu 🚊');
-    } else if (rec && rec.status === 'completed') {
-      toast('Quest trem klasik tos réngsé — ' + rec.coins + ' koin kacatet ✅');
-    }
-    return res;
-  }
-
-  window.PirakuQuestProgress = {
-    table: TABLE,
-    playerKey: playerKey,
-    save: save,
-    load: load,
-    resumeOnRefresh: resumeOnRefresh,
-    getLocal: getLocal,
-    flush: flushDirty,
-    today: todayStr,
-    dailySnapshot: dailySnapshot
-  };
-
-  // Muat progres otomatis begitu ada warga/kontrol aktif (setelah login/auto-detect),
-  // lalu sekali lagi saat tab kembali fokus agar progres lintas perangkat segar.
-  let loadedOnce = false;
-  function tryAutoLoad() {
-    if (loadedOnce) return;
-    if (typeof window === 'undefined' || !window.PIRAKU_QUESTS) return;
-    if (!client()) return;
-    loadedOnce = true;
-    resumeOnRefresh();
-  }
-  function scheduleAutoLoad() {
-    // Tunggu main.js siap (PIRAKU_QUESTS ada & klien Supabase dibuat).
-    let tries = 0;
-    const iv = setInterval(() => {
-      tries++;
-      if (loadedOnce || tries > 40) { clearInterval(iv); return; }
-      tryAutoLoad();
-    }, 500);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', scheduleAutoLoad);
-  else scheduleAutoLoad();
-
-  window.addEventListener('online', () => { flushDirty(); });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !loadedOnce) tryAutoLoad();
-  });
-  window.addEventListener('beforeunload', () => { flushDirty(); });
 })();

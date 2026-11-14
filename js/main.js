@@ -1137,14 +1137,14 @@ let activeQuestSystem = null;
       po.x = p.x + q.z * v.lat; po.z = p.z - q.x * v.lat; po.y = v.c === CFly ? p.y + .1 : .16;
       po.ry = Math.atan2(-q.z, q.x);
       const s = isReborn ? 0.001 : 1;
-      dum.position.set(po.x, po.y, po.z); dum.rotation.set(0, po.ry, 0); dum.scale.setScalar(s); dum.updateMatrix(); vMat.copy(dum.matrix);
+      if(v.glbMesh){v.glbMesh.position.set(po.x,po.y,po.z);v.glbMesh.rotation.y=po.ry;v.glbMesh.scale.setScalar(s)}dum.position.set(po.x, po.y, po.z); dum.rotation.set(0, po.ry, 0); dum.scale.setScalar(s); dum.updateMatrix(); vMat.copy(dum.matrix);
       v.parts.forEach(part => {
         MA.multiplyMatrices(vMat, part.P); VM[part.mi].setMatrixAt(part.idx, MA);
       });
     });
     VM.forEach(m => { m.instanceMatrix.needsUpdate = true; });
   }
-
+  (function initGLBCityAssets(){const L=THREE.GLTFLoader||window.GLTFLoader;if(!L)return;const ld=new L(),grp=new THREE.Group();scene.add(grp);const fit=(raw,w,h,d)=>{const r=raw.clone(true);r.traverse(o=>{if(o.isMesh){o.castShadow=o.receiveShadow=true;const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{if(m){m.roughness=0.88;m.metalness=0.05}})}});const b=new THREE.Box3().setFromObject(r),sz=b.getSize(new THREE.Vector3()),ct=b.getCenter(new THREE.Vector3());const sx=sz.x>1e-3?w/sz.x:1,sy=sz.y>1e-3?h/sz.y:1,szz=sz.z>1e-3?d/sz.z:1;const g=new THREE.Group();r.scale.set(sx,sy,szz);r.position.set(-ct.x*sx,-b.min.y*sy,-ct.z*szz);g.add(r);return g};ld.load("models/Tree.glb",g=>{if(trunkM)trunkM.visible=false;if(crownM)crownM.visible=false;trees.forEach((t,i)=>{const sc=(t.s||1)*4.4,m=fit(g.scene,sc,sc*1.15,sc);m.position.set(t.x,0,t.z);m.rotation.y=(i*1.37)%(PI*2);grp.add(m)})});ld.load("models/Bench.glb",g=>{if(bnM)bnM.visible=false;furn.forEach(f=>{if(f[0]!=="b")return;const m=fit(g.scene,1.9,0.85,0.75);m.position.set(f[1],0.1,f[2]);m.rotation.y=f[2]<-10?0:PI;grp.add(m)})});ld.load("models/Bus Stop.glb",g=>{if(typeof STATIONS==="undefined")return;STATIONS.forEach(st=>{const m=fit(g.scene,2.8,2.2,1.5),oz=st.sz>15?2.4:-2.4;m.position.set(st.sx,0.18,st.sz+oz);m.rotation.y=oz>0?PI:0;grp.add(m)})});const vFiles=["models/Van.glb","models/sedan.glb","models/taxi.glb","models/suv-luxury.glb","models/hatchback-sports.glb","models/Bus.glb"];Promise.all(vFiles.map(u=>new Promise(res=>ld.load(u,g=>res(g.scene),undefined,()=>res(null))))).then(arr=>{if(!arr[1])return;VM.forEach(m=>{if(m)m.visible=false});veh.forEach((v,idx)=>{const isAngkot=idx%3===0,src=isAngkot?(arr[0]||arr[1]):(arr[1+(idx%5)]||arr[1]),dim=isAngkot?[1.55,1.65,3.3]:(src===arr[5]?[1.75,1.9,4.2]:[1.45,1.25,2.75]),m=fit(src,dim[0],dim[1],dim[2]);m.children[0].rotation.y=PI/2;if(isAngkot)m.traverse(o=>{if(o.isMesh&&o.material&&o.material.color)o.material.color.lerp(new THREE.Color(0x2e9e5b),0.65)});v.glbMesh=m;grp.add(m)})})})();
   // Trem Listrik
 
       // ================= 3D MODEL LOADER DENGAN FAIL-SAFE =================
