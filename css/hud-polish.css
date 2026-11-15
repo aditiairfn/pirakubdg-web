@@ -358,3 +358,86 @@ div[style*="bottom: 16px"][style*="border-radius: 999px"] {
   margin: 0 auto !important;
   z-index: 52 !important;
 }
+
+
+/* === HEADER TOP BAR FINAL FIX (NO YELLOW BUTTON, NO XP BAR OVERFLOW, ALIGNED) === */
+.brand-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  width: 100% !important;
+  max-width: 640px !important;
+  margin: 0 auto !important;
+  height: 30px !important;
+}
+
+.brand-tag {
+  font-size: 12px !important;
+  gap: 5px !important;
+  flex-shrink: 0 !important;
+}
+
+#warga-counter {
+  font-size: 8.5px !important;
+  padding: 2px 5px !important;
+}
+
+.top-center-clock {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(111, 227, 163, 0.25) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #e2e8f0 !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  flex-shrink: 0 !important;
+}
+
+.top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+  flex-shrink: 1 !important;
+}
+
+#btn-citizen-status {
+  background: #14423b !important;
+  color: #6fe3a3 !important;
+  border: 1px solid rgba(111, 227, 163, 0.38) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  max-height: 28px !important;
+  padding: 0 9px !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  line-height: 28px !important;
+  display: inline-block !important;
+  max-width: 98px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  vertical-align: middle !important;
+}
+
+/* Sembunyikan mini XP bar / sub-elemen di dalam tombol profil agar tidak mendorong teks ke atas */
+#btn-citizen-status > * {
+  display: none !important;
+}
+
+.btn-menu-toggle {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  flex-shrink: 0 !important;
+  background: #14423b !important;
+  border: 1px solid rgba(111, 227, 163, 0.3) !important;
+  color: #f4f7f5 !important;
+}
