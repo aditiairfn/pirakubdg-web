@@ -1206,7 +1206,7 @@ let activeQuestSystem = null;
     try { loadCustomTramModel(); } catch (e) {}
   }, 100);
 
-  const rebornGroup = new THREE.Group(); scene.add(rebornGroup);
+  const rebornGroup = new THREE.Group(); rebornGroup.visible = false; scene.add(rebornGroup);
   const tram = new THREE.Group();
   [-3.15, 0, 3.15].forEach(x => {
     box(3, 1.5, 1.7, x, .35, 0, 0x1f6bff, tram); box(2.9, .52, 1.76, x, 1.0, 0, 0xbfe6ff, tram, false); box(3, .14, 1.5, x, 1.85, 0, 0xf8fafc, tram);
