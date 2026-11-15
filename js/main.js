@@ -712,11 +712,11 @@ let activeQuestSystem = null;
   const Rsur = road([[-60, -52], [-42, -36], [-32, -27.5], [-21, -26], [0, -26], [21, -26], [42, -26], [60, -26]], 8.4);
   const RdipW = road([[-60, 3], [-42, 3], [-21, 3]], 6.2), RdipE = road([[21, 3], [42, 3], [60, 3]], 6.2);
   const Rmaj = road([[-21, -26], [-21, -12], [-21, 3]], 5.2), Rsen = road([[21, -26], [21, -12], [21, 3]], 5.2);
-  const Rcla = road([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
+  // const Rcla = road([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
   const Rcim = road([[-21, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4.4);
   const Rcil = road([[18, 3], [31, 16], [44, 27], [60, 38]], 4.4);
-  const RriauW = road([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
-  const Rdago = road([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
+  // const RriauW = road([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
+  // const Rdago = road([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
   // Jalan Ekspansi Baru (ujungnya disambungkan ke jalan utama agar tidak bolong)
   // disabled: const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
   // disabled: const Rcisangkuy = road([[21, 3], [24, -4], [38, -10], [42, -26]], 5.0);
@@ -754,11 +754,11 @@ let activeQuestSystem = null;
   addJunction(21, -26, 8.8, 8.8, ["W", "S"]);       // Simpang Surapati - Sentot
   addJunction(-21, 3, 7.6, 7.6, ["N", "W", "S"]);   // Simpang Diponegoro - Majapahit - Cimanuk
   addJunction(21, 3, 7.6, 7.6, ["N", "E"]);         // Simpang Diponegoro - Sentot - Cisangkuy
-  addJunction(-42, 3, 7.2, 7.2, ["N", "S", "E"]);   // Perempatan Dago - Diponegoro
-  addJunction(-42, 16, 7.0, 7.0, ["N", "S", "E", "W"]); // Perempatan Dago - Riau
-  addJunction(-42, -40, 6.8, 6.8, ["N", "S", "W"]); // Pertigaan Dago - Cikapayang
-  addJunction(44, 27, 6.4, 6.4, ["W", "S"]);        // Pertigaan Cimanuk - Cilamaya - Saparua
-  addJunction(44, 3, 6.6, 6.6, ["N", "W", "E"]);    // Pertigaan Diponegoro Timur - Saparua
+  // addJunction(-42, 3, 7.2, 7.2, ["N", "S", "E"]);   // Perempatan Dago - Diponegoro
+  // addJunction(-42, 16, 7.0, 7.0, ["N", "S", "E", "W"]); // Perempatan Dago - Riau
+  // addJunction(-42, -40, 6.8, 6.8, ["N", "S", "W"]); // Pertigaan Dago - Cikapayang
+  // addJunction(44, 27, 6.4, 6.4, ["W", "S"]);        // Pertigaan Cimanuk - Cilamaya - Saparua
+  // addJunction(44, 3, 6.6, 6.6, ["N", "W", "E"]);    // Pertigaan Diponegoro Timur - Saparua
 
   // Median / Pulau Jalan di bawah pilar Flyover Pasupati (Surapati lurus)
   const pasupatiMedian = new THREE.Mesh(new THREE.BoxGeometry(82, 0.24, 1.05), CurbMat);
@@ -899,7 +899,7 @@ let activeQuestSystem = null;
     box(7.5, .6, 6, 0, 0, 0, 0x78716c, v); box(6.8, 3.2, 5.2, 0, .6, 0, 0xfafaf9, v); hip(7.8, 6.2, 2.2, 0, 3.8, 0, 0xb45309, v);
     box(6.2, 1.8, 1.5, 0, .6, 2.2, 0xf5f5f4, v);
     [-2.2, -.7, .7, 2.2].forEach(px => cyl(.1, .1, 1.8, 6, px, .6, 2.9, 0xffffff, v));
-    DUTCH.add(v);
+    // DUTCH.add(v);
   }
   [[-32, -14, .1], [32, -14, -.1]].forEach(p => mkColonialVilla(p[0], p[1], p[2]));
 
