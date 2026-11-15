@@ -129,6 +129,44 @@
     const ffMat = new THREE.PointsMaterial({ color: 0xfef08a, size: 0.22, transparent: true, opacity: 0.75 });
     fireflyPoints = new THREE.Points(ffGeo, ffMat);
     grp.add(fireflyPoints);
+
+    // 8. TEMPAT SAMPAH PILAH ORGANIK & ANORGANIK (Prosedural Three.js)
+    const matBinGreen = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
+    const matBinYellow = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.6 });
+    [[-13.8, -11.3], [-13.8, -0.8], [13.8, -11.3], [13.8, -0.8]].forEach(p => {
+      const binGrp = new THREE.Group();
+      binGrp.position.set(p[0], 0.05, p[1]);
+      const b1 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.56, 10), matBinGreen);
+      b1.position.set(-0.22, 0.28, 0);
+      const b2 = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.15, 0.56, 10), matBinYellow);
+      b2.position.set(0.22, 0.28, 0);
+      binGrp.add(b1, b2);
+      grp.add(binGrp);
+    });
+
+    // 9. PAPAN NAMA LANDMARK 3D (CanvasTexture Ringan)
+    function makeSignMesh(label, bg, fg, w, h) {
+      const cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 64;
+      const c = cv.getContext("2d");
+      c.fillStyle = bg; c.fillRect(0, 0, 256, 64);
+      c.strokeStyle = fg; c.lineWidth = 4; c.strokeRect(4, 4, 248, 56);
+      c.fillStyle = fg; c.font = "800 28px sans-serif"; c.textAlign = "center"; c.textBaseline = "middle";
+      c.fillText(label, 128, 34);
+      const tex = new THREE.CanvasTexture(cv);
+      return new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.12), new THREE.MeshBasicMaterial({ map: tex }));
+    }
+    const signGasibu = makeSignMesh("LAPANGAN GASIBU", "#14532d", "#fef08a", 3.4, 0.72);
+    signGasibu.position.set(0, 1.1, 2.2);
+    const poleG1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 8), matIron);
+    poleG1.position.set(-1.4, 0.55, 2.2);
+    const poleG2 = poleG1.clone(); poleG2.position.x = 1.4;
+    grp.add(signGasibu, poleG1, poleG2);
+
+    const signMonju = makeSignMesh("MONUMEN PERJUANGAN", "#1e293b", "#38bdf8", 4.2, 0.78);
+    signMonju.position.set(0, 1.4, -30.2);
+    grp.add(signMonju);
+
   }
 
   // 7. MINIMAP RADAR NAVIGASI INTERAKTIF
