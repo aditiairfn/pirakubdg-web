@@ -1,6 +1,6 @@
-/* ================= PIRAKUBDG GAME HUD — CLEAN ARCHITECTURAL LAYOUT ================= */
+/* ================= PIRAKUBDG CLEAN GAME UI (BANDUNG TEA GREEN & GOLD PALETTE) ================= */
 
-/* 1. TOP BAR SOLID 1 BARIS */
+/* 1. TOP HEADER BAR: 1 Baris Penuh, Simetris, & Anti-Tumpuk */
 .top-hud {
   position: fixed !important;
   top: 0 !important;
@@ -10,157 +10,155 @@
   max-width: 100% !important;
   margin: 0 !important;
   padding: max(8px, env(safe-area-inset-top)) 12px 8px 12px !important;
-  background: rgba(14, 47, 42, 0.94) !important;
-  backdrop-filter: blur(16px) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 0 !important;
+  background: #0e2f2a !important;
+  border-bottom: 1px solid rgba(111, 227, 163, 0.18) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28) !important;
+  display: block !important;
   z-index: 50 !important;
   box-sizing: border-box !important;
 }
 
 .brand-row {
-  display: flex !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
   align-items: center !important;
-  justify-content: space-between !important;
   gap: 8px !important;
   width: 100% !important;
-  max-width: 560px !important;
+  max-width: 640px !important;
   margin: 0 auto !important;
 }
 
 .brand-tag {
+  justify-self: start !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
   font-size: 13px !important;
   font-weight: 800 !important;
-  color: #ffffff !important;
+  color: #f4f7f5 !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 6px !important;
+  white-space: nowrap !important;
 }
 
 #warga-counter {
-  background: rgba(255, 207, 74, 0.16) !important;
-  color: #ffcf4a !important;
-  border: 1px solid rgba(255, 207, 74, 0.35) !important;
+  background: rgba(111, 227, 163, 0.14) !important;
+  color: #6fe3a3 !important;
+  border: 1px solid rgba(111, 227, 163, 0.3) !important;
   font-size: 9.5px !important;
   font-weight: 800 !important;
-  padding: 2px 7px !important;
+  padding: 2px 6px !important;
+  border-radius: 5px !important;
+}
+
+.top-center-clock {
+  justify-self: center !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: #ffcf4a !important;
   border-radius: 6px !important;
+  padding: 4px 10px !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.3px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
 }
 
 .top-actions {
+  justify-self: end !important;
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
 }
 
 #btn-citizen-status {
-  background: linear-gradient(135deg, #ffcf4a, #f59e0b) !important;
+  background: #ffcf4a !important;
   color: #0e2f2a !important;
   border: none !important;
-  border-radius: 8px !important;
-  padding: 6px 11px !important;
-  font-size: 11px !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  font-size: 10.5px !important;
   font-weight: 800 !important;
-  max-width: 145px !important;
+  letter-spacing: 0.2px !important;
+  max-width: 120px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
 }
 
 .btn-menu-toggle {
   width: 30px !important;
   height: 30px !important;
-  border-radius: 8px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 6px !important;
+  background: rgba(255, 255, 255, 0.08) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
-  color: #fff !important;
+  color: #f4f7f5 !important;
 }
 
-/* Sembunyikan sub-hud & ticker lama dari header atas (dipindah ke pil samping yang rapi) */
+/* Sembunyikan baris lama sub-hud & ticker yang bikin penuh */
 .sub-hud,
 .citizen-ticker-bar {
   display: none !important;
 }
 
-/* 2. FLOATING SIDE PILLS (KIRI & KANAN ATAS — 100% TENGAH LAYAR BEBAS UNTUK 3D) */
+/* 2. FLOATING SIDE PILLS (Kiri & Kanan Atas — Rapi, Tidak Saling Tabrak) */
 .hud-side-left {
   position: fixed !important;
-  top: calc(54px + env(safe-area-inset-top)) !important;
+  top: calc(52px + env(safe-area-inset-top)) !important;
   left: 10px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
   gap: 6px !important;
   z-index: 38 !important;
-  pointer-events: none !important;
 }
 
 .hud-side-right {
   position: fixed !important;
-  top: calc(54px + env(safe-area-inset-top)) !important;
+  top: calc(52px + env(safe-area-inset-top)) !important;
   right: 10px !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-end !important;
   gap: 6px !important;
   z-index: 38 !important;
-  pointer-events: none !important;
 }
 
 .hud-pill-btn {
-  pointer-events: auto !important;
-  background: rgba(14, 47, 42, 0.88) !important;
-  color: #f8fafc !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  backdrop-filter: blur(12px) !important;
-  border-radius: 8px !important;
+  background: rgba(14, 47, 42, 0.92) !important;
+  color: #f4f7f5 !important;
+  border: 1px solid rgba(111, 227, 163, 0.25) !important;
+  border-radius: 6px !important;
   padding: 6px 10px !important;
   font-size: 10.5px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.2px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.4px !important;
   display: inline-flex !important;
   align-items: center !important;
   gap: 5px !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
   cursor: pointer !important;
   white-space: nowrap !important;
-  transition: transform 0.15s ease, background 0.15s ease !important;
-}
-
-.hud-pill-btn:active {
-  transform: scale(0.96) !important;
 }
 
 .hud-pill-btn.accent {
-  background: linear-gradient(135deg, #ffcf4a, #f59e0b) !important;
+  background: #ffcf4a !important;
   color: #0e2f2a !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-  font-weight: 800 !important;
+  border-color: #fde68a !important;
 }
 
-.hud-pill-btn.active {
-  border-color: #6fe3a3 !important;
-  color: #6fe3a3 !important;
-}
-
-/* Laci Kamera (Muncul rapi di kiri saat tombol KAMERA diklik) */
 .cam-drawer {
-  pointer-events: auto !important;
   display: none !important;
   flex-direction: column !important;
-  gap: 4px !important;
-  background: rgba(14, 47, 42, 0.94) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  border-radius: 10px !important;
-  padding: 5px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+  gap: 3px !important;
+  background: rgba(14, 47, 42, 0.96) !important;
+  border: 1px solid rgba(111, 227, 163, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 4px !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35) !important;
 }
 
 .cam-drawer.open {
@@ -174,19 +172,18 @@
   font-size: 10.5px !important;
   font-weight: 700 !important;
   padding: 5px 9px !important;
-  border-radius: 6px !important;
+  border-radius: 5px !important;
   text-align: left !important;
   cursor: pointer !important;
   white-space: nowrap !important;
 }
 
-.cam-drawer button.active,
 .cam-drawer button:hover {
-  background: rgba(111, 227, 163, 0.18) !important;
+  background: rgba(111, 227, 163, 0.16) !important;
   color: #6fe3a3 !important;
 }
 
-/* 3. SEMBUNYIKAN LABEL ATAS KEPALA YANG MENGGANGGU */
+/* 3. BERSIHKAN OVERHEAD LABELS YANG MENGGANGGU */
 .citizen-nametag,
 .avatar-label,
 .npc-overhead-tag,
@@ -196,7 +193,7 @@
   pointer-events: none !important;
 }
 
-/* 4. PANEL SKENARIO KOTA (Disembunyikan default, muncul rapi di tengah bawah saat tab SKENARIO dibuka) */
+/* 4. PANEL SKENARIO KOTA */
 #bottom-control-panel.control-card {
   position: fixed !important;
   left: 12px !important;
@@ -207,11 +204,10 @@
   margin: 0 auto !important;
   transform: none !important;
   padding: 11px 14px !important;
-  border-radius: 14px !important;
-  background: rgba(14, 47, 42, 0.95) !important;
-  backdrop-filter: blur(16px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.42) !important;
+  border-radius: 12px !important;
+  background: rgba(14, 47, 42, 0.96) !important;
+  border: 1px solid rgba(111, 227, 163, 0.28) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4) !important;
   z-index: 44 !important;
   box-sizing: border-box !important;
 }
@@ -223,46 +219,52 @@
   display: none !important;
 }
 
-/* 5. BOTTOM NAVIGATION BAR (5 TAB RAPI DI PALING BAWAH) */
+/* 5. BOTTOM NAVIGATION DOCK 6 TAB (Palet Hijau Teh Bandung #0b2521 + Garis Aktif Emas #ffcf4a) */
 .bottom-nav-dock {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  height: calc(54px + env(safe-area-inset-bottom)) !important;
+  height: calc(56px + env(safe-area-inset-bottom)) !important;
   padding-bottom: env(safe-area-inset-bottom) !important;
-  background: rgba(11, 37, 33, 0.96) !important;
-  backdrop-filter: blur(16px) !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  background: #0b2521 !important;
+  border-top: 1px solid rgba(111, 227, 163, 0.2) !important;
   display: grid !important;
-  grid-template-columns: repeat(5, 1fr) !important;
-  align-items: center !important;
+  grid-template-columns: repeat(6, 1fr) !important;
+  align-items: stretch !important;
   z-index: 50 !important;
 }
 
 .nav-dock-btn {
   background: transparent !important;
   border: none !important;
-  color: #94a3b8 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+  color: #9bb5ae !important;
   display: flex !important;
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 2px !important;
-  height: 100% !important;
+  gap: 3px !important;
   font-family: inherit !important;
   cursor: pointer !important;
-  padding: 4px 0 !important;
-  transition: color 0.15s ease !important;
+  padding: 4px 2px !important;
+  position: relative !important;
 }
 
-.nav-dock-btn .nav-ico {
-  font-size: 16px !important;
-  line-height: 1 !important;
+.nav-dock-btn:last-child {
+  border-right: none !important;
+}
+
+.nav-dock-btn svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  stroke-width: 2 !important;
 }
 
 .nav-dock-btn .nav-lbl {
-  font-size: 9px !important;
+  font-size: 8.5px !important;
   font-weight: 800 !important;
   letter-spacing: 0.4px !important;
   text-transform: uppercase !important;
@@ -270,19 +272,20 @@
 
 .nav-dock-btn.active {
   color: #ffcf4a !important;
+  background: rgba(255, 207, 74, 0.06) !important;
+  border-right: 2px solid #ffcf4a !important;
 }
 
-/* 6. JOYSTICK & TOMBOL LOMPAT (Berdiri bersih di atas Bottom Dock tanpa menabrak apapun) */
+/* 6. JOYSTICK & TOMBOL LOMPAT DI ATAS DOCK BAWAH */
 #joystick-zone {
   position: fixed !important;
   bottom: calc(68px + env(safe-area-inset-bottom)) !important;
   left: 14px !important;
-  width: 86px !important;
-  height: 86px !important;
+  width: 84px !important;
+  height: 84px !important;
   z-index: 36 !important;
-  background: rgba(14, 47, 42, 0.58) !important;
-  border: 1.5px solid rgba(255, 255, 255, 0.28) !important;
-  backdrop-filter: blur(8px) !important;
+  background: rgba(14, 47, 42, 0.6) !important;
+  border: 1.5px solid rgba(111, 227, 163, 0.35) !important;
 }
 
 #joystick-knob {
@@ -294,15 +297,15 @@
   position: fixed !important;
   bottom: calc(74px + env(safe-area-inset-bottom)) !important;
   right: 14px !important;
-  width: 48px !important;
-  height: 48px !important;
-  font-size: 20px !important;
+  width: 46px !important;
+  height: 46px !important;
+  font-size: 19px !important;
   z-index: 36 !important;
 }
 
 #btn-tram-action {
   position: fixed !important;
-  bottom: calc(130px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(128px + env(safe-area-inset-bottom)) !important;
   right: 14px !important;
   padding: 7px 12px !important;
   font-size: 11px !important;
@@ -310,12 +313,12 @@
 }
 
 #interaction-prompt {
-  bottom: calc(70px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(72px + env(safe-area-inset-bottom)) !important;
   z-index: 42 !important;
 }
 
 #rpg-dialog {
-  bottom: calc(62px + env(safe-area-inset-bottom)) !important;
+  bottom: calc(64px + env(safe-area-inset-bottom)) !important;
   left: 10px !important;
   right: 10px !important;
   max-width: 460px !important;
