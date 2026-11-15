@@ -344,7 +344,7 @@
 
     // 2. Gerakkan karakter warga lain secara halus + atur volume suara berdasarkan jarak 3D
     remotePlayers.forEach((entry, sid) => {
-      if (now - entry.lastSeen > 22000) {
+      if (now - entry.lastSeen > 60000) {
         removeRemoteAvatar(sid);
         return;
       }
@@ -415,6 +415,27 @@
     }
   };
 
+  
+  function sendMyLiveSnapshot() {
+    if (!mpChannel) return;
+    const id = getMyIdentity();
+    const am = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    const x = am && am.position ? Number(am.position.x.toFixed(3)) : 0;
+    const z = am && am.position ? Number(am.position.z.toFixed(3)) : 2.5;
+    const rotY = am && am.rotation ? Number(am.rotation.y.toFixed(3)) : 0;
+    mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, x, z, rotY } });
+  }
+  window.forceBroadcastMyAppearance = async function() {
+    lastBroadcastTime = 0;
+    sendMyLiveSnapshot();
+    if (mpChannel) {
+      const id = getMyIdentity();
+      const am = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+      try {
+        await mpChannel.track({ ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, x: am && am.position ? Number(am.position.x.toFixed(2)) : 0, z: am && am.position ? Number(am.position.z.toFixed(2)) : 2.5, rotY: 0, color: myInfo.color, acc: myInfo.acc, role: myInfo.role, x: 0, z: 2.5, rotY: 0, online_at: new Date().toISOString() });
+      } catch (_) {}
+    }
+  };
   function connectGlobalWorld() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
     if (mpChannel) return;
@@ -428,7 +449,17 @@
     });
 
     mpChannel
-      .on('presence', { event: 'sync' }, () => {
+      .on("presence", { event: "sync" }, () => {
+        const st = mpChannel.presenceState();
+        Object.keys(st).forEach(sid => {
+          if (sid === mySessionId) return;
+          const info = Array.isArray(st[sid]) && st[sid].length ? st[sid][st[sid].length - 1] : null;
+          if (info) {
+            const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
+            if (en) en.lastSeen = Date.now();
+          }
+        });
+        sendMyLiveSnapshot();
         lastBroadcastTime = 0;
         const state = mpChannel.presenceState();
         const sids = Object.keys(state);
@@ -504,7 +535,7 @@
     }
     injectBubbleLayer();
     connectGlobalWorld();
-    setTimeout(ensureGuestPlayerSpawned, 450);
+    setTimeout(() => { ensureGuestPlayerSpawned(); window.forceBroadcastMyAppearance(); }, 900);
   }
 
   if (document.readyState === 'loading') {
