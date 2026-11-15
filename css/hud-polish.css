@@ -1,0 +1,259 @@
+/* ================= UI HUD POLISH — PIRAKUBDG (ANTI-OVERLAP & MOBILE-FIRST) ================= */
+
+/* 1. TOP HUD: Rapi, proporsional, & bebas kepotong di layar sempit */
+.top-hud {
+  top: max(10px, env(safe-area-inset-top)) !important;
+  left: 10px !important;
+  right: 10px !important;
+  gap: 6px !important;
+  z-index: 40 !important;
+}
+
+.brand-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 6px !important;
+  min-height: 36px !important;
+}
+
+.brand-tag {
+  padding: 5px 10px !important;
+  font-size: 12px !important;
+  border-radius: 999px !important;
+  backdrop-filter: blur(14px) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+#warga-counter {
+  font-size: 10px !important;
+  padding: 2px 7px !important;
+}
+
+.top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-width: 0 !important;
+}
+
+#btn-citizen-status {
+  padding: 5px 11px !important;
+  font-size: 11.5px !important;
+  max-width: 155px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  border-radius: 999px !important;
+}
+
+.btn-menu-toggle {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+/* 2. SUB-HUD (Waktu, Pencarian, & Tombol Kamera): Horizontal scroll tanpa gepeng/kepotong */
+.sub-hud {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  -webkit-overflow-scrolling: touch !important;
+  scrollbar-width: none !important;
+  padding-bottom: 2px !important;
+}
+
+.sub-hud::-webkit-scrollbar {
+  display: none !important;
+}
+
+.time-badge,
+.view-chip {
+  flex-shrink: 0 !important;
+  white-space: nowrap !important;
+  height: 30px !important;
+  padding: 0 11px !important;
+  font-size: 11px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.search-box {
+  flex-shrink: 0 !important;
+  width: 108px !important;
+  height: 30px !important;
+  border-radius: 999px !important;
+  padding: 0 9px !important;
+}
+
+.search-box:focus-within {
+  width: 145px !important;
+}
+
+.search-input {
+  font-size: 11px !important;
+}
+
+/* 3. TICKER CURHAT WARGA: Ramping 1 baris */
+.citizen-ticker-bar {
+  height: 28px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.ticker-badge {
+  font-size: 9.5px !important;
+  padding: 2px 7px !important;
+  border-radius: 999px !important;
+  flex-shrink: 0 !important;
+}
+
+.ticker-content {
+  font-size: 11px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* 4. PANEL SKENARIO KOTA BAWAH: Kompak & memberi ruang aman untuk Joystick & Tombol Lompat */
+#bottom-control-panel.control-card {
+  bottom: calc(64px + env(safe-area-inset-bottom)) !important;
+  left: 12px !important;
+  right: 12px !important;
+  max-width: 420px !important;
+  margin: 0 auto !important;
+  padding: 11px 14px !important;
+  border-radius: 18px !important;
+  background: rgba(14, 47, 42, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35) !important;
+  z-index: 28 !important;
+}
+
+/* Saat mode warga aktif (joystick muncul), geser panel skenario ke atas sedikit agar tidak ketutup joystick & tombol lompat */
+body.citizen-active #bottom-control-panel.control-card,
+#joystick-zone[style*="block"] ~ #bottom-control-panel.control-card {
+  bottom: calc(168px + env(safe-area-inset-bottom)) !important;
+}
+
+.control-card .card-label {
+  font-size: 10.5px !important;
+  margin-bottom: 2px !important;
+}
+
+.control-card .card-title {
+  font-size: 13.5px !important;
+  line-height: 1.25 !important;
+  margin-bottom: 8px !important;
+}
+
+.control-card .mode-toggle {
+  gap: 6px !important;
+  margin-bottom: 8px !important;
+}
+
+.control-card .btn-mode {
+  padding: 6px 10px !important;
+  font-size: 11px !important;
+  border-radius: 10px !important;
+}
+
+.control-card .vitals {
+  gap: 5px !important;
+  margin-bottom: 6px !important;
+}
+
+.control-card .vit {
+  font-size: 10.5px !important;
+}
+
+.control-card .milestone-bar {
+  font-size: 10px !important;
+  padding-top: 5px !important;
+}
+
+/* 5. JOYSTICK, TOMBOL LOMPAT, & PIL SKENARIO: Posisi simetris di atas bar chat bawah */
+#joystick-zone {
+  bottom: calc(66px + env(safe-area-inset-bottom)) !important;
+  left: 16px !important;
+  width: 92px !important;
+  height: 92px !important;
+  z-index: 36 !important;
+  background: rgba(14, 47, 42, 0.55) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+#joystick-knob {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+#btn-jump-mobile {
+  bottom: calc(74px + env(safe-area-inset-bottom)) !important;
+  right: 16px !important;
+  width: 50px !important;
+  height: 50px !important;
+  font-size: 21px !important;
+  z-index: 36 !important;
+}
+
+#btn-tram-action {
+  bottom: calc(134px + env(safe-area-inset-bottom)) !important;
+  right: 16px !important;
+  padding: 8px 14px !important;
+  font-size: 11.5px !important;
+  z-index: 36 !important;
+}
+
+.btn-show-panel-fab {
+  bottom: calc(68px + env(safe-area-inset-bottom)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  padding: 7px 14px !important;
+  font-size: 11px !important;
+  border-radius: 999px !important;
+  z-index: 32 !important;
+  white-space: nowrap !important;
+}
+
+/* 6. QUICK CHAT & EMOTE BAR PALING BAWAH */
+.quick-chat-bar,
+#quick-chat-dock {
+  bottom: max(10px, env(safe-area-inset-bottom)) !important;
+  left: 10px !important;
+  right: 10px !important;
+  max-width: 440px !important;
+  margin: 0 auto !important;
+  height: 44px !important;
+  padding: 4px 6px !important;
+  border-radius: 999px !important;
+  z-index: 38 !important;
+}
+
+/* 7. INTERACTION PROMPT & RPG DIALOG */
+#interaction-prompt {
+  bottom: calc(130px + env(safe-area-inset-bottom)) !important;
+  z-index: 39 !important;
+}
+
+#rpg-dialog {
+  bottom: calc(14px + env(safe-area-inset-bottom)) !important;
+  left: 10px !important;
+  right: 10px !important;
+  max-width: 460px !important;
+  margin: 0 auto !important;
+  z-index: 45 !important;
+}
