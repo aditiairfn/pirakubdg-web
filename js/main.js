@@ -3507,10 +3507,14 @@ let activeQuestSystem = null;
       myPlayerMesh.position.z += moveFinalVec.z * speed;
 
       const prevY = myPlayerMesh.position.y;
-      myPlayerMesh.position.x = Math.max(-138, Math.min(75, myPlayerMesh.position.x));
-      myPlayerMesh.position.z = Math.max(-65, Math.min(55, myPlayerMesh.position.z));
-      // Jika sedang berjalan di atas dek jembatan tinggi (prevY > 1.35) & grounded, tahan di dalam parapet jembatan (-29.0 .. -23.0)
-      if (isGrounded && prevY > 1.35 && myPlayerMesh.position.x > -126 && myPlayerMesh.position.x < -30) {
+      myPlayerMesh.position.x = Math.max(-132, Math.min(61, myPlayerMesh.position.x));
+      myPlayerMesh.position.z = Math.max(-62, Math.min(52, myPlayerMesh.position.z));
+      // Jika melewati batas barat kota (x < -61) via Flyover Pasupati, kunci tetap di atas koridor jembatan (-29.0 .. -23.0)
+      if (myPlayerMesh.position.x < -61) {
+        myPlayerMesh.position.z = Math.max(-29.0, Math.min(-23.0, myPlayerMesh.position.z));
+      }
+      // Jika sedang berjalan di atas dek jembatan tinggi (prevY > 1.15) & grounded, tahan di dalam parapet jembatan (-29.0 .. -23.0)
+      if (isGrounded && prevY > 1.15 && myPlayerMesh.position.x < -25) {
         myPlayerMesh.position.z = Math.max(-29.0, Math.min(-23.0, myPlayerMesh.position.z));
       }
 

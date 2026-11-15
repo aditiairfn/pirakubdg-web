@@ -633,7 +633,11 @@
       }
     }
     if (selfMesh && selfMesh.position) {
-      if (selfMesh.position.x < -138.0) selfMesh.position.x = -138.0;
+      if (selfMesh.position.z >= -29.2 && selfMesh.position.z <= -22.8) {
+        if (selfMesh.position.x < -132.0) selfMesh.position.x = -132.0;
+      } else {
+        if (selfMesh.position.x < -61.0) selfMesh.position.x = -61.0;
+      }
       if (selfMesh.position.x > 61.0) selfMesh.position.x = 61.0;
       if (selfMesh.position.z < -31.0) selfMesh.position.z = -31.0;
       if (selfMesh.position.z > 24.5) selfMesh.position.z = 24.5;
