@@ -711,10 +711,10 @@ let activeQuestSystem = null;
  // Ruas jalan utama kawasan Gedung Sate - Lapangan Gasibu (sesuai peta asli Google Maps)
   const _dummyRoad = road([[-999, -999], [-998, -998]], 0.1);
   // 1. Jl. Surapati (poros utara lurus di bawah Flyover Pasupati, batas utara Lapangan Gasibu)
-  const Rsur = road([[-65, -26], [-42, -26], [-21, -26], [0, -26], [21, -26], [42, -26], [65, -26]], 8.4);
+  const Rsur = road([[-235, -26], [-150, -26], [-65, -26], [-42, -26], [-21, -26], [0, -26], [21, -26], [42, -26], [65, -26], [150, -26], [235, -26]], 8.4);
   // 2. Jl. Diponegoro (barat & timur terbuka; ruas tengah -21..21 ditutup sebagai plaza pedestrian Gedung Sate)
-  const RdipW = road([[-65, 3], [-42, 3], [-21, 3]], 6.2);
-  const RdipE = road([[21, 3], [42, 3], [65, 3]], 6.2);
+  const RdipW = road([[-235, 3], [-150, 3], [-65, 3], [-42, 3], [-21, 3]], 6.2);
+  const RdipE = road([[21, 3], [42, 3], [65, 3], [150, 3], [235, 3]], 6.2);
   // 3. Poros Barat Gasibu-Gedung Sate: Jl. Majapahit (utara) -> Jl. Cilamaya (selatan)
   const Rmaj = road([[-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 24]], 5.4);
   // 4. Poros Timur Gasibu-Gedung Sate: Jl. Sentot Alibasyah (utara) -> Jl. Hayam Wuruk (selatan)
@@ -821,7 +821,7 @@ let activeQuestSystem = null;
     box(1.6, 20, 1.8, PX, 0, PZ, 0xc7cbd1, FLY);
     [-.5, .5].forEach(o => box(.55, 4.4, 1.7, PX + o, 19.8, PZ, 0xd62b2b, FLY));
 
-    const cabM = IM(poleG, MAT(0xeef1f4), 32, false, false);
+    const cabM = IM(poleG, MAT(0xeef1f4), 32, false, false); window.pirakuPasupatiCables = cabM;
     const pA = V3(0, 0, 0), pB = V3(0, 0, 0), pD = V3(0, 0, 0), pY = V3(0, 1, 0), qq = new THREE.Quaternion();
     let n = 0;
     [-1, 1].forEach(sd => {

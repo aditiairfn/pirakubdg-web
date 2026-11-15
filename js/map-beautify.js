@@ -172,27 +172,26 @@
     infinitePlain.receiveShadow = true;
     horizonGrp.add(infinitePlain);
 
-    // 2. Samakan Material Aspal & Trotoar Persis dengan Jalan Asli + Barisan Lampu Jalan PJU
-    let origAsphMat = null, origWalkMat = null;
-    scene.traverse(o => {
-      if (o.isMesh && o.material && o.geometry) {
-        if (!origAsphMat && o.position && Math.abs(o.position.y - 0.165) < 0.01 && o.geometry.type === "PlaneGeometry") {
-          origAsphMat = o.material;
-        }
-        if (!origWalkMat && o.material.map && o.geometry.type === "BufferGeometry" && !o.geometry.parameters) {
-          // Ambil material trotoar dari mesh jalan di y=0.21
-          const pos = o.geometry.attributes && o.geometry.attributes.position;
-          if (pos && pos.count > 10 && Math.abs(pos.getY(0) - 0.21) < 0.01) origWalkMat = o.material;
-        }
-      }
-    });
-
-    const extAsphaltMat = origAsphMat || new THREE.MeshStandardMaterial({ color: 0x333b48, roughness: 0.88 });
-    const extWalkMat = origWalkMat || new THREE.MeshStandardMaterial({ color: 0xb8b2a6, roughness: 0.88 });
-    const extDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    // 2. Barisan Lampu Jalan PJU Menyala + Kolam Cahaya di Aspal + Jendela Hotel Pullman + RGB Pasupati
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.45 });
-    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfff3c4 });
-    const extLampBulbs = [];
+    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0x475569 });
+    const glowCv = document.createElement("canvas");
+    glowCv.width = glowCv.height = 64;
+    const gg2 = glowCv.getContext("2d");
+    const rad = gg2.createRadialGradient(32, 32, 2, 32, 32, 32);
+    rad.addColorStop(0, "rgba(255,224,130,0.88)");
+    rad.addColorStop(0.5, "rgba(255,200,90,0.28)");
+    rad.addColorStop(1, "rgba(255,200,90,0)");
+    gg2.fillStyle = rad;
+    gg2.fillRect(0, 0, 64, 64);
+    const roadGlowMat = new THREE.MeshBasicMaterial({
+      map: new THREE.CanvasTexture(glowCv),
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+    const extLampPools = [];
 
     function addStreetLamp(lx, lz, rotY) {
       const lg = new THREE.Group();
@@ -202,61 +201,88 @@
       pole.position.y = 2.2;
       const arm = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.07, 0.07), poleMat);
       arm.position.set(0.55, 4.35, 0);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.22), lampBulbMat);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 0.24), lampBulbMat);
       head.position.set(1.05, 4.3, 0);
-      lg.add(pole, arm, head);
+      const pool = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 7.2), roadGlowMat);
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(1.1, -0.04, 0);
+      lg.add(pole, arm, head, pool);
       horizonGrp.add(lg);
-      extLampBulbs.push(head);
+      extLampPools.push(pool);
     }
 
-    function extendExactRoad(x0, z0, x1, z1, roadW) {
+    function populateStreetLamps(x0, z0, x1, z1, roadW) {
       const len = Math.hypot(x1 - x0, z1 - z0);
-      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
       const isEW = Math.abs(x1 - x0) > Math.abs(z1 - z0);
-      const asph = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? len : roadW, isEW ? roadW : len), extAsphaltMat);
-      asph.rotation.x = -Math.PI / 2;
-      asph.position.set(cx, 0.152, cz);
-      asph.receiveShadow = true;
-      horizonGrp.add(asph);
-
-      const sw = 1.45;
-      [-1, 1].forEach(side => {
-        const off = side * (roadW / 2 + sw / 2);
-        const walk = new THREE.Mesh(new THREE.BoxGeometry(isEW ? len : sw, 0.06, isEW ? sw : len), extWalkMat);
-        walk.position.set(cx + (isEW ? 0 : off), 0.18, cz + (isEW ? off : 0));
-        walk.receiveShadow = true;
-        horizonGrp.add(walk);
-      });
-
-      const steps = Math.floor(len / 7);
-      for (let k = 0; k < steps; k++) {
-        const u = (k + 0.5) / steps;
-        const dash = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? 3.0 : 0.24, isEW ? 0.24 : 3.0), extDashMat);
-        dash.rotation.x = -Math.PI / 2;
-        dash.position.set(x0 + (x1 - x0) * u, 0.158, z0 + (z1 - z0) * u);
-        horizonGrp.add(dash);
-      }
-
-      // Pasang lampu jalan PJU tiap 22m di sisi trotoar
-      const lampSteps = Math.floor(len / 22);
+      const lampSteps = Math.floor(len / 20);
       for (let k = 0; k < lampSteps; k++) {
         const u = (k + 0.4) / lampSteps;
         const px = x0 + (x1 - x0) * u;
         const pz = z0 + (z1 - z0) * u;
         const side = (k % 2 === 0) ? 1 : -1;
-        const off = side * (roadW / 2 + 0.55);
+        const off = side * (roadW / 2 + 0.45);
         if (isEW) addStreetLamp(px, pz + off, side > 0 ? Math.PI / 2 : -Math.PI / 2);
         else addStreetLamp(px + off, pz, side > 0 ? Math.PI : 0);
       }
     }
 
-    // Cukup sambung sampai radius ±235m (hemat render karena zoom-out sudah dibatasi maxDistance=92)
-    extendExactRoad(-235, -26, -65, -26, 8.4);
-    extendExactRoad(65, -26, 235, -26, 8.4);
-    extendExactRoad(-235, 3, -65, 3, 6.2);
-    extendExactRoad(65, 3, 235, 3, 6.2);
-    extendExactRoad(-21, 24, -21, 235, 5.4);
-    extendExactRoad(21, 24, 21, 235, 5.4);
+    populateStreetLamps(-230, -26, 230, -26, 8.4);
+    populateStreetLamps(-230, 3, -24, 3, 6.2);
+    populateStreetLamps(24, 3, 230, 3, 6.2);
+    populateStreetLamps(-21, -24, -21, 230, 5.4);
+    populateStreetLamps(21, -24, 21, 230, 5.4);
+
+    // Jendela Menyala Hotel Pullman Bandung Grand Central (x=-26, z=14)
+    const pullmanWinMat = new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0 });
+    const pullmanWinGrp = new THREE.Group();
+    pullmanWinGrp.position.set(-26, 0, 14);
+    for (let fl = 0; fl < 7; fl++) {
+      const wy = 2.4 + fl * 1.45;
+      [-4.2, -2.5, -0.8, 0.8, 2.5, 4.2].forEach(wx => {
+        const wN = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.72), pullmanWinMat);
+        wN.position.set(wx, wy, -3.56);
+        wN.rotation.y = Math.PI;
+        const wS = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.72), pullmanWinMat);
+        wS.position.set(wx, wy, 3.56);
+        pullmanWinGrp.add(wN, wS);
+      });
+    }
+    horizonGrp.add(pullmanWinGrp);
+
+    // Lampu RGB Dinamis Flyover Pasupati (Pilar Merah-Putih + Kabel Cable-Stayed RGB + LED Dek Jembatan)
+    const pasupatiRgbMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0 });
+    const pasupatiPylonGlow = new THREE.PointLight(0xff2a85, 0, 28, 1.6);
+    pasupatiPylonGlow.position.set(-54, 14, -26);
+    horizonGrp.add(pasupatiPylonGlow);
+
+    // Strip LED RGB sepanjang tepi utara & selatan dek Flyover Pasupati (-95 s/d -24 di z=-26)
+    const pasupatiLedL = new THREE.Mesh(new THREE.BoxGeometry(70, 0.16, 0.14), pasupatiRgbMat);
+    pasupatiLedL.position.set(-60, 6.45, -22.6);
+    const pasupatiLedR = new THREE.Mesh(new THREE.BoxGeometry(70, 0.16, 0.14), pasupatiRgbMat);
+    pasupatiLedR.position.set(-60, 6.45, -29.4);
+    horizonGrp.add(pasupatiLedL, pasupatiLedR);
+
+    // Overlay kabel RGB sejajar 32 kabel Pasupati (PX=-54, puncak y=23.5 -> dek y=6.2)
+    const pasupatiRgbCables = [];
+    [-1, 1].forEach(sd => {
+      for (let k = 0; k < 8; k++) {
+        [-1, 1].forEach(j => {
+          const ax = -54 + sd * (4 + k * 2.2);
+          const ay = ax > -44 ? 6.2 - (ax + 44) * 0.25 : 6.2;
+          const az = -26 + j * 3.1;
+          const topY = 14.5 + k * 1.15;
+          const pTop = new THREE.Vector3(-54, topY, -26 + j * 0.65);
+          const pBot = new THREE.Vector3(ax, ay, az);
+          const dist = pTop.distanceTo(pBot);
+          const cMat = new THREE.MeshBasicMaterial({ color: 0xff007f, transparent: true, opacity: 0 });
+          const cMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, dist, 6), cMat);
+          cMesh.position.copy(pTop).add(pBot).multiplyScalar(0.5);
+          cMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pBot.clone().sub(pTop).normalize());
+          horizonGrp.add(cMesh);
+          pasupatiRgbCables.push({ mat: cMat, idx: k + (sd > 0 ? 8 : 0) });
+        });
+      }
+    });
 
     // 3. Tekstur Fasad Rumah, Fasad Ruko 2-Lantai, & Atap Genteng Tanah Liat (Ep. 3)
     const houseFacadeTex = makeProcTex(256, 256, (g, w, h) => {
@@ -524,6 +550,27 @@
       window.__pirakuSkyU.bot.value.lerp(new THREE.Color(pal.bot), 0.12);
       window.__pirakuSkyU.sunC.value.lerp(new THREE.Color(pal.sun), 0.12);
       scRef.fog.color.copy(window.__pirakuSkyU.bot.value);
+      const isNight = /Malam/i.test(btnTxt);
+      const isDusk = /Senja/i.test(btnTxt);
+      const nightLevel = isNight ? 1.0 : isDusk ? 0.55 : 0.0;
+
+      // Lampu PJU menyala hangat + kolam cahaya di aspal
+      lampBulbMat.color.setHex(nightLevel > 0.1 ? 0xffe49e : 0x475569);
+      roadGlowMat.opacity = nightLevel * 0.65;
+
+      // Jendela Hotel Pullman menyala kuning keemasan hangat
+      pullmanWinMat.opacity = nightLevel * 0.88;
+
+      // Flyover Pasupati RGB Rainbow Wave seperti foto referensi
+      pasupatiRgbMat.opacity = nightLevel * 0.92;
+      pasupatiPylonGlow.intensity = nightLevel * 2.2;
+      const hueBase = ((t || performance.now() * 0.001) * 0.14) % 1;
+      pasupatiRgbMat.color.setHSL(hueBase, 0.95, 0.58);
+      pasupatiPylonGlow.color.setHSL((hueBase + 0.5) % 1, 0.95, 0.55);
+      pasupatiRgbCables.forEach(c => {
+        c.mat.opacity = nightLevel * 0.92;
+        c.mat.color.setHSL((hueBase + c.idx * 0.055) % 1, 0.96, 0.58);
+      });
     }
     if (selfMesh && selfMesh.position) {
       if (selfMesh.position.x < -61.0) selfMesh.position.x = -61.0;
