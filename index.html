@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v3">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v4">
 </head>
 <body>
 
@@ -467,6 +467,61 @@
     <div id="district-title" style="font-weight:800; font-size:12px; letter-spacing:0.8px; color:var(--lampu, #ffcf4a); text-transform:uppercase;">DISTRIK KOTA</div>
     <div id="district-subtitle" style="font-size:10px; color:#cfe0d9; font-weight:600; margin-top:2px;">Zona Interaktif</div>
   </div>
+
+  
+  <!-- Floating Side Pills (Kiri: Kamera & Waktu | Kanan: Rekam Story & Obrolan) -->
+  <div class="hud-side-left">
+    <button class="hud-pill-btn" onclick="document.getElementById('cam-drawer-menu').classList.toggle('open')">🎥 KAMERA ▾</button>
+    <div class="cam-drawer" id="cam-drawer-menu">
+      <button onclick="moveCam('overview'); document.getElementById('cam-drawer-menu').classList.remove('open')">🏙️ Overview Kota</button>
+      <button onclick="moveCam('sate'); document.getElementById('cam-drawer-menu').classList.remove('open')">🏛️ Gedung Sate</button>
+      <button onclick="moveCam('pasupati'); document.getElementById('cam-drawer-menu').classList.remove('open')">🌉 Jembatan Pasupati</button>
+      <button onclick="moveCam('walkot'); document.getElementById('cam-drawer-menu').classList.remove('open')">☕ Pak Walkot</button>
+    </div>
+    <button class="hud-pill-btn" onclick="cycleTime()">☀️ GANTI WAKTU</button>
+  </div>
+
+  <div class="hud-side-right">
+    <button class="hud-pill-btn accent" onclick="snapCity()">📷 FOTO KOTA</button>
+    <button class="hud-pill-btn" onclick="openChatModal()">💬 OBROLAN</button>
+    <button class="hud-pill-btn" onclick="openWardrobeModal()">👕 OUTFIT</button>
+  </div>
+
+  <!-- Bottom Navigation Dock (5 Tab Rapi ala Simulasi Kota) -->
+  <nav class="bottom-nav-dock" aria-label="Navigasi Utama">
+    <button class="nav-dock-btn active" id="nav-tab-peta" onclick="setActiveDockTab('peta'); toggleBottomPanel(false);">
+      <span class="nav-ico">🗺️</span>
+      <span class="nav-lbl">Peta</span>
+    </button>
+    <button class="nav-dock-btn" id="nav-tab-skenario" onclick="setActiveDockTab('skenario'); const p=document.getElementById('bottom-control-panel'); toggleBottomPanel(p.style.display==='none' || getComputedStyle(p).display==='none');">
+      <span class="nav-ico">🚊</span>
+      <span class="nav-lbl">Skenario</span>
+    </button>
+    <button class="nav-dock-btn" id="nav-tab-polling" onclick="setActiveDockTab('polling'); openPollingModal();">
+      <span class="nav-ico">📊</span>
+      <span class="nav-lbl">Polling</span>
+    </button>
+    <button class="nav-dock-btn" id="nav-tab-warga" onclick="setActiveDockTab('warga'); openLeaderboardModal();">
+      <span class="nav-ico">🏆</span>
+      <span class="nav-lbl">Warga</span>
+    </button>
+    <button class="nav-dock-btn" id="nav-tab-akun" onclick="setActiveDockTab('akun'); openCheckinModal();">
+      <span class="nav-ico">📅</span>
+      <span class="nav-lbl">Absen</span>
+    </button>
+  </nav>
+
+  <script>
+    function setActiveDockTab(tab) {
+      document.querySelectorAll('.nav-dock-btn').forEach(b => b.classList.remove('active'));
+      const el = document.getElementById('nav-tab-' + tab);
+      if (el) el.classList.add('active');
+    }
+    window.addEventListener('DOMContentLoaded', () => {
+      const p = document.getElementById('bottom-control-panel');
+      if (p) p.style.display = 'none';
+    });
+  </script>
 
   <div id="webgl-canvas"></div>
 
