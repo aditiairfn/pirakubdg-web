@@ -715,7 +715,7 @@ let activeQuestSystem = null;
   const Rcla = road([[-999,-999],[-998,-998]], 0.1), _oldRcla = ([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
   const Rcim = road([[-21, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4.4);
   const Rcil = road([[18, 3], [31, 16], [44, 27], [60, 38]], 4.4);
-  const RriauW = road([[-999,-999],[-998,-998]], 0.1), RriauE = RriauW, _oldRriau = ([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
+  const RriauW = road([[-999,-999],[-998,-998]], 0.1), _oldRriau = ([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
   const Rdago = road([[-999,-999],[-998,-998]], 0.1), _oldRdago = ([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
   // Jalan Ekspansi Baru (ujungnya disambungkan ke jalan utama agar tidak bolong)
   // disabled: const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
