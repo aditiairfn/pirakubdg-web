@@ -3474,7 +3474,7 @@ let activeQuestSystem = null;
 
     let inputForward = 0;
     let inputRight = 0;
-    const speed = 8.5 * delta;
+    const speed = 8.5 * (window.pirakuSpeedMult || 1.0) * delta;
 
     if (keys.w) inputForward += 1;
     if (keys.s) inputForward -= 1;
