@@ -54,10 +54,14 @@
             </div>
           `).join("")}
         </div>
-        <button id="btn-info-polling" style="width:100%;padding:10px;border-radius:12px;border:1px solid rgba(250,204,21,0.45);background:rgba(250,204,21,0.12);color:#fde047;font-size:12px;font-weight:800;cursor:pointer;">📊 Ikut Polling Kebijakan Kota</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button id="btn-info-districts" style="padding:10px;border-radius:12px;border:none;background:#f59e0b;color:#0f172a;font-size:12px;font-weight:800;cursor:pointer;">🏙️ 30 Kecamatan</button>
+          <button id="btn-info-polling" style="padding:10px;border-radius:12px;border:1px solid rgba(250,204,21,0.45);background:rgba(250,204,21,0.12);color:#fde047;font-size:12px;font-weight:800;cursor:pointer;">📊 Polling Kota</button>
+        </div>
       </div>`;
 
     modal.querySelector("#btn-close-info").onclick = () => { modal.style.display = "none"; };
+    modal.querySelector("#btn-info-districts").onclick = () => { modal.style.display = "none"; if (window.openDistrictsHubModal) window.openDistrictsHubModal(); };
     modal.querySelector("#btn-info-polling").onclick = () => {
       modal.style.display = "none";
       if (typeof window.openPollingModal === "function") window.openPollingModal();
