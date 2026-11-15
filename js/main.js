@@ -798,13 +798,6 @@ let activeQuestSystem = null;
   const gInfield = new THREE.CircleGeometry(3.18, 48); gInfield.rotateX(-PI / 2);
   const mInfield = mk(gInfield, 0x4d7c3f, 0, 0.12, -9.8, null, false, true);
   mInfield.scale.set(1.55, 1.0, 2.15);
-  // Pelataran plaza upacara sisi selatan (arah Gedung Sate) + tiang bendera
-  box(6.4, 0.126, 4.2, 0, 0, -4.6, MAT(0xd6d3d1), null, false, true);
-  cyl(0.06, 0.08, 5.2, 8, 0, 0.13, -4.2, 0xf8fafc);
-
-  // Plaza Upacara Selatan Gasibu & Jalur Penghubung ke Gerbang Gedung Sate
-  box(13.5, 0.135, 5.6, 0, 0, -2.9, MAT(0xd8d0c1), null, false, true);
-  box(6.4, 0.145, 4.2, 0, 0, 7.8, MAT(0xd8d0c1), null, false, true);
 
 // Flyover Pasupati (mendarat/ramp di ujung barat Jl. Surapati, sebelah barat Gasibu)
   const FLY = new THREE.Group(); scene.add(FLY);
@@ -970,11 +963,11 @@ let activeQuestSystem = null;
     mPos.add(signPos);
   }
 
-  // 2. PULLMAN BANDUNG GRAND CENTRAL (Tanda Merah di seberang Barat Gasibu: x = -33.5, z = -10.5)
+  // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Barat Gasibu: x = -33.5, z = -10.5 — Menara Tinggi di Kanan)
   {
     const pullman = new THREE.Group();
     pullman.position.set(-33.5, 0, -10.5);
-    pullman.rotation.y = PI / 2; // Menghadap Timur (langsung menatap Lapangan Gasibu & Jl. Majapahit)
+    pullman.rotation.y = PI / 2; // Menghadap Timur (menatap Gasibu), sehingga +X = Kanan & -X = Kiri
     scene.add(pullman);
 
     // Pelataran & Podium Neo-Kolonial Putih memanjang sejajar Gasibu
@@ -982,35 +975,35 @@ let activeQuestSystem = null;
     box(15.6, 3.1, 7.2, 0, 0.24, 0.3, 0xf8fafc, pullman);
     box(16.0, 0.26, 7.6, 0, 3.34, 0.3, 0xcbd5e1, pullman);
 
-    // Sayap Ballroom Atap Limasan Gelap
+    // Sayap Ballroom Atap Limasan Gelap di sebelah KIRI (x negatif)
     [-4.8, 4.8].forEach(sx => {
       box(4.6, 3.2, 2.0, sx, 0.24, 4.0, 0xf8fafc, pullman);
       FR(5.2, 2.5, 0.62, 1.3, sx, 3.44, 4.0, 0x1e293b, pullman);
     });
-    box(5.4, 4.0, 5.2, 2.8, 3.34, 0.3, 0xf8fafc, pullman);
-    FR(6.0, 5.8, 0.65, 1.9, 2.8, 7.34, 0.3, 0x1e293b, pullman);
+    box(5.4, 4.0, 5.2, -2.8, 3.34, 0.3, 0xf8fafc, pullman);
+    FR(6.0, 5.8, 0.65, 1.9, -2.8, 7.34, 0.3, 0x1e293b, pullman);
 
-    // Menara Kembar Putih Tinggi menghadap Gasibu
-    box(4.8, 12.6, 4.6, -1.4, 3.34, -0.6, 0xf8fafc, pullman);
-    box(5.1, 0.3, 4.9, -1.4, 15.94, -0.6, 0x94a3b8, pullman);
+    // Menara Kembar Putih Tinggi di sebelah KANAN (x positif)
+    box(4.8, 12.6, 4.6, 1.4, 3.34, -0.6, 0xf8fafc, pullman);
+    box(5.1, 0.3, 4.9, 1.4, 15.94, -0.6, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
       [-1.2, -0.4, 0.4, 1.2].forEach(wx => {
-        box(0.5, 1.02, 0.14, -1.4 + wx, 4.0 + fl * 1.68, 1.72, GLASSM, pullman, false);
+        box(0.5, 1.02, 0.14, 1.4 + wx, 4.0 + fl * 1.68, 1.72, GLASSM, pullman, false);
       });
     }
 
-    // Menara Utama dengan papan nama "pullman" menghadap Gasibu
-    box(5.4, 13.4, 5.0, -5.2, 3.34, 0.3, 0xf8fafc, pullman);
-    box(5.7, 0.32, 5.3, -5.2, 16.74, 0.3, 0x94a3b8, pullman);
+    // Menara Utama dengan papan nama "pullman" di sisi paling KANAN (x = +5.2)
+    box(5.4, 13.4, 5.0, 5.2, 3.34, 0.3, 0xf8fafc, pullman);
+    box(5.7, 0.32, 5.3, 5.2, 16.74, 0.3, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
       [-1.5, -0.5, 0.5, 1.5].forEach(wx => {
-        box(0.55, 1.05, 0.14, -5.2 + wx, 4.0 + fl * 1.75, 2.82, GLASSM, pullman, false);
-        box(0.55, 1.05, 0.14, -5.2 + wx, 4.0 + fl * 1.75, -2.22, GLASSM, pullman, false);
+        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, 2.82, GLASSM, pullman, false);
+        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, -2.22, GLASSM, pullman, false);
       });
     }
 
     const signPullman = mkMuseumSign('pullman', '#1e293b', 4.2, 0.75);
-    signPullman.position.set(-5.2, 17.35, 2.75);
+    signPullman.position.set(5.2, 17.35, 2.75);
     pullman.add(signPullman);
   }
 
