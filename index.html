@@ -19,7 +19,11 @@
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
   <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v18">
-  <style id="piraku-zindex-fix">.citizen-label, .name-tag, #labels-container { z-index: 12 !important; }</style>
+  <style id="piraku-zindex-fix">
+    body > div[style*="pointer-events: none"][style*="position: absolute"] { z-index: 8 !important; }
+    .modal-overlay { z-index: 99990 !important; }
+    .modal-card { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+  </style>
 </head>
 <body>
 
@@ -784,7 +788,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v51"></script>
+  <script src="./js/main.js?v=20261115v52"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
@@ -929,6 +933,6 @@
   </script>
 
   <script src="js/piraku-economy.js?v=20261115v2"></script>
-  <script src="js/piraku-games.js?v=20261115v2"></script>
+  <script src="js/piraku-games.js?v=20261115v3"></script>
 </body>
 </html>

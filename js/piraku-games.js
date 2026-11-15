@@ -61,7 +61,7 @@
     if (!modal) {
       modal = document.createElement("div");
       modal.id = "piraku-games-modal";
-      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.76);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.76);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;touch-action:pan-y;";
       modal.addEventListener("click", e => { if (e.target === modal) { clearGameTimer(); modal.style.display = "none"; } });
       document.body.appendChild(modal);
     }
@@ -81,7 +81,7 @@
     const tier = window.PirakuEconomy ? window.PirakuEconomy.getTierObj() : { badge: "🌱", name: "Warga Baru" };
 
     modal.innerHTML = `
-      <div style="width:100%;max-width:420px;background:#0f172a;border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.65);max-height:85vh;overflow-y:auto;">
+      <div style="width:100%;max-width:420px;background:#0f172a;border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.65);max-height:82dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div>
             <div style="font-size:11px;color:#38bdf8;font-weight:800;letter-spacing:.5px;">JELAJAH BANDUNG • ARCADE WARGA</div>
