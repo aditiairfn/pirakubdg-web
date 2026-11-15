@@ -1476,6 +1476,7 @@ let activeQuestSystem = null;
     if (!isRidingTram && !myPlayerMesh) return;
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0, reborn = curMode === 'reborn';
     coins.forEach(c => {
+      if (!c.h.visible) return;
       if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
       c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
       if (!reborn || Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3 : 2.2)) return;
