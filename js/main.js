@@ -1507,13 +1507,19 @@ let activeQuestSystem = null;
   }
   const nB = furn.filter(f => f[0] === 'b').length, nL = furn.filter(f => f[0] === 'l').length;
   const LAMPM = new THREE.MeshStandardMaterial({ color: 0xfff3c4, emissive: 0xffc861, emissiveIntensity: 0, roughness: .6 });
-  const bnM = IM(boxG, MAT(0x8a6a4a), nB * 2, true, false), lpM = IM(poleG, MAT(0x374151), nL), lhM = IM(sphG, LAMPM, nL, false, false);
+  const bnM = IM(boxG, MAT(0x8a6a4a), nB * 2, true, false), bnLegM = IM(boxG, MAT(0x1e293b), nB * 2, true, false), lpM = IM(poleG, MAT(0x374151), nL), lhM = IM(sphG, LAMPM, nL, false, false);
   let b = 0, l = 0;
   furn.forEach(f => {
-    if (f[0] === 'b') { setM(bnM, b * 2, f[1], .4, f[2], 2, .15, .6); setM(bnM, b * 2 + 1, f[1], .5, f[2] - .3, 2, .6, .1); b++; }
+    if (f[0] === 'b') {
+      setM(bnM, b * 2, f[1], 0.26, f[2], 2, 0.1, 0.58);
+      setM(bnM, b * 2 + 1, f[1], 0.48, f[2] - 0.25, 2, 0.45, 0.09);
+      setM(bnLegM, b * 2, f[1] - 0.78, 0.0, f[2], 0.12, 0.26, 0.54);
+      setM(bnLegM, b * 2 + 1, f[1] + 0.78, 0.0, f[2], 0.12, 0.26, 0.54);
+      b++;
+    }
     else if (f[0] === 'l') { setM(lpM, l, f[1], 0, f[2], 1, 4.2, 1); setM(lhM, l, f[1], 4.3, f[2], .35, .35, .35); l++; }
   });
-  [bnM, lpM, lhM].forEach(m => m.instanceMatrix.needsUpdate = true);
+  [bnM, bnLegM, lpM, lhM].forEach(m => m.instanceMatrix.needsUpdate = true);
 
   // Awan & Atmosfer
   const clouds = new THREE.Group(); scene.add(clouds);
@@ -1626,6 +1632,14 @@ let activeQuestSystem = null;
       else { txt.innerText = 'Level 3 - Paris van Java Reborn'; nxt.innerText = 'Kota Berkembang Pesat! ✨'; }
     }
   }
+
+  
+  window.focusCityMapOverview = function() {
+    if (typeof joyX !== "undefined") joyX = 0;
+    if (typeof joyY !== "undefined") joyY = 0;
+    if (typeof isRidingTram !== "undefined" && isRidingTram && typeof toggleRideTram === "function") toggleRideTram();
+    if (typeof showToast === "function") showToast("Menampilkan Peta Bandung 🗺️");
+  };
 
   window.toggleBottomPanel = function(show) {
     const panel = document.getElementById('bottom-control-panel');
@@ -1866,10 +1880,18 @@ let activeQuestSystem = null;
   };
 
   function setupActivePlayer(mesh, c) {
+    if (typeof joyX !== "undefined") joyX = 0;
+    if (typeof joyY !== "undefined") joyY = 0;
+    if (typeof joyActive !== "undefined") joyActive = false;
     if (c && c.color !== undefined) localStorage.setItem('piraku_my_color', String(c.color));
     if (c && c.acc) localStorage.setItem('piraku_my_acc', String(c.acc));
     if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
     myPlayerMesh = mesh;
+    if (myPlayerMesh) {
+      myPlayerMesh.userData.isPlayer = true;
+      myPlayerMesh.userData.isAI = false;
+      if (myPlayerMesh.userData.a) { myPlayerMesh.userData.a.spd = 0; myPlayerMesh.userData.a.target = null; }
+    }
     isControlledByPlayer = true;
     mesh.userData.a.walk = false;
 

@@ -699,7 +699,7 @@
 
   <!-- Bottom Navigation Dock (6 Tab Rapi dengan Palet Hijau Teh Bandung & Emas) -->
   <nav class="bottom-nav-dock" aria-label="Navigasi Utama">
-    <button class="nav-dock-btn active" id="nav-tab-peta" onclick="setActiveDockTab('peta'); toggleBottomPanel(false);">
+    <button class="nav-dock-btn active" id="nav-tab-peta" onclick="setActiveDockTab(peta); const p=document.getElementById(bottom-control-panel); if(p){p.dataset.userOpened=0; p.classList.add(hidden); p.style.setProperty(display,none,important);} if(typeof window.focusCityMapOverview===function) window.focusCityMapOverview();">
       <svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>
       <span class="nav-lbl">Peta</span>
     </button>
@@ -760,7 +760,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v38"></script>
+  <script src="./js/main.js?v=20261115v39"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
