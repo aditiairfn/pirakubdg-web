@@ -257,9 +257,9 @@
       const pt = pCurve.getPointAt(u), tg = pCurve.getTangentAt(u);
       const segLen = (pCurve.getLength() / 54) * 1.08;
       [-3.35, 3.35].forEach(sd => {
-        const strip = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.16, 0.14), pasupatiLedMat);
-        strip.position.set(pt.x, pt.y + 0.55, pt.z + sd);
-        strip.lookAt(pt.x + tg.x, pt.y + 0.55 + tg.y, pt.z + sd + tg.z);
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.14, 0.14), pasupatiLedMat);
+        strip.position.set(pt.x, pt.y + 0.56, pt.z + sd);
+        strip.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), tg.clone().normalize());
         horizonGrp.add(strip);
       });
     }

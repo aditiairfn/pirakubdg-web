@@ -716,9 +716,9 @@ let activeQuestSystem = null;
   const RdipW = road([[-235, 3], [-150, 3], [-65, 3], [-42, 3], [-21, 3]], 6.2);
   const RdipE = road([[21, 3], [42, 3], [65, 3], [150, 3], [235, 3]], 6.2);
   // 3. Poros Barat Gasibu-Gedung Sate: Jl. Majapahit (utara) -> Jl. Cilamaya (selatan)
-  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 24]], 5.4);
+  const Rmaj = road([[-21, -235], [-21, -120], [-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 24], [-21, 120], [-21, 235]], 5.4);
   // 4. Poros Timur Gasibu-Gedung Sate: Jl. Sentot Alibasyah (utara) -> Jl. Hayam Wuruk (selatan)
-  const Rsen = road([[21, -26], [21, -12], [21, 3], [21, 14], [21, 24]], 5.4);
+  const Rsen = road([[21, -235], [21, -120], [21, -26], [21, -12], [21, 3], [21, 14], [21, 24], [21, 120], [21, 235]], 5.4);
   const Rcim = _dummyRoad, Rcil = _dummyRoad, Rcla = _dummyRoad, RriauW = _dummyRoad, RriauE = _dummyRoad, Rdago = _dummyRoad;
 
   // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross)
