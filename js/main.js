@@ -2370,7 +2370,7 @@ let activeQuestSystem = null;
     if (title) {
       title.textContent = isR ? 'Bandung Reborn: Trem Listrik & Plaza Hijau' : 'Kondisi Sekarang: Macet & Polusi Knalpot';
     }
-    gsap.to(rebornGroup.scale, { y: isR ? 1 : 0.001, duration: 0.5 });
+    rebornGroup.visible = false; rebornGroup.scale.set(0.001, 0.001, 0.001);
     gsap.to(LM, { opacity: isR ? 0 : 0.75, duration: 0.5 });
   };
   applyMode('reborn');
