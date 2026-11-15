@@ -109,11 +109,7 @@
 }
 
 /* Sembunyikan teks level / sub-bar di dalam tombol profil agar tidak bikin tinggi tombol melebar */
-#btn-citizen-status small,
-#btn-citizen-status .lvl-tag,
-#btn-citizen-status span:nth-child(2) {
-  display: none !important;
-}
+
 
 .btn-menu-toggle {
   width: 28px !important;
@@ -428,9 +424,7 @@ div[style*="bottom: 16px"][style*="border-radius: 999px"] {
 }
 
 /* Sembunyikan mini XP bar / sub-elemen di dalam tombol profil agar tidak mendorong teks ke atas */
-#btn-citizen-status > * {
-  display: none !important;
-}
+
 
 .btn-menu-toggle {
   width: 28px !important;
@@ -440,4 +434,44 @@ div[style*="bottom: 16px"][style*="border-radius: 999px"] {
   background: #14423b !important;
   border: 1px solid rgba(111, 227, 163, 0.3) !important;
   color: #f4f7f5 !important;
+}
+
+
+/* === FIX TEKS PROFIL @yelclaw AGAR MUNCUL RAPI DI TENGAH TOMBOL === */
+#btn-citizen-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  background: #14423b !important;
+  color: #6fe3a3 !important;
+  border: 1px solid rgba(111, 227, 163, 0.4) !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  max-width: 135px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+#btn-citizen-status > * {
+  display: inline !important;
+  font-size: inherit !important;
+  color: inherit !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Sembunyikan hanya sub-badge level / bar progress kalau ada */
+#btn-citizen-status small,
+#btn-citizen-status .lvl-tag,
+#btn-citizen-status .xp-bar,
+#btn-citizen-status div {
+  display: none !important;
 }

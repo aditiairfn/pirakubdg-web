@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v7">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v8">
 </head>
 <body>
 
@@ -33,7 +33,6 @@
   <div class="top-hud">
     <div class="brand-row">
       <div class="brand-tag">@pirakubdg <span id="warga-counter">MEMUAT...</span></div>
-      <button class="top-center-clock" onclick="cycleTime()" title="Ganti Waktu">☀️ SIANG</button>
       <div class="top-actions">
         <button class="btn-join" id="btn-citizen-status" onclick="handleCitizenButtonClick()"><span>+</span> Masuk / Daftar</button>
         <button class="btn-menu-toggle" id="btn-main-menu" onclick="toggleHudMenu(event)" title="Menu Kota">⋯</button>
@@ -472,13 +471,7 @@
   
   <!-- Floating Side Pills (Kiri & Kanan Atas) -->
   <div class="hud-side-left">
-    <button class="hud-pill-btn" onclick="document.getElementById('cam-drawer-menu').classList.toggle('open')">🎥 KAMERA ▾</button>
-    <div class="cam-drawer" id="cam-drawer-menu">
-      <button onclick="moveCam('overview'); document.getElementById('cam-drawer-menu').classList.remove('open')">🏙️ Overview Kota</button>
-      <button onclick="moveCam('sate'); document.getElementById('cam-drawer-menu').classList.remove('open')">🏛️ Gedung Sate</button>
-      <button onclick="moveCam('pasupati'); document.getElementById('cam-drawer-menu').classList.remove('open')">🌉 Jembatan Pasupati</button>
-      <button onclick="moveCam('walkot'); document.getElementById('cam-drawer-menu').classList.remove('open')">☕ Pak Walkot</button>
-    </div>
+    <button class="hud-pill-btn" id="side-time-btn" onclick="cycleTime()" title="Ketuk untuk ganti waktu">☀️ Siang</button>
   </div>
 
   <div class="hud-side-right">
@@ -547,6 +540,21 @@
       };
       window.addEventListener('DOMContentLoaded', hideClutter);
       setInterval(hideClutter, 800);
+    })();
+  </script>
+
+
+  <script>
+    (function() {
+      const syncClock = () => {
+        const src = document.getElementById('time-badge');
+        const dst = document.getElementById('side-time-btn');
+        if (src && dst && src.textContent.trim()) {
+          dst.textContent = src.textContent.trim();
+        }
+      };
+      window.addEventListener('DOMContentLoaded', syncClock);
+      setInterval(syncClock, 500);
     })();
   </script>
 
