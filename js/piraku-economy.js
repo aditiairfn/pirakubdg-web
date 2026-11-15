@@ -1,4 +1,4 @@
-// ================= PIRAKUBDG ECONOMY, WALLET & 3D SHOP =================
+// ================= PIRAKUBDG ECONOMY, WALLET, 10-MIN VEHICLE RENTAL & 3D SHOP =================
 (function() {
   const STORAGE_KEY = "piraku_economy_v1";
 
@@ -10,8 +10,8 @@
       { id: "aura_emas", name: "Aura Langkah Emas", price: 350, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
     ],
     mobility: [
-      { id: "sepeda_kota", name: "Sepeda Boseh Bandung", price: 250, speed: 1.35, icon: "🚲", desc: "Kecepatan jalan naik 1.35x + sepeda 3D di bawah kaki." },
-      { id: "skuter_listrik", name: "Skuter Listrik Gasibu", price: 450, speed: 1.65, icon: "🛴", desc: "Kecepatan meluncur 1.65x keliling Gedung Sate & Monju." }
+      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 60, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
+      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 110, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." }
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
@@ -26,7 +26,10 @@
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (typeof parsed.coins === "number") return parsed;
+        if (typeof parsed.coins === "number") {
+          if (typeof parsed.rentalExpiresAt !== "number") parsed.rentalExpiresAt = 0;
+          return parsed;
+        }
       }
     } catch (e) {}
     return {
@@ -34,9 +37,10 @@
       owned: ["tier_1"],
       equippedOutfit: null,
       equippedVehicle: null,
+      rentalExpiresAt: 0,
       tier: "tier_1",
       billboardText: "WILUJENG SUMPING DI PIRAKU BANDUNG!",
-      history: [{ label: "Bonus Warga Baru Piraku", delta: +500, ts: Date.now() }]
+      history: [{ label: "Bonus Warga Baru Piraku", delta: 500, ts: Date.now() }]
     };
   }
 
@@ -68,15 +72,28 @@
       this.addCoins(-amount, reason);
       return true;
     },
+    getActiveRental() {
+      if (!state.equippedVehicle || !state.rentalExpiresAt) return null;
+      const remMs = state.rentalExpiresAt - Date.now();
+      if (remMs <= 0) return null;
+      const item = CATALOG.mobility.find(m => m.id === state.equippedVehicle);
+      return item ? { item, remMs } : null;
+    },
     getSpeedMultiplier() {
-      if (state.equippedVehicle === "skuter_listrik") return 1.65;
-      if (state.equippedVehicle === "sepeda_kota") return 1.35;
-      return 1.0;
+      const r = this.getActiveRental();
+      return r ? r.item.speed : 1.0;
     },
     getTierObj() {
       return CATALOG.tier.find(t => t.id === state.tier) || CATALOG.tier[0];
     }
   };
+
+  function formatRem(ms) {
+    const totalSec = Math.max(0, Math.ceil(ms / 1000));
+    const m = String(Math.floor(totalSec / 60)).padStart(2, "0");
+    const s = String(totalSec % 60).padStart(2, "0");
+    return m + ":" + s;
+  }
 
   function showCoinToast(msg, isWarn) {
     let el = document.getElementById("piraku-coin-toast");
@@ -108,7 +125,6 @@
     bar._t = setTimeout(() => { bar.style.display = "none"; }, 18000);
   }
 
-  // Sinkronisasi aksesoris 3D (Iket, Kacamata, Helm, Aura, Sepeda/Skuter) ke myPlayerMesh & Billboard Gasibu
   let billboardMesh = null;
   function updateGasibuBillboard3D(text) {
     const sc = window.pirakuScene;
@@ -119,7 +135,6 @@
       const tex = new THREE.CanvasTexture(cv);
       const mat = new THREE.MeshBasicMaterial({ map: tex });
       billboardMesh = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 2.2), mat);
-      // Pasang menghadap lapangan Gasibu di papan LED utara Gasibu (0, 4.3, -22.2)
       billboardMesh.position.set(0, 4.35, -22.15);
       billboardMesh.userData = { cv, tex };
       sc.add(billboardMesh);
@@ -150,7 +165,6 @@
     const grp = new THREE.Group();
     grp.name = "piraku-shop-attachments";
 
-    // Outfit / Aksesoris Kepala & Aura
     if (state.equippedOutfit === "iket_sunda") {
       const iket = new THREE.Mesh(
         new THREE.TorusGeometry(0.25, 0.065, 8, 20),
@@ -194,9 +208,9 @@
       grp.add(ring);
     }
 
-    // Kendaraan Mobilitas (Sepeda / Skuter)
-    if (state.equippedVehicle === "sepeda_kota" || state.equippedVehicle === "skuter_listrik") {
-      const col = state.equippedVehicle === "skuter_listrik" ? 0x38bdf8 : 0x22c55e;
+    const rental = window.PirakuEconomy.getActiveRental();
+    if (rental) {
+      const col = rental.item.id === "skuter_listrik" ? 0x38bdf8 : 0x22c55e;
       const deck = new THREE.Mesh(
         new THREE.BoxGeometry(0.22, 0.06, 0.88),
         new THREE.MeshStandardMaterial({ color: col, metalness: 0.5, roughness: 0.3 })
@@ -219,7 +233,6 @@
     updateGasibuBillboard3D(state.billboardText);
   }
 
-  // Tombol HUD Dompet Koin Piraku di kanan atas
   function injectWalletHUD() {
     if (!document.body || document.getElementById("piraku-wallet-pill")) return;
     const pill = document.createElement("button");
@@ -235,7 +248,9 @@
     const pill = document.getElementById("piraku-wallet-pill");
     if (!pill) return;
     const tier = window.PirakuEconomy.getTierObj();
-    pill.innerHTML = `<span>🪙 ${state.coins.toLocaleString("id-ID")}</span><span style="font-size:10px;background:rgba(250,204,21,0.18);padding:1px 6px;border-radius:999px;color:#fef08a;">${tier.badge} Toko</span>`;
+    const rental = window.PirakuEconomy.getActiveRental();
+    const badgeStr = rental ? `${rental.item.icon} ${formatRem(rental.remMs)}` : `${tier.badge} Toko`;
+    pill.innerHTML = `<span>🪙 ${state.coins.toLocaleString("id-ID")}</span><span style="font-size:10px;background:rgba(250,204,21,0.18);padding:1px 6px;border-radius:999px;color:#fef08a;">${badgeStr}</span>`;
   }
 
   let activeTab = "outfit";
@@ -260,7 +275,7 @@
 
     const tabs = [
       { id: "outfit", label: "👕 Gaya 3D" },
-      { id: "mobility", label: "🛴 Kendaraan" },
+      { id: "mobility", label: "🛴 Sewa" },
       { id: "city", label: "📢 Billboard" },
       { id: "tier", label: "🪪 Gelar KTP" }
     ];
@@ -284,22 +299,24 @@
         </div>`;
       }).join("");
     } else if (activeTab === "mobility") {
-      bodyHTML = CATALOG.mobility.map(item => {
-        const owned = state.owned.includes(item.id);
-        const equipped = state.equippedVehicle === item.id;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${equipped ? "#38bdf8" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:24px;">${item.icon}</span>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#f8fafc;">${item.name}</div>
-              <div style="font-size:11px;color:#94a3b8;">${item.desc}</div>
+      const rental = window.PirakuEconomy.getActiveRental();
+      bodyHTML = `<div style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:8px 10px;border-radius:10px;margin-bottom:8px;">⏱️ Sistem sewa berlaku <b>10 menit</b> real-time sejak disewa.</div>` +
+        CATALOG.mobility.map(item => {
+          const isThisActive = rental && rental.item.id === item.id;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${isThisActive ? "#38bdf8" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:24px;">${item.icon}</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#f8fafc;">${item.name}</div>
+                <div style="font-size:11px;color:#94a3b8;">${item.desc}</div>
+                ${isThisActive ? `<div style="font-size:11px;font-weight:800;color:#4ade80;margin-top:2px;">Aktif • Sisa waktu: ${formatRem(rental.remMs)}</div>` : ""}
+              </div>
             </div>
-          </div>
-          <button data-buy-veh="${item.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${equipped ? "#22c55e" : owned ? "#38bdf8" : "#f59e0b"};color:#0f172a;">
-            ${equipped ? "Aktif ✓" : owned ? "Naiki" : "🪙 " + item.price}
-          </button>
-        </div>`;
-      }).join("");
+            <button data-rent-veh="${item.id}" style="padding:7px 11px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isThisActive ? "#38bdf8" : "#f59e0b"};color:#0f172a;">
+              ${isThisActive ? "+10m (🪙 " + item.price + ")" : "Sewa 🪙 " + item.price}
+            </button>
+          </div>`;
+        }).join("");
     } else if (activeTab === "city") {
       bodyHTML = `
         <div style="padding:12px;border-radius:12px;background:#1e293b;border:1px solid rgba(148,163,184,0.2);margin-bottom:10px;">
@@ -338,7 +355,7 @@
     }
 
     modal.innerHTML = `
-      <div style="width:100%;max-width:410px;background:#0f172a;border:1.5px solid rgba(250,204,21,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 20px 45px rgba(0,0,0,0.6);max-height:84vh;overflow-y:auto;">
+      <div style="width:100%;max-width:410px;background:#0f172a;border:1.5px solid rgba(250,204,21,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 20px 45px rgba(0,0,0,0.6);max-height:82dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
           <div>
             <div style="font-size:11px;color:#facc15;font-weight:800;letter-spacing:.5px;">EKONOMI & TOKO KOTA</div>
@@ -373,16 +390,17 @@
       };
     });
 
-    modal.querySelectorAll("[data-buy-veh]").forEach(btn => {
+    modal.querySelectorAll("[data-rent-veh]").forEach(btn => {
       btn.onclick = () => {
-        const id = btn.dataset.buyVeh;
+        const id = btn.dataset.rentVeh;
         const item = CATALOG.mobility.find(x => x.id === id);
         if (!item) return;
-        if (!state.owned.includes(id)) {
-          if (!window.PirakuEconomy.spendCoins(item.price, "Beli " + item.name)) return;
-          state.owned.push(id);
-        }
-        state.equippedVehicle = (state.equippedVehicle === id) ? null : id;
+        const curRental = window.PirakuEconomy.getActiveRental();
+        const isExtend = curRental && curRental.item.id === id;
+        if (!window.PirakuEconomy.spendCoins(item.price, (isExtend ? "Perpanjang " : "Sewa ") + item.name)) return;
+        const baseTime = isExtend ? state.rentalExpiresAt : Date.now();
+        state.equippedVehicle = id;
+        state.rentalExpiresAt = baseTime + (item.durationMin || 10) * 60 * 1000;
         saveState();
         renderEconomyModal();
       };
@@ -428,12 +446,22 @@
     }
   }
 
-  // Sambungkan multiplier kecepatan Sepeda/Skuter ke loop updatePlayerMovement di js/main.js & jaga attachment tetap terpasang
   setInterval(() => {
     injectWalletHUD();
+    if (state.equippedVehicle && (!state.rentalExpiresAt || Date.now() >= state.rentalExpiresAt)) {
+      const expiredItem = CATALOG.mobility.find(m => m.id === state.equippedVehicle);
+      state.equippedVehicle = null;
+      state.rentalExpiresAt = 0;
+      saveState();
+      showCoinToast("⏱️ Waktu sewa " + (expiredItem ? expiredItem.name.split(" (")[0] : "kendaraan") + " habis!", true);
+      const modal = document.getElementById("piraku-economy-modal");
+      if (modal && modal.style.display === "flex" && activeTab === "mobility") renderEconomyModal();
+    } else {
+      updateWalletHUD();
+    }
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    if (mesh && !mesh.getObjectByName("piraku-shop-attachments") && (state.equippedOutfit || state.equippedVehicle)) {
+    if (mesh && !mesh.getObjectByName("piraku-shop-attachments") && (state.equippedOutfit || window.PirakuEconomy.getActiveRental())) {
       syncPlayer3DAttachments();
     }
-  }, 600);
+  }, 1000);
 })();
