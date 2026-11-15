@@ -1848,6 +1848,23 @@ let activeQuestSystem = null;
   window.pirakuCreateCitizenMesh = createCitizenMesh;
   window.pirakuScene = scene;
 
+  setInterval(() => {
+    if (typeof scene === "undefined" || !scene || typeof THREE === "undefined") return;
+    const wp = new THREE.Vector3();
+    const toRemove = [];
+    scene.traverse(obj => {
+      if (!obj || !obj.parent || obj === scene || obj.userData?.isPlayer || obj.userData?.a) return;
+      obj.getWorldPosition(wp);
+      // Zona tepat di depan fasad & tangga pintu masuk Museum Geologi (x = 34.5, z = -6.5 menghadap +Z)
+      if (wp.x >= 25.5 && wp.x <= 43.5 && wp.z >= -5.8 && wp.z <= 2.2) {
+        const isFoliageOrLamp = obj.children && obj.children.length >= 2 && obj.children.length <= 10 && wp.y < 1.0;
+        if (isFoliageOrLamp) toRemove.push(obj);
+      }
+    });
+    toRemove.forEach(o => { if (o.parent) o.parent.remove(o); });
+  }, 800);
+
+
   // Sapu bersih semua pohon & tiang yang menghalangi fasad pintu masuk Museum Geologi
   setTimeout(() => {
     if (typeof scene === "undefined" || !scene || typeof THREE === "undefined") return;

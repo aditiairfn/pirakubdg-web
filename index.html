@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v15">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v17">
 </head>
 <body>
 
@@ -740,14 +740,14 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v33"></script>
+  <script src="./js/main.js?v=20261115v35"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
 
   <script>
     (function() {
-      const hideClutter = () => {
+      const hideClutter = () => { const bp = document.getElementById(bottom-control-panel); if (bp && bp.dataset.userOpened === 1) return;
         const inp = document.querySelector('input[placeholder*="Sapa wargi"]');
         if (inp && inp.parentElement) inp.parentElement.style.display = 'none';
         document.querySelectorAll('div, span').forEach(el => {
