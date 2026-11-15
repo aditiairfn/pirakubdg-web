@@ -1657,48 +1657,110 @@ let activeQuestSystem = null;
     };
   }
 
+  function parseCitizenStyle(c) {
+    // Format c.acc bisa berupa legacy ('none','glasses','peci','cat') atau 'acc|skinIdx|pantsIdx|hairStyle'
+    const raw = String(c.acc || 'none');
+    const parts = raw.split('|');
+    const acc = parts[0] || 'none';
+    let hash = 0;
+    const seedStr = String(c.ig || c.name || 'bdg');
+    for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+    const skinIdx = parts[1] !== undefined ? parseInt(parts[1], 10) : Math.abs(hash) % SKIN.length;
+    const pantsIdx = parts[2] !== undefined ? parseInt(parts[2], 10) : Math.abs(hash >> 2) % 5;
+    const hairStyle = parts[3] || (Math.abs(hash >> 4) % 4 === 0 ? 'hijab' : 'short');
+    return { acc, skinIdx: isNaN(skinIdx) ? 1 : skinIdx, pantsIdx: isNaN(pantsIdx) ? 0 : pantsIdx, hairStyle };
+  }
+
+  const PANTS_PALETTE = [0x1e293b, 0x111827, 0x1d4ed8, 0x57534e, 0x7f1d1d];
+
   function createCitizenMesh(c) {
-    c.upvotes = c.upvotes || 0; 
+    c.upvotes = c.upvotes || 0;
     c.acc = c.acc || 'none';
     c.kecamatan = c.kecamatan || 'Bandung Wetan';
     c.level = parseInt(c.level, 10) || 1;
     c.xp = parseInt(c.xp, 10) || 0;
 
-    const cg = new THREE.Group(), skin = SKIN[Math.floor(rnd() * 4)];
-    const body = new THREE.Group(); cg.add(body);
+    const st = parseCitizenStyle(c);
+    const cg = new THREE.Group();
+    const skin = SKIN[st.skinIdx % SKIN.length];
+    const pantsColor = PANTS_PALETTE[st.pantsIdx % PANTS_PALETTE.length];
+    const shirtColor = c.color || 0x1e3a8a;
 
+    const body = new THREE.Group();
+    cg.add(body);
+
+    // Kaki & Sepatu Sneakers Sol Putih
     const mkLeg = (sd) => {
       const legGroup = new THREE.Group();
-      legGroup.position.set(sd * 0.11, 0.34, 0);
+      legGroup.position.set(sd * 0.1, 0.36, 0);
       cg.add(legGroup);
 
-      cyl(0.085, 0.07, 0.34, 8, 0, -0.17, 0, 0x273449, legGroup);
-      const shoe = mk(SP(0.1, 8, 6), 0x111827, 0, -0.28, 0.05, legGroup);
-      shoe.scale.set(1, 0.6, 1.4);
+      cyl(0.072, 0.062, 0.32, 10, 0, -0.32, 0, pantsColor, legGroup);
+      box(0.13, 0.06, 0.21, 0, -0.36, 0.03, 0x111827, legGroup);
+      box(0.135, 0.025, 0.22, 0, -0.36, 0.03, 0xf8fafc, legGroup, false); // Sol putih
       return legGroup;
     };
     const legL = mkLeg(-1);
     const legR = mkLeg(1);
 
-    cyl(.2, .25, .5, 14, 0, .32, 0, c.color, body);
-    const head = new THREE.Group(); head.position.y = 1.1; body.add(head);
-    mk(SP(.3, 16, 12), skin, 0, 0, 0, head);
-    mk(new THREE.SphereGeometry(.31, 16, 10, 0, PI * 2, 0, PI * .55), 0x111827, 0, .03, -.02, head);
-    [-.1, .1].forEach(x => mk(SP(.045, 8, 6), 0x111111, x, -.02, .27, head));
+    // Torso Baju + Kerah Putih Rapi
+    cyl(0.18, 0.22, 0.48, 14, 0, 0.34, 0, shirtColor, body);
+    cyl(0.11, 0.12, 0.06, 12, 0, 0.81, 0, 0xf8fafc, body, false); // Kerah baju
 
-    if (c.acc === 'glasses') box(.36, .08, .06, 0, -.02, .28, 0x0f172a, head);
-    else if (c.acc === 'peci') cyl(.26, .26, .18, 14, 0, .28, 0, 0x111827, head);
-    else if (c.acc === 'cat') {
-      const cat = new THREE.Group(); cat.position.set(0.38, 0, 0.2); cg.add(cat);
-      box(0.24, 0.18, 0.35, 0, 0.09, 0, 0xf97316, cat);
-      mk(new THREE.SphereGeometry(0.12, 8, 6), 0xf97316, 0, 0.22, 0.14, cat);
+    // Kepala Proporsional
+    const head = new THREE.Group();
+    head.position.y = 1.05;
+    body.add(head);
+    mk(SP(0.25, 16, 12), skin, 0, 0, 0, head);
+
+    // Mata ekspresif
+    [-0.085, 0.085].forEach(ex => {
+      mk(SP(0.032, 8, 6), 0x0f172a, ex, -0.01, 0.225, head);
+    });
+
+    // Gaya Rambut / Hijab
+    if (st.hairStyle === 'hijab') {
+      // Kerudung / Hijab rapi menutup kepala hingga bahu
+      mk(new THREE.SphereGeometry(0.275, 16, 12, 0, PI * 2, 0, PI * 0.72), shirtColor, 0, 0.01, -0.02, head);
+      cyl(0.22, 0.27, 0.24, 14, 0, -0.26, -0.02, shirtColor, head);
+    } else if (st.hairStyle === 'ponytail') {
+      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
+      mk(SP(0.11, 10, 8), 0x1c1917, 0, 0.06, -0.27, head); // Kuncir belakang
+    } else {
+      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
     }
 
-    const arm = sd => { const q = new THREE.Group(); q.position.set(sd * .27, .74, 0); body.add(q); cyl(.06, .055, .4, 8, 0, -.4, 0, c.color, q); return q; };
+    // Aksesoris & Topi
+    if (st.acc === 'glasses') {
+      [-0.085, 0.085].forEach(gx => box(0.095, 0.065, 0.03, gx, -0.01, 0.235, 0x0f172a, head, false));
+      box(0.05, 0.02, 0.03, 0, -0.005, 0.238, 0x0f172a, head, false);
+    } else if (st.acc === 'peci') {
+      cyl(0.21, 0.23, 0.15, 16, 0, 0.16, 0, 0x0f172a, head);
+    } else if (st.acc === 'caping') {
+      cyl(0.04, 0.38, 0.18, 16, 0, 0.18, 0, 0xd97706, head);
+    } else if (st.acc === 'cat') {
+      const cat = new THREE.Group();
+      cat.position.set(0.36, 0, 0.18);
+      cg.add(cat);
+      box(0.22, 0.16, 0.32, 0, 0.08, 0, 0xf97316, cat);
+      mk(new THREE.SphereGeometry(0.11, 8, 6), 0xf97316, 0, 0.2, 0.13, cat);
+    }
+
+    // Lengan + Telapak Tangan Sewarna Kulit
+    const arm = sd => {
+      const q = new THREE.Group();
+      q.position.set(sd * 0.24, 0.72, 0);
+      body.add(q);
+      cyl(0.052, 0.045, 0.34, 10, 0, -0.34, 0, shirtColor, q);
+      mk(SP(0.052, 8, 8), skin, 0, -0.37, 0, q);
+      return q;
+    };
     const armL = arm(-1), armR = arm(1);
 
-    const rg = new THREE.RingGeometry(.42, .52, 24); rg.rotateX(-PI / 2);
-    mk(rg, new THREE.MeshBasicMaterial({ color: c.color, transparent: true, opacity: .7 }), 0, .03, 0, cg, false, false);
+    // Ring indikator halus di bawah kaki
+    const rg = new THREE.RingGeometry(0.36, 0.44, 24);
+    rg.rotateX(-PI / 2);
+    mk(rg, new THREE.MeshBasicMaterial({ color: shirtColor, transparent: true, opacity: 0.55 }), 0, 0.03, 0, cg, false, false);
 
     let posX = c.x, posZ = c.z;
     let isResidentAtHouse = false;
@@ -1711,11 +1773,12 @@ let activeQuestSystem = null;
       isResidentAtHouse = true;
     }
 
-    cg.scale.setScalar(1.25); cg.position.set(posX, 0.1, posZ);
+    cg.scale.setScalar(1.22);
+    cg.position.set(posX, 0.1, posZ);
 
-    cg.userData.a = { 
-      body, head, armL, armR, legL, legR, ph: rnd() * 6.28, c, 
-      tx: posX, tz: posZ, 
+    cg.userData.a = {
+      body, head, armL, armR, legL, legR, ph: rnd() * 6.28, c,
+      tx: posX, tz: posZ,
       walk: !isResidentAtHouse,
       isAtHouse: isResidentAtHouse
     };
@@ -1724,12 +1787,12 @@ let activeQuestSystem = null;
     const hitbox = mk(new THREE.BoxGeometry(1.2, 2.2, 1.2), new THREE.MeshBasicMaterial({ visible: false }), 0, 1.1, 0, cg);
     hitbox.userData = c;
     hitbox.userData.meshGroup = cg;
-    clickableObjects.push(hitbox); 
+    clickableObjects.push(hitbox);
     registeredCitizensList.push(c);
-    citizensGroup.add(cg); 
+    citizensGroup.add(cg);
 
     const myIg = localStorage.getItem('piraku_my_ig');
-    if (myIg && (c?.ig || '').toLowerCase() === String(myIg || "").toLowerCase()) {
+    if (myIg && (c?.ig || '').toLowerCase() === String(myIg || '').toLowerCase()) {
       setupActivePlayer(cg, c);
     }
 

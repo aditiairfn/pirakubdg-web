@@ -411,51 +411,266 @@
   </div>
 
   
-  <!-- Modal Ganti Karakter / Wardrobe -->
+  <!-- Modal Ganti Karakter / Wardrobe (Gaya Kartu Krem-Hijau Bandung + Live Preview) -->
   <div class="modal-overlay" id="wardrobe-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Lemari Outfit & Karakter 👕</h3>
-        <button class="btn-close" onclick="closeWardrobeModal()">✕</button>
-      </div>
-      <div style="font-size:11.5px;color:var(--sub);margin-bottom:12px;">Sesuaikan persona dan outfit karaktermu di Bandung:</div>
-      
-      <div class="form-group">
-        <label>Pilih Peran Kota</label>
-        <div class="chip-grid">
-          <div class="role-chip-edit selected" onclick="pickWardrobeRole(this, 'Barista', '☕')">☕ Akang Barista</div>
-          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Indie', '🎸')">🎸 Anak Indie</div>
-          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Gowes', '🚲')">🚲 Wargi Gowes</div>
-          <div class="role-chip-edit" onclick="pickWardrobeRole(this, 'Santai', '🚶')">🚶 Warga Santai</div>
-        </div>
+    <div class="modal-card" style="background:#f6f1e3; border:2px solid #2b463c; border-radius:20px; padding:0; overflow:hidden; max-width:390px; width:92%;">
+      <div class="modal-header" style="background:#263f35; color:#ffffff; padding:14px 18px; margin:0; border-bottom:2px solid #1d3129;">
+        <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff;">Karakter Warga</h3>
+        <button class="btn-close" onclick="closeWardrobeModal()" style="background:rgba(255,255,255,0.16); color:#fff; border:none; width:30px; height:30px; border-radius:8px; font-weight:800;">✕</button>
       </div>
 
-      <div class="form-group">
-        <label>Aksesoris Skena</label>
-        <div class="chip-grid">
-          <div class="acc-chip-edit selected" onclick="pickWardrobeAcc(this, 'none')">Polos Santai</div>
-          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'glasses')">🕶️ Kacamata Hitam</div>
-          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'peci')">🎩 Peci / Kupluk</div>
-          <div class="acc-chip-edit" onclick="pickWardrobeAcc(this, 'cat')">🐈 Bawa Si Oyen</div>
+      <div style="padding:14px 16px 16px 16px; color:#2b2620;">
+        <div style="display:grid; grid-template-columns:108px 1fr; gap:14px; align-items:start;">
+          <!-- Kotak Live Preview Avatar -->
+          <div style="background:#ebe3cf; border:1.5px dashed #b8ad94; border-radius:14px; padding:10px 6px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:175px;">
+            <svg id="wardrobe-preview-svg" viewBox="0 0 100 155" width="90" height="140">
+              <ellipse cx="50" cy="144" rx="26" ry="7" fill="rgba(43,70,60,0.18)"/>
+              <!-- Kaki & Celana -->
+              <rect id="pv-leg-l" x="37" y="102" width="10" height="36" rx="4" fill="#1e293b"/>
+              <rect id="pv-leg-r" x="53" y="102" width="10" height="36" rx="4" fill="#1e293b"/>
+              <!-- Baju -->
+              <rect id="pv-shirt" x="28" y="60" width="44" height="46" rx="12" fill="#2d6a4f"/>
+              <!-- Hijab Belakang (jika aktif) -->
+              <path id="pv-hijab-back" d="M26,42 Q26,72 50,74 Q74,72 74,42 Z" fill="#2d6a4f" style="display:none;"/>
+              <!-- Kepala & Kulit -->
+              <circle id="pv-skin" cx="50" cy="40" r="21" fill="#d99b66"/>
+              <!-- Mata -->
+              <circle cx="43" cy="39" r="2.3" fill="#1e293b"/>
+              <circle cx="57" cy="39" r="2.3" fill="#1e293b"/>
+              <!-- Rambut -->
+              <path id="pv-hair" d="M29,37 A21,21 0 0,1 71,37 Q60,31 50,33 Q40,31 29,37 Z" fill="#1c1917"/>
+              <!-- Peci -->
+              <rect id="pv-peci" x="33" y="16" width="34" height="13" rx="3" fill="#111827" style="display:none;"/>
+              <!-- Caping -->
+              <polygon id="pv-caping" points="50,6 16,25 84,25" fill="#d97706" style="display:none;"/>
+              <!-- Kacamata -->
+              <g id="pv-glasses" style="display:none;">
+                <rect x="35" y="35" width="12" height="8" rx="2" fill="#0f172a"/>
+                <rect x="53" y="35" width="12" height="8" rx="2" fill="#0f172a"/>
+                <line x1="47" y1="38" x2="53" y2="38" stroke="#0f172a" stroke-width="2"/>
+              </g>
+            </svg>
+            <span id="pv-role-badge" style="margin-top:4px; font-size:9.5px; font-weight:800; color:#263f35; background:#dcd2ba; padding:2px 8px; border-radius:999px;">☕ Barista</span>
+          </div>
+
+          <!-- Pilihan Kustomisasi Simpel -->
+          <div style="display:flex; flex-direction:column; gap:9px;">
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">BAJU</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-shirt-row">
+                <button type="button" class="wd-swatch active" data-hex="0x2d6a4f" data-css="#2d6a4f" style="background:#2d6a4f"></button>
+                <button type="button" class="wd-swatch" data-hex="0xc2593f" data-css="#c2593f" style="background:#c2593f"></button>
+                <button type="button" class="wd-swatch" data-hex="0x2563eb" data-css="#2563eb" style="background:#2563eb"></button>
+                <button type="button" class="wd-swatch" data-hex="0x7e22ce" data-css="#7e22ce" style="background:#7e22ce"></button>
+                <button type="button" class="wd-swatch" data-hex="0xd97706" data-css="#d97706" style="background:#d97706"></button>
+                <button type="button" class="wd-swatch" data-hex="0x0f766e" data-css="#0f766e" style="background:#0f766e"></button>
+                <button type="button" class="wd-swatch" data-hex="0x78350f" data-css="#78350f" style="background:#78350f"></button>
+                <button type="button" class="wd-swatch" data-hex="0xe7dec8" data-css="#e7dec8" style="background:#e7dec8"></button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">CELANA</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-pants-row">
+                <button type="button" class="wd-swatch active" data-idx="0" data-css="#1e293b" style="background:#1e293b"></button>
+                <button type="button" class="wd-swatch" data-idx="1" data-css="#111827" style="background:#111827"></button>
+                <button type="button" class="wd-swatch" data-idx="2" data-css="#1d4ed8" style="background:#1d4ed8"></button>
+                <button type="button" class="wd-swatch" data-idx="3" data-css="#57534e" style="background:#57534e"></button>
+                <button type="button" class="wd-swatch" data-idx="4" data-css="#7f1d1d" style="background:#7f1d1d"></button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">KULIT</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-skin-row">
+                <button type="button" class="wd-swatch" data-idx="3" data-css="#9a6a45" style="background:#9a6a45"></button>
+                <button type="button" class="wd-swatch active" data-idx="2" data-css="#c68a5c" style="background:#c68a5c"></button>
+                <button type="button" class="wd-swatch" data-idx="1" data-css="#e0ac80" style="background:#e0ac80"></button>
+                <button type="button" class="wd-swatch" data-idx="0" data-css="#f1c9a0" style="background:#f1c9a0"></button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">GAYA RAMBUT</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-hair-row">
+                <button type="button" class="wd-pill active" data-val="short">Pendek</button>
+                <button type="button" class="wd-pill" data-val="hijab">Hijab</button>
+                <button type="button" class="wd-pill" data-val="ponytail">Kuncir</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">TOPI & AKSESORIS</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-acc-row">
+                <button type="button" class="wd-pill active" data-val="none">Tanpa</button>
+                <button type="button" class="wd-pill" data-val="peci">Peci</button>
+                <button type="button" class="wd-pill" data-val="caping">Caping</button>
+                <button type="button" class="wd-pill" data-val="glasses">Kacamata</button>
+                <button type="button" class="wd-pill" data-val="cat">🐈 Oyen</button>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">PERAN</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-role-row">
+                <button type="button" class="wd-pill active" data-role="Barista" data-emoji="☕">☕ Barista</button>
+                <button type="button" class="wd-pill" data-role="Indie" data-emoji="🎸">🎸 Indie</button>
+                <button type="button" class="wd-pill" data-role="Gowes" data-emoji="🚲">🚲 Gowes</button>
+                <button type="button" class="wd-pill" data-role="Santai" data-emoji="🚶">🚶 Santai</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:14px; padding-top:10px; border-top:1px solid #dcd2ba;">
+          <span style="font-size:10px; color:#5c5346; line-height:1.25;">Tersimpan otomatis ke profil warga kamu.</span>
+          <button class="btn-submit" id="btn-save-wardrobe" onclick="saveWardrobeCustomization()" style="width:auto; margin:0; padding:9px 20px; border-radius:10px; background:#e07a3f; color:#ffffff; font-weight:800; font-size:12.5px; border:none; box-shadow:0 4px 12px rgba(224,122,63,0.35);">Simpan</button>
         </div>
       </div>
-
-      <div class="form-group">
-        <label>Warna Outfit</label>
-        <div class="color-row">
-          <div class="color-swatch-edit selected" style="background:#1e3a8a" onclick="pickWardrobeColor(this, 0x1e3a8a)"></div>
-          <div class="color-swatch-edit" style="background:#dc2626" onclick="pickWardrobeColor(this, 0xdc2626)"></div>
-          <div class="color-swatch-edit" style="background:#16a34a" onclick="pickWardrobeColor(this, 0x16a34a)"></div>
-          <div class="color-swatch-edit" style="background:#f59e0b" onclick="pickWardrobeColor(this, 0xf59e0b)"></div>
-          <div class="color-swatch-edit" style="background:#475569" onclick="pickWardrobeColor(this, 0x475569)"></div>
-        </div>
-      </div>
-
-      <button class="btn-submit" id="btn-save-wardrobe" onclick="saveWardrobeCustomization()">Simpan Penampilan Baru ✨</button>
     </div>
   </div>
 
-  
+  <style>
+    .wd-swatch {
+      width: 24px; height: 24px; border-radius: 7px;
+      border: 2px solid #2b2620; cursor: pointer; padding: 0;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .wd-swatch.active {
+      box-shadow: 0 0 0 2.5px #f6f1e3, 0 0 0 4.5px #f59e0b;
+      transform: scale(1.06);
+    }
+    .wd-pill {
+      background: #ffffff; color: #2b2620;
+      border: 1.5px solid #8c806a; border-radius: 999px;
+      padding: 4px 10px; font-size: 10.5px; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+    }
+    .wd-pill.active {
+      background: #f3c65f; border-color: #b45309;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.35);
+    }
+  </style>
+
+  <script>
+    (function() {
+      let wdState = {
+        shirtHex: 0x2d6a4f, shirtCss: '#2d6a4f',
+        pantsIdx: 0, pantsCss: '#1e293b',
+        skinIdx: 2, skinCss: '#c68a5c',
+        hair: 'short', acc: 'none',
+        role: 'Barista', emoji: '☕'
+      };
+
+      function syncWardrobeStateToGlobals() {
+        const encodedAcc = wdState.acc + '|' + wdState.skinIdx + '|' + wdState.pantsIdx + '|' + wdState.hair;
+        if (typeof window.pickWardrobeColor === 'function') {
+          const dummy = document.createElement('div');
+          window.pickWardrobeColor(dummy, wdState.shirtHex);
+        }
+        if (typeof window.pickWardrobeAcc === 'function') {
+          const dummy = document.createElement('div');
+          window.pickWardrobeAcc(dummy, encodedAcc);
+        }
+        if (typeof window.pickWardrobeRole === 'function') {
+          const dummy = document.createElement('div');
+          window.pickWardrobeRole(dummy, wdState.role, wdState.emoji);
+        }
+      }
+
+      function updateWardrobePreview() {
+        const pvShirt = document.getElementById('pv-shirt');
+        const pvLegL = document.getElementById('pv-leg-l');
+        const pvLegR = document.getElementById('pv-leg-r');
+        const pvSkin = document.getElementById('pv-skin');
+        const pvHair = document.getElementById('pv-hair');
+        const pvHijab = document.getElementById('pv-hijab-back');
+        const pvPeci = document.getElementById('pv-peci');
+        const pvCaping = document.getElementById('pv-caping');
+        const pvGlasses = document.getElementById('pv-glasses');
+        const pvRole = document.getElementById('pv-role-badge');
+
+        if (pvShirt) pvShirt.setAttribute('fill', wdState.shirtCss);
+        if (pvLegL) pvLegL.setAttribute('fill', wdState.pantsCss);
+        if (pvLegR) pvLegR.setAttribute('fill', wdState.pantsCss);
+        if (pvSkin) pvSkin.setAttribute('fill', wdState.skinCss);
+        if (pvRole) pvRole.textContent = wdState.emoji + ' ' + wdState.role;
+
+        if (pvHijab && pvHair) {
+          if (wdState.hair === 'hijab') {
+            pvHijab.style.display = 'block';
+            pvHijab.setAttribute('fill', wdState.shirtCss);
+            pvHair.style.display = 'none';
+          } else {
+            pvHijab.style.display = 'none';
+            pvHair.style.display = 'block';
+          }
+        }
+        if (pvPeci) pvPeci.style.display = wdState.acc === 'peci' ? 'block' : 'none';
+        if (pvCaping) pvCaping.style.display = wdState.acc === 'caping' ? 'block' : 'none';
+        if (pvGlasses) pvGlasses.style.display = wdState.acc === 'glasses' ? 'block' : 'none';
+
+        syncWardrobeStateToGlobals();
+      }
+
+      window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('#wd-shirt-row .wd-swatch').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-shirt-row .wd-swatch').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.shirtHex = parseInt(btn.dataset.hex, 16);
+            wdState.shirtCss = btn.dataset.css;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-pants-row .wd-swatch').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-pants-row .wd-swatch').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.pantsIdx = parseInt(btn.dataset.idx, 10);
+            wdState.pantsCss = btn.dataset.css;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-skin-row .wd-swatch').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-skin-row .wd-swatch').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.skinIdx = parseInt(btn.dataset.idx, 10);
+            wdState.skinCss = btn.dataset.css;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-hair-row .wd-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-hair-row .wd-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.hair = btn.dataset.val;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-acc-row .wd-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-acc-row .wd-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.acc = btn.dataset.val;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-role-row .wd-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-role-row .wd-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.role = btn.dataset.role;
+            wdState.emoji = btn.dataset.emoji;
+            updateWardrobePreview();
+          });
+        });
+        updateWardrobePreview();
+      });
+    })();
+  </script>
+
   <!-- Tombol Interaksi Trem -->
   <button id="btn-tram-action" hidden onclick="toggleRideTram()" style="position:fixed; bottom:95px; right:25px; background:linear-gradient(135deg, #2563eb, #1d4ed8); color:#fff; border:2px solid #93c5fd; border-radius:30px; padding:10px 18px; font-size:12px; font-weight:800; font-family:inherit; box-shadow:0 8px 24px rgba(0,0,0,0.4); z-index:35; cursor:pointer; display:none; align-items:center; gap:6px; transition:transform 0.2s;">
     <span id="tram-action-icon">🚊</span> <span id="tram-action-text">Naik Trem</span>
@@ -522,7 +737,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v21"></script>
+  <script src="./js/main.js?v=20261115v22"></script>
   <script src="js/multiplayer.js?v=20261112rpg"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
