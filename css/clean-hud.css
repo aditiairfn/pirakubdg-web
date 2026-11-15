@@ -1,0 +1,109 @@
+/* ================= PIRAKUBDG CLEAN GLASSMORPHISM HUD ================= */
+:root {
+  --hud-bg: rgba(15, 23, 42, 0.78);
+  --hud-border: rgba(255, 255, 255, 0.14);
+  --hud-accent: #22c55e;
+  --hud-text: #f8fafc;
+  --hud-blur: blur(12px);
+}
+
+/* 1. Penyatuan Gaya Glassmorphism & Tipografi Seragam */
+#hud-top,
+.hud-panel,
+.hud-card,
+.top-bar,
+#mp-online-badge,
+#mp-quick-bar {
+  background: var(--hud-bg) !important;
+  backdrop-filter: var(--hud-blur) !important;
+  -webkit-backdrop-filter: var(--hud-blur) !important;
+  border: 1px solid var(--hud-border) !important;
+  color: var(--hud-text) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32) !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", sans-serif !important;
+}
+
+/* 2. Rapikan Bar Atas & Mencegah Tumpukan di Layar HP */
+#mp-online-badge {
+  top: auto !important;
+  bottom: 66px !important;
+  right: 14px !important;
+  padding: 5px 11px !important;
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.2px;
+}
+
+/* 3. Zona Ibu Jari Bawah (Joystick Kiri, Quick Chat Bawah) */
+#joystick-zone {
+  bottom: 68px !important;
+  left: 16px !important;
+  width: 96px !important;
+  height: 96px !important;
+  background: rgba(15, 23, 42, 0.45) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+  backdrop-filter: blur(6px) !important;
+  border-radius: 50% !important;
+}
+
+#joystick-knob {
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+#btn-jump-mobile {
+  bottom: 106px !important;
+  right: 16px !important;
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 50% !important;
+  background: var(--hud-bg) !important;
+  border: 1px solid var(--hud-border) !important;
+  backdrop-filter: var(--hud-blur) !important;
+}
+
+/* 4. Quick Chat Bar Ramping & Presisi di Dasar Layar */
+#mp-quick-bar {
+  bottom: 14px !important;
+  height: 42px !important;
+  padding: 4px 8px !important;
+  border-radius: 999px !important;
+  gap: 5px !important;
+  max-width: calc(100vw - 24px) !important;
+}
+
+#mp-quick-bar input {
+  font-size: 12px !important;
+  width: 140px !important;
+  color: #f8fafc !important;
+}
+
+#mp-quick-bar button:last-child {
+  background: var(--hud-accent) !important;
+  color: #052e16 !important;
+  font-weight: 800 !important;
+  padding: 6px 13px !important;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+#mp-quick-bar button:active {
+  transform: scale(0.94);
+}
+
+/* 5. Floating Chat Bubble di Atas Kepala Avatar */
+#mp-bubble-layer > div {
+  background: rgba(255, 255, 255, 0.96) !important;
+  color: #0f172a !important;
+  border-radius: 14px !important;
+  padding: 6px 11px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(15, 23, 42, 0.08) !important;
+}
+
+/* 6. Skala Responsif Layar Kecil (iPhone SE / Mobile) */
+@media (max-width: 420px) {
+  #mp-quick-bar input {
+    width: 112px !important;
+  }
+}
