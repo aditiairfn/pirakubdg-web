@@ -128,7 +128,7 @@
     ffGeo.setAttribute("position", new THREE.BufferAttribute(posArr, 3));
     const ffMat = new THREE.PointsMaterial({ color: 0xfef08a, size: 0.22, transparent: true, opacity: 0.75 });
     fireflyPoints = new THREE.Points(ffGeo, ffMat);
-    grp.add(fireflyPoints);
+    // fireflyPoints dihapus agar tidak muncul kotak putih outframe
 
     // ================= 10. SEAMLESS BANDUNG BASIN HORIZON (KUALITAS VISUAL EP. 3 FINAL) =================
     const horizonGrp = new THREE.Group();
@@ -303,7 +303,7 @@
     const periTrees = [];
     for (let x = -255; x <= 255; x += 13.5) {
       for (let z = -255; z <= 255; z += 13.5) {
-        if (x > -67 && x < 67 && z > -34 && z < 28) continue;
+        if (x > -67 && x < 67 && z > -68 && z < 32) continue;
         if (Math.abs(z + 26) < 9.2 || Math.abs(z - 3) < 8.2) continue;
         if (z > 22 && (Math.abs(x + 21) < 7.8 || Math.abs(x - 21) < 7.8)) continue;
         if (Math.hypot(x, z - 20) > 255) continue;
@@ -320,9 +320,25 @@
     const roofCols = [0xb45309, 0x9a3412, 0x475569, 0x334155];
     const awnCols = [0xdc2626, 0x16a34a, 0x2563eb, 0xd97706];
 
+    
+    const houseGlowTex = makeProcTex(256, 256, (g, w, h) => {
+      g.fillStyle = "#000000";
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = "#ffcf70";
+      g.fillRect(w * 0.10, h * 0.28, w * 0.30, h * 0.34);
+    });
+    const hWallMat = new THREE.MeshStandardMaterial({
+      map: houseFacadeTex,
+      emissiveMap: houseGlowTex,
+      emissive: new THREE.Color(0xffb84d),
+      emissiveIntensity: 0,
+      roughness: 0.90
+    });
+    window.__pirakuHouseWallMat = hWallMat;
+
     const hWallIM = new THREE.InstancedMesh(
       new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshStandardMaterial({ map: houseFacadeTex, roughness: 0.90 }),
+      hWallMat,
       Math.max(1, periHouses.length)
     );
     const hRoofGeo = new THREE.ConeGeometry(0.71, 1, 4);
@@ -533,6 +549,9 @@
       // Nyalakan semua jendela Gedung Sate, Hotel Pullman (-34.5, -10.5), & bangunan sekitar
       if (window.pirakuGlassMat) {
         window.pirakuGlassMat.emissiveIntensity = nightLevel * 1.35;
+      }
+      if (window.__pirakuHouseWallMat) {
+        window.__pirakuHouseWallMat.emissiveIntensity = nightLevel * 1.25;
       }
 
       // Nyalakan 32 kabel asli Flyover Pasupati (PX=-54, PZ=-26) dengan gelombang warna RGB dinamis

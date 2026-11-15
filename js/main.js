@@ -794,6 +794,8 @@ let activeQuestSystem = null;
 // Flyover Pasupati (mendarat/ramp di ujung barat Jl. Surapati, sebelah barat Gasibu)
   const FLY = new THREE.Group(); scene.add(FLY);
   const CFly = new THREE.CatmullRomCurve3([
+    V3(-132, 0.22, -26),
+    V3(-114, 3.4, -26),
     V3(-95, 6.2, -26),
     V3(-75, 6.2, -26),
     V3(-54, 6.2, -26),
@@ -801,7 +803,7 @@ let activeQuestSystem = null;
     V3(-24, 0.22, -26)
   ]);
   CFly.userData = { w: 7.2, len: CFly.getLength() };
-  const NDK = 56, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0), MAT(0x64748b), 12), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
+  const NDK = 76, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0), MAT(0x64748b), 12), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
   FLY.add(deckM, pilM, barrierM);
 
   for (let i = 0; i < NDK; i++) {
@@ -811,9 +813,7 @@ let activeQuestSystem = null;
       dum.position.set(p.x - q.z * sd, p.y + 0.15, p.z + q.x * sd); dum.scale.set(.45, .8, sl); dum.updateMatrix(); barrierM.setMatrixAt(i * 2 + j, dum.matrix);
     });
   }
-  [
-    [-88, 5.65], [-76, 5.65], [-64, 5.65], [-44, 4.4], [-34, 2.2]
-  ].forEach(([px, py], i) => setM(pilM, i, px, 0, -26, 2.4, py, 2.4));
+  [[-116, 2.8], [-102, 5.2], [-88, 5.8], [-74, 5.8], [-64, 5.8], [-44, 4.4], [-34, 2.2]].forEach(([px, py], i) => setM(pilM, i, px, 0, -26, 2.4, py, 2.4));
 
   // Pilon Utama & Kabel Pasupati (sisi barat di koridor Cikapayang/Balubur)
   {
