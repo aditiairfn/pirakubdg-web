@@ -740,14 +740,14 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v35"></script>
+  <script src="./js/main.js?v=20261115v36"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
 
   <script>
     (function() {
-      const hideClutter = () => { const bp = document.getElementById(bottom-control-panel); if (bp && bp.dataset.userOpened === 1) return;
+      const hideClutter = () => { const bp = document.getElementById("bottom-control-panel"); if (bp && bp.dataset.userOpened === "1") return;
         const inp = document.querySelector('input[placeholder*="Sapa wargi"]');
         if (inp && inp.parentElement) inp.parentElement.style.display = 'none';
         document.querySelectorAll('div, span').forEach(el => {

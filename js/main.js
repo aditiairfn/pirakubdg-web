@@ -1848,59 +1848,10 @@ let activeQuestSystem = null;
   window.pirakuCreateCitizenMesh = createCitizenMesh;
   window.pirakuScene = scene;
 
-  setInterval(() => {
-    if (typeof scene === "undefined" || !scene || typeof THREE === "undefined") return;
-    const wp = new THREE.Vector3();
-    const toRemove = [];
-    scene.traverse(obj => {
-      if (!obj || !obj.parent || obj === scene || obj.userData?.isPlayer || obj.userData?.a) return;
-      obj.getWorldPosition(wp);
-      // Zona tepat di depan fasad & tangga pintu masuk Museum Geologi (x = 34.5, z = -6.5 menghadap +Z)
-      if (wp.x >= 25.5 && wp.x <= 43.5 && wp.z >= -5.8 && wp.z <= 2.2) {
-        const isFoliageOrLamp = obj.children && obj.children.length >= 2 && obj.children.length <= 10 && wp.y < 1.0;
-        if (isFoliageOrLamp) toRemove.push(obj);
-      }
-    });
-    toRemove.forEach(o => { if (o.parent) o.parent.remove(o); });
-  }, 800);
+  
 
 
-  // Sapu bersih semua pohon & tiang yang menghalangi fasad pintu masuk Museum Geologi
-  setTimeout(() => {
-    if (typeof scene === "undefined" || !scene || typeof THREE === "undefined") return;
-    scene.updateMatrixWorld(true);
-    let museumBox = null;
-    scene.traverse(obj => {
-      if (museumBox) return;
-      const txt = JSON.stringify(obj.userData || "") + (obj.name || "");
-      if (/museum|geologi/i.test(txt)) {
-        const b = new THREE.Box3().setFromObject(obj);
-        if (!b.isEmpty() && (b.max.x - b.min.x) > 4) museumBox = b;
-      }
-    });
-    const toRemove = [];
-    const wp = new THREE.Vector3();
-    scene.traverse(obj => {
-      if (!obj || !obj.parent || obj === scene) return;
-      obj.getWorldPosition(wp);
-      const inFrontOfMuseum = museumBox
-        ? (wp.x >= museumBox.min.x - 10 && wp.x <= museumBox.max.x + 10 && wp.z >= museumBox.min.z - 10 && wp.z <= museumBox.max.z + 10)
-        : (wp.x > 10 && wp.x < 48 && wp.z > -32 && wp.z < 22);
-      if (!inFrontOfMuseum) return;
-      // Deteksi objek pohon/tiang (punya mahkota hijau / batang coklat atau lampu jalan di depan pintu)
-      let hasFoliage = false;
-      obj.traverse(ch => {
-        if (ch.isMesh && ch.material && ch.material.color) {
-          const hex = ch.material.color.getHex();
-          if (hex === 0x5c8d47 || hex === 0x4d7c3a || hex === 0x6b9e54 || hex === 0x3f6b2c || hex === 0x2d5a27) hasFoliage = true;
-        }
-      });
-      if (hasFoliage && obj.children && obj.children.length >= 2 && obj.children.length <= 10) {
-        toRemove.push(obj);
-      }
-    });
-    toRemove.forEach(o => { if (o.parent) o.parent.remove(o); });
-  }, 600);
+  
 
   window.pirakuCamera = typeof camera !== "undefined" ? camera : (typeof cam !== "undefined" ? cam : null);
   window.hideStaticCitizenByIg = (ig, hide) => {
