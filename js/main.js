@@ -774,11 +774,11 @@ let activeQuestSystem = null;
   });
 
   // Penutup Simpang Riau Timur - Cilaki (Halte Cilaki)
-  addJunction(31, 16, 6.4, 6.4, ["N", "S", "E", "W"]);
+  // removed orphan junction
 
   // Promenade Transit & Koridor Hijau Depan Gedung Sate (menyambung Diponegoro Barat - Timur)
   box(36.8, 0.14, 6.2, 0, 0, 3, MAT(0xd6cfc2), null, false, true);      // Pelataran batu andesit
-  box(36.8, 0.165, 3.2, 0, 0, 3, MAT(0x3a424e), null, false, true);     // Koridor khusus trem & sepeda
+  // removed tram lane on plaza     // Koridor khusus trem & sepeda
   box(36.8, 0.18, 0.28, 0, 0, 0.05, CurbMat, null, false, true);        // Kanstin utara
   box(36.8, 0.18, 0.28, 0, 0, 5.95, CurbMat, null, false, true);        // Kanstin selatan
 
