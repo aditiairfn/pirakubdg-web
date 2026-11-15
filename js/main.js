@@ -708,19 +708,22 @@ let activeQuestSystem = null;
     return c;
   }
 
-  // Ruas jalan utama Bandung dengan sambungan rapat
-  const Rsur = road([[-60, -52], [-42, -36], [-32, -27.5], [-21, -26], [0, -26], [21, -26], [42, -26], [60, -26]], 8.4);
-  const RdipW = road([[-60, 3], [-42, 3], [-21, 3]], 6.2), RdipE = road([[21, 3], [42, 3], [60, 3]], 6.2);
-  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3]], 5.2), Rsen = road([[21, -26], [21, -12], [21, 3]], 5.2);
-  const Rcla = road([[-999,-999],[-998,-998]], 0.1), _oldRcla = ([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
-  const Rcim = road([[-21, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4.4);
-  const Rcil = road([[18, 3], [31, 16], [44, 27], [60, 38]], 4.4);
-  const RriauW = road([[-999,-999],[-998,-998]], 0.1), _oldRriau = ([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
-  const Rdago = road([[-999,-999],[-998,-998]], 0.1), _oldRdago = ([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
-  // Jalan Ekspansi Baru (ujungnya disambungkan ke jalan utama agar tidak bolong)
-  // disabled: const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
-  // disabled: const Rcisangkuy = road([[21, 3], [24, -4], [38, -10], [42, -26]], 5.0);
-  // disabled: const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 3]], 4.8);
+ // Ruas jalan utama kawasan Gedung Sate - Lapangan Gasibu (sesuai peta asli Google Maps)
+  const _dummyRoad = road([[-999, -999], [-998, -998]], 0.1);
+  // 1. Jl. Surapati (poros utara lurus di bawah Flyover Pasupati, batas utara Lapangan Gasibu)
+  const Rsur = road([[-65, -26], [-42, -26], [-21, -26], [0, -26], [21, -26], [42, -26], [65, -26]], 8.4);
+  // 2. Jl. Diponegoro (barat & timur terbuka; ruas tengah -21..21 ditutup sebagai plaza pedestrian Gedung Sate)
+  const RdipW = road([[-65, 3], [-42, 3], [-21, 3]], 6.2);
+  const RdipE = road([[21, 3], [42, 3], [65, 3]], 6.2);
+  // 3. Poros Barat Gasibu-Gedung Sate: Jl. Majapahit (utara) -> Jl. Cilamaya (selatan)
+  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 23]], 5.4);
+  // 4. Poros Timur Gasibu-Gedung Sate: Jl. Sentot Alibasyah (utara) -> Jl. Hayam Wuruk (selatan)
+  const Rsen = road([[21, -26], [21, -12], [21, 3], [21, 14], [21, 23]], 5.4);
+  // 5. Jl. Cimandiri (lurus di belakang/selatan Gedung Sate menghubungkan Cilamaya - Hayam Wuruk)
+  const Rcim = road([[-21, 23], [-10, 23], [0, 23], [10, 23], [21, 23]], 5.0);
+  // 6. Jl. Cilaki & Jl. Cisangkuy (koridor timur di samping Taman Lansia & Museum Geologi)
+  const Rcil = road([[21, 23], [32, 23], [42, 16], [42, 3], [42, -12], [42, -26]], 5.0);
+  const Rcla = _dummyRoad, RriauW = _dummyRoad, RriauE = _dummyRoad, Rdago = _dummyRoad;
 
   // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross) agar garis marka tidak saling tabrak
   function addJunction(x, z, w, d, cwDirs = []) {
@@ -730,7 +733,6 @@ let activeQuestSystem = null;
     pad.receiveShadow = true;
     scene.add(pad);
 
-    // Tambah zebra cross di sisi yang diminta
     cwDirs.forEach(dir => {
       const isNS = dir === "N" || dir === "S";
       const ox = dir === "E" ? w / 2 + 1.1 : dir === "W" ? -w / 2 - 1.1 : 0;
@@ -750,15 +752,14 @@ let activeQuestSystem = null;
     });
   }
 
-  addJunction(-21, -26, 8.8, 8.8, ["E", "S"]);      // Simpang Surapati - Majapahit
-  addJunction(21, -26, 8.8, 8.8, ["W", "S"]);       // Simpang Surapati - Sentot
-  addJunction(-21, 3, 7.6, 7.6, ["N", "W", "S"]);   // Simpang Diponegoro - Majapahit - Cimanuk
-  addJunction(21, 3, 7.6, 7.6, ["N", "E"]);         // Simpang Diponegoro - Sentot - Cisangkuy
-  // addJunction(-42, 3, 7.2, 7.2, ["N", "S", "E"]);   // Perempatan Dago - Diponegoro
-  // addJunction(-42, 16, 7.0, 7.0, ["N", "S", "E", "W"]); // Perempatan Dago - Riau
-  // addJunction(-42, -40, 6.8, 6.8, ["N", "S", "W"]); // Pertigaan Dago - Cikapayang
-  // addJunction(44, 27, 6.4, 6.4, ["W", "S"]);        // Pertigaan Cimanuk - Cilamaya - Saparua
-  // addJunction(44, 3, 6.6, 6.6, ["N", "W", "E"]);    // Pertigaan Diponegoro Timur - Saparua
+  addJunction(-21, -26, 8.8, 8.8, ["E", "W", "S"]);   // Simpang Surapati - Majapahit
+  addJunction(21, -26, 8.8, 8.8, ["E", "W", "S"]);    // Simpang Surapati - Sentot Alibasyah
+  addJunction(-21, 3, 7.2, 7.2, ["N", "W", "S"]);     // Pertigaan Diponegoro Barat - Majapahit - Cilamaya
+  addJunction(21, 3, 7.2, 7.2, ["N", "E", "S"]);      // Pertigaan Diponegoro Timur - Sentot - Hayam Wuruk
+  addJunction(-21, 23, 6.4, 6.4, ["N", "E"]);         // Sudut Cilamaya - Cimandiri (Barat Daya Gedung Sate)
+  addJunction(21, 23, 6.4, 6.4, ["N", "W", "E"]);     // Pertigaan Hayam Wuruk - Cimandiri - Cilaki
+  addJunction(42, 3, 6.8, 6.8, ["N", "S", "W", "E"]); // Perempatan Diponegoro Timur - Cilaki (Museum Geologi)
+  addJunction(42, -26, 8.6, 8.6, ["E", "W", "S"]);    // Pertigaan Surapati - Cilaki
 
   // Median / Pulau Jalan di bawah pilar Flyover Pasupati (Surapati lurus)
   const pasupatiMedian = new THREE.Mesh(new THREE.BoxGeometry(82, 0.24, 1.05), CurbMat);
