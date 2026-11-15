@@ -639,8 +639,8 @@
         if (selfMesh.position.x < -61.0) selfMesh.position.x = -61.0;
       }
       if (selfMesh.position.x > 61.0) selfMesh.position.x = 61.0;
-      if (selfMesh.position.z < -31.0) selfMesh.position.z = -31.0;
-      if (selfMesh.position.z > 24.5) selfMesh.position.z = 24.5;
+      if (selfMesh.position.z < -62.0) selfMesh.position.z = -62.0;
+      if (selfMesh.position.z > 52.0) selfMesh.position.z = 52.0;
     }
 
     const cv = document.getElementById("piraku-radar-cv");
