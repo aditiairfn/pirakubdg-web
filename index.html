@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v5">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v6">
 </head>
 <body>
 
@@ -533,5 +533,22 @@
   <script src="js/multiplayer.js?v=20261112rpg"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
+
+  <script>
+    (function() {
+      const hideClutter = () => {
+        const inp = document.querySelector('input[placeholder*="Sapa wargi"]');
+        if (inp && inp.parentElement) inp.parentElement.style.display = 'none';
+        document.querySelectorAll('div, span').forEach(el => {
+          if (el.children.length <= 2 && /\d+\s+Online/i.test(el.textContent.trim())) {
+            el.style.display = 'none';
+          }
+        });
+      };
+      window.addEventListener('DOMContentLoaded', hideClutter);
+      setInterval(hideClutter, 800);
+    })();
+  </script>
+
 </body>
 </html>
