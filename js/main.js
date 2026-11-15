@@ -503,7 +503,7 @@ let activeQuestSystem = null;
   renderer.toneMappingExposure = 1.18;
   container.appendChild(renderer.domElement);
 
-  const scene = new THREE.Scene();
+  const scene = new THREE.Scene(); window.pirakuScene = scene;
   scene.fog = new THREE.FogExp2(0xd9e7ee, 0.00095);
 
   const cam = new THREE.PerspectiveCamera(40, W / H, 0.5, 1600);
