@@ -821,7 +821,7 @@ let activeQuestSystem = null;
     box(1.6, 20, 1.8, PX, 0, PZ, 0xc7cbd1, FLY);
     [-.5, .5].forEach(o => box(.55, 4.4, 1.7, PX + o, 19.8, PZ, 0xd62b2b, FLY));
 
-    const cabM = IM(poleG, MAT(0xeef1f4), 32, false, false); window.pirakuPasupatiCables = cabM;
+    const cabM = IM(poleG, new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false }), 32, false, false); window.pirakuPasupatiCables = cabM;
     const pA = V3(0, 0, 0), pB = V3(0, 0, 0), pD = V3(0, 0, 0), pY = V3(0, 1, 0), qq = new THREE.Quaternion();
     let n = 0;
     [-1, 1].forEach(sd => {

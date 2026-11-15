@@ -174,7 +174,7 @@
 
     // 2. Barisan Lampu Jalan PJU Menyala + Kolam Cahaya di Aspal + Jendela Hotel Pullman + RGB Pasupati
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.45 });
-    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0x475569 });
+    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc, fog: false });
     const glowCv = document.createElement("canvas");
     glowCv.width = glowCv.height = 64;
     const gg2 = glowCv.getContext("2d");
@@ -189,7 +189,8 @@
       transparent: true,
       opacity: 0,
       depthWrite: false,
-      blending: THREE.AdditiveBlending
+      blending: THREE.AdditiveBlending,
+      fog: false
     });
     const extLampPools = [];
 
@@ -239,6 +240,18 @@
     populateStreetLamps(21, -24, 21, 220, 5.4);    // Jl. Sentot Alibasyah - Hayam Wuruk
 
     window.__pirakuNightLights = { lampBulbMat, roadGlowMat };
+
+    // Strip LED RGB tepi dek Flyover Pasupati (-95 s/d -24, z=-26)
+    const pasupatiLedMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0, fog: false });
+    const pLedN = new THREE.Mesh(new THREE.BoxGeometry(70, 0.22, 0.18), pasupatiLedMat);
+    pLedN.position.set(-59.5, 6.42, -22.65);
+    const pLedS = new THREE.Mesh(new THREE.BoxGeometry(70, 0.22, 0.18), pasupatiLedMat);
+    pLedS.position.set(-59.5, 6.42, -29.35);
+    const pPylonLight = new THREE.PointLight(0xff2a85, 0, 32, 1.5);
+    pPylonLight.position.set(-54, 15, -26);
+    horizonGrp.add(pLedN, pLedS, pPylonLight);
+    window.__pirakuPasupatiDeco = { pasupatiLedMat, pPylonLight };
+
     // 3. Tekstur Fasad Rumah, Fasad Ruko 2-Lantai, & Atap Genteng Tanah Liat (Ep. 3)
     const houseFacadeTex = makeProcTex(256, 256, (g, w, h) => {
       g.fillStyle = "#f4efe6";
@@ -288,12 +301,12 @@
     const pRnd = () => (pSeed = (pSeed * 16807) % 2147483647) / 2147483647;
     const periHouses = [];
     const periTrees = [];
-    for (let x = -175; x <= 175; x += 12.5) {
-      for (let z = -175; z <= 175; z += 12.5) {
+    for (let x = -255; x <= 255; x += 13.5) {
+      for (let z = -255; z <= 255; z += 13.5) {
         if (x > -67 && x < 67 && z > -34 && z < 28) continue;
         if (Math.abs(z + 26) < 9.2 || Math.abs(z - 3) < 8.2) continue;
         if (z > 22 && (Math.abs(x + 21) < 7.8 || Math.abs(x - 21) < 7.8)) continue;
-        if (Math.hypot(x, z) > 175) continue;
+        if (Math.hypot(x, z - 20) > 255) continue;
         const nearArterial = Math.abs(z + 26) < 15.5 || Math.abs(z - 3) < 14.5 || (z > 22 && (Math.abs(x + 21) < 14 || Math.abs(x - 21) < 14));
         if (nearArterial || pRnd() < 0.62) {
           periHouses.push({ x: x + (pRnd() - 0.5) * 2.2, z: z + (pRnd() - 0.5) * 2.2, isRuko: nearArterial });
@@ -433,8 +446,8 @@
     let mSeed = 11;
     const mRnd = () => (mSeed = (mSeed * 16807) % 2147483647) / 2147483647;
     [
-      { count: 48, rMin: 215, rSpan: 35, hMin: 34, hSpan: 42, wMin: 68, wSpan: 48, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
-      { count: 56, rMin: 265, rSpan: 45, hMin: 56, hSpan: 68, wMin: 88, wSpan: 64, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
+      { count: 56, rMin: 325, rSpan: 55, hMin: 42, hSpan: 48, wMin: 78, wSpan: 52, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
+      { count: 64, rMin: 405, rSpan: 75, hMin: 68, hSpan: 78, wMin: 98, wSpan: 68, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
     ].forEach(layer => {
       for (let i = 0; i < layer.count; i++) {
         const a = (i / layer.count) * Math.PI * 2 + mRnd() * 0.14;
@@ -445,14 +458,14 @@
           new THREE.ConeGeometry(1, 1, 7),
           new THREE.MeshStandardMaterial({ color: layer.cols[i % layer.cols.length], flatShading: true, roughness: 0.92 })
         );
-        cone.position.set(Math.cos(a) * r, h / 2 - 2, Math.sin(a) * r);
+        cone.position.set(Math.cos(a) * r, h / 2 - 2, 25 + Math.sin(a) * r);
         cone.scale.set(w, h, w);
         cone.rotation.y = mRnd() * Math.PI;
         horizonGrp.add(cone);
       }
     });
 
-    scene.fog = new THREE.Fog(0xd8e6ee, 185, 460);
+    scene.fog = new THREE.Fog(0xd8e6ee, 210, 590);
 
   }
 
@@ -525,23 +538,25 @@
       // Nyalakan 32 kabel asli Flyover Pasupati (PX=-54, PZ=-26) dengan gelombang warna RGB dinamis
       const cab = window.pirakuPasupatiCables;
       const cabMat = window.pirakuPasupatiCabMat;
-      if (cab && cab.instanceColor && cabMat) {
-        const hueBase = ((t || performance.now() * 0.001) * 0.16) % 1;
+      if (cab && cab.instanceColor) {
+        const hueBase = ((t || performance.now() * 0.001) * 0.18) % 1;
         const cTmp = new THREE.Color();
         if (nightLevel > 0.05) {
-          cabMat.emissive = cabMat.emissive || new THREE.Color(0xffffff);
-          cabMat.emissive.setHex(0xffffff);
-          cabMat.emissiveIntensity = nightLevel * 0.95;
           for (let ci = 0; ci < 32; ci++) {
-            cTmp.setHSL((hueBase + (ci % 16) * 0.0625) % 1, 0.98, 0.56);
+            cTmp.setHSL((hueBase + (ci % 16) * 0.0625) % 1, 1.0, 0.56);
             cab.setColorAt(ci, cTmp);
           }
         } else {
-          cabMat.emissiveIntensity = 0;
           cTmp.setHex(0xeef1f4);
           for (let ci = 0; ci < 32; ci++) cab.setColorAt(ci, cTmp);
         }
         cab.instanceColor.needsUpdate = true;
+        if (window.__pirakuPasupatiDeco) {
+          window.__pirakuPasupatiDeco.pasupatiLedMat.opacity = nightLevel * 0.95;
+          window.__pirakuPasupatiDeco.pasupatiLedMat.color.setHSL(hueBase, 1.0, 0.56);
+          window.__pirakuPasupatiDeco.pPylonLight.intensity = nightLevel * 2.8;
+          window.__pirakuPasupatiDeco.pPylonLight.color.setHSL((hueBase + 0.45) % 1, 1.0, 0.55);
+        }
       }
     }
     if (selfMesh && selfMesh.position) {
