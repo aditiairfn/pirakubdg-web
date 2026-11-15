@@ -219,7 +219,7 @@
     scene.add(envGroup);
 
     // Pertajam sedikit kabut jarak jauh agar horizon pegunungan menyatu alami
-    if (scene.fog) {
+    scene.traverse(o => { if (o.name && /tram|rel|coin/i.test(o.name)) o.visible = false; }); if (typeof tram !== "undefined" && tram) tram.visible = false; if (scene.fog) {
       scene.fog.density = Math.max(scene.fog.density, 0.00125);
     }
   }
