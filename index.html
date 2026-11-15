@@ -791,24 +791,60 @@
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v5"></script>
-
   <script>
-    (function() {
-      const hideClutter = () => { const bp = document.getElementById("bottom-control-panel"); if (bp && bp.dataset.userOpened === "1") return;
-        const inp = document.querySelector('input[placeholder*="Sapa wargi"]');
-        if (inp && inp.parentElement) inp.parentElement.style.display = 'none';
-        document.querySelectorAll('div, span').forEach(el => {
-          if (el.id !== 'top-online-count' && !el.classList.contains('online-status-pill') && el.children.length <= 2 && /^\d+\s+Online$/i.test(el.textContent.trim())) {
-            const num = el.textContent.trim().match(/\d+/);
-            const dst = document.getElementById('top-online-count');
-            if (num && dst) dst.textContent = num[0] + ' Warga Online';
-            el.style.display = 'none';
-          }
-        });
-      };
-      window.addEventListener('DOMContentLoaded', hideClutter);
-      setInterval(hideClutter, 800);
-    })();
+    function closeScenarioPanel() {
+      const bp = document.getElementById("bottom-control-panel");
+      if (bp) {
+        bp.dataset.userOpened = "0";
+        bp.classList.add("hidden");
+        bp.style.setProperty("display", "none", "important");
+      }
+    }
+    function closeAllOverlays() {
+      closeScenarioPanel();
+      document.querySelectorAll(".modal-overlay, .modal-backdrop, [id$=\"-modal\"]").forEach(m => {
+        m.style.display = "none";
+      });
+    }
+    window.toggleScenarioDock = function() {
+      const p = document.getElementById("bottom-control-panel");
+      if (!p) return;
+      const isClosed = (p.style.display === "none" || getComputedStyle(p).display === "none" || p.classList.contains("hidden"));
+      if (isClosed) {
+        closeAllOverlays();
+        setActiveDockTab("skenario");
+        p.dataset.userOpened = "1";
+        p.classList.remove("hidden");
+        p.style.setProperty("display", "block", "important");
+        p.style.setProperty("visibility", "visible", "important");
+        p.style.setProperty("opacity", "1", "important");
+        p.style.setProperty("pointer-events", "auto", "important");
+        p.style.setProperty("z-index", "995", "important");
+      } else {
+        setActiveDockTab("peta");
+        closeScenarioPanel();
+      }
+    };
+    function setActiveDockTab(tab) {
+      if (tab !== "skenario") closeScenarioPanel();
+      if (tab === "peta") closeAllOverlays();
+      document.querySelectorAll(".nav-dock-btn").forEach(b => b.classList.remove("active"));
+      const el = document.getElementById("nav-tab-" + tab);
+      if (el) el.classList.add("active");
+    }
+    document.addEventListener("click", (e) => {
+      const dockBtn = e.target.closest(".nav-dock-btn");
+      if (dockBtn && dockBtn.id !== "nav-tab-skenario") {
+        closeScenarioPanel();
+        if (dockBtn.id === "nav-tab-peta") closeAllOverlays();
+      }
+      if (e.target.closest("#btn-citizen-status, .online-status-pill")) {
+        closeScenarioPanel();
+      }
+    }, true);
+    window.addEventListener("DOMContentLoaded", () => {
+      closeScenarioPanel();
+    });
   </script>
 
 
