@@ -241,15 +241,31 @@
 
     window.__pirakuNightLights = { lampBulbMat, roadGlowMat };
 
-    // Strip LED RGB tepi dek Flyover Pasupati (-95 s/d -24, z=-26)
-    const pasupatiLedMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0, fog: false });
-    const pLedN = new THREE.Mesh(new THREE.BoxGeometry(70, 0.22, 0.18), pasupatiLedMat);
-    pLedN.position.set(-59.5, 6.42, -22.65);
-    const pLedS = new THREE.Mesh(new THREE.BoxGeometry(70, 0.22, 0.18), pasupatiLedMat);
-    pLedS.position.set(-59.5, 6.42, -29.35);
-    const pPylonLight = new THREE.PointLight(0xff2a85, 0, 32, 1.5);
+    // Strip LED RGB mengikuti kurva CFly Flyover Pasupati (termasuk ramp turun ke x=-132)
+    const pasupatiLedMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0, fog: false, toneMapped: false });
+    const pCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-132, 0.22, -26),
+      new THREE.Vector3(-114, 3.4, -26),
+      new THREE.Vector3(-95, 6.2, -26),
+      new THREE.Vector3(-75, 6.2, -26),
+      new THREE.Vector3(-54, 6.2, -26),
+      new THREE.Vector3(-38, 3.6, -26),
+      new THREE.Vector3(-24, 0.22, -26)
+    ]);
+    for (let si = 0; si < 54; si++) {
+      const u = (si + 0.5) / 54;
+      const pt = pCurve.getPointAt(u), tg = pCurve.getTangentAt(u);
+      const segLen = (pCurve.getLength() / 54) * 1.08;
+      [-3.35, 3.35].forEach(sd => {
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.16, 0.14), pasupatiLedMat);
+        strip.position.set(pt.x, pt.y + 0.55, pt.z + sd);
+        strip.lookAt(pt.x + tg.x, pt.y + 0.55 + tg.y, pt.z + sd + tg.z);
+        horizonGrp.add(strip);
+      });
+    }
+    const pPylonLight = new THREE.PointLight(0xff2a85, 0, 34, 1.5);
     pPylonLight.position.set(-54, 15, -26);
-    horizonGrp.add(pLedN, pLedS, pPylonLight);
+    horizonGrp.add(pPylonLight);
     window.__pirakuPasupatiDeco = { pasupatiLedMat, pPylonLight };
 
     // 3. Tekstur Fasad Rumah, Fasad Ruko 2-Lantai, & Atap Genteng Tanah Liat (Ep. 3)
@@ -483,6 +499,75 @@
 
     scene.fog = new THREE.Fog(0xd8e6ee, 210, 590);
 
+    // ================= 11. JALAN BELAKANG GEDUNG SATE & PLAZA TAMAN MONUMEN PERJUANGAN =================
+    const fullAsphMat = new THREE.MeshStandardMaterial({ color: 0x262d38, roughness: 0.90 });
+    const fullWalkMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.88 });
+    const fullDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+
+    function buildStraightCorridor(x0, z0, x1, z1, w) {
+      const len = Math.hypot(x1 - x0, z1 - z0);
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      const isEW = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+      const roadM = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? len : w, isEW ? w : len), fullAsphMat);
+      roadM.rotation.x = -Math.PI / 2;
+      roadM.position.set(cx, 0.185, cz);
+      roadM.receiveShadow = true;
+      horizonGrp.add(roadM);
+      [-1, 1].forEach(side => {
+        const off = side * (w / 2 + 0.725);
+        const walkM = new THREE.Mesh(new THREE.BoxGeometry(isEW ? len : 1.45, 0.06, isEW ? 1.45 : len), fullWalkMat);
+        walkM.position.set(cx + (isEW ? 0 : off), 0.215, cz + (isEW ? off : 0));
+        walkM.receiveShadow = true;
+        horizonGrp.add(walkM);
+      });
+      const steps = Math.floor(len / 7);
+      for (let k = 0; k < steps; k++) {
+        const u = (k + 0.5) / steps;
+        const dashM = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? 3.0 : 0.24, isEW ? 0.24 : 3.0), fullDashMat);
+        dashM.rotation.x = -Math.PI / 2;
+        dashM.position.set(x0 + (x1 - x0) * u, 0.192, z0 + (z1 - z0) * u);
+        horizonGrp.add(dashM);
+      }
+    }
+
+    // Jalan poros belakang Gedung Sate (Jl. Cilamaya x=-21 & Jl. Hayam Wuruk x=21 ke selatan + Jl. Riau melintang di z=48)
+    buildStraightCorridor(-21, 24, -21, 235, 5.4);
+    buildStraightCorridor(21, 24, 21, 235, 5.4);
+    buildStraightCorridor(-235, 48, 235, 48, 6.4);
+
+    // Jalan poros sisi Monumen Perjuangan ke utara (Jl. Dipatiukur x=-21 & x=21 dari z=-26 ke -235)
+    buildStraightCorridor(-21, -235, -21, -26, 5.4);
+    buildStraightCorridor(21, -235, 21, -26, 5.4);
+
+    // Plaza Paving + Taman Bunga + Lampu Taman Klasik di pelataran Monumen Perjuangan (x: -16..16, z: -31..-66)
+    const plazaMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 });
+    const plazaDeck = new THREE.Mesh(new THREE.BoxGeometry(30, 0.08, 34), plazaMat);
+    plazaDeck.position.set(0, 0.06, -48.5);
+    plazaDeck.receiveShadow = true;
+    horizonGrp.add(plazaDeck);
+
+    // Jalur taman tengah berwarna terakota + bedengan tanaman hijau & bunga warna-warni
+    const walkAxis = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.04, 33), new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.85 }));
+    walkAxis.position.set(0, 0.11, -48.5);
+    horizonGrp.add(walkAxis);
+
+    const flowerCols = [0xf43f5e, 0xfacc15, 0xa855f7, 0xf97316];
+    [-9.5, 9.5].forEach((bx, bIdx) => {
+      [-37, -45, -53, -61].forEach((bz, zIdx) => {
+        // Bedengan taman hijau
+        const bed = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.24, 5.2), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.9 }));
+        bed.position.set(bx, 0.20, bz);
+        horizonGrp.add(bed);
+        // Bunga berwarna di atas bedengan
+        const flw = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.14, 3.8), new THREE.MeshStandardMaterial({ color: flowerCols[(bIdx + zIdx) % flowerCols.length], roughness: 0.8 }));
+        flw.position.set(bx, 0.35, bz);
+        horizonGrp.add(flw);
+        // Lampu taman klasik menyala hangat di sudut bedengan
+        addStreetLamp(bx > 0 ? bx - 3.8 : bx + 3.8, bz, bx > 0 ? Math.PI : 0);
+      });
+    });
+
+
   }
 
   // 7. MINIMAP RADAR NAVIGASI INTERAKTIF
@@ -558,6 +643,7 @@
       const cab = window.pirakuPasupatiCables;
       const cabMat = window.pirakuPasupatiCabMat;
       if (cab && cab.instanceColor) {
+        if (cab.material) cab.material.toneMapped = false;
         const hueBase = ((t || performance.now() * 0.001) * 0.18) % 1;
         const cTmp = new THREE.Color();
         if (nightLevel > 0.05) {
