@@ -258,6 +258,16 @@
   }
 
   window.toggleVoiceChat = async function() {
+    const id = getMyIdentity();
+    if (id.isGuest) {
+      if (typeof showToast === 'function') {
+        showToast('Daftar / masuk warga dulu untuk pakai Voice Chat & akses fitur lainnya 🎙️');
+      }
+      if (typeof handleCitizenButtonClick === 'function') {
+        setTimeout(() => handleCitizenButtonClick(), 550);
+      }
+      return;
+    }
     if (!isMicEnabled) {
       try {
         localAudioStream = await navigator.mediaDevices.getUserMedia({
@@ -309,6 +319,13 @@
     const guestMesh = createCitizenMesh(guestData);
     if (guestMesh) {
       setupActivePlayer(guestMesh, guestData);
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820;
+      if (isTouch) {
+        const jz = document.getElementById('joystick-zone');
+        const jb = document.getElementById('btn-jump-mobile');
+        if (jz) jz.style.display = 'block';
+        if (jb) jb.style.display = 'flex';
+      }
     }
   }
 
@@ -499,7 +516,7 @@
     }
     injectBubbleLayer();
     connectGlobalWorld();
-    setTimeout(ensureGuestPlayerSpawned, 2200);
+    setTimeout(ensureGuestPlayerSpawned, 450);
   }
 
   if (document.readyState === 'loading') {
