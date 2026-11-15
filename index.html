@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v2">
 </head>
 <body>
 
@@ -50,7 +50,7 @@
       <div class="time-badge" id="time-badge" onclick="cycleTime()" title="Ketuk untuk pratinjau waktu">🕒 Waktu...</div>
       <div class="search-box">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="search-warga" placeholder="Cari IG..." oninput="handleSearchCitizen(this.value)">
+        <input type="text" class="search-input" id="search-warga" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" placeholder="Cari IG..." oninput="handleSearchCitizen(this.value)">
       </div>
       <button class="view-chip active" id="chip-overview" onclick="moveCam('overview')">🏙️ Overview</button>
       <button class="view-chip" id="chip-sate" onclick="moveCam('sate')">🏛️ Gedung Sate</button>
