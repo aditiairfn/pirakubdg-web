@@ -3459,6 +3459,16 @@ let activeQuestSystem = null;
   const moveRightVec = new THREE.Vector3();
   const moveFinalVec = new THREE.Vector3();
 
+  
+  function getPasupatiDeckY(x, z, curY) {
+    if (x < -134 || x > -22 || Math.abs(z + 26) > 3.15) return BASE_Y;
+    const u = Math.max(0, Math.min(1, (x - (-132)) / (-24 - (-132))));
+    const deckY = CFly.getPointAt(u).y + 0.14;
+    // Hanya naik/menapak di atas jembatan jika sudah di atas dek (curY >= deckY - 1.1) atau masuk dari ujung ramp (< 1.1m)
+    if (deckY <= 1.1 || curY >= deckY - 1.1) return deckY;
+    return BASE_Y;
+  }
+
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh || isRidingTram) return;
 
@@ -3496,8 +3506,13 @@ let activeQuestSystem = null;
       myPlayerMesh.position.x += moveFinalVec.x * speed;
       myPlayerMesh.position.z += moveFinalVec.z * speed;
 
-      myPlayerMesh.position.x = Math.max(-75, Math.min(75, myPlayerMesh.position.x));
+      const prevY = myPlayerMesh.position.y;
+      myPlayerMesh.position.x = Math.max(-138, Math.min(75, myPlayerMesh.position.x));
       myPlayerMesh.position.z = Math.max(-65, Math.min(55, myPlayerMesh.position.z));
+      // Jika sedang berjalan di atas dek jembatan tinggi (prevY > 1.35) & grounded, tahan di dalam parapet jembatan (-29.0 .. -23.0)
+      if (isGrounded && prevY > 1.35 && myPlayerMesh.position.x > -126 && myPlayerMesh.position.x < -30) {
+        myPlayerMesh.position.z = Math.max(-29.0, Math.min(-23.0, myPlayerMesh.position.z));
+      }
 
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
@@ -3519,6 +3534,14 @@ let activeQuestSystem = null;
       if (a.armR) a.armR.rotation.x *= 0.6;
     }
 
+    const groundY = getPasupatiDeckY(myPlayerMesh.position.x, myPlayerMesh.position.z, myPlayerMesh.position.y);
+    if (isGrounded) {
+      if (myPlayerMesh.position.y > groundY + 0.35) {
+        isGrounded = false;
+      } else {
+        myPlayerMesh.position.y = groundY;
+      }
+    }
     if (!isGrounded) {
       playerVelY += gravity * delta;
       myPlayerMesh.position.y += playerVelY * delta;
@@ -3530,8 +3553,8 @@ let activeQuestSystem = null;
       a.armL.rotation.x = -0.6;
       a.armR.rotation.x = -0.6;
 
-      if (myPlayerMesh.position.y <= BASE_Y) {
-        myPlayerMesh.position.y = BASE_Y;
+      if (myPlayerMesh.position.y <= groundY) {
+        myPlayerMesh.position.y = groundY;
         playerVelY = 0;
         isGrounded = true;
       }
