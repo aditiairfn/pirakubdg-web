@@ -936,22 +936,19 @@ let activeQuestSystem = null;
   {
     const mPos = new THREE.Group();
     mPos.position.set(29.5, 0, 13.5);
-    mPos.rotation.y = -PI / 2; // Menghadap Barat (ke arah Gedung Sate)
+    mPos.rotation.y = -PI / 2;
     scene.add(mPos);
 
-    // Pelataran & bodi utama Indische putih-krem (menapak y = 0)
     box(12.2, 0.28, 8.6, 0, 0, 0, 0xcbd5e1, mPos, false, true);
     box(11.0, 3.4, 7.2, 0, 0.28, 0, CREAM, mPos);
-    box(11.4, 0.25, 7.6, 0, 3.68, 0, 0xd6cfc2, mPos); // Lis profil atap
-    FR(12.0, 8.2, 0.65, 2.2, 0, 3.93, 0, 0x8c3b2b, mPos); // Atap limasan genteng terakota
+    box(11.4, 0.25, 7.6, 0, 3.68, 0, 0xd6cfc2, mPos);
+    FR(12.0, 8.2, 0.65, 2.2, 0, 3.93, 0, 0x8c3b2b, mPos);
 
-    // Sayap serambi depan + pedimen & 4 kolom kolonial
     box(5.0, 3.1, 1.8, 0, 0.28, 4.1, CREAM, mPos);
     FR(5.6, 2.4, 0.52, 1.3, 0, 3.38, 4.1, 0x8c3b2b, mPos);
     [-1.9, -0.65, 0.65, 1.9].forEach(px => box(0.32, 2.9, 0.32, px, 0.28, 4.85, 0xffffff, mPos));
     box(1.5, 2.2, 0.14, 0, 0.28, 5.01, 0x3a2a26, mPos, false);
 
-    // Jendela & lengkungan khas Gedung Sate
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 3; k++) {
         const wx = sd * (3.0 + k * 0.95);
@@ -960,7 +957,6 @@ let activeQuestSystem = null;
       }
     });
 
-    // Kotak Pos Oranye Ikonik PT Pos Indonesia di halaman depan
     box(0.55, 1.1, 0.55, -3.6, 0.28, 5.2, 0xea580c, mPos);
     box(0.68, 0.2, 0.68, -3.6, 1.38, 5.2, 0xc2410c, mPos);
 
@@ -969,35 +965,78 @@ let activeQuestSystem = null;
     mPos.add(signPos);
   }
 
-  // 2. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Diponegoro Timur: x = 35.5, z = -5.5)
+  // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Timur Ujung Oval Biru Gasibu: x = 33.5, z = -9.5)
+  {
+    const pullman = new THREE.Group();
+    pullman.position.set(33.5, 0, -9.5);
+    pullman.rotation.y = -PI / 2; // Menghadap Barat (langsung menatap ujung timur oval Gasibu & tiang bendera)
+    scene.add(pullman);
+
+    // Pelataran & Podium Neo-Kolonial Putih memanjang sejajar sisi timur Gasibu (menapak y = 0)
+    box(19.5, 0.24, 11.0, 0, 0, 0, 0xd6d3d1, pullman, false, true);
+    box(18.0, 3.1, 7.6, 0, 0.24, 0.4, 0xf8fafc, pullman);
+    box(18.4, 0.26, 8.0, 0, 3.34, 0.4, 0xcbd5e1, pullman);
+
+    // Kanopi & Sayap Ballroom Atap Limasan Gelap di sisi kiri & kanan podium (persis foto)
+    [-5.8, 5.8].forEach(sx => {
+      box(5.4, 3.2, 2.2, sx, 0.24, 4.4, 0xf8fafc, pullman);
+      FR(6.0, 2.8, 0.62, 1.4, sx, 3.44, 4.4, 0x1e293b, pullman);
+    });
+    // Bagian tengah ballroom beratap limasan gelap tinggi
+    box(6.2, 4.2, 5.6, -3.2, 3.34, 0.4, 0xf8fafc, pullman);
+    FR(6.8, 6.2, 0.65, 2.0, -3.2, 7.54, 0.4, 0x1e293b, pullman);
+
+    // Menara Kembar Putih Tinggi di sisi utara/kanan podium (seperti di foto)
+    // Menara Belakang-Kiri
+    box(5.4, 13.0, 4.8, 1.8, 3.34, -0.8, 0xf8fafc, pullman);
+    box(5.7, 0.3, 5.1, 1.8, 16.34, -0.8, 0x94a3b8, pullman);
+    for (let fl = 0; fl < 7; fl++) {
+      [-1.4, -0.45, 0.45, 1.4].forEach(wx => {
+        box(0.55, 1.05, 0.14, 1.8 + wx, 4.0 + fl * 1.72, 1.62, GLASSM, pullman, false);
+      });
+    }
+
+    // Menara Utama Depan-Kanan (dengan logo "pullman" di mahkota)
+    box(6.2, 13.6, 5.4, 6.2, 3.34, 0.4, 0xf8fafc, pullman);
+    box(6.5, 0.32, 5.7, 6.2, 16.94, 0.4, 0x94a3b8, pullman);
+    for (let fl = 0; fl < 7; fl++) {
+      [-1.8, -0.6, 0.6, 1.8].forEach(wx => {
+        box(0.62, 1.08, 0.14, 6.2 + wx, 4.0 + fl * 1.78, 3.12, GLASSM, pullman, false);
+        box(0.62, 1.08, 0.14, 6.2 + wx, 4.0 + fl * 1.78, -2.32, GLASSM, pullman, false);
+      });
+    }
+
+    // Mahkota & Papan Nama "pullman" di puncak menara kanan
+    const signPullman = mkMuseumSign('pullman', '#1e293b', 4.4, 0.78);
+    signPullman.position.set(6.2, 17.55, 2.8);
+    pullman.add(signPullman);
+  }
+
+  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Cilaki & Jl. Diponegoro Timur: x = 51.5, z = -5.5)
   {
     const mGeo = new THREE.Group();
-    mGeo.position.set(35.5, 0, -5.5);
-    mGeo.rotation.y = 0; // Fasad Art Deco menghadap Selatan (Jl. Diponegoro Timur)
+    mGeo.position.set(51.5, 0, -5.5);
+    mGeo.rotation.y = 0;
     scene.add(mGeo);
 
-    // Taman & pelataran masuk (menapak y = 0)
-    box(17.2, 0.16, 11.2, 0, 0, 0, 0x527d4c, mGeo, false, true);
+    box(16.2, 0.16, 11.2, 0, 0, 0, 0x527d4c, mGeo, false, true);
     box(5.2, 0.22, 4.4, 0, 0, 3.4, 0xd8d0c1, mGeo, false, true);
 
-    // Sayap Barat & Timur Art Deco simetris
-    box(15.6, 3.4, 5.8, 0, 0.2, -1.0, 0xf5f2eb, mGeo);
-    box(16.0, 0.32, 6.2, 0, 3.6, -1.0, 0x64748b, mGeo); // Lis atap datar
+    box(14.8, 3.4, 5.8, 0, 0.2, -1.0, 0xf5f2eb, mGeo);
+    box(15.2, 0.32, 6.2, 0, 3.6, -1.0, 0x64748b, mGeo);
 
-    // Menara Tengah Bertingkat + Ornamen Art Deco
-    box(5.6, 5.2, 6.6, 0, 0.2, -0.8, 0xfaf8f5, mGeo);
-    box(6.0, 0.32, 7.0, 0, 5.4, -0.8, 0x475569, mGeo);
+    box(5.4, 5.2, 6.6, 0, 0.2, -0.8, 0xfaf8f5, mGeo);
+    box(5.8, 0.32, 7.0, 0, 5.4, -0.8, 0x475569, mGeo);
     box(3.4, 1.3, 4.0, 0, 5.72, -0.8, 0xfaf8f5, mGeo);
     box(3.8, 0.28, 4.4, 0, 7.02, -0.8, 0x334155, mGeo);
 
-    // Kanopi Pintu Masuk Utama & Pilar Putih
     box(4.6, 0.26, 2.0, 0, 2.55, 2.8, 0x475569, mGeo);
     [-1.9, 1.9].forEach(px => box(0.36, 2.35, 0.36, px, 0.2, 3.4, 0xfaf8f5, mGeo));
     box(2.2, 2.1, 0.14, 0, 0.2, 2.52, 0x1e293b, mGeo, false);
 
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 4; k++) {
-        box(0.72, 1.65, 0.14, sd * (3.7 + k * 1.15), 1.05, 1.92, GLASSM, mGeo, false);
+        box(0.72, 1.65, 0.14, sd * (3.5 + k * 1.1), 1.05, 1.92, GLASSM, mGeo, false);
       }
       box(0.55, 2.1, 0.14, sd * 1.35, 3.0, 2.52, GLASSM, mGeo, false);
     });
@@ -1005,44 +1044,6 @@ let activeQuestSystem = null;
     const signGeo = mkMuseumSign('MUSEUM GEOLOGI', '#1e3a8a', 5.0, 0.68);
     signGeo.position.set(0, 3.1, 3.85);
     mGeo.add(signGeo);
-  }
-
-  // 3. PULLMAN BANDUNG GRAND CENTRAL (Utara Museum Geologi / Seberang Gasibu: x = 35.5, z = -18.5)
-  {
-    const pullman = new THREE.Group();
-    pullman.position.set(35.5, 0, -18.5);
-    pullman.rotation.y = -PI / 2; // Menghadap Barat (ke arah Lapangan Gasibu & Jl. Sentot Alibasyah)
-    scene.add(pullman);
-
-    // Pelataran & Podium Grand Ballroom (menapak y = 0)
-    box(13.5, 0.24, 15.5, 0, 0, 0, 0x94a3b8, pullman, false, true);
-    box(12.2, 3.2, 14.0, 0, 0.24, 0, 0x334155, pullman); // Podium batu gelap modern
-    box(12.6, 0.3, 14.4, 0, 3.44, 0, 0xb45309, pullman); // Aksen lis tembaga hangat
-
-    // Kanopi Drop-off Lobi Utama menghadap Gasibu
-    box(5.6, 0.32, 2.4, 0, 2.6, 7.6, 0x1e293b, pullman);
-    [-2.3, 2.3].forEach(px => box(0.35, 2.36, 0.35, px, 0.24, 8.4, 0x92400e, pullman));
-    box(3.4, 2.2, 0.16, 0, 0.24, 7.02, 0x38bdf8, pullman, false);
-
-    // Menara Utama Pullman (12 Lantai Kaca Biru-Gelap + Sirip Vertikal Tembaga)
-    box(9.6, 11.8, 7.4, 0, 3.74, -1.6, 0x1e293b, pullman);
-    box(9.2, 11.4, 7.6, 0, 3.9, -1.6, 0x0f172a, pullman); // Curtain wall kaca gelap
-    // Kisi-kisi jendela kaca & sirip vertikal tembaga khas Pullman Bandung
-    for (let fl = 0; fl < 6; fl++) {
-      box(9.35, 0.85, 7.72, 0, 4.4 + fl * 1.75, -1.6, GLASSM, pullman, false);
-    }
-    for (let s = -4; s <= 4; s++) {
-      box(0.22, 11.8, 0.35, s * 1.05, 3.74, 2.22, 0xb45309, pullman);
-      box(0.22, 11.8, 0.35, s * 1.05, 3.74, -5.42, 0xb45309, pullman);
-    }
-
-    // Mahkota Rooftop & Papan Nama PULLMAN BANDUNG
-    box(10.0, 0.65, 7.8, 0, 15.54, -1.6, 0x0f172a, pullman);
-    box(10.2, 0.2, 8.0, 0, 16.19, -1.6, 0xd97706, pullman);
-
-    const signPullman = mkMuseumSign('PULLMAN BANDUNG', '#0f172a', 6.4, 0.78);
-    signPullman.position.set(0, 15.1, 2.35);
-    pullman.add(signPullman);
   }
 
   // Billboard LED 3D
