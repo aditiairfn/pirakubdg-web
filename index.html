@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v17">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v18">
 </head>
 <body>
 
@@ -746,6 +746,32 @@
         p.style.setProperty("display", "none", "important");
       }
     };
+    
+    (function() {
+      function closeScenarioPanel() {
+        const bp = document.getElementById("bottom-control-panel");
+        if (bp) {
+          bp.dataset.userOpened = "0";
+          bp.classList.add("hidden");
+          bp.style.setProperty("display", "none", "important");
+        }
+      }
+      document.addEventListener("click", (e) => {
+        const dockBtn = e.target.closest(".nav-dock-btn");
+        if (dockBtn && dockBtn.id !== "nav-tab-skenario") {
+          closeScenarioPanel();
+          if (dockBtn.id === "nav-tab-peta") {
+            document.querySelectorAll(".modal-overlay, .modal-backdrop, [id$="-modal"]").forEach(m => {
+              m.style.display = "none";
+            });
+          }
+        }
+        if (e.target.closest("#btn-citizen-status, .online-status-pill")) {
+          closeScenarioPanel();
+        }
+      }, true);
+    })();
+
     function setActiveDockTab(tab) {
       document.querySelectorAll('.nav-dock-btn').forEach(b => b.classList.remove('active'));
       const el = document.getElementById('nav-tab-' + tab);
@@ -760,11 +786,11 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v40"></script>
+  <script src="./js/main.js?v=20261115v41"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
-  <script src="js/map-beautify.js?v=20261115v3"></script>
+  <script src="js/map-beautify.js?v=20261115v4"></script>
 
   <script>
     (function() {

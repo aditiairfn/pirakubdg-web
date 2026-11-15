@@ -136,7 +136,7 @@
     if (!document.body || document.getElementById("piraku-minimap-radar")) return;
     const box = document.createElement("div");
     box.id = "piraku-minimap-radar";
-    box.style.cssText = "position:fixed;top:102px;left:12px;width:82px;height:82px;border-radius:50%;background:rgba(15,23,42,0.85);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.48);box-shadow:0 6px 18px rgba(0,0,0,0.35);z-index:940;pointer-events:none;overflow:hidden;";
+    box.style.cssText = "position:fixed;top:102px;left:12px;width:82px;height:82px;border-radius:50%;background:rgba(15,23,42,0.85);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.48);box-shadow:0 6px 18px rgba(0,0,0,0.35);z-index:25;pointer-events:none;overflow:hidden;";
     box.innerHTML = "<canvas id=\"piraku-radar-cv\" width=\"82\" height=\"82\"></canvas>";
     document.body.appendChild(box);
   }

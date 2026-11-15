@@ -1472,7 +1472,7 @@ let activeQuestSystem = null;
   const coinHud = document.createElement('div');
   coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
   coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
-  function updateCoins(dt) {
+  function updateCoins(dt) { return;
     if (!isRidingTram && !myPlayerMesh) return;
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0, reborn = curMode === 'reborn';
     coins.forEach(c => {

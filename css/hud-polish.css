@@ -449,3 +449,5 @@
 #btn-citizen-status { gap: 6px !important; }
 
 #bottom-control-panel[data-user-opened="1"] { display: block !important; opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; z-index: 985 !important; }
+
+#overhead-chat-container { z-index: 24 !important; }
