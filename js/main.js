@@ -1830,6 +1830,8 @@ let activeQuestSystem = null;
     return mesh;
   };
   window.getMyActivePlayerMesh = () => myPlayerMesh;
+  window.pirakuCreateCitizenMesh = createCitizenMesh;
+  window.pirakuScene = scene;
 
   function setupActivePlayer(mesh, c) {
     myPlayerMesh = mesh;

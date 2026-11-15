@@ -364,12 +364,7 @@
   transform: none !important;
 }
 
-#btn-citizen-status div,
-#btn-citizen-status .xp-bar,
-#btn-citizen-status .xp-fill,
-#btn-citizen-status small {
-  display: none !important;
-}
+
 
 .online-status-pill {
   background: rgba(19, 27, 46, 0.9) !important;
@@ -437,14 +432,12 @@
   padding: 0 !important;
 }
 
-#btn-citizen-status div,
-#btn-citizen-status .xp-bar,
-#btn-citizen-status .xp-fill,
-#btn-citizen-status small {
-  display: none !important;
-}
+
 
 #btn-voice-mic {
   outline: none !important;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28) !important;
 }
+
+/* === HIDE TRAM PROMPT === */
+#interaction-prompt[data-kind="tram"] { display: none !important; }

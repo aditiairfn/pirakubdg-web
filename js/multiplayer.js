@@ -91,14 +91,15 @@
 
   function getOrCreateRemoteAvatar(payload) {
     if (!payload || !payload.sessionId || payload.sessionId === mySessionId) return null;
-    if (typeof scene === 'undefined') return null;
+    const activeScene = window.pirakuScene || (typeof scene !== "undefined" ? scene : null);
+    if (!activeScene) return null;
 
     let entry = remotePlayers.get(payload.sessionId);
     if (entry && entry.mesh) {
       // Update outfit live jika warga mengganti baju/aksesoris
       if ((payload.color && entry.color !== payload.color) || (payload.acc && entry.acc !== payload.acc)) {
         if (typeof citizensGroup !== 'undefined') citizensGroup.remove(entry.mesh);
-        else scene.remove(entry.mesh);
+        else (window.pirakuScene || scene).remove(entry.mesh);
         entry.mesh = null;
       } else {
         return entry;
@@ -106,9 +107,9 @@
     }
 
     let mesh = null;
-    if (typeof createCitizenMesh === 'function') {
+    if (typeof window.pirakuCreateCitizenMesh === "function") {
       try {
-        mesh = createCitizenMesh({
+        mesh = window.pirakuCreateCitizenMesh({
           ig: payload.ig || 'Wargi',
           kecamatan: payload.kecamatan || 'Bandung',
           wish: 'Wargi online di Gasibu',
@@ -136,7 +137,7 @@
       );
       head.position.y = 0.98;
       mesh.add(body, head);
-      scene.add(mesh);
+      activeScene.add(mesh);
     }
 
     if (mesh) {
@@ -164,7 +165,7 @@
     const entry = remotePlayers.get(sessionId);
     if (entry && entry.mesh) {
       if (typeof citizensGroup !== 'undefined') citizensGroup.remove(entry.mesh);
-      if (typeof scene !== 'undefined') scene.remove(entry.mesh);
+      if (typeof scene !== 'undefined') (window.pirakuScene || scene).remove(entry.mesh);
     }
     remotePlayers.delete(sessionId);
     closePeerVoice(sessionId);
@@ -420,6 +421,7 @@
 
     mpChannel
       .on('presence', { event: 'sync' }, () => {
+        lastBroadcastTime = 0;
         const state = mpChannel.presenceState();
         const sids = Object.keys(state);
         updateOnlineCount(sids.length);
