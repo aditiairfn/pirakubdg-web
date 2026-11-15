@@ -264,6 +264,7 @@
 
     // Overlay kabel RGB sejajar 32 kabel Pasupati (PX=-54, puncak y=23.5 -> dek y=6.2)
     const pasupatiRgbCables = [];
+    window.__pirakuNightLights = { lampBulbMat, roadGlowMat, pullmanWinMat, pasupatiRgbMat, pasupatiPylonGlow, pasupatiRgbCables };
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 8; k++) {
         [-1, 1].forEach(j => {
@@ -554,23 +555,21 @@
       const isDusk = /Senja/i.test(btnTxt);
       const nightLevel = isNight ? 1.0 : isDusk ? 0.55 : 0.0;
 
-      // Lampu PJU menyala hangat + kolam cahaya di aspal
-      lampBulbMat.color.setHex(nightLevel > 0.1 ? 0xffe49e : 0x475569);
-      roadGlowMat.opacity = nightLevel * 0.65;
-
-      // Jendela Hotel Pullman menyala kuning keemasan hangat
-      pullmanWinMat.opacity = nightLevel * 0.88;
-
-      // Flyover Pasupati RGB Rainbow Wave seperti foto referensi
-      pasupatiRgbMat.opacity = nightLevel * 0.92;
-      pasupatiPylonGlow.intensity = nightLevel * 2.2;
-      const hueBase = ((t || performance.now() * 0.001) * 0.14) % 1;
-      pasupatiRgbMat.color.setHSL(hueBase, 0.95, 0.58);
-      pasupatiPylonGlow.color.setHSL((hueBase + 0.5) % 1, 0.95, 0.55);
-      pasupatiRgbCables.forEach(c => {
-        c.mat.opacity = nightLevel * 0.92;
-        c.mat.color.setHSL((hueBase + c.idx * 0.055) % 1, 0.96, 0.58);
-      });
+      const nl = window.__pirakuNightLights;
+      if (nl) {
+        nl.lampBulbMat.color.setHex(nightLevel > 0.1 ? 0xffe49e : 0x475569);
+        nl.roadGlowMat.opacity = nightLevel * 0.65;
+        nl.pullmanWinMat.opacity = nightLevel * 0.88;
+        nl.pasupatiRgbMat.opacity = nightLevel * 0.92;
+        nl.pasupatiPylonGlow.intensity = nightLevel * 2.2;
+        const hueBase = ((t || performance.now() * 0.001) * 0.14) % 1;
+        nl.pasupatiRgbMat.color.setHSL(hueBase, 0.95, 0.58);
+        nl.pasupatiPylonGlow.color.setHSL((hueBase + 0.5) % 1, 0.95, 0.55);
+        nl.pasupatiRgbCables.forEach(c => {
+          c.mat.opacity = nightLevel * 0.92;
+          c.mat.color.setHSL((hueBase + c.idx * 0.055) % 1, 0.96, 0.58);
+        });
+      }
     }
     if (selfMesh && selfMesh.position) {
       if (selfMesh.position.x < -61.0) selfMesh.position.x = -61.0;
