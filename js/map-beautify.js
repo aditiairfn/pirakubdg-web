@@ -258,6 +258,7 @@
   }
 
   function updateRadarAndAtmosphere(t) {
+    const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     injectMinimapRadar();
     const timeBtn = document.getElementById("side-time-btn");
     const isNightOrDusk = timeBtn && /Malam|Senja/i.test(timeBtn.textContent || "");
@@ -326,7 +327,7 @@
       ctx.fillRect(lx - 2.2, ly - 2.2, 4.4, 4.4);
     });
 
-    const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    
     if (selfMesh && selfMesh.position) {
       const sx = Math.max(8, Math.min(W - 8, cx + selfMesh.position.x * scale));
       const sy = Math.max(8, Math.min(H - 8, cy + selfMesh.position.z * scale));
