@@ -514,7 +514,7 @@ let activeQuestSystem = null;
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = PI / 2.08;
   controls.minDistance = 3;
-  controls.maxDistance = 380;
+  controls.maxDistance = 92; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
 
   // Pencahayaan — pagi cerah Bandung (langit biru lembut, matahari rendah, kabut tipis)

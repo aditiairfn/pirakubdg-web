@@ -172,31 +172,42 @@
     infinitePlain.receiveShadow = true;
     horizonGrp.add(infinitePlain);
 
-    // 2. Tekstur Aspal & Trotoar Paving ala Ep. 3 menyambung presisi dengan jalan asli (y=0.15)
-    const asphTex = makeProcTex(256, 256, (g, w, h) => {
-      g.fillStyle = "#2d3542";
-      g.fillRect(0, 0, w, h);
-      for (let i = 0; i < 1800; i++) {
-        const v = (40 + Math.random() * 45) | 0;
-        g.fillStyle = "rgba(" + v + "," + (v + 4) + "," + (v + 12) + ",0.22)";
-        g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
-      }
-    }, 4, 40);
-    const paveTex = makeProcTex(128, 128, (g, w, h) => {
-      g.fillStyle = "#b8b2a6";
-      g.fillRect(0, 0, w, h);
-      for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-          const sh = (155 + Math.random() * 35) | 0;
-          g.fillStyle = "rgb(" + sh + "," + (sh - 6) + "," + (sh - 14) + ")";
-          g.fillRect(c * 16 + (r % 2) * 8 - 7, r * 16 + 1, 14, 14);
+    // 2. Samakan Material Aspal & Trotoar Persis dengan Jalan Asli + Barisan Lampu Jalan PJU
+    let origAsphMat = null, origWalkMat = null;
+    scene.traverse(o => {
+      if (o.isMesh && o.material && o.geometry) {
+        if (!origAsphMat && o.position && Math.abs(o.position.y - 0.165) < 0.01 && o.geometry.type === "PlaneGeometry") {
+          origAsphMat = o.material;
+        }
+        if (!origWalkMat && o.material.map && o.geometry.type === "BufferGeometry" && !o.geometry.parameters) {
+          // Ambil material trotoar dari mesh jalan di y=0.21
+          const pos = o.geometry.attributes && o.geometry.attributes.position;
+          if (pos && pos.count > 10 && Math.abs(pos.getY(0) - 0.21) < 0.01) origWalkMat = o.material;
         }
       }
-    }, 2, 90);
+    });
 
-    const extAsphaltMat = new THREE.MeshStandardMaterial({ map: asphTex, roughness: 0.90 });
-    const extWalkMat = new THREE.MeshStandardMaterial({ map: paveTex, roughness: 0.88 });
+    const extAsphaltMat = origAsphMat || new THREE.MeshStandardMaterial({ color: 0x333b48, roughness: 0.88 });
+    const extWalkMat = origWalkMat || new THREE.MeshStandardMaterial({ color: 0xb8b2a6, roughness: 0.88 });
     const extDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.5, metalness: 0.45 });
+    const lampBulbMat = new THREE.MeshBasicMaterial({ color: 0xfff3c4 });
+    const extLampBulbs = [];
+
+    function addStreetLamp(lx, lz, rotY) {
+      const lg = new THREE.Group();
+      lg.position.set(lx, 0.21, lz);
+      lg.rotation.y = rotY;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.09, 4.4, 8), poleMat);
+      pole.position.y = 2.2;
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.07, 0.07), poleMat);
+      arm.position.set(0.55, 4.35, 0);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.1, 0.22), lampBulbMat);
+      head.position.set(1.05, 4.3, 0);
+      lg.add(pole, arm, head);
+      horizonGrp.add(lg);
+      extLampBulbs.push(head);
+    }
 
     function extendExactRoad(x0, z0, x1, z1, roadW) {
       const len = Math.hypot(x1 - x0, z1 - z0);
@@ -225,14 +236,27 @@
         dash.position.set(x0 + (x1 - x0) * u, 0.158, z0 + (z1 - z0) * u);
         horizonGrp.add(dash);
       }
+
+      // Pasang lampu jalan PJU tiap 22m di sisi trotoar
+      const lampSteps = Math.floor(len / 22);
+      for (let k = 0; k < lampSteps; k++) {
+        const u = (k + 0.4) / lampSteps;
+        const px = x0 + (x1 - x0) * u;
+        const pz = z0 + (z1 - z0) * u;
+        const side = (k % 2 === 0) ? 1 : -1;
+        const off = side * (roadW / 2 + 0.55);
+        if (isEW) addStreetLamp(px, pz + off, side > 0 ? Math.PI / 2 : -Math.PI / 2);
+        else addStreetLamp(px + off, pz, side > 0 ? Math.PI : 0);
+      }
     }
 
-    extendExactRoad(-460, -26, -65, -26, 8.4);
-    extendExactRoad(65, -26, 460, -26, 8.4);
-    extendExactRoad(-460, 3, -65, 3, 6.2);
-    extendExactRoad(65, 3, 460, 3, 6.2);
-    extendExactRoad(-21, 24, -21, 460, 5.4);
-    extendExactRoad(21, 24, 21, 460, 5.4);
+    // Cukup sambung sampai radius ±235m (hemat render karena zoom-out sudah dibatasi maxDistance=92)
+    extendExactRoad(-235, -26, -65, -26, 8.4);
+    extendExactRoad(65, -26, 235, -26, 8.4);
+    extendExactRoad(-235, 3, -65, 3, 6.2);
+    extendExactRoad(65, 3, 235, 3, 6.2);
+    extendExactRoad(-21, 24, -21, 235, 5.4);
+    extendExactRoad(21, 24, 21, 235, 5.4);
 
     // 3. Tekstur Fasad Rumah, Fasad Ruko 2-Lantai, & Atap Genteng Tanah Liat (Ep. 3)
     const houseFacadeTex = makeProcTex(256, 256, (g, w, h) => {
@@ -283,12 +307,12 @@
     const pRnd = () => (pSeed = (pSeed * 16807) % 2147483647) / 2147483647;
     const periHouses = [];
     const periTrees = [];
-    for (let x = -250; x <= 250; x += 11.5) {
-      for (let z = -250; z <= 250; z += 11.5) {
+    for (let x = -175; x <= 175; x += 12.5) {
+      for (let z = -175; z <= 175; z += 12.5) {
         if (x > -67 && x < 67 && z > -34 && z < 28) continue;
         if (Math.abs(z + 26) < 9.2 || Math.abs(z - 3) < 8.2) continue;
         if (z > 22 && (Math.abs(x + 21) < 7.8 || Math.abs(x - 21) < 7.8)) continue;
-        if (Math.hypot(x, z) > 255) continue;
+        if (Math.hypot(x, z) > 175) continue;
         const nearArterial = Math.abs(z + 26) < 15.5 || Math.abs(z - 3) < 14.5 || (z > 22 && (Math.abs(x + 21) < 14 || Math.abs(x - 21) < 14));
         if (nearArterial || pRnd() < 0.62) {
           periHouses.push({ x: x + (pRnd() - 0.5) * 2.2, z: z + (pRnd() - 0.5) * 2.2, isRuko: nearArterial });
@@ -428,8 +452,8 @@
     let mSeed = 11;
     const mRnd = () => (mSeed = (mSeed * 16807) % 2147483647) / 2147483647;
     [
-      { count: 48, rMin: 350, rSpan: 55, hMin: 34, hSpan: 42, wMin: 68, wSpan: 48, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
-      { count: 56, rMin: 430, rSpan: 75, hMin: 56, hSpan: 68, wMin: 88, wSpan: 64, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
+      { count: 48, rMin: 215, rSpan: 35, hMin: 34, hSpan: 42, wMin: 68, wSpan: 48, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
+      { count: 56, rMin: 265, rSpan: 45, hMin: 56, hSpan: 68, wMin: 88, wSpan: 64, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
     ].forEach(layer => {
       for (let i = 0; i < layer.count; i++) {
         const a = (i / layer.count) * Math.PI * 2 + mRnd() * 0.14;
@@ -447,7 +471,7 @@
       }
     });
 
-    scene.fog = new THREE.Fog(0xd8e6ee, 165, 540);
+    scene.fog = new THREE.Fog(0xd8e6ee, 105, 310);
 
   }
 
