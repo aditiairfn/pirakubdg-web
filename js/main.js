@@ -5,6 +5,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_sOY6Z9Qa8aILpSL3otVpRA_tx7RyGvf";
 let supabaseClient = null;
 if (typeof window !== 'undefined' && window.supabase && SUPABASE_URL.startsWith('http')) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window.pirakuSupabase = supabaseClient;
 }
 
 // Variabel waktu global

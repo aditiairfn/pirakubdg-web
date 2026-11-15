@@ -46,6 +46,7 @@
 
   let state = loadState();
   function saveState() {
+    if (typeof window.syncPirakuWalletToSupabase === "function") window.syncPirakuWalletToSupabase(state);
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
     updateWalletHUD();
     syncPlayer3DAttachments();
