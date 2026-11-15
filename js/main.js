@@ -719,7 +719,7 @@ let activeQuestSystem = null;
   const Rmaj = road([[-21, -235], [-21, -120], [-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 24], [-21, 120], [-21, 235]], 5.4);
   // 4. Poros Timur Gasibu-Gedung Sate: Jl. Sentot Alibasyah (utara) -> Jl. Hayam Wuruk (selatan)
   const Rsen = road([[21, -235], [21, -120], [21, -26], [21, -12], [21, 3], [21, 14], [21, 24], [21, 120], [21, 235]], 5.4);
-  const Rcim = _dummyRoad, Rcil = _dummyRoad, Rcla = _dummyRoad, RriauW = _dummyRoad, RriauE = _dummyRoad, Rdago = _dummyRoad;
+  const Rcim = _dummyRoad, Rcil = _dummyRoad, Rcla = _dummyRoad, RriauW = road([[-235, 48], [-120, 48], [-21, 48], [21, 48], [120, 48], [235, 48]], 6.4), RriauE = _dummyRoad, Rdago = _dummyRoad;
 
   // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross)
   function addJunction(x, z, w, d, cwDirs = []) {

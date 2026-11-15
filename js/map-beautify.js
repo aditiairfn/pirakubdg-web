@@ -256,9 +256,9 @@
       const u = (si + 0.5) / 54;
       const pt = pCurve.getPointAt(u), tg = pCurve.getTangentAt(u);
       const segLen = (pCurve.getLength() / 54) * 1.08;
-      [-3.35, 3.35].forEach(sd => {
-        const strip = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.14, 0.14), pasupatiLedMat);
-        strip.position.set(pt.x, pt.y + 0.56, pt.z + sd);
+      [-3.3, 3.3].forEach(sd => {
+        const strip = new THREE.Mesh(new THREE.BoxGeometry(segLen, 0.18, 0.22), pasupatiLedMat);
+        strip.position.set(pt.x, pt.y + 0.62, pt.z + sd);
         strip.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), tg.clone().normalize());
         horizonGrp.add(strip);
       });
