@@ -319,9 +319,10 @@
     activeMapId = d.id;
 
     if (d.isMainMap) {
-      restoreMainGedungSateMap();
+      pill.style.display = "none";
     } else {
-      buildDedicatedDistrictScene(d);
+      pill.style.display = "flex";
+      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name} ▾</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Gd. Sate</button>`;
     }
 
     updateMapIndicatorHUD(d);
