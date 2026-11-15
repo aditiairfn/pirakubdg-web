@@ -1641,6 +1641,14 @@ let activeQuestSystem = null;
     if (typeof showToast === "function") showToast("Menampilkan Peta Bandung 🗺️");
   };
 
+  
+  window.focusCityMapOverview = function() {
+    if (typeof joyX !== "undefined") joyX = 0;
+    if (typeof joyY !== "undefined") joyY = 0;
+    if (typeof isRidingTram !== "undefined" && isRidingTram && typeof toggleRideTram === "function") toggleRideTram();
+    if (typeof showToast === "function") showToast("Menampilkan Peta Bandung 🗺️");
+  };
+
   window.toggleBottomPanel = function(show) {
     const panel = document.getElementById('bottom-control-panel');
     const fabBtn = document.getElementById('btn-show-panel');
@@ -1883,10 +1891,18 @@ let activeQuestSystem = null;
     if (typeof joyX !== "undefined") joyX = 0;
     if (typeof joyY !== "undefined") joyY = 0;
     if (typeof joyActive !== "undefined") joyActive = false;
+    if (typeof joyX !== "undefined") joyX = 0;
+    if (typeof joyY !== "undefined") joyY = 0;
+    if (typeof joyActive !== "undefined") joyActive = false;
     if (c && c.color !== undefined) localStorage.setItem('piraku_my_color', String(c.color));
     if (c && c.acc) localStorage.setItem('piraku_my_acc', String(c.acc));
     if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
     myPlayerMesh = mesh;
+    if (myPlayerMesh) {
+      myPlayerMesh.userData.isPlayer = true;
+      myPlayerMesh.userData.isAI = false;
+      if (myPlayerMesh.userData.a) { myPlayerMesh.userData.a.spd = 0; myPlayerMesh.userData.a.target = null; }
+    }
     if (myPlayerMesh) {
       myPlayerMesh.userData.isPlayer = true;
       myPlayerMesh.userData.isAI = false;
