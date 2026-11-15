@@ -32,13 +32,12 @@
     const savedIg = localStorage.getItem('piraku_my_ig');
     const ig = savedIg ? savedIg : ('Tamu_' + mySessionId.slice(-4));
     const kec = localStorage.getItem('piraku_my_kec') || 'Bandung';
-    let color = 0x2d6a4f;
-    let acc = 'none';
-    if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))?.userData?.a?.c) {
-      color = (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).userData.a.c.color || color;
-      acc = (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).userData.a.c.acc || acc;
-    }
-    return { sessionId: mySessionId, ig, kecamatan: kec, color, acc, isGuest: !savedIg };
+    const activeMesh = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : null;
+    const cData = activeMesh?.userData?.a?.c;
+    const color = (cData && cData.color !== undefined) ? cData.color : (parseInt(localStorage.getItem('piraku_my_color') || '', 10) || 0x2563eb);
+    const acc = (cData && cData.acc) ? cData.acc : (localStorage.getItem('piraku_my_acc') || 'none');
+    const role = (cData && cData.role) ? cData.role : 'WARGA';
+    return { sessionId: mySessionId, ig, kecamatan: kec, color, acc, role, isGuest: !savedIg };
   }
 
   function injectBubbleLayer() {
@@ -82,6 +81,7 @@
     }
   }
   window.broadcastLiveChat = sendChatMessage;
+  window.forceBroadcastMyAppearance = () => { lastBroadcastTime = 0; };
 
   function updateOnlineCount(count) {
     const total = Math.max(1, count);
@@ -141,6 +141,9 @@
     }
 
     if (mesh) {
+      if (typeof window.hideStaticCitizenByIg === 'function' && payload.ig) {
+        window.hideStaticCitizenByIg(payload.ig, true);
+      }
       mesh.position.set(payload.x || 0, 0.1, payload.z || 0);
       if (mesh.userData && mesh.userData.a) {
         mesh.userData.a.walk = false; // Dikendalikan langsung oleh posisi realtime!
@@ -162,6 +165,10 @@
   }
 
   function removeRemoteAvatar(sessionId) {
+    const rem = remotePlayers.get(sessionId);
+    if (rem && rem.ig && typeof window.hideStaticCitizenByIg === 'function') {
+      window.hideStaticCitizenByIg(rem.ig, false);
+    }
     const entry = remotePlayers.get(sessionId);
     if (entry && entry.mesh) {
       if (typeof citizensGroup !== 'undefined') citizensGroup.remove(entry.mesh);
@@ -326,6 +333,7 @@
             kecamatan: id.kecamatan,
             color: id.color,
             acc: id.acc,
+            role: id.role,
             x: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.x.toFixed(3)),
             z: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.z.toFixed(3)),
             rotY: Number(((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation.y : 0).toFixed(3))

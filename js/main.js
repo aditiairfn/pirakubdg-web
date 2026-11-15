@@ -1832,8 +1832,20 @@ let activeQuestSystem = null;
   window.getMyActivePlayerMesh = () => myPlayerMesh;
   window.pirakuCreateCitizenMesh = createCitizenMesh;
   window.pirakuScene = scene;
+  window.hideStaticCitizenByIg = (ig, hide) => {
+    if (!ig) return;
+    const target = String(ig).toLowerCase();
+    registeredCitizensList.forEach(c => {
+      if (!c.isRemoteLive && c.ig && c.ig.toLowerCase() === target && c.meshGroup && c.meshGroup !== myPlayerMesh) {
+        c.meshGroup.visible = !hide;
+      }
+    });
+  };
 
   function setupActivePlayer(mesh, c) {
+    if (c && c.color !== undefined) localStorage.setItem('piraku_my_color', String(c.color));
+    if (c && c.acc) localStorage.setItem('piraku_my_acc', String(c.acc));
+    if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
     myPlayerMesh = mesh;
     isControlledByPlayer = true;
     mesh.userData.a.walk = false;
@@ -2814,6 +2826,9 @@ let activeQuestSystem = null;
     cData.role = editRole;
     cData.acc = editAcc;
     cData.color = editColor;
+    localStorage.setItem('piraku_my_color', String(editColor));
+    localStorage.setItem('piraku_my_acc', String(editAcc));
+    if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
 
     const animIdx = animC.indexOf(myPlayerMesh);
     if (animIdx > -1) animC.splice(animIdx, 1);
