@@ -130,29 +130,35 @@
     fireflyPoints = new THREE.Points(ffGeo, ffMat);
     grp.add(fireflyPoints);
 
-    // ================= 10. SEAMLESS BANDUNG BASIN HORIZON (ZERO BOX EDGE) =================
+    // ================= 10. SEAMLESS BANDUNG BASIN HORIZON (KUALITAS VISUAL EP. 3 FINAL) =================
     const horizonGrp = new THREE.Group();
     horizonGrp.name = "piraku-bandung-horizon";
     scene.add(horizonGrp);
 
-    // 1. Tekstur rumput organik seragam dengan lantai kota agar sambungan 0% terlihat
-    const grassCv = document.createElement("canvas");
-    grassCv.width = grassCv.height = 128;
-    const gg = grassCv.getContext("2d");
-    gg.fillStyle = "#6c965c";
-    gg.fillRect(0, 0, 128, 128);
-    for (let i = 0; i < 800; i++) {
-      gg.fillStyle = Math.random() > 0.5 ? "rgba(88,128,72,0.42)" : "rgba(142,174,104,0.32)";
-      gg.fillRect(Math.random() * 128, Math.random() * 128, 2, 3);
+    function makeProcTex(w, h, fn, rx = 1, ry = 1) {
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      fn(c.getContext("2d"), w, h);
+      const t = new THREE.CanvasTexture(c);
+      t.wrapS = t.wrapT = THREE.RepeatWrapping;
+      t.repeat.set(rx, ry);
+      return t;
     }
-    const grassTex = new THREE.CanvasTexture(grassCv);
-    grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
-    grassTex.repeat.set(160, 160);
+
+    // 1. Tekstur rumput organik lembut ala Ep. 3 (#74a063)
+    const grassTex = makeProcTex(128, 128, (g, w, h) => {
+      g.fillStyle = "#74a063";
+      g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 750; i++) {
+        g.fillStyle = Math.random() > 0.5 ? "rgba(98,140,80,0.42)" : "rgba(150,180,110,0.32)";
+        g.fillRect(Math.random() * w, Math.random() * h, 2, 3);
+      }
+    }, 170, 170);
     const seamlessGroundMat = new THREE.MeshStandardMaterial({ map: grassTex, roughness: 0.95, metalness: 0 });
 
-    // Samakan warna lantai tanah bawaan di scene agar menyatu tanpa garis batas kotak
+    // Samakan warna lantai tanah utama di scene agar tidak ada garis batas
     scene.traverse(obj => {
-      if (obj.isMesh && obj.geometry && obj.geometry.type === "BoxGeometry" && obj.scale) {
+      if (obj.isMesh && obj.geometry && obj.geometry.type === "BoxGeometry") {
         const p = obj.geometry.parameters;
         if (p && p.width >= 90 && p.depth >= 80 && p.height <= 2.5) {
           obj.material = seamlessGroundMat;
@@ -160,16 +166,36 @@
       }
     });
 
-    // Hamparan dataran Bandung Raya menyatu rata (y = -0.004 agar bebas z-fighting & bebas tangga pinggiran)
     const infinitePlain = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1800), seamlessGroundMat);
     infinitePlain.rotation.x = -Math.PI / 2;
     infinitePlain.position.y = -0.004;
     infinitePlain.receiveShadow = true;
     horizonGrp.add(infinitePlain);
 
-    // Perpanjangan jalan asli (Jl. Surapati z=-26, Jl. Diponegoro z=3, Jl. Cilamaya x=-21, Jl. Hayam Wuruk x=21) presisi di y=0.15 + trotoar y=0.21
-    const extAsphaltMat = new THREE.MeshStandardMaterial({ color: 0x2d3542, roughness: 0.90 });
-    const extWalkMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.88 });
+    // 2. Tekstur Aspal & Trotoar Paving ala Ep. 3 menyambung presisi dengan jalan asli (y=0.15)
+    const asphTex = makeProcTex(256, 256, (g, w, h) => {
+      g.fillStyle = "#2d3542";
+      g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 1800; i++) {
+        const v = (40 + Math.random() * 45) | 0;
+        g.fillStyle = "rgba(" + v + "," + (v + 4) + "," + (v + 12) + ",0.22)";
+        g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+    }, 4, 40);
+    const paveTex = makeProcTex(128, 128, (g, w, h) => {
+      g.fillStyle = "#b8b2a6";
+      g.fillRect(0, 0, w, h);
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const sh = (155 + Math.random() * 35) | 0;
+          g.fillStyle = "rgb(" + sh + "," + (sh - 6) + "," + (sh - 14) + ")";
+          g.fillRect(c * 16 + (r % 2) * 8 - 7, r * 16 + 1, 14, 14);
+        }
+      }
+    }, 2, 90);
+
+    const extAsphaltMat = new THREE.MeshStandardMaterial({ map: asphTex, roughness: 0.90 });
+    const extWalkMat = new THREE.MeshStandardMaterial({ map: paveTex, roughness: 0.88 });
     const extDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
 
     function extendExactRoad(x0, z0, x1, z1, roadW) {
@@ -182,94 +208,201 @@
       asph.receiveShadow = true;
       horizonGrp.add(asph);
 
-      // Trotoar kiri & kanan (lebar 1.45m di y=0.21 persis seperti main.js)
       const sw = 1.45;
       [-1, 1].forEach(side => {
         const off = side * (roadW / 2 + sw / 2);
-        const walk = new THREE.Mesh(
-          new THREE.BoxGeometry(isEW ? len : sw, 0.06, isEW ? sw : len),
-          extWalkMat
-        );
+        const walk = new THREE.Mesh(new THREE.BoxGeometry(isEW ? len : sw, 0.06, isEW ? sw : len), extWalkMat);
         walk.position.set(cx + (isEW ? 0 : off), 0.18, cz + (isEW ? off : 0));
         walk.receiveShadow = true;
         horizonGrp.add(walk);
       });
 
-      // Marka garis putus-putus putih tengah jalan
       const steps = Math.floor(len / 7);
       for (let k = 0; k < steps; k++) {
         const u = (k + 0.5) / steps;
-        const dx = x0 + (x1 - x0) * u;
-        const dz = z0 + (z1 - z0) * u;
         const dash = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? 3.0 : 0.24, isEW ? 0.24 : 3.0), extDashMat);
         dash.rotation.x = -Math.PI / 2;
-        dash.position.set(dx, 0.158, dz);
+        dash.position.set(x0 + (x1 - x0) * u, 0.158, z0 + (z1 - z0) * u);
         horizonGrp.add(dash);
       }
     }
 
-    // Sambung tepat dari ujung koordinat asli di main.js (±65 di X, +24 di Z) sampai ±460m!
-    extendExactRoad(-460, -26, -65, -26, 8.4); // Jl. Surapati Barat (ke Pasteur/Dago)
-    extendExactRoad(65, -26, 460, -26, 8.4);   // Jl. Surapati Timur (ke Cicaheum)
-    extendExactRoad(-460, 3, -65, 3, 6.2);     // Jl. Diponegoro Barat
-    extendExactRoad(65, 3, 460, 3, 6.2);       // Jl. Diponegoro Timur (ke Supratman)
-    extendExactRoad(-21, 24, -21, 460, 5.4);   // Jl. Cilamaya Selatan (ke Riau/Banda)
-    extendExactRoad(21, 24, 21, 460, 5.4);     // Jl. Hayam Wuruk Selatan (ke Riau)
+    extendExactRoad(-460, -26, -65, -26, 8.4);
+    extendExactRoad(65, -26, 460, -26, 8.4);
+    extendExactRoad(-460, 3, -65, 3, 6.2);
+    extendExactRoad(65, 3, 460, 3, 6.2);
+    extendExactRoad(-21, 24, -21, 460, 5.4);
+    extendExactRoad(21, 24, 21, 460, 5.4);
 
-    // 2. Permukiman Perifer & Pepohonan Bandung sampai radius 270m (menghilangkan kesan pulau kosong)
+    // 3. Tekstur Fasad Rumah, Fasad Ruko 2-Lantai, & Atap Genteng Tanah Liat (Ep. 3)
+    const houseFacadeTex = makeProcTex(256, 256, (g, w, h) => {
+      g.fillStyle = "#f4efe6";
+      g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 450; i++) {
+        g.fillStyle = "rgba(110,100,85,0.06)";
+        g.fillRect(Math.random() * w, Math.random() * h, 2, 2);
+      }
+      // Jendela berbingkai putih + kaca biru lembut
+      g.fillStyle = "#e2e8f0";
+      g.fillRect(w * 0.10 - 4, h * 0.28 - 4, w * 0.30 + 8, h * 0.34 + 8);
+      g.fillStyle = "#3f5a73";
+      g.fillRect(w * 0.10, h * 0.28, w * 0.30, h * 0.34);
+      // Pintu kayu hangat
+      g.fillStyle = "#7c5a3a";
+      g.fillRect(w * 0.56, h * 0.34, w * 0.22, h * 0.62);
+      // Ambient occlusion halus di bagian bawah dinding
+      const ao = g.createLinearGradient(0, h * 0.82, 0, h);
+      ao.addColorStop(0, "rgba(40,30,20,0)");
+      ao.addColorStop(1, "rgba(40,30,20,0.28)");
+      g.fillStyle = ao;
+      g.fillRect(0, h * 0.82, w, h * 0.18);
+    });
+
+    const roofTileTex = makeProcTex(128, 128, (g, w, h) => {
+      g.fillStyle = "#c96f45";
+      g.fillRect(0, 0, w, h);
+      for (let r = 0; r < 8; r++) {
+        g.fillStyle = r % 2 ? "rgba(0,0,0,0.10)" : "rgba(255,255,255,0.06)";
+        g.fillRect(0, r * 16, w, 16);
+        g.strokeStyle = "rgba(60,25,10,0.48)";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.moveTo(0, r * 16 + 15);
+        g.lineTo(w, r * 16 + 15);
+        g.stroke();
+        for (let x = (r % 2) * 8; x < w; x += 16) {
+          g.beginPath();
+          g.moveTo(x, r * 16);
+          g.lineTo(x, r * 16 + 15);
+          g.stroke();
+        }
+      }
+    }, 3, 2);
+
     let pSeed = 42;
     const pRnd = () => (pSeed = (pSeed * 16807) % 2147483647) / 2147483647;
     const periHouses = [];
     const periTrees = [];
-    for (let x = -260; x <= 260; x += 13) {
-      for (let z = -260; z <= 260; z += 13) {
-        // Lewati area kota inti & koridor jalan perpanjangan
+    for (let x = -250; x <= 250; x += 11.5) {
+      for (let z = -250; z <= 250; z += 11.5) {
         if (x > -67 && x < 67 && z > -34 && z < 28) continue;
-        if (Math.abs(z + 26) < 9.5 || Math.abs(z - 3) < 8.5) continue;
-        if (z > 22 && (Math.abs(x + 21) < 8.0 || Math.abs(x - 21) < 8.0)) continue;
-        if (Math.hypot(x, z) > 265) continue;
-        if (pRnd() < 0.56) {
-          periHouses.push([x + (pRnd() - 0.5) * 3.5, z + (pRnd() - 0.5) * 3.5]);
-        } else if (pRnd() < 0.82) {
-          periTrees.push([x + (pRnd() - 0.5) * 3.5, z + (pRnd() - 0.5) * 3.5]);
+        if (Math.abs(z + 26) < 9.2 || Math.abs(z - 3) < 8.2) continue;
+        if (z > 22 && (Math.abs(x + 21) < 7.8 || Math.abs(x - 21) < 7.8)) continue;
+        if (Math.hypot(x, z) > 255) continue;
+        const nearArterial = Math.abs(z + 26) < 15.5 || Math.abs(z - 3) < 14.5 || (z > 22 && (Math.abs(x + 21) < 14 || Math.abs(x - 21) < 14));
+        if (nearArterial || pRnd() < 0.62) {
+          periHouses.push({ x: x + (pRnd() - 0.5) * 2.2, z: z + (pRnd() - 0.5) * 2.2, isRuko: nearArterial });
+        } else if (pRnd() < 0.85) {
+          periTrees.push({ x: x + (pRnd() - 0.5) * 2.6, z: z + (pRnd() - 0.5) * 2.6 });
         }
       }
     }
 
     const wallCols = [0xf5efe6, 0xede0d4, 0xe6ccb2, 0xdbeafe, 0xfef3c7, 0xe2e8f0];
     const roofCols = [0xb45309, 0x9a3412, 0x475569, 0x334155];
-    const hWallIM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 }), Math.max(1, periHouses.length));
-    const hRoofGeo = new THREE.ConeGeometry(0.72, 1, 4); hRoofGeo.rotateY(Math.PI / 4);
-    const hRoofIM = new THREE.InstancedMesh(hRoofGeo, new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 0.85 }), Math.max(1, periHouses.length));
+    const awnCols = [0xdc2626, 0x16a34a, 0x2563eb, 0xd97706];
+
+    const hWallIM = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({ map: houseFacadeTex, roughness: 0.90 }),
+      Math.max(1, periHouses.length)
+    );
+    const hRoofGeo = new THREE.ConeGeometry(0.71, 1, 4);
+    hRoofGeo.rotateY(Math.PI / 4);
+    const hRoofIM = new THREE.InstancedMesh(
+      hRoofGeo,
+      new THREE.MeshStandardMaterial({ map: roofTileTex, flatShading: true, roughness: 0.85 }),
+      Math.max(1, periHouses.length)
+    );
+    const hTrimIM = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.85 }),
+      Math.max(1, periHouses.length)
+    );
+    const rukos = periHouses.filter(h => h.isRuko);
+    const hAwnIM = new THREE.InstancedMesh(
+      new THREE.BoxGeometry(1, 1, 1),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.75 }),
+      Math.max(1, rukos.length)
+    );
+
     const dum = new THREE.Object3D(), col = new THREE.Color();
+    let awnIdx = 0;
     periHouses.forEach((h, i) => {
-      const bw = 4.2 + pRnd() * 2.2, bh = 2.8 + Math.floor(pRnd() * 2) * 1.5, bd = 4.2 + pRnd() * 2.2;
-      dum.position.set(h[0], bh / 2, h[1]); dum.rotation.set(0, (i % 2) * Math.PI / 2, 0); dum.scale.set(bw, bh, bd); dum.updateMatrix();
+      const bw = h.isRuko ? 4.6 : (4.4 + pRnd() * 1.8);
+      const bh = h.isRuko ? (4.8 + Math.floor(pRnd() * 2) * 1.8) : (3.0 + Math.floor(pRnd() * 2) * 1.4);
+      const bd = h.isRuko ? 5.2 : (4.4 + pRnd() * 1.8);
+      const rot = (i % 2) * Math.PI / 2;
+
+      dum.position.set(h.x, bh / 2, h.z);
+      dum.rotation.set(0, rot, 0);
+      dum.scale.set(bw, bh, bd);
+      dum.updateMatrix();
       hWallIM.setMatrixAt(i, dum.matrix);
       hWallIM.setColorAt(i, col.setHex(wallCols[i % wallCols.length]));
-      dum.position.set(h[0], bh + 0.75, h[1]); dum.scale.set(bw + 0.6, 1.5, bd + 0.6); dum.updateMatrix();
+
+      // Lisplang atap putih bersih ala Ep. 3
+      dum.position.set(h.x, bh + 0.1, h.z);
+      dum.scale.set(bw + 0.55, 0.22, bd + 0.55);
+      dum.updateMatrix();
+      hTrimIM.setMatrixAt(i, dum.matrix);
+
+      // Atap genteng bertekstur
+      dum.position.set(h.x, bh + 0.85, h.z);
+      dum.scale.set(bw + 0.45, 1.45, bd + 0.45);
+      dum.updateMatrix();
       hRoofIM.setMatrixAt(i, dum.matrix);
       hRoofIM.setColorAt(i, col.setHex(roofCols[(i * 3) % roofCols.length]));
+
+      // Kanopi ruko warna-warni di koridor arteri
+      if (h.isRuko && awnIdx < rukos.length) {
+        dum.position.set(h.x, 2.35, h.z);
+        dum.scale.set(bw + 0.65, 0.42, bd + 0.65);
+        dum.updateMatrix();
+        hAwnIM.setMatrixAt(awnIdx, dum.matrix);
+        hAwnIM.setColorAt(awnIdx, col.setHex(awnCols[awnIdx % awnCols.length]));
+        awnIdx++;
+      }
     });
     if (hWallIM.instanceColor) hWallIM.instanceColor.needsUpdate = true;
     if (hRoofIM.instanceColor) hRoofIM.instanceColor.needsUpdate = true;
-    horizonGrp.add(hWallIM, hRoofIM);
+    if (hAwnIM.instanceColor) hAwnIM.instanceColor.needsUpdate = true;
+    horizonGrp.add(hWallIM, hTrimIM, hRoofIM, hAwnIM);
 
-    const tTrunkIM = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.2, 0.3, 1, 7), new THREE.MeshStandardMaterial({ color: 0x7a5a40, roughness: 0.9 }), Math.max(1, periTrees.length));
-    const tCrownIM = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, flatShading: true, roughness: 0.9 }), Math.max(1, periTrees.length));
-    const leafCols = [0x4f8a47, 0x62a050, 0x3f7a40, 0x74a85a];
+    // 4. Pohon 3-Mahkota Organik (IcosahedronGeometry 3 Lapis seperti Ep. 3 Final)
+    const tTrunkIM = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.18, 0.28, 1, 8),
+      new THREE.MeshStandardMaterial({ color: 0x7a5a40, roughness: 0.9 }),
+      Math.max(1, periTrees.length)
+    );
+    const crownGeo3 = new THREE.IcosahedronGeometry(1, 2);
+    const tCrowns3 = [0, 1, 2].map(() => new THREE.InstancedMesh(
+      crownGeo3,
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.92 }),
+      Math.max(1, periTrees.length)
+    ));
+    const leafCols = [0x4f8a47, 0x62a050, 0x3f7a40, 0x74a85a, 0x5b9a4c, 0x86b560];
     periTrees.forEach((t, i) => {
-      const s = 0.9 + pRnd() * 0.45;
-      dum.position.set(t[0], 1.5 * s, t[1]); dum.rotation.set(0, 0, 0); dum.scale.set(s, 3.0 * s, s); dum.updateMatrix();
+      const s = 0.85 + pRnd() * 0.4, ry = pRnd() * 6.28, gi = Math.floor(pRnd() * leafCols.length);
+      dum.position.set(t.x, 1.6 * s, t.z); dum.rotation.set(0, 0, 0); dum.scale.set(s, 3.2 * s, s); dum.updateMatrix();
       tTrunkIM.setMatrixAt(i, dum.matrix);
-      dum.position.set(t[0], 3.6 * s, t[1]); dum.rotation.set(0, pRnd() * 3, 0); dum.scale.set(2.4 * s, 1.9 * s, 2.4 * s); dum.updateMatrix();
-      tCrownIM.setMatrixAt(i, dum.matrix);
-      tCrownIM.setColorAt(i, col.setHex(leafCols[i % leafCols.length]));
-    });
-    if (tCrownIM.instanceColor) tCrownIM.instanceColor.needsUpdate = true;
-    horizonGrp.add(tTrunkIM, tCrownIM);
 
-    // 3. Shader Sky Dome + Sun Bloom (identik eps 3 final.html)
+      dum.position.set(t.x, 3.7 * s, t.z); dum.rotation.set(0, ry, 0); dum.scale.set(2.5 * s, 1.9 * s, 2.5 * s); dum.updateMatrix();
+      tCrowns3[0].setMatrixAt(i, dum.matrix);
+      tCrowns3[0].setColorAt(i, col.setHex(leafCols[gi]));
+
+      dum.position.set(t.x + Math.cos(ry) * 1.1 * s, 4.6 * s, t.z + Math.sin(ry) * 1.0 * s); dum.scale.set(1.7 * s, 1.4 * s, 1.7 * s); dum.updateMatrix();
+      tCrowns3[1].setMatrixAt(i, dum.matrix);
+      tCrowns3[1].setColorAt(i, col.setHex(leafCols[(gi + 2) % leafCols.length]));
+
+      dum.position.set(t.x - Math.cos(ry) * 1.2 * s, 4.1 * s, t.z - Math.sin(ry) * 0.9 * s); dum.scale.set(1.5 * s, 1.25 * s, 1.5 * s); dum.updateMatrix();
+      tCrowns3[2].setMatrixAt(i, dum.matrix);
+      tCrowns3[2].setColorAt(i, col.setHex(leafCols[(gi + 4) % leafCols.length]));
+    });
+    tCrowns3.forEach(m => { if (m.instanceColor) m.instanceColor.needsUpdate = true; horizonGrp.add(m); });
+    horizonGrp.add(tTrunkIM);
+
+    // 5. Shader Sky Dome + Sun Bloom & Cincin Pegunungan Mangkok Bandung (Ep. 3 Final)
     window.__pirakuSkyU = {
       top: { value: new THREE.Color(0x63a2d4) },
       bot: { value: new THREE.Color(0xd6e6ef) },
@@ -292,12 +425,11 @@
     horizonGrp.add(skyDome);
     window.__pirakuSkyDome = skyDome;
 
-    // 4. Cincin Pegunungan Mangkok Bandung 360° Berlapis
     let mSeed = 11;
     const mRnd = () => (mSeed = (mSeed * 16807) % 2147483647) / 2147483647;
     [
-      { count: 46, rMin: 340, rSpan: 55, hMin: 36, hSpan: 44, wMin: 72, wSpan: 48, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
-      { count: 54, rMin: 430, rSpan: 75, hMin: 58, hSpan: 72, wMin: 92, wSpan: 68, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
+      { count: 48, rMin: 350, rSpan: 55, hMin: 34, hSpan: 42, wMin: 68, wSpan: 48, cols: [0x6f9a82, 0x7aa68a, 0x668f7a] },
+      { count: 56, rMin: 430, rSpan: 75, hMin: 56, hSpan: 68, wMin: 88, wSpan: 64, cols: [0x8eb3a2, 0x7ea392, 0x9cbcb0, 0x88ab9b] }
     ].forEach(layer => {
       for (let i = 0; i < layer.count; i++) {
         const a = (i / layer.count) * Math.PI * 2 + mRnd() * 0.14;
@@ -315,8 +447,7 @@
       }
     });
 
-    // 5. Fog menyatu mulus ke cakrawala (tidak ada garis potong horizon)
-    scene.fog = new THREE.Fog(0xd8e6ee, 135, 490);
+    scene.fog = new THREE.Fog(0xd8e6ee, 165, 540);
 
   }
 
