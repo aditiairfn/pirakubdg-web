@@ -59,7 +59,7 @@
     const stalls = [
       { x: -18.5, z: -13.5, mat: matRoofGreen },
       { x: -18.5, z: -9.5, mat: matRoofGold },
-      { x: -18.5, z: -5.5, mat: matRoofTerracotta }
+      { x: -18.5, z: -5.5, mat: matTerracotta }
     ];
     stalls.forEach(st => {
       const g = new THREE.Group();
