@@ -912,6 +912,97 @@ let activeQuestSystem = null;
     // DUTCH.add(v);
   }
   [[-32, -14, .1], [32, -14, -.1]].forEach(p => mkColonialVilla(p[0], p[1], p[2]));
+  
+// ================= MUSEUM POS INDONESIA & MUSEUM GEOLOGI (KORIDOR TIMUR) =================
+  function mkMuseumSign(text, bgHex, w = 5.6, h = 0.75) {
+    const cv = document.createElement('canvas');
+    cv.width = 512; cv.height = 72;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = bgHex;
+    ctx.fillRect(0, 0, 512, 72);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(4, 4, 504, 64);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 30px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 256, 38);
+    const mat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), side: THREE.DoubleSide });
+    return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+  }
+
+  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate, seberang Jl. Hayam Wuruk: x = 29.5, z = 13.5)
+  {
+    const mPos = new THREE.Group();
+    mPos.position.set(29.5, 0, 13.5);
+    mPos.rotation.y = -PI / 2; // Menghadap Barat (ke arah Gedung Sate & Jl. Hayam Wuruk)
+    scene.add(mPos);
+
+    // Pelataran & bodi utama Indische putih-krem
+    box(11.5, 0.25, 8.2, 0, 0.12, 0, 0xcbd5e1, mPos, false, true);
+    box(10.6, 3.6, 7.2, 0, 2.05, 0, CREAM, mPos);
+    FR(11.6, 8.2, 0.68, 2.1, 0, 3.85, 0, ROOFMAT, mPos);
+
+    // Serambi & kolom lengkung depan
+    box(4.8, 3.2, 1.6, 0, 1.85, 4.1, CREAM, mPos);
+    FR(5.4, 2.2, 0.55, 1.2, 0, 3.45, 4.1, ROOFMAT, mPos);
+    [-1.8, -0.6, 0.6, 1.8].forEach(px => box(0.32, 2.8, 0.32, px, 1.65, 4.75, 0xf8fafc, mPos));
+    box(1.4, 2.1, 0.12, 0, 1.3, 4.91, 0x3a2a26, mPos, false);
+
+    // Deretan jendela & lengkungan khas Gedung Sate
+    [-1, 1].forEach(sd => {
+      for (let k = 0; k < 3; k++) {
+        box(0.85, 1.45, 0.12, sd * (2.9 + k * 0.95), 2.1, 3.62, GLASSM, mPos, false);
+      }
+    });
+
+    // Kotak Pos Oranye Ikonik PT Pos Indonesia di halaman depan
+    box(0.55, 1.15, 0.55, -3.4, 0.82, 5.1, 0xea580c, mPos);
+    box(0.65, 0.18, 0.65, -3.4, 1.45, 5.1, 0xc2410c, mPos);
+
+    const signPos = mkMuseumSign('MUSEUM POS INDONESIA', '#c2410c', 5.4, 0.72);
+    signPos.position.set(0, 3.65, 5.05);
+    mPos.add(signPos);
+  }
+
+  // 2. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Diponegoro & Jl. Cilaki: x = 34.5, z = -7.5)
+  {
+    const mGeo = new THREE.Group();
+    mGeo.position.set(34.5, 0, -7.5);
+    mGeo.rotation.y = 0; // Fasad utama menghadap Selatan (Jl. Diponegoro Timur)
+    scene.add(mGeo);
+
+    // Halaman taman & jalur masuk batu alam
+    box(16.5, 0.18, 12.5, 0, 0.09, 0, 0x527d4c, mGeo, false, true);
+    box(4.8, 0.22, 4.6, 0, 0.11, 4.0, 0xd8d0c1, mGeo, false, true);
+
+    // Sayap Barat & Timur Art Deco (Nieuwe Bouwen putih gading)
+    box(15.2, 3.5, 6.4, 0, 1.9, -1.2, 0xf5f2eb, mGeo);
+    box(15.6, 0.35, 6.8, 0, 3.82, -1.2, 0x64748b, mGeo); // Lis atap datar khas Art Deco
+
+    // Menara Tengah Bertingkat + Aksen Garis Horizontal Biru-Abu
+    box(5.4, 5.4, 7.2, 0, 2.85, -1.0, 0xfaf8f5, mGeo);
+    box(5.8, 0.35, 7.6, 0, 5.7, -1.0, 0x475569, mGeo);
+    box(3.2, 1.3, 4.2, 0, 6.5, -1.0, 0xfaf8f5, mGeo);
+    box(3.6, 0.28, 4.6, 0, 7.25, -1.0, 0x334155, mGeo);
+
+    // Kanopi Pintu Masuk Utama & Jendela Vertikal
+    box(4.4, 0.28, 2.0, 0, 2.9, 3.0, 0x475569, mGeo);
+    [-1.8, 1.8].forEach(px => box(0.35, 2.7, 0.35, px, 1.5, 3.6, 0xfaf8f5, mGeo));
+    box(2.2, 2.2, 0.14, 0, 1.25, 2.62, 0x1e293b, mGeo, false);
+
+    [-1, 1].forEach(sd => {
+      for (let k = 0; k < 4; k++) {
+        box(0.75, 1.6, 0.12, sd * (3.6 + k * 1.15), 2.0, 2.02, GLASSM, mGeo, false);
+      }
+      box(0.55, 2.2, 0.12, sd * 1.35, 4.1, 2.62, GLASSM, mGeo, false);
+    });
+
+    const signGeo = mkMuseumSign("MUSEUM GEOLOGI", "#1e3a8a", 5.2, 0.72);
+    signGeo.position.set(0, 3.35, 3.95);
+    mGeo.add(signGeo);
+  }
 
   // Billboard LED 3D
   const billboardCanvas = document.createElement('canvas');
