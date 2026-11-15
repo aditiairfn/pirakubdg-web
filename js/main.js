@@ -710,7 +710,7 @@ let activeQuestSystem = null;
 
   // Ruas jalan utama Bandung dengan sambungan rapat
   const Rsur = road([[-60, -52], [-42, -36], [-32, -27.5], [-21, -26], [0, -26], [21, -26], [42, -26], [60, -26]], 8.4);
-  const RdipW = road([[-60, 3], [-42, 3], [-21, 3], [0, 3], [21, 3], [42, 3], [60, 3]], 6.4), RdipE = RdipW;
+  const RdipW = road([[-60, 3], [-42, 3], [-21, 3]], 6.2), RdipE = road([[21, 3], [42, 3], [60, 3]], 6.2);
   const Rmaj = road([[-21, -26], [-21, -12], [-21, 3]], 5.2), Rsen = road([[21, -26], [21, -12], [21, 3]], 5.2);
   const Rcla = road([[-21, 3], [-27, 14], [-33, 22], [-42, 33], [-48.5, 40]], 4.4);
   const Rcim = road([[-21, 3], [-25, 9], [-25, 21], [-17, 29.5], [0, 32], [18, 30.5], [32, 30], [44, 27]], 4.4);
@@ -718,9 +718,9 @@ let activeQuestSystem = null;
   const RriauW = road([[-60, 16], [-42, 16], [-24, 16]], 5.6), RriauE = road([[24, 16], [42, 16], [60, 16]], 5.6);
   const Rdago = road([[-42, -50], [-42, -26], [-42, 3], [-42, 16], [-42, 35]], 5.8);
   // Jalan Ekspansi Baru (ujungnya disambungkan ke jalan utama agar tidak bolong)
-  const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
-  const Rcisangkuy = road([[21, 3], [24, -4], [38, -10], [42, -26]], 5.0);
-  const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 3]], 4.8);
+  // disabled: const Rcikapayang = road([[-42, -40], [-55, -40], [-68, -42]], 5.5);
+  // disabled: const Rcisangkuy = road([[21, 3], [24, -4], [38, -10], [42, -26]], 5.0);
+  // disabled: const Rsaparua = road([[44, 27], [52, 25], [52, 10], [44, 3]], 4.8);
 
   // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross) agar garis marka tidak saling tabrak
   function addJunction(x, z, w, d, cwDirs = []) {
@@ -945,7 +945,7 @@ let activeQuestSystem = null;
   
   // ================= LANDMARK DISTRIK EKSPANSI =================
   const expansionGroup = new THREE.Group();
-  scene.add(expansionGroup);
+  expansionGroup.visible = false; scene.add(expansionGroup);
 
   // 1. DAGO / CIKAPAYANG SKATEPARK (Barat: X: -55, Z: -40)
   {
@@ -1030,7 +1030,7 @@ let activeQuestSystem = null;
   ];
   const near = (x, z) => RP.some(p => (p.x - x) ** 2 + (p.z - z) ** 2 < 36) || SK.some(q => x > q[0] - 2.5 && x < q[1] + 2.5 && z > q[2] - 2.5 && z < q[3] + 2.5);
   for (let x = -38.6; x <= 44; x += 6.4) for (let z = -37.6; z <= 44; z += 6.4) {
-    if (near(x, z)) continue; const u = rnd();
+    continue; const u = rnd();
     const f = u < .4 ? 1 : u < .75 ? 2 : u < .93 ? 3 : 4, k = rnd() < .55 ? 0 : 1;
     bl.push({ x, z, w: k ? 5.4 : 4.6, d: k ? 5.4 : 4.6, f, k, c: WALLS[Math.floor(rnd() * 5)], r: ROOF_COLORS[Math.floor(rnd() * ROOF_COLORS.length)] });
   }
