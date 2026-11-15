@@ -800,52 +800,61 @@ let activeQuestSystem = null;
   box(13.5, 0.135, 5.6, 0, 0, -2.9, MAT(0xd8d0c1), null, false, true);
   box(6.4, 0.145, 4.2, 0, 0, 7.8, MAT(0xd8d0c1), null, false, true);
 
-  // Flyover Pasupati
+// Flyover Pasupati (mendarat/ramp di ujung barat Jl. Surapati, sebelah barat Gasibu)
   const FLY = new THREE.Group(); scene.add(FLY);
-  const CFly = new THREE.CatmullRomCurve3([-85, -60, -35, 0, 35, 65, 85].map(x => V3(x, 6.2, -26 + 1.6 * Math.sin(x / 30))));
+  const CFly = new THREE.CatmullRomCurve3([
+    V3(-95, 6.2, -26),
+    V3(-75, 6.2, -26),
+    V3(-54, 6.2, -26),
+    V3(-38, 3.6, -26),
+    V3(-24, 0.22, -26)
+  ]);
   CFly.userData = { w: 7.2, len: CFly.getLength() };
-  const NDK = 80, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0), MAT(0x64748b), 15), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
+  const NDK = 56, deckM = IM(boxG, MAT(0x3b414c), NDK), pilM = IM(new THREE.CylinderGeometry(0.14, 0.17, 1, 12).translate(0, 0.5, 0), MAT(0x64748b), 12), barrierM = IM(boxG, MAT(0x94a3b8), NDK * 2);
   FLY.add(deckM, pilM, barrierM);
 
   for (let i = 0; i < NDK; i++) {
     const u = (i + .5) / NDK, p = CFly.getPointAt(u), q = CFly.getTangentAt(u), sl = CFly.userData.len / NDK * 1.15;
-    dum.position.set(p.x, 5.65, p.z); dum.lookAt(p.x + q.x, 5.65, p.z + q.z); dum.scale.set(7.2, .65, sl); dum.updateMatrix(); deckM.setMatrixAt(i, dum.matrix);
+    dum.position.set(p.x, p.y - 0.35, p.z); dum.lookAt(p.x + q.x, p.y - 0.35 + q.y, p.z + q.z); dum.scale.set(7.2, .65, sl); dum.updateMatrix(); deckM.setMatrixAt(i, dum.matrix);
     [-3.3, 3.3].forEach((sd, j) => {
-      dum.position.set(p.x - q.z * sd, 6.2, p.z + q.x * sd); dum.scale.set(.45, .8, sl); dum.updateMatrix(); barrierM.setMatrixAt(i * 2 + j, dum.matrix);
+      dum.position.set(p.x - q.z * sd, p.y + 0.15, p.z + q.x * sd); dum.scale.set(.45, .8, sl); dum.updateMatrix(); barrierM.setMatrixAt(i * 2 + j, dum.matrix);
     });
   }
-  [-82, -70, -58, -46, -8, 4, 16, 28, 40, 52, 64, 76, 84].forEach((px, i) => setM(pilM, i, px, 0, px >= -12 ? -26 : -26 + 1.6 * Math.sin(px / 30), 2.4, 5.65, 2.4));
+  [
+    [-88, 5.65], [-76, 5.65], [-64, 5.65], [-44, 4.4], [-34, 2.2]
+  ].forEach(([px, py], i) => setM(pilM, i, px, 0, -26, 2.4, py, 2.4));
 
-  // Pilon Utama & Kabel Pasupati
+  // Pilon Utama & Kabel Pasupati (sisi barat di koridor Cikapayang/Balubur)
   {
-    const PX = -27, zc = x => -26 + 1.6 * Math.sin(x / 30), PZ = zc(PX);
+    const PX = -54, PZ = -26;
     box(1.6, 20, 1.8, PX, 0, PZ, 0xc7cbd1, FLY);
     [-.5, .5].forEach(o => box(.55, 4.4, 1.7, PX + o, 19.8, PZ, 0xd62b2b, FLY));
-    
+
     const cabM = IM(poleG, MAT(0xeef1f4), 32, false, false);
     const pA = V3(0, 0, 0), pB = V3(0, 0, 0), pD = V3(0, 0, 0), pY = V3(0, 1, 0), qq = new THREE.Quaternion();
     let n = 0;
-    [-1, 1].forEach(sd => { 
+    [-1, 1].forEach(sd => {
       for (let k = 0; k < 8; k++) [-1, 1].forEach(j => {
-        const ax = PX + sd * (5 + k * 4.6);
-        pA.set(ax, 6.8, zc(ax) + j * .6); 
+        const ax = PX + sd * (4 + k * 2.2);
+        const ay = ax > -44 ? 6.2 - (ax + 44) * 0.25 : 6.2;
+        pA.set(ax, ay, PZ + j * .6);
         pB.set(PX + sd * .3, 14 + k * 1.15, PZ + j * .3);
-        pD.subVectors(pB, pA); const len = pD.length(); 
+        pD.subVectors(pB, pA); const len = pD.length();
         qq.setFromUnitVectors(pY, pD.normalize());
-        dum.position.copy(pA); dum.quaternion.copy(qq); dum.scale.set(1.4, len, 1.4); dum.updateMatrix(); 
+        dum.position.copy(pA); dum.quaternion.copy(qq); dum.scale.set(1.4, len, 1.4); dum.updateMatrix();
         cabM.setMatrixAt(n++, dum.matrix);
-      }); 
+      });
     });
     cabM.instanceMatrix.needsUpdate = true;
     FLY.add(cabM);
 
-    const medM = IM(boxG, MAT(0xaeb4bd), 60, false, false);
-    for (let i = 0; i < 60; i++) {
-      const u = (i + .5) / 60, p = CFly.getPointAt(u), q = CFly.getTangentAt(u);
-      dum.position.set(p.x, 6.3, p.z); dum.lookAt(p.x + q.x, 6.3, p.z + q.z); dum.scale.set(.45, .5, 2.9); dum.updateMatrix(); 
+    const medM = IM(boxG, MAT(0xaeb4bd), 42, false, false);
+    for (let i = 0; i < 42; i++) {
+      const u = (i + .5) / 42, p = CFly.getPointAt(u), q = CFly.getTangentAt(u);
+      dum.position.set(p.x, p.y + 0.1, p.z); dum.lookAt(p.x + q.x, p.y + 0.1 + q.y, p.z + q.z); dum.scale.set(.45, .5, 2.2); dum.updateMatrix();
       medM.setMatrixAt(i, dum.matrix);
     }
-    medM.instanceMatrix.needsUpdate = true; 
+    medM.instanceMatrix.needsUpdate = true;
     dum.quaternion.identity();
     FLY.add(medM);
   }
