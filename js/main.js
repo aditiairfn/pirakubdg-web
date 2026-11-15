@@ -788,20 +788,19 @@ let activeQuestSystem = null;
   box(0.35, 0.13, 18.2, -16.6, 0, -9.2, CurbMat, null, false, true);    // Bingkai kanstin barat
   box(0.35, 0.13, 18.2, 16.6, 0, -9.2, CurbMat, null, false, true);     // Bingkai kanstin timur
 
-  // Lintasan Lari (Jogging Track) Oval Gasibu (sejajar panjang Gedung Sate, warna biru)
-  const gg = new THREE.RingGeometry(3.4, 4.9, 56); gg.rotateX(-PI / 2);
-  const gGasibu = mk(gg, 0x2563eb, 0, 0.115, -9.2, null, false, true);
-  gGasibu.scale.set(2.95, 1.0, 1.28);
-  const ggLine = new THREE.RingGeometry(4.12, 4.18, 56); ggLine.rotateX(-PI / 2);
-  const gGasibuLine = mk(ggLine, 0xf8fafc, 0, 0.118, -9.2, null, false, true);
-  gGasibuLine.scale.set(2.95, 1.0, 1.28);
-  const gInfield = new THREE.CircleGeometry(3.38, 48); gInfield.rotateX(-PI / 2);
-  const mInfield = mk(gInfield, 0x4d7c3f, 0, 0.12, -9.2, null, false, true);
-  mInfield.scale.set(2.95, 1.0, 1.28);
-  // Pelataran plaza upacara sisi timur & barat dalam oval + tiang bendera
-  box(6.4, 0.126, 6.8, 6.8, 0, -9.2, MAT(0xd6d3d1), null, false, true);
-  box(5.2, 0.126, 6.4, -7.2, 0, -9.2, MAT(0xd6d3d1), null, false, true);
-  cyl(0.06, 0.08, 5.2, 8, 7.2, 0.13, -9.2, 0xf8fafc);
+  // Lintasan Lari (Jogging Track) Oval Gasibu (memanjang sumbu Z sesuai coretan biru)
+  const gg = new THREE.RingGeometry(3.2, 4.5, 56); gg.rotateX(-PI / 2);
+  const gGasibu = mk(gg, 0x2563eb, 0, 0.115, -9.8, null, false, true);
+  gGasibu.scale.set(1.55, 1.0, 2.15);
+  const ggLine = new THREE.RingGeometry(3.82, 3.88, 56); ggLine.rotateX(-PI / 2);
+  const gGasibuLine = mk(ggLine, 0xf8fafc, 0, 0.118, -9.8, null, false, true);
+  gGasibuLine.scale.set(1.55, 1.0, 2.15);
+  const gInfield = new THREE.CircleGeometry(3.18, 48); gInfield.rotateX(-PI / 2);
+  const mInfield = mk(gInfield, 0x4d7c3f, 0, 0.12, -9.8, null, false, true);
+  mInfield.scale.set(1.55, 1.0, 2.15);
+  // Pelataran plaza upacara sisi selatan (arah Gedung Sate) + tiang bendera
+  box(6.4, 0.126, 4.2, 0, 0, -4.6, MAT(0xd6d3d1), null, false, true);
+  cyl(0.06, 0.08, 5.2, 8, 0, 0.13, -4.2, 0xf8fafc);
 
   // Plaza Upacara Selatan Gasibu & Jalur Penghubung ke Gerbang Gedung Sate
   box(13.5, 0.135, 5.6, 0, 0, -2.9, MAT(0xd8d0c1), null, false, true);
@@ -939,7 +938,7 @@ let activeQuestSystem = null;
     return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   }
 
-  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate, seberang Jl. Hayam Wuruk: x = 28.5, z = 14.5)
+  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate / kiri di kamera: x = 28.5, z = 14.5)
   {
     const mPos = new THREE.Group();
     mPos.position.set(28.5, 0, 14.5);
@@ -971,55 +970,54 @@ let activeQuestSystem = null;
     mPos.add(signPos);
   }
 
-  // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Timur Lapangan Gasibu / Sudut Diponegoro Timur - Sentot: x = 32.5, z = -10.5)
+  // 2. PULLMAN BANDUNG GRAND CENTRAL (Tanda Merah di seberang Barat Gasibu: x = -33.5, z = -10.5)
   {
     const pullman = new THREE.Group();
-    pullman.position.set(32.5, 0, -10.5);
-    pullman.rotation.y = -PI / 2; // Menghadap Barat langsung menatap Gasibu & Gedung Sate
+    pullman.position.set(-33.5, 0, -10.5);
+    pullman.rotation.y = PI / 2; // Menghadap Timur (langsung menatap Lapangan Gasibu & Jl. Majapahit)
     scene.add(pullman);
 
-    // Pelataran & Podium Neo-Kolonial Putih (terpisah rapi di utara Jl. Diponegoro Timur z=3)
+    // Pelataran & Podium Neo-Kolonial Putih memanjang sejajar Gasibu
     box(16.8, 0.24, 10.2, 0, 0, 0, 0xd6d3d1, pullman, false, true);
     box(15.6, 3.1, 7.2, 0, 0.24, 0.3, 0xf8fafc, pullman);
     box(16.0, 0.26, 7.6, 0, 3.34, 0.3, 0xcbd5e1, pullman);
 
-    // Sayap Ballroom Atap Limasan Gelap di sisi kiri & kanan podium
+    // Sayap Ballroom Atap Limasan Gelap
     [-4.8, 4.8].forEach(sx => {
       box(4.6, 3.2, 2.0, sx, 0.24, 4.0, 0xf8fafc, pullman);
       FR(5.2, 2.5, 0.62, 1.3, sx, 3.44, 4.0, 0x1e293b, pullman);
     });
-    // Bagian tengah ballroom beratap limasan gelap
-    box(5.4, 4.0, 5.2, -2.8, 3.34, 0.3, 0xf8fafc, pullman);
-    FR(6.0, 5.8, 0.65, 1.9, -2.8, 7.34, 0.3, 0x1e293b, pullman);
+    box(5.4, 4.0, 5.2, 2.8, 3.34, 0.3, 0xf8fafc, pullman);
+    FR(6.0, 5.8, 0.65, 1.9, 2.8, 7.34, 0.3, 0x1e293b, pullman);
 
     // Menara Kembar Putih Tinggi menghadap Gasibu
-    box(4.8, 12.6, 4.6, 1.4, 3.34, -0.6, 0xf8fafc, pullman);
-    box(5.1, 0.3, 4.9, 1.4, 15.94, -0.6, 0x94a3b8, pullman);
+    box(4.8, 12.6, 4.6, -1.4, 3.34, -0.6, 0xf8fafc, pullman);
+    box(5.1, 0.3, 4.9, -1.4, 15.94, -0.6, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
       [-1.2, -0.4, 0.4, 1.2].forEach(wx => {
-        box(0.5, 1.02, 0.14, 1.4 + wx, 4.0 + fl * 1.68, 1.72, GLASSM, pullman, false);
+        box(0.5, 1.02, 0.14, -1.4 + wx, 4.0 + fl * 1.68, 1.72, GLASSM, pullman, false);
       });
     }
 
-    // Menara Utama Depan-Kanan (dengan papan nama "pullman" menghadap Gasibu)
-    box(5.4, 13.4, 5.0, 5.2, 3.34, 0.3, 0xf8fafc, pullman);
-    box(5.7, 0.32, 5.3, 5.2, 16.74, 0.3, 0x94a3b8, pullman);
+    // Menara Utama dengan papan nama "pullman" menghadap Gasibu
+    box(5.4, 13.4, 5.0, -5.2, 3.34, 0.3, 0xf8fafc, pullman);
+    box(5.7, 0.32, 5.3, -5.2, 16.74, 0.3, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
       [-1.5, -0.5, 0.5, 1.5].forEach(wx => {
-        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, 2.82, GLASSM, pullman, false);
-        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, -2.22, GLASSM, pullman, false);
+        box(0.55, 1.05, 0.14, -5.2 + wx, 4.0 + fl * 1.75, 2.82, GLASSM, pullman, false);
+        box(0.55, 1.05, 0.14, -5.2 + wx, 4.0 + fl * 1.75, -2.22, GLASSM, pullman, false);
       });
     }
 
     const signPullman = mkMuseumSign('pullman', '#1e293b', 4.2, 0.75);
-    signPullman.position.set(5.2, 17.35, 2.75);
+    signPullman.position.set(-5.2, 17.35, 2.75);
     pullman.add(signPullman);
   }
 
-  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Cilaki & Jl. Diponegoro Timur: x = 51.5, z = -6.5)
+  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Diponegoro Timur: x = 34.5, z = -6.5)
   {
     const mGeo = new THREE.Group();
-    mGeo.position.set(51.5, 0, -6.5);
+    mGeo.position.set(34.5, 0, -6.5);
     mGeo.rotation.y = 0;
     scene.add(mGeo);
 
