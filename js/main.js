@@ -716,14 +716,10 @@ let activeQuestSystem = null;
   const RdipW = road([[-65, 3], [-42, 3], [-21, 3]], 6.2);
   const RdipE = road([[21, 3], [42, 3], [65, 3]], 6.2);
   // 3. Poros Barat Gasibu-Gedung Sate: Jl. Majapahit (utara) -> Jl. Cilamaya (selatan)
-  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 23]], 5.4);
+  const Rmaj = road([[-21, -26], [-21, -12], [-21, 3], [-21, 14], [-21, 24]], 5.4);
   // 4. Poros Timur Gasibu-Gedung Sate: Jl. Sentot Alibasyah (utara) -> Jl. Hayam Wuruk (selatan)
-  const Rsen = road([[21, -26], [21, -12], [21, 3], [21, 14], [21, 23]], 5.4);
-  // 5. Jl. Cimandiri (lurus di belakang/selatan Gedung Sate & Museum Pos)
-  const Rcim = road([[-42, 23], [-21, 23], [0, 23], [21, 23], [42, 23], [65, 23]], 5.0);
-  // 6. Jl. Cilaki (poros vertikal lurus Utara-Selatan di timur blok Museum Pos & Taman)
-  const Rcil = road([[42, -26], [42, -12], [42, 3], [42, 14], [42, 23], [42, 42]], 5.2);
-  const Rcla = _dummyRoad, RriauW = _dummyRoad, RriauE = _dummyRoad, Rdago = _dummyRoad;
+  const Rsen = road([[21, -26], [21, -12], [21, 3], [21, 14], [21, 24]], 5.4);
+  const Rcim = _dummyRoad, Rcil = _dummyRoad, Rcla = _dummyRoad, RriauW = _dummyRoad, RriauE = _dummyRoad, Rdago = _dummyRoad;
 
   // Penutup Perempatan & Pertigaan (Intersection Pads + Zebra Cross)
   function addJunction(x, z, w, d, cwDirs = []) {
@@ -752,15 +748,10 @@ let activeQuestSystem = null;
     });
   }
 
-  addJunction(-21, -26, 8.8, 8.8, ["E", "W", "S"]);      // Simpang Surapati - Majapahit
-  addJunction(21, -26, 8.8, 8.8, ["E", "W", "S"]);       // Simpang Surapati - Sentot Alibasyah
-  addJunction(-21, 3, 7.2, 7.2, ["N", "W", "S"]);        // Pertigaan Diponegoro Barat - Majapahit - Cilamaya
-  addJunction(21, 3, 7.2, 7.2, ["N", "E", "S"]);         // Pertigaan Diponegoro Timur - Sentot - Hayam Wuruk
-  addJunction(-21, 23, 6.4, 6.4, ["N", "E", "W"]);       // Pertigaan Cilamaya - Cimandiri
-  addJunction(21, 23, 6.4, 6.4, ["N", "W", "E"]);        // Perempatan Hayam Wuruk - Cimandiri
-  addJunction(42, 23, 6.4, 6.4, ["N", "S", "W", "E"]);   // Perempatan Cimandiri - Cilaki
-  addJunction(42, 3, 6.8, 6.8, ["N", "S", "W", "E"]);    // Perempatan Diponegoro Timur - Cilaki (Museum Geologi)
-  addJunction(42, -26, 8.6, 8.6, ["E", "W", "S"]);       // Pertigaan Surapati - Cilaki    // Pertigaan Surapati - Cilaki
+  addJunction(-21, -26, 8.8, 8.8, ["E", "W", "S"]);   // Simpang Surapati - Majapahit
+  addJunction(21, -26, 8.8, 8.8, ["E", "W", "S"]);    // Simpang Surapati - Sentot Alibasyah
+  addJunction(-21, 3, 7.2, 7.2, ["N", "W", "S"]);     // Pertigaan Diponegoro Barat - Majapahit - Cilamaya
+  addJunction(21, 3, 7.2, 7.2, ["N", "E", "S"]);      // Pertigaan Diponegoro Timur - Sentot - Hayam Wuruk       // Pertigaan Surapati - Cilaki    // Pertigaan Surapati - Cilaki
 
   // Median / Pulau Jalan di bawah pilar Flyover Pasupati (Surapati lurus)
   const pasupatiMedian = new THREE.Mesh(new THREE.BoxGeometry(82, 0.24, 1.05), CurbMat);
@@ -932,40 +923,6 @@ let activeQuestSystem = null;
     return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   }
 
-  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate, sejajar Jl. Diponegoro Timur: x = 31.5, z = 13.5)
-  {
-    const mPos = new THREE.Group();
-    mPos.position.set(31.5, 0, 13.5);
-    mPos.rotation.y = PI; // Menghadap Utara (Jl. Diponegoro Timur), sejajar dengan Gedung Sate
-    scene.add(mPos);
-
-    box(13.2, 0.28, 9.2, 0, 0, 0, 0xcbd5e1, mPos, false, true);
-    box(12.0, 3.4, 7.4, 0, 0.28, 0, CREAM, mPos);
-    box(12.4, 0.25, 7.8, 0, 3.68, 0, 0xd6cfc2, mPos);
-    FR(13.0, 8.4, 0.65, 2.1, 0, 3.93, 0, 0x8c3b2b, mPos);
-
-    // Serambi & pedimen depan menghadap Jl. Diponegoro Timur
-    box(5.0, 3.1, 1.6, 0, 0.28, 4.1, CREAM, mPos);
-    FR(5.6, 2.2, 0.52, 1.2, 0, 3.38, 4.1, 0x8c3b2b, mPos);
-    [-1.8, -0.6, 0.6, 1.8].forEach(px => box(0.3, 2.9, 0.3, px, 0.28, 4.8, 0xffffff, mPos));
-    box(1.4, 2.2, 0.14, 0, 0.28, 4.95, 0x3a2a26, mPos, false);
-
-    [-1, 1].forEach(sd => {
-      for (let k = 0; k < 3; k++) {
-        const wx = sd * (2.9 + k * 0.95);
-        box(0.75, 1.45, 0.14, wx, 1.1, 3.72, GLASSM, mPos, false);
-      }
-    });
-
-    // Kotak Pos Oranye Ikonik di sudut barat laut (pertigaan Hayam Wuruk - Diponegoro)
-    box(0.55, 1.1, 0.55, 4.6, 0.28, 4.8, 0xea580c, mPos);
-    box(0.68, 0.2, 0.68, 4.6, 1.38, 4.8, 0xc2410c, mPos);
-
-    const signPos = mkMuseumSign('MUSEUM POS INDONESIA', '#c2410c', 5.2, 0.68);
-    signPos.position.set(0, 3.05, 5.02);
-    mPos.add(signPos);
-  }
-
   // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Barat Gasibu: x = -33.5, z = -10.5 — Menara Tinggi di Kanan)
   {
     const pullman = new THREE.Group();
@@ -1010,10 +967,10 @@ let activeQuestSystem = null;
     pullman.add(signPullman);
   }
 
-  // 3. MUSEUM GEOLOGI BANDUNG (Seberang Timur Jl. Cilaki & Jl. Diponegoro Timur: x = 52.5, z = -6.5)
+  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Utara Jl. Diponegoro Timur: x = 34.5, z = -6.5)
   {
     const mGeo = new THREE.Group();
-    mGeo.position.set(52.5, 0, -6.5);
+    mGeo.position.set(34.5, 0, -6.5);
     mGeo.rotation.y = 0; // Menghadap Selatan ke Jl. Diponegoro Timur
     scene.add(mGeo);
 
