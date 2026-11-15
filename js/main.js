@@ -1260,7 +1260,8 @@ let activeQuestSystem = null;
   }
   [[31, -6], [35, -5.5], [42, -6.5], [44, -14]].forEach(p => rawTrees.push({ x: p[0], z: p[1], s: 1.0 }));
 
-  const trees = rawTrees.filter(t => !nearRoad(t.x, t.z, 4.7));
+  const inMuseumFront = (x, z) => (x >= 25.0 && x <= 44.0 && z >= -9.5 && z <= 1.5);
+  const trees = rawTrees.filter(t => !nearRoad(t.x, t.z, 4.7) && !inMuseumFront(t.x, t.z));
   const trunkM = IM(trunkG, MAT(0x7a5a40), trees.length), crownM = IM(crownG, clay, trees.length * 2);
   trees.forEach((t, i) => {
     const c = [0x4d7348, 0x5a8852, 0x3d6639, 0x66945c][i % 4];
