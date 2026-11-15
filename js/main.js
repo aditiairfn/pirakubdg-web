@@ -788,13 +788,20 @@ let activeQuestSystem = null;
   box(0.35, 0.13, 18.2, -16.6, 0, -9.2, CurbMat, null, false, true);    // Bingkai kanstin barat
   box(0.35, 0.13, 18.2, 16.6, 0, -9.2, CurbMat, null, false, true);     // Bingkai kanstin timur
 
-  // Lintasan Lari (Jogging Track) Oval Gasibu
-  const gg = new THREE.RingGeometry(3.1, 4.7, 48); gg.rotateX(-PI / 2);
-  const gGasibu = mk(gg, 0xc86d1f, 0, 0.115, -11.4, null, false, true);
-  gGasibu.scale.x = 2.45;
-  const gInfield = new THREE.CircleGeometry(3.08, 40); gInfield.rotateX(-PI / 2);
-  const mInfield = mk(gInfield, 0x527d4c, 0, 0.12, -11.4, null, false, true);
-  mInfield.scale.x = 2.45;
+  // Lintasan Lari (Jogging Track) Oval Gasibu (sejajar panjang Gedung Sate, warna biru)
+  const gg = new THREE.RingGeometry(3.4, 4.9, 56); gg.rotateX(-PI / 2);
+  const gGasibu = mk(gg, 0x2563eb, 0, 0.115, -9.2, null, false, true);
+  gGasibu.scale.set(2.95, 1.0, 1.28);
+  const ggLine = new THREE.RingGeometry(4.12, 4.18, 56); ggLine.rotateX(-PI / 2);
+  const gGasibuLine = mk(ggLine, 0xf8fafc, 0, 0.118, -9.2, null, false, true);
+  gGasibuLine.scale.set(2.95, 1.0, 1.28);
+  const gInfield = new THREE.CircleGeometry(3.38, 48); gInfield.rotateX(-PI / 2);
+  const mInfield = mk(gInfield, 0x4d7c3f, 0, 0.12, -9.2, null, false, true);
+  mInfield.scale.set(2.95, 1.0, 1.28);
+  // Pelataran plaza upacara sisi timur & barat dalam oval + tiang bendera
+  box(6.4, 0.126, 6.8, 6.8, 0, -9.2, MAT(0xd6d3d1), null, false, true);
+  box(5.2, 0.126, 6.4, -7.2, 0, -9.2, MAT(0xd6d3d1), null, false, true);
+  cyl(0.06, 0.08, 5.2, 8, 7.2, 0.13, -9.2, 0xf8fafc);
 
   // Plaza Upacara Selatan Gasibu & Jalur Penghubung ke Gerbang Gedung Sate
   box(13.5, 0.135, 5.6, 0, 0, -2.9, MAT(0xd8d0c1), null, false, true);
@@ -932,117 +939,114 @@ let activeQuestSystem = null;
     return new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
   }
 
-  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate, seberang Jl. Hayam Wuruk: x = 29.5, z = 13.5)
+  // 1. MUSEUM POS INDONESIA (Sisi Timur Gedung Sate, seberang Jl. Hayam Wuruk: x = 28.5, z = 14.5)
   {
     const mPos = new THREE.Group();
-    mPos.position.set(29.5, 0, 13.5);
+    mPos.position.set(28.5, 0, 14.5);
     mPos.rotation.y = -PI / 2;
     scene.add(mPos);
 
-    box(12.2, 0.28, 8.6, 0, 0, 0, 0xcbd5e1, mPos, false, true);
-    box(11.0, 3.4, 7.2, 0, 0.28, 0, CREAM, mPos);
-    box(11.4, 0.25, 7.6, 0, 3.68, 0, 0xd6cfc2, mPos);
-    FR(12.0, 8.2, 0.65, 2.2, 0, 3.93, 0, 0x8c3b2b, mPos);
+    box(10.8, 0.28, 8.0, 0, 0, 0, 0xcbd5e1, mPos, false, true);
+    box(9.8, 3.4, 6.8, 0, 0.28, 0, CREAM, mPos);
+    box(10.2, 0.25, 7.2, 0, 3.68, 0, 0xd6cfc2, mPos);
+    FR(10.8, 7.8, 0.65, 2.1, 0, 3.93, 0, 0x8c3b2b, mPos);
 
-    box(5.0, 3.1, 1.8, 0, 0.28, 4.1, CREAM, mPos);
-    FR(5.6, 2.4, 0.52, 1.3, 0, 3.38, 4.1, 0x8c3b2b, mPos);
-    [-1.9, -0.65, 0.65, 1.9].forEach(px => box(0.32, 2.9, 0.32, px, 0.28, 4.85, 0xffffff, mPos));
-    box(1.5, 2.2, 0.14, 0, 0.28, 5.01, 0x3a2a26, mPos, false);
+    box(4.6, 3.1, 1.6, 0, 0.28, 3.8, CREAM, mPos);
+    FR(5.2, 2.2, 0.52, 1.2, 0, 3.38, 3.8, 0x8c3b2b, mPos);
+    [-1.7, -0.55, 0.55, 1.7].forEach(px => box(0.3, 2.9, 0.3, px, 0.28, 4.5, 0xffffff, mPos));
+    box(1.4, 2.2, 0.14, 0, 0.28, 4.65, 0x3a2a26, mPos, false);
 
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 3; k++) {
-        const wx = sd * (3.0 + k * 0.95);
-        box(0.82, 1.5, 0.14, wx, 1.1, 3.62, GLASSM, mPos, false);
-        box(0.95, 0.18, 0.22, wx, 1.0, 3.65, 0xd6cfc2, mPos, false);
+        const wx = sd * (2.6 + k * 0.88);
+        box(0.75, 1.45, 0.14, wx, 1.1, 3.42, GLASSM, mPos, false);
       }
     });
 
-    box(0.55, 1.1, 0.55, -3.6, 0.28, 5.2, 0xea580c, mPos);
-    box(0.68, 0.2, 0.68, -3.6, 1.38, 5.2, 0xc2410c, mPos);
+    box(0.55, 1.1, 0.55, -3.2, 0.28, 4.8, 0xea580c, mPos);
+    box(0.68, 0.2, 0.68, -3.2, 1.38, 4.8, 0xc2410c, mPos);
 
-    const signPos = mkMuseumSign('MUSEUM POS INDONESIA', '#c2410c', 5.2, 0.68);
-    signPos.position.set(0, 3.05, 5.06);
+    const signPos = mkMuseumSign('MUSEUM POS INDONESIA', '#c2410c', 5.0, 0.68);
+    signPos.position.set(0, 3.05, 4.72);
     mPos.add(signPos);
   }
 
-  // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Timur Ujung Oval Biru Gasibu: x = 33.5, z = -9.5)
+  // 2. PULLMAN BANDUNG GRAND CENTRAL (Seberang Timur Lapangan Gasibu / Sudut Diponegoro Timur - Sentot: x = 32.5, z = -10.5)
   {
     const pullman = new THREE.Group();
-    pullman.position.set(33.5, 0, -9.5);
-    pullman.rotation.y = -PI / 2; // Menghadap Barat (langsung menatap ujung timur oval Gasibu & tiang bendera)
+    pullman.position.set(32.5, 0, -10.5);
+    pullman.rotation.y = -PI / 2; // Menghadap Barat langsung menatap Gasibu & Gedung Sate
     scene.add(pullman);
 
-    // Pelataran & Podium Neo-Kolonial Putih memanjang sejajar sisi timur Gasibu (menapak y = 0)
-    box(19.5, 0.24, 11.0, 0, 0, 0, 0xd6d3d1, pullman, false, true);
-    box(18.0, 3.1, 7.6, 0, 0.24, 0.4, 0xf8fafc, pullman);
-    box(18.4, 0.26, 8.0, 0, 3.34, 0.4, 0xcbd5e1, pullman);
+    // Pelataran & Podium Neo-Kolonial Putih (terpisah rapi di utara Jl. Diponegoro Timur z=3)
+    box(16.8, 0.24, 10.2, 0, 0, 0, 0xd6d3d1, pullman, false, true);
+    box(15.6, 3.1, 7.2, 0, 0.24, 0.3, 0xf8fafc, pullman);
+    box(16.0, 0.26, 7.6, 0, 3.34, 0.3, 0xcbd5e1, pullman);
 
-    // Kanopi & Sayap Ballroom Atap Limasan Gelap di sisi kiri & kanan podium (persis foto)
-    [-5.8, 5.8].forEach(sx => {
-      box(5.4, 3.2, 2.2, sx, 0.24, 4.4, 0xf8fafc, pullman);
-      FR(6.0, 2.8, 0.62, 1.4, sx, 3.44, 4.4, 0x1e293b, pullman);
+    // Sayap Ballroom Atap Limasan Gelap di sisi kiri & kanan podium
+    [-4.8, 4.8].forEach(sx => {
+      box(4.6, 3.2, 2.0, sx, 0.24, 4.0, 0xf8fafc, pullman);
+      FR(5.2, 2.5, 0.62, 1.3, sx, 3.44, 4.0, 0x1e293b, pullman);
     });
-    // Bagian tengah ballroom beratap limasan gelap tinggi
-    box(6.2, 4.2, 5.6, -3.2, 3.34, 0.4, 0xf8fafc, pullman);
-    FR(6.8, 6.2, 0.65, 2.0, -3.2, 7.54, 0.4, 0x1e293b, pullman);
+    // Bagian tengah ballroom beratap limasan gelap
+    box(5.4, 4.0, 5.2, -2.8, 3.34, 0.3, 0xf8fafc, pullman);
+    FR(6.0, 5.8, 0.65, 1.9, -2.8, 7.34, 0.3, 0x1e293b, pullman);
 
-    // Menara Kembar Putih Tinggi di sisi utara/kanan podium (seperti di foto)
-    // Menara Belakang-Kiri
-    box(5.4, 13.0, 4.8, 1.8, 3.34, -0.8, 0xf8fafc, pullman);
-    box(5.7, 0.3, 5.1, 1.8, 16.34, -0.8, 0x94a3b8, pullman);
+    // Menara Kembar Putih Tinggi menghadap Gasibu
+    box(4.8, 12.6, 4.6, 1.4, 3.34, -0.6, 0xf8fafc, pullman);
+    box(5.1, 0.3, 4.9, 1.4, 15.94, -0.6, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
-      [-1.4, -0.45, 0.45, 1.4].forEach(wx => {
-        box(0.55, 1.05, 0.14, 1.8 + wx, 4.0 + fl * 1.72, 1.62, GLASSM, pullman, false);
+      [-1.2, -0.4, 0.4, 1.2].forEach(wx => {
+        box(0.5, 1.02, 0.14, 1.4 + wx, 4.0 + fl * 1.68, 1.72, GLASSM, pullman, false);
       });
     }
 
-    // Menara Utama Depan-Kanan (dengan logo "pullman" di mahkota)
-    box(6.2, 13.6, 5.4, 6.2, 3.34, 0.4, 0xf8fafc, pullman);
-    box(6.5, 0.32, 5.7, 6.2, 16.94, 0.4, 0x94a3b8, pullman);
+    // Menara Utama Depan-Kanan (dengan papan nama "pullman" menghadap Gasibu)
+    box(5.4, 13.4, 5.0, 5.2, 3.34, 0.3, 0xf8fafc, pullman);
+    box(5.7, 0.32, 5.3, 5.2, 16.74, 0.3, 0x94a3b8, pullman);
     for (let fl = 0; fl < 7; fl++) {
-      [-1.8, -0.6, 0.6, 1.8].forEach(wx => {
-        box(0.62, 1.08, 0.14, 6.2 + wx, 4.0 + fl * 1.78, 3.12, GLASSM, pullman, false);
-        box(0.62, 1.08, 0.14, 6.2 + wx, 4.0 + fl * 1.78, -2.32, GLASSM, pullman, false);
+      [-1.5, -0.5, 0.5, 1.5].forEach(wx => {
+        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, 2.82, GLASSM, pullman, false);
+        box(0.55, 1.05, 0.14, 5.2 + wx, 4.0 + fl * 1.75, -2.22, GLASSM, pullman, false);
       });
     }
 
-    // Mahkota & Papan Nama "pullman" di puncak menara kanan
-    const signPullman = mkMuseumSign('pullman', '#1e293b', 4.4, 0.78);
-    signPullman.position.set(6.2, 17.55, 2.8);
+    const signPullman = mkMuseumSign('pullman', '#1e293b', 4.2, 0.75);
+    signPullman.position.set(5.2, 17.35, 2.75);
     pullman.add(signPullman);
   }
 
-  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Cilaki & Jl. Diponegoro Timur: x = 51.5, z = -5.5)
+  // 3. MUSEUM GEOLOGI BANDUNG (Sisi Timur Jl. Cilaki & Jl. Diponegoro Timur: x = 51.5, z = -6.5)
   {
     const mGeo = new THREE.Group();
-    mGeo.position.set(51.5, 0, -5.5);
+    mGeo.position.set(51.5, 0, -6.5);
     mGeo.rotation.y = 0;
     scene.add(mGeo);
 
-    box(16.2, 0.16, 11.2, 0, 0, 0, 0x527d4c, mGeo, false, true);
-    box(5.2, 0.22, 4.4, 0, 0, 3.4, 0xd8d0c1, mGeo, false, true);
+    box(15.6, 0.16, 10.8, 0, 0, 0, 0x527d4c, mGeo, false, true);
+    box(5.0, 0.22, 4.2, 0, 0, 3.2, 0xd8d0c1, mGeo, false, true);
 
-    box(14.8, 3.4, 5.8, 0, 0.2, -1.0, 0xf5f2eb, mGeo);
-    box(15.2, 0.32, 6.2, 0, 3.6, -1.0, 0x64748b, mGeo);
+    box(14.4, 3.4, 5.6, 0, 0.2, -1.0, 0xf5f2eb, mGeo);
+    box(14.8, 0.32, 6.0, 0, 3.6, -1.0, 0x64748b, mGeo);
 
-    box(5.4, 5.2, 6.6, 0, 0.2, -0.8, 0xfaf8f5, mGeo);
-    box(5.8, 0.32, 7.0, 0, 5.4, -0.8, 0x475569, mGeo);
-    box(3.4, 1.3, 4.0, 0, 5.72, -0.8, 0xfaf8f5, mGeo);
-    box(3.8, 0.28, 4.4, 0, 7.02, -0.8, 0x334155, mGeo);
+    box(5.2, 5.2, 6.4, 0, 0.2, -0.8, 0xfaf8f5, mGeo);
+    box(5.6, 0.32, 6.8, 0, 5.4, -0.8, 0x475569, mGeo);
+    box(3.2, 1.3, 3.8, 0, 5.72, -0.8, 0xfaf8f5, mGeo);
+    box(3.6, 0.28, 4.2, 0, 7.02, -0.8, 0x334155, mGeo);
 
-    box(4.6, 0.26, 2.0, 0, 2.55, 2.8, 0x475569, mGeo);
-    [-1.9, 1.9].forEach(px => box(0.36, 2.35, 0.36, px, 0.2, 3.4, 0xfaf8f5, mGeo));
-    box(2.2, 2.1, 0.14, 0, 0.2, 2.52, 0x1e293b, mGeo, false);
+    box(4.4, 0.26, 2.0, 0, 2.55, 2.7, 0x475569, mGeo);
+    [-1.8, 1.8].forEach(px => box(0.35, 2.35, 0.35, px, 0.2, 3.3, 0xfaf8f5, mGeo));
+    box(2.1, 2.1, 0.14, 0, 0.2, 2.42, 0x1e293b, mGeo, false);
 
     [-1, 1].forEach(sd => {
       for (let k = 0; k < 4; k++) {
-        box(0.72, 1.65, 0.14, sd * (3.5 + k * 1.1), 1.05, 1.92, GLASSM, mGeo, false);
+        box(0.7, 1.6, 0.14, sd * (3.4 + k * 1.05), 1.05, 1.82, GLASSM, mGeo, false);
       }
-      box(0.55, 2.1, 0.14, sd * 1.35, 3.0, 2.52, GLASSM, mGeo, false);
+      box(0.55, 2.1, 0.14, sd * 1.3, 3.0, 2.42, GLASSM, mGeo, false);
     });
 
     const signGeo = mkMuseumSign('MUSEUM GEOLOGI', '#1e3a8a', 5.0, 0.68);
-    signGeo.position.set(0, 3.1, 3.85);
+    signGeo.position.set(0, 3.1, 3.75);
     mGeo.add(signGeo);
   }
 
