@@ -40,6 +40,32 @@
     return { sessionId: mySessionId, ig, kecamatan: kec, color, acc, role, isGuest: !savedIg };
   }
 
+  
+  const onlineNameTags = new Map();
+  function syncOnlineNameTag(key, mesh, label, isSelf) {
+    const layer = document.getElementById("mp-bubble-layer");
+    const camObj = getActiveCamera();
+    if (!layer || !camObj || !mesh || typeof THREE === "undefined") return;
+    let tag = onlineNameTags.get(key);
+    if (!tag) {
+      tag = document.createElement("div");
+      tag.style.cssText = "position:absolute;left:0;top:0;transform:translate(-50%,-100%);padding:2px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:0.2px;white-space:nowrap;pointer-events:none;background:rgba(15,23,42,0.78);color:" + (isSelf ? "#fde047" : "#f8fafc") + ";border:1px solid " + (isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)") + ";";
+      layer.appendChild(tag);
+      onlineNameTags.set(key, tag);
+    }
+    if (tag.textContent !== label) tag.textContent = label;
+    const v = new THREE.Vector3();
+    mesh.getWorldPosition(v);
+    v.y += 1.48;
+    v.project(camObj);
+    if (v.z > 1) { tag.style.display = "none"; }
+    else {
+      tag.style.display = "block";
+      tag.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + "px";
+      tag.style.top = ((-(v.y * 0.5) + 0.5) * window.innerHeight).toFixed(1) + "px";
+    }
+  }
+
   function injectBubbleLayer() {
     if (document.getElementById('mp-bubble-layer')) return;
     const bubbleLayer = document.createElement('div');
@@ -175,6 +201,7 @@
       if (typeof scene !== 'undefined') (window.pirakuScene || scene).remove(entry.mesh);
     }
     remotePlayers.delete(sessionId);
+    const oldTag = onlineNameTags.get(sessionId); if (oldTag) { oldTag.remove(); onlineNameTags.delete(sessionId); }
     closePeerVoice(sessionId);
   }
 
@@ -389,6 +416,8 @@
     });
 
     // 3. Posisi bubble chat melayang di atas kepala
+    if (activeMesh) syncOnlineNameTag("self", activeMesh, getMyIdentity().ig, true);
+    remotePlayers.forEach((en, sid) => { if (en.mesh) syncOnlineNameTag(sid, en.mesh, en.ig || "Wargi", false); });
     const activeCam = getActiveCamera();
     if (activeCam && typeof THREE !== 'undefined' && activeBubbles.length > 0) {
       const tempV = new THREE.Vector3();

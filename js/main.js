@@ -1720,13 +1720,27 @@ let activeQuestSystem = null;
 
     // Gaya Rambut / Hijab
     if (st.hairStyle === 'hijab') {
-      // Kerudung / Hijab rapi menutup kepala hingga bahu
       const hijabColor = (shirtColor === 0xf8fafc || shirtColor === 0xe7dec8) ? 0x334155 : 0xf1f5f9;
-      mk(new THREE.SphereGeometry(0.275, 16, 12, 0, PI * 2, 0, PI * 0.72), hijabColor, 0, 0.01, -0.02, head);
-      cyl(0.22, 0.27, 0.24, 14, 0, -0.26, -0.02, hijabColor, head);
+      const dome = mk(new THREE.SphereGeometry(0.268, 16, 12, 0, PI * 2, 0, PI * 0.62), hijabColor, 0, 0.02, -0.048, head);
+      dome.rotation.x = -0.44;
+      cyl(0.21, 0.26, 0.22, 14, 0, -0.25, -0.055, hijabColor, head);
     } else if (st.hairStyle === 'ponytail') {
       mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
-      mk(SP(0.11, 10, 8), 0x1c1917, 0, 0.06, -0.27, head); // Kuncir belakang
+      mk(SP(0.11, 10, 8), 0x1c1917, 0, 0.06, -0.27, head);
+    } else if (st.hairStyle === 'bob') {
+      mk(new THREE.SphereGeometry(0.268, 16, 10, 0, PI * 2, 0, PI * 0.58), 0x1c1917, 0, 0.025, -0.02, head);
+      box(0.11, 0.24, 0.22, -0.21, -0.08, -0.03, 0x1c1917, head, false);
+      box(0.11, 0.24, 0.22, 0.21, -0.08, -0.03, 0x1c1917, head, false);
+      box(0.42, 0.24, 0.14, 0, -0.08, -0.19, 0x1c1917, head, false);
+    } else if (st.hairStyle === 'bun') {
+      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
+      mk(SP(0.115, 10, 8), 0x111827, 0, 0.28, -0.06, head);
+    } else if (st.hairStyle === 'curly') {
+      mk(new THREE.SphereGeometry(0.285, 16, 10, 0, PI * 2, 0, PI * 0.6), 0x1c1917, 0, 0.03, -0.02, head);
+      [[-0.22,0.12,-0.02],[0.22,0.12,-0.02],[0,0.23,-0.05],[-0.15,0.21,0.06],[0.15,0.21,0.06]].forEach(p => mk(SP(0.105, 8, 6), 0x1c1917, p[0], p[1], p[2], head));
+    } else if (st.hairStyle === 'mohawk') {
+      mk(new THREE.SphereGeometry(0.256, 14, 8, 0, PI * 2, 0, PI * 0.45), 0x27272a, 0, 0.02, -0.015, head);
+      box(0.08, 0.17, 0.34, 0, 0.27, -0.02, 0x111827, head, false);
     } else {
       mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
     }
