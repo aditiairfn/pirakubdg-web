@@ -726,11 +726,26 @@
   </nav>
 
   <script>
+    function closeScenarioPanel() {
+      const bp = document.getElementById("bottom-control-panel");
+      if (bp) {
+        bp.dataset.userOpened = "0";
+        bp.classList.add("hidden");
+        bp.style.setProperty("display", "none", "important");
+      }
+    }
+    function closeAllOverlays() {
+      closeScenarioPanel();
+      document.querySelectorAll(".modal-overlay, .modal-backdrop, [id$='-modal']").forEach(m => {
+        m.style.display = "none";
+      });
+    }
     window.toggleScenarioDock = function() {
       const p = document.getElementById("bottom-control-panel");
       if (!p) return;
       const isClosed = (p.style.display === "none" || getComputedStyle(p).display === "none" || p.classList.contains("hidden"));
       if (isClosed) {
+        closeAllOverlays();
         setActiveDockTab("skenario");
         p.dataset.userOpened = "1";
         p.classList.remove("hidden");
@@ -741,45 +756,28 @@
         p.style.setProperty("z-index", "995", "important");
       } else {
         setActiveDockTab("peta");
-        p.dataset.userOpened = "0";
-        p.classList.add("hidden");
-        p.style.setProperty("display", "none", "important");
+        closeScenarioPanel();
       }
     };
-    
-    (function() {
-      function closeScenarioPanel() {
-        const bp = document.getElementById("bottom-control-panel");
-        if (bp) {
-          bp.dataset.userOpened = "0";
-          bp.classList.add("hidden");
-          bp.style.setProperty("display", "none", "important");
-        }
-      }
-      document.addEventListener("click", (e) => {
-        const dockBtn = e.target.closest(".nav-dock-btn");
-        if (dockBtn && dockBtn.id !== "nav-tab-skenario") {
-          closeScenarioPanel();
-          if (dockBtn.id === "nav-tab-peta") {
-            document.querySelectorAll(".modal-overlay, .modal-backdrop, [id$="-modal"]").forEach(m => {
-              m.style.display = "none";
-            });
-          }
-        }
-        if (e.target.closest("#btn-citizen-status, .online-status-pill")) {
-          closeScenarioPanel();
-        }
-      }, true);
-    })();
-
     function setActiveDockTab(tab) {
-      document.querySelectorAll('.nav-dock-btn').forEach(b => b.classList.remove('active'));
-      const el = document.getElementById('nav-tab-' + tab);
-      if (el) el.classList.add('active');
+      if (tab !== "skenario") closeScenarioPanel();
+      if (tab === "peta") closeAllOverlays();
+      document.querySelectorAll(".nav-dock-btn").forEach(b => b.classList.remove("active"));
+      const el = document.getElementById("nav-tab-" + tab);
+      if (el) el.classList.add("active");
     }
-    window.addEventListener('DOMContentLoaded', () => {
-      const p = document.getElementById('bottom-control-panel');
-      if (p) p.style.display = 'none';
+    document.addEventListener("click", (e) => {
+      const dockBtn = e.target.closest(".nav-dock-btn");
+      if (dockBtn && dockBtn.id !== "nav-tab-skenario") {
+        closeScenarioPanel();
+        if (dockBtn.id === "nav-tab-peta") closeAllOverlays();
+      }
+      if (e.target.closest("#btn-citizen-status, .online-status-pill")) {
+        closeScenarioPanel();
+      }
+    }, true);
+    window.addEventListener("DOMContentLoaded", () => {
+      closeScenarioPanel();
     });
   </script>
 
