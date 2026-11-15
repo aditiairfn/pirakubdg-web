@@ -1757,24 +1757,63 @@ let activeQuestSystem = null;
     }
   }
 
-  // Walkot
-  const WALKOT = new THREE.Group(); WALKOT.position.set(-10, .12, -2.5); WALKOT.scale.setScalar(1.25); WALKOT.rotation.y = 2.45; scene.add(WALKOT);
-  box(.9, .07, .8, 0, .31, -.05, 0x2563eb, WALKOT);
-  cyl(.46, .46, .05, 16, 1.15, .58, .2, 0x9a6b43, WALKOT);
-  cyl(.04, .04, .58, 8, 1.15, 0, .2, 0x6b4a32, WALKOT);
-  const bodW = new THREE.Group(); bodW.position.set(0, .46, 0); WALKOT.add(bodW);
-  cyl(.27, .33, .62, 16, 0, .31, 0, 0x1e3a8a, bodW);
-  const headW = new THREE.Group(); headW.position.set(0, .86, 0); bodW.add(headW);
-  mk(new THREE.SphereGeometry(.38, 12, 10), 0xf4c29a, 0, 0, 0, headW);
-  cyl(.27, .31, .25, 16, 0, .27, 0, 0x0f172a, headW);
-  cyl(.32, .32, .04, 16, 0, .27, 0, 0xfacc15, headW);
-  cyl(.065, .05, .11, 12, 0.4, 0.7, 0.2, 0xffffff, bodW);
+  // Walkot (Berdiri ramah di tepi plaza depan Gedung Sate sebelah barat, lengkap dengan meja kopi santai)
+  const WALKOT = new THREE.Group();
+  WALKOT.position.set(-6.5, 0.14, 1.4);
+  WALKOT.scale.setScalar(1.18);
+  WALKOT.rotation.y = 0.55;
+  scene.add(WALKOT);
 
-  const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', kecamatan: 'Sumur Bandung', wish: 'Wilujeng sumping! Sok atuh keliling Gasibu & tata kotana!', upvotes: 42, x: -10, z: -2.5 };
-  const walkotHitbox = mk(new THREE.BoxGeometry(1.5, 2.5, 1.5), new THREE.MeshBasicMaterial({ visible: false }), -10, 1.2, -2.5);
+  // Set meja kopi bundar & 2 kursi taman di sebelah Pak Walkot
+  cyl(0.45, 0.45, 0.05, 16, 1.05, 0.56, 0.15, 0x9a6b43, WALKOT);
+  cyl(0.05, 0.07, 0.56, 10, 1.05, 0, 0.15, 0x334155, WALKOT);
+  cyl(0.28, 0.28, 0.04, 12, 1.05, 0, 0.15, 0x334155, WALKOT);
+  cyl(0.06, 0.05, 0.1, 10, 0.92, 0.59, 0.12, 0xffffff, WALKOT); // Cangkir kopi
+
+  // Kaki & sepatu pantofel hitam menapak tanah
+  [-0.1, 0.1].forEach(lx => {
+    cyl(0.065, 0.055, 0.44, 10, lx, 0, 0, 0x0f172a, WALKOT);
+    box(0.13, 0.07, 0.22, lx, 0, 0.04, 0x111827, WALKOT);
+  });
+
+  // Badan jas biru navy + kemeja putih + dasi merah
+  const bodW = new THREE.Group();
+  bodW.position.set(0, 0.44, 0);
+  WALKOT.add(bodW);
+  cyl(0.21, 0.24, 0.56, 14, 0, 0, 0, 0x1e3a8a, bodW);
+  box(0.12, 0.42, 0.05, 0, 0.12, 0.2, 0xffffff, bodW, false); // Kemeja V-neck
+  box(0.045, 0.32, 0.06, 0, 0.16, 0.21, 0xdc2626, bodW, false); // Dasi merah
+
+  // Kedua lengan (lengan kiri rileks, lengan kanan melambai ramah)
+  cyl(0.055, 0.048, 0.44, 10, -0.27, 0.08, 0, 0x1e3a8a, bodW);
+  mk(new THREE.SphereGeometry(0.055, 8, 8), 0xf4c29a, -0.27, 0.06, 0, bodW);
+  const armRightW = new THREE.Group();
+  armRightW.position.set(0.26, 0.48, 0);
+  armRightW.rotation.z = -0.55;
+  bodW.add(armRightW);
+  cyl(0.055, 0.048, 0.42, 10, 0, -0.38, 0, 0x1e3a8a, armRightW);
+  mk(new THREE.SphereGeometry(0.055, 8, 8), 0xf4c29a, 0, -0.4, 0, armRightW);
+
+  // Kepala proporsional, kacamata hitam khas, & peci hitam nasional
+  const headW = new THREE.Group();
+  headW.position.set(0, 0.78, 0);
+  bodW.add(headW);
+  mk(new THREE.SphereGeometry(0.24, 14, 12), 0xf4c29a, 0, 0, 0, headW);
+  // Kacamata bingkai hitam
+  [-0.08, 0.08].forEach(ex => {
+    box(0.09, 0.065, 0.03, ex, 0.02, 0.22, 0x0f172a, headW, false);
+    box(0.065, 0.045, 0.035, ex, 0.02, 0.225, 0xe0f2fe, headW, false);
+  });
+  box(0.05, 0.018, 0.03, 0, 0.025, 0.225, 0x0f172a, headW, false);
+  // Peci hitam pas di kepala
+  cyl(0.21, 0.23, 0.16, 16, 0, 0.15, 0, 0x0f172a, headW);
+
+  const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', kecamatan: 'Sumur Bandung', wish: 'Wilujeng sumping! Sok atuh keliling Gasibu & tata kotana!', upvotes: 42, x: -6.5, z: 1.4 };
+  const walkotHitbox = mk(new THREE.BoxGeometry(1.4, 2.2, 1.4), new THREE.MeshBasicMaterial({ visible: false }), -6.5, 1.1, 1.4);
   walkotHitbox.userData = walkotData;
   walkotHitbox.userData.meshGroup = WALKOT;
-  clickableObjects.push(walkotHitbox); registeredCitizensList.push(walkotData);
+  clickableObjects.push(walkotHitbox);
+  registeredCitizensList.push(walkotData);
 
   let totalWarga = 1;
 
