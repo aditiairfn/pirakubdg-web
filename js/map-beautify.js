@@ -500,45 +500,6 @@
     scene.fog = new THREE.Fog(0xd8e6ee, 210, 590);
 
     // ================= 11. JALAN BELAKANG GEDUNG SATE & PLAZA TAMAN MONUMEN PERJUANGAN =================
-    const fullAsphMat = new THREE.MeshStandardMaterial({ color: 0x262d38, roughness: 0.90 });
-    const fullWalkMat = new THREE.MeshStandardMaterial({ color: 0x9ca3af, roughness: 0.88 });
-    const fullDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-
-    function buildStraightCorridor(x0, z0, x1, z1, w) {
-      const len = Math.hypot(x1 - x0, z1 - z0);
-      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
-      const isEW = Math.abs(x1 - x0) > Math.abs(z1 - z0);
-      const roadM = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? len : w, isEW ? w : len), fullAsphMat);
-      roadM.rotation.x = -Math.PI / 2;
-      roadM.position.set(cx, 0.185, cz);
-      roadM.receiveShadow = true;
-      horizonGrp.add(roadM);
-      [-1, 1].forEach(side => {
-        const off = side * (w / 2 + 0.725);
-        const walkM = new THREE.Mesh(new THREE.BoxGeometry(isEW ? len : 1.45, 0.06, isEW ? 1.45 : len), fullWalkMat);
-        walkM.position.set(cx + (isEW ? 0 : off), 0.215, cz + (isEW ? off : 0));
-        walkM.receiveShadow = true;
-        horizonGrp.add(walkM);
-      });
-      const steps = Math.floor(len / 7);
-      for (let k = 0; k < steps; k++) {
-        const u = (k + 0.5) / steps;
-        const dashM = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? 3.0 : 0.24, isEW ? 0.24 : 3.0), fullDashMat);
-        dashM.rotation.x = -Math.PI / 2;
-        dashM.position.set(x0 + (x1 - x0) * u, 0.192, z0 + (z1 - z0) * u);
-        horizonGrp.add(dashM);
-      }
-    }
-
-    // Jalan poros belakang Gedung Sate (Jl. Cilamaya x=-21 & Jl. Hayam Wuruk x=21 ke selatan + Jl. Riau melintang di z=48)
-    buildStraightCorridor(-21, 24, -21, 235, 5.4);
-    buildStraightCorridor(21, 24, 21, 235, 5.4);
-    buildStraightCorridor(-235, 48, 235, 48, 6.4);
-
-    // Jalan poros sisi Monumen Perjuangan ke utara (Jl. Dipatiukur x=-21 & x=21 dari z=-26 ke -235)
-    buildStraightCorridor(-21, -235, -21, -26, 5.4);
-    buildStraightCorridor(21, -235, 21, -26, 5.4);
-
     // Plaza Paving + Taman Bunga + Lampu Taman Klasik di pelataran Monumen Perjuangan (x: -16..16, z: -31..-66)
     const plazaMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 });
     const plazaDeck = new THREE.Mesh(new THREE.BoxGeometry(30, 0.08, 34), plazaMat);
