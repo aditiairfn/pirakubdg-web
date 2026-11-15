@@ -130,6 +130,111 @@
     fireflyPoints = new THREE.Points(ffGeo, ffMat);
     grp.add(fireflyPoints);
 
+    // ================= 10. BANDUNG BASIN HORIZON 360° & TRANSPARENT BOUNDARY =================
+    const horizonGrp = new THREE.Group();
+    horizonGrp.name = "piraku-bandung-horizon";
+    scene.add(horizonGrp);
+
+    // Hamparan dataran Bandung Raya luas agar tepi map tidak terpotong kotak
+    const outerPlain = new THREE.Mesh(
+      new THREE.RingGeometry(48, 460, 64),
+      new THREE.MeshStandardMaterial({ color: 0x3b5e3c, roughness: 0.95 })
+    );
+    outerPlain.rotation.x = -Math.PI / 2;
+    outerPlain.position.y = -0.06;
+    horizonGrp.add(outerPlain);
+
+    // Perpanjangan jalan arteri keluar batas kota
+    const extRoadMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+    const extRoadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 420), extRoadMat);
+    extRoadNS.rotation.x = -Math.PI / 2;
+    extRoadNS.position.set(-42, -0.02, 0);
+    const extRoadEW = new THREE.Mesh(new THREE.PlaneGeometry(420, 8.5), extRoadMat);
+    extRoadEW.rotation.x = -Math.PI / 2;
+    extRoadEW.position.set(0, -0.02, 3.0);
+    horizonGrp.add(extRoadNS, extRoadEW);
+
+    // Tembok batas transparan (holographic glass barrier low-profile di keliling arena)
+    const boundW = 122, boundD = 98, boundCenterZ = -6;
+    const glassWallMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.14,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const edgeGlowMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45 });
+    [
+      { w: boundW, h: 1.35, d: 0.12, x: 0, z: boundCenterZ - boundD / 2 },
+      { w: boundW, h: 1.35, d: 0.12, x: 0, z: boundCenterZ + boundD / 2 },
+      { w: 0.12, h: 1.35, d: boundD, x: -boundW / 2, z: boundCenterZ },
+      { w: 0.12, h: 1.35, d: boundD, x: boundW / 2, z: boundCenterZ }
+    ].forEach(w => {
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, w.d), glassWallMat);
+      wall.position.set(w.x, w.h / 2, w.z);
+      const topRail = new THREE.Mesh(new THREE.BoxGeometry(w.w + 0.05, 0.06, w.d + 0.05), edgeGlowMat);
+      topRail.position.set(w.x, w.h, w.z);
+      horizonGrp.add(wall, topRail);
+    });
+
+    // Ring Pegunungan Cekungan Bandung 360° (Tangkuban Parahu di Utara, Manglayang Timur, Malabar Selatan)
+    function buildMountainRing(radius, baseHeight, peakVar, segments, colorHex, yOffset) {
+      const geo = new THREE.CylinderGeometry(radius, radius * 1.18, baseHeight, segments, 1, true);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const y = pos.getY(i);
+        if (y > 0) {
+          const vx = pos.getX(i), vz = pos.getZ(i);
+          const ang = Math.atan2(vz, vx);
+          // Siluet khas Tangkuban Parahu di sisi utara (-PI/2) & pegunungan bergelombang
+          const ridge = Math.sin(ang * 5) * 0.45 + Math.cos(ang * 11) * 0.3 + Math.sin(ang * 19) * 0.25;
+          const northBoost = Math.max(0, -Math.sin(ang)) * 0.55;
+          pos.setY(i, y + (ridge + northBoost) * peakVar);
+        }
+      }
+      geo.computeVertexNormals();
+      const mat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        roughness: 0.95,
+        metalness: 0.02,
+        side: THREE.BackSide
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.y = baseHeight * 0.45 + yOffset;
+      horizonGrp.add(mesh);
+      return mesh;
+    }
+
+    buildMountainRing(245, 36, 16, 96, 0x2f5249, -2); // Lapisan bukit hijau dekat
+    buildMountainRing(340, 62, 26, 96, 0x264356, -4); // Lapisan pegunungan biru-hijau Bandung Raya
+
+    // Siluet Skyline Gedung & Perumahan Bandung di kaki bukit (radius 105..175)
+    const cityBlockGeo = new THREE.BoxGeometry(1, 1, 1);
+    const cityBlockMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.85 });
+    const skylineCount = 150;
+    const skylineIM = new THREE.InstancedMesh(cityBlockGeo, cityBlockMat, skylineCount);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < skylineCount; i++) {
+      const ang = (i / skylineCount) * Math.PI * 2 + (i % 7) * 0.03;
+      const dist = 108 + (i % 9) * 8.5;
+      const bw = 4.5 + (i % 4) * 2.2;
+      const bh = 4.0 + ((i * 7) % 13) * 1.45;
+      const bd = 4.5 + (i % 3) * 2.0;
+      dummy.position.set(Math.cos(ang) * dist, bh / 2 - 0.1, Math.sin(ang) * dist);
+      dummy.rotation.y = -ang;
+      dummy.scale.set(bw, bh, bd);
+      dummy.updateMatrix();
+      skylineIM.setMatrixAt(i, dummy.matrix);
+    }
+    skylineIM.instanceMatrix.needsUpdate = true;
+    horizonGrp.add(skylineIM);
+
+    // Kabut atmosfer lembut agar gunung & skyline menyatu dengan langit
+    if (!scene.fog) {
+      scene.fog = new THREE.FogExp2(0xcbe3ee, 0.0024);
+    }
+
+
     // 8. TEMPAT SAMPAH PILAH ORGANIK & ANORGANIK (Prosedural Three.js)
     const matBinGreen = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.6 });
     const matBinYellow = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.6 });
@@ -196,6 +301,19 @@
         arr[i * 3 + 2] = f.bz + Math.cos(t * 0.8 + f.phase) * 0.65;
       }
       fireflyPoints.geometry.attributes.position.needsUpdate = true;
+    }
+
+    
+    // Jaga pemain tetap di dalam tembok batas transparan & sesuaikan warna kabut horizon
+    const scRef = window.pirakuScene || (typeof scene !== "undefined" ? scene : null);
+    if (scRef && scRef.fog && scRef.background && scRef.background.isColor) {
+      scRef.fog.color.lerp(scRef.background, 0.15);
+    }
+    if (selfMesh && selfMesh.position) {
+      if (selfMesh.position.x < -59.5) selfMesh.position.x = -59.5;
+      if (selfMesh.position.x > 59.5) selfMesh.position.x = 59.5;
+      if (selfMesh.position.z < -53.5) selfMesh.position.z = -53.5;
+      if (selfMesh.position.z > 41.5) selfMesh.position.z = 41.5;
     }
 
     const cv = document.getElementById("piraku-radar-cv");
