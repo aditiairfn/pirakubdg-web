@@ -167,19 +167,54 @@
     infinitePlain.receiveShadow = true;
     horizonGrp.add(infinitePlain);
 
-    // Perpanjangan jalan arteri utama lurus menembus horizon (Dago, Diponegoro, Riau)
-    const extRoadMat = new THREE.MeshStandardMaterial({ color: 0x2d3542, roughness: 0.92 });
-    [
-      { w: 7.8, d: 900, x: -42, z: 0 },
-      { w: 7.4, d: 900, x: 48, z: 0 },
-      { w: 900, d: 8.6, x: 0, z: 3.0 },
-      { w: 900, d: 7.6, x: 0, z: 18.0 }
-    ].forEach(r => {
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(r.w, r.d), extRoadMat);
-      m.rotation.x = -Math.PI / 2;
-      m.position.set(r.x, 0.008, r.z);
-      horizonGrp.add(m);
-    });
+    // Perpanjangan jalan asli (Jl. Surapati z=-26, Jl. Diponegoro z=3, Jl. Cilamaya x=-21, Jl. Hayam Wuruk x=21) presisi di y=0.15 + trotoar y=0.21
+    const extAsphaltMat = new THREE.MeshStandardMaterial({ color: 0x2d3542, roughness: 0.90 });
+    const extWalkMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.88 });
+    const extDashMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+
+    function extendExactRoad(x0, z0, x1, z1, roadW) {
+      const len = Math.hypot(x1 - x0, z1 - z0);
+      const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+      const isEW = Math.abs(x1 - x0) > Math.abs(z1 - z0);
+      const asph = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? len : roadW, isEW ? roadW : len), extAsphaltMat);
+      asph.rotation.x = -Math.PI / 2;
+      asph.position.set(cx, 0.152, cz);
+      asph.receiveShadow = true;
+      horizonGrp.add(asph);
+
+      // Trotoar kiri & kanan (lebar 1.45m di y=0.21 persis seperti main.js)
+      const sw = 1.45;
+      [-1, 1].forEach(side => {
+        const off = side * (roadW / 2 + sw / 2);
+        const walk = new THREE.Mesh(
+          new THREE.BoxGeometry(isEW ? len : sw, 0.06, isEW ? sw : len),
+          extWalkMat
+        );
+        walk.position.set(cx + (isEW ? 0 : off), 0.18, cz + (isEW ? off : 0));
+        walk.receiveShadow = true;
+        horizonGrp.add(walk);
+      });
+
+      // Marka garis putus-putus putih tengah jalan
+      const steps = Math.floor(len / 7);
+      for (let k = 0; k < steps; k++) {
+        const u = (k + 0.5) / steps;
+        const dx = x0 + (x1 - x0) * u;
+        const dz = z0 + (z1 - z0) * u;
+        const dash = new THREE.Mesh(new THREE.PlaneGeometry(isEW ? 3.0 : 0.24, isEW ? 0.24 : 3.0), extDashMat);
+        dash.rotation.x = -Math.PI / 2;
+        dash.position.set(dx, 0.158, dz);
+        horizonGrp.add(dash);
+      }
+    }
+
+    // Sambung tepat dari ujung koordinat asli di main.js (±65 di X, +24 di Z) sampai ±460m!
+    extendExactRoad(-460, -26, -65, -26, 8.4); // Jl. Surapati Barat (ke Pasteur/Dago)
+    extendExactRoad(65, -26, 460, -26, 8.4);   // Jl. Surapati Timur (ke Cicaheum)
+    extendExactRoad(-460, 3, -65, 3, 6.2);     // Jl. Diponegoro Barat
+    extendExactRoad(65, 3, 460, 3, 6.2);       // Jl. Diponegoro Timur (ke Supratman)
+    extendExactRoad(-21, 24, -21, 460, 5.4);   // Jl. Cilamaya Selatan (ke Riau/Banda)
+    extendExactRoad(21, 24, 21, 460, 5.4);     // Jl. Hayam Wuruk Selatan (ke Riau)
 
     // 2. Permukiman Perifer & Pepohonan Bandung sampai radius 270m (menghilangkan kesan pulau kosong)
     let pSeed = 42;
@@ -189,9 +224,9 @@
     for (let x = -260; x <= 260; x += 13) {
       for (let z = -260; z <= 260; z += 13) {
         // Lewati area kota inti & koridor jalan perpanjangan
-        if (x > -64 && x < 64 && z > -58 && z < 46) continue;
-        if (Math.abs(x + 42) < 8.5 || Math.abs(x - 48) < 8.5) continue;
-        if (Math.abs(z - 3.0) < 9.0 || Math.abs(z - 18.0) < 8.5) continue;
+        if (x > -67 && x < 67 && z > -34 && z < 28) continue;
+        if (Math.abs(z + 26) < 9.5 || Math.abs(z - 3) < 8.5) continue;
+        if (z > 22 && (Math.abs(x + 21) < 8.0 || Math.abs(x - 21) < 8.0)) continue;
         if (Math.hypot(x, z) > 265) continue;
         if (pRnd() < 0.56) {
           periHouses.push([x + (pRnd() - 0.5) * 3.5, z + (pRnd() - 0.5) * 3.5]);
@@ -336,10 +371,10 @@
       scRef.fog.color.copy(window.__pirakuSkyU.bot.value);
     }
     if (selfMesh && selfMesh.position) {
-      if (selfMesh.position.x < -59.5) selfMesh.position.x = -59.5;
-      if (selfMesh.position.x > 59.5) selfMesh.position.x = 59.5;
-      if (selfMesh.position.z < -53.5) selfMesh.position.z = -53.5;
-      if (selfMesh.position.z > 41.5) selfMesh.position.z = 41.5;
+      if (selfMesh.position.x < -61.0) selfMesh.position.x = -61.0;
+      if (selfMesh.position.x > 61.0) selfMesh.position.x = 61.0;
+      if (selfMesh.position.z < -31.0) selfMesh.position.z = -31.0;
+      if (selfMesh.position.z > 24.5) selfMesh.position.z = 24.5;
     }
 
     const cv = document.getElementById("piraku-radar-cv");
