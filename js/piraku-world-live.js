@@ -157,7 +157,7 @@
     if (!document.body || document.getElementById("piraku-event-pill")) return;
     const el = document.createElement("div");
     el.id = "piraku-event-pill";
-    el.style.cssText = "position:fixed;top:98px;left:12px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.5);color:#f8fafc;font-size:11px;font-weight:800;z-index:26;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 6px 16px rgba(0,0,0,0.35);";
+    el.style.cssText = "position:fixed;top:238px;left:12px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.5);color:#f8fafc;font-size:11px;font-weight:800;z-index:26;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 6px 16px rgba(0,0,0,0.35);";
     el.onclick = () => {
       const ev = getCurrentEvent();
       const toast = document.getElementById("piraku-coin-toast");
