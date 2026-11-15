@@ -575,8 +575,15 @@
     if (!document.body || document.getElementById("piraku-minimap-radar")) return;
     const box = document.createElement("div");
     box.id = "piraku-minimap-radar";
-    box.style.cssText = "position:fixed;top:102px;left:12px;width:82px;height:82px;border-radius:50%;background:rgba(15,23,42,0.85);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.48);box-shadow:0 6px 18px rgba(0,0,0,0.35);z-index:25;pointer-events:none;overflow:hidden;";
-    box.innerHTML = "<canvas id=\"piraku-radar-cv\" width=\"82\" height=\"82\"></canvas>";
+    box.title = "Ketuk untuk perbesar/perkecil Peta Mini";
+    box.style.cssText = "position:fixed;top:102px;left:12px;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 45%, #162235 0%, #0b1220 100%);backdrop-filter:blur(10px);border:2px solid rgba(56,189,248,0.65);box-shadow:0 8px 22px rgba(0,0,0,0.45), inset 0 0 14px rgba(15,23,42,0.85);z-index:25;pointer-events:auto;cursor:pointer;overflow:hidden;transition:width .2s ease,height .2s ease;";
+    box.innerHTML = "<canvas id=\"piraku-radar-cv\" width=\"208\" height=\"208\" style=\"width:100%;height:100%;display:block;\"></canvas>";
+    box.addEventListener("click", () => {
+      const big = box.dataset.big === "1";
+      box.dataset.big = big ? "0" : "1";
+      box.style.width = big ? "104px" : "148px";
+      box.style.height = big ? "104px" : "148px";
+    });
     document.body.appendChild(box);
   }
 
@@ -674,32 +681,122 @@
     const cv = document.getElementById("piraku-radar-cv");
     if (!cv) return;
     const ctx = cv.getContext("2d");
-    const W = 82, H = 82, cx = 41, cy = 41, scale = 0.72;
+    const W = 208, H = 208, cx = 104, cy = 110, scale = 1.38;
+    const toX = wx => cx + wx * scale;
+    const toY = wz => cy + wz * scale;
+
     ctx.clearRect(0, 0, W, H);
 
-    ctx.strokeStyle = "rgba(148,163,184,0.26)";
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(cx, cy, 24, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(cx, 6); ctx.lineTo(cx, H - 6); ctx.moveTo(6, cy); ctx.lineTo(W - 6, cy); ctx.stroke();
+    // Zona taman hijau Gasibu & Monju
+    ctx.fillStyle = "rgba(34, 197, 94, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(toX(0), toY(-11.5), 18 * scale, 11.5 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Trek lari biru Gasibu
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.ellipse(toX(0), toY(-11.5), 14.5 * scale, 8.2 * scale, 0, 0, Math.PI * 2);
+    ctx.stroke();
 
-    const landmarks = [
-      { x: 0, z: -23, c: "#f59e0b" },
-      { x: 34.5, z: -6.5, c: "#38bdf8" },
-      { x: 0, z: -35, c: "#a78bfa" }
-    ];
-    landmarks.forEach(lm => {
-      const lx = cx + lm.x * scale;
-      const ly = cy + lm.z * scale;
-      ctx.fillStyle = lm.c;
-      ctx.fillRect(lx - 2.2, ly - 2.2, 4.4, 4.4);
-    });
+    // Plaza Monumen Perjuangan (Utara)
+    ctx.fillStyle = "rgba(148, 163, 184, 0.22)";
+    ctx.fillRect(toX(-13), toY(-56), 26 * scale, 24 * scale);
 
-    
+    // Jaringan Jalan Raya Utama (Aspal & Marka)
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 8.5;
+    // Jl. Surapati (barat - timur)
+    ctx.beginPath(); ctx.moveTo(toX(-75), toY(-26)); ctx.lineTo(toX(75), toY(-26)); ctx.stroke();
+    // Jl. Diponegoro (barat & timur)
+    ctx.lineWidth = 6.5;
+    ctx.beginPath(); ctx.moveTo(toX(-75), toY(3)); ctx.lineTo(toX(-21), toY(3)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(21), toY(3)); ctx.lineTo(toX(75), toY(3)); ctx.stroke();
+    // Poros Barat (Majapahit - Cilamaya) & Timur (Sentot - Hayam Wuruk)
+    ctx.lineWidth = 6.0;
+    ctx.beginPath(); ctx.moveTo(toX(-21), toY(-70)); ctx.lineTo(toX(-21), toY(65)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(21), toY(-70)); ctx.lineTo(toX(21), toY(65)); ctx.stroke();
+
+    // Garis tengah marka jalan putih tipis
+    ctx.strokeStyle = "rgba(226, 232, 240, 0.45)";
+    ctx.lineWidth = 1.1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(toX(-75), toY(-26)); ctx.lineTo(toX(75), toY(-26)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(-21), toY(-70)); ctx.lineTo(toX(-21), toY(65)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(toX(21), toY(-70)); ctx.lineTo(toX(21), toY(65)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Flyover Pasupati (sisi barat di atas Jl. Surapati)
+    ctx.strokeStyle = "#f43f5e";
+    ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(toX(-75), toY(-26)); ctx.lineTo(toX(-24), toY(-26)); ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(toX(-54), toY(-26), 3.2, 0, Math.PI * 2); ctx.fill();
+
+    // Blok Gedung Landmark:
+    // 1. Gedung Sate (0, 13.5)
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(toX(-16), toY(8), 32 * scale, 11 * scale);
+    ctx.fillStyle = "#f59e0b";
+    ctx.fillRect(toX(-4.5), toY(9.5), 9 * scale, 8 * scale);
+
+    // 2. Hotel Pullman (-34.5, -10.5)
+    ctx.fillStyle = "#60a5fa";
+    ctx.fillRect(toX(-39), toY(-19), 9 * scale, 17 * scale);
+
+    // 3. Monumen Perjuangan (0, -46)
+    ctx.fillStyle = "#c084fc";
+    ctx.fillRect(toX(-5), toY(-49), 10 * scale, 6 * scale);
+
+    // Label mini landmark
+    ctx.fillStyle = "rgba(248, 250, 252, 0.88)";
+    ctx.font = "bold 10px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("GD. SATE", toX(0), toY(27));
+    ctx.fillStyle = "rgba(186, 230, 253, 0.85)";
+    ctx.font = "bold 9px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("GASIBU", toX(0), toY(-10));
+    ctx.fillStyle = "rgba(216, 180, 254, 0.85)";
+    ctx.fillText("MONJU", toX(0), toY(-53));
+
+    // Penunjuk arah mata angin Utara (U)
+    ctx.fillStyle = "#38bdf8";
+    ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("U", cx, 15);
+
+    // Penanda Pemain + Arah Hadap (View Cone)
     if (selfMesh && selfMesh.position) {
-      const sx = Math.max(8, Math.min(W - 8, cx + selfMesh.position.x * scale));
-      const sy = Math.max(8, Math.min(H - 8, cy + selfMesh.position.z * scale));
+      const sx = Math.max(18, Math.min(W - 18, toX(selfMesh.position.x)));
+      const sy = Math.max(18, Math.min(H - 18, toY(selfMesh.position.z)));
+      const rot = selfMesh.rotation ? -selfMesh.rotation.y + Math.PI / 2 : 0;
+
+      // Sorot arah hadap karakter
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(rot);
+      const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 22);
+      grad.addColorStop(0, "rgba(253, 224, 71, 0.55)");
+      grad.addColorStop(1, "rgba(253, 224, 71, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, 22, -0.48, 0.48);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+
+      // Cincin pulse & titik kuning karakter
+      const pulse = 7.5 + Math.sin((t || 0) * 5) * 1.8;
+      ctx.strokeStyle = "rgba(253, 224, 71, 0.55)";
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(sx, sy, pulse, 0, Math.PI * 2); ctx.stroke();
+
       ctx.fillStyle = "#fde047";
-      ctx.beginPath(); ctx.arc(sx, sy, 3.6, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx, sy, 5.2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
     }
   }
 
