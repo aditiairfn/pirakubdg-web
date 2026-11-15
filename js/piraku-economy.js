@@ -83,7 +83,7 @@
     if (!el) {
       el = document.createElement("div");
       el.id = "piraku-coin-toast";
-      el.style.cssText = "position:fixed;top:96px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:999px;font-size:12px;font-weight:700;z-index:95;pointer-events:none;transition:opacity .25s ease;box-shadow:0 8px 24px rgba(0,0,0,0.35);white-space:nowrap;";
+      el.style.cssText = "position:fixed;top:96px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:999px;font-size:12px;font-weight:700;z-index:100001;pointer-events:none;transition:opacity .25s ease;box-shadow:0 8px 24px rgba(0,0,0,0.35);white-space:nowrap;";
       document.body.appendChild(el);
     }
     el.style.background = isWarn ? "#dc2626" : "linear-gradient(135deg,#f59e0b,#d97706)";
@@ -245,7 +245,7 @@
     if (!modal) {
       modal = document.createElement("div");
       modal.id = "piraku-economy-modal";
-      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.72);backdrop-filter:blur(6px);z-index:90;display:flex;align-items:center;justify-content:center;padding:14px;";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.72);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;";
       modal.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
       document.body.appendChild(modal);
     }

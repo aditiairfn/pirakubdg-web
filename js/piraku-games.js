@@ -61,7 +61,7 @@
     if (!modal) {
       modal = document.createElement("div");
       modal.id = "piraku-games-modal";
-      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.76);backdrop-filter:blur(7px);z-index:92;display:flex;align-items:center;justify-content:center;padding:14px;";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.76);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;";
       modal.addEventListener("click", e => { if (e.target === modal) { clearGameTimer(); modal.style.display = "none"; } });
       document.body.appendChild(modal);
     }
