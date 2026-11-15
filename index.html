@@ -20,7 +20,9 @@
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
   <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v18">
   <style id="piraku-zindex-fix">
-    body > div[style*="pointer-events: none"][style*="position: absolute"] { z-index: 8 !important; }
+    body > div[style*="pointer-events: none"][style*="position: absolute"],
+    body > div[style*="pointer-events:none"][style*="position:absolute"] { z-index: 5 !important; isolation: isolate !important; }
+    #piraku-minimap-radar { z-index: 25 !important; }
     .modal-overlay { z-index: 99990 !important; }
     .modal-card { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
   </style>
@@ -788,7 +790,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v52"></script>
+  <script src="./js/main.js?v=20261115v53"></script>
   <script src="js/multiplayer.js?v=20261115v15"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
@@ -933,6 +935,6 @@
   </script>
 
   <script src="js/piraku-economy.js?v=20261115v2"></script>
-  <script src="js/piraku-games.js?v=20261115v3"></script>
+  <script src="js/piraku-games.js?v=20261115v4"></script>
 </body>
 </html>
