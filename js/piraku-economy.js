@@ -239,7 +239,7 @@
     const pill = document.createElement("button");
     pill.id = "piraku-wallet-pill";
     pill.type = "button";
-    pill.style.cssText = "position:fixed;top:144px;right:12px;padding:7px 12px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(250,204,21,0.65);color:#fde047;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;cursor:pointer;z-index:26;box-shadow:0 6px 18px rgba(0,0,0,0.35);";
+    pill.style.cssText = "position:fixed;top:182px;right:12px;padding:7px 12px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(250,204,21,0.65);color:#fde047;font-size:12px;font-weight:800;display:flex;align-items:center;gap:6px;cursor:pointer;z-index:26;box-shadow:0 6px 18px rgba(0,0,0,0.35);";
     pill.onclick = () => openEconomyModal("outfit");
     document.body.appendChild(pill);
     updateWalletHUD();
