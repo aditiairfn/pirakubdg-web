@@ -514,7 +514,7 @@ let activeQuestSystem = null;
   controls.dampingFactor = 0.06;
   controls.maxPolarAngle = PI / 2.08;
   controls.minDistance = 3;
-  controls.maxDistance = 92; window.pirakuControls = controls;
+  controls.maxDistance = 155; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
 
   // Pencahayaan — pagi cerah Bandung (langit biru lembut, matahari rendah, kabut tipis)
@@ -837,6 +837,10 @@ let activeQuestSystem = null;
       });
     });
     cabM.instanceMatrix.needsUpdate = true;
+    const _cInit = new THREE.Color(0xeef1f4);
+    for (let ci = 0; ci < 32; ci++) cabM.setColorAt(ci, _cInit);
+    if (cabM.instanceColor) cabM.instanceColor.needsUpdate = true;
+    window.pirakuPasupatiCabMat = cabM.material;
     FLY.add(cabM);
 
     const medM = IM(boxG, MAT(0xaeb4bd), 42, false, false);
@@ -854,7 +858,7 @@ let activeQuestSystem = null;
   const G = new THREE.Group(); G.position.set(0, 0, 13.5); G.rotation.y = PI; scene.add(G);
   const CREAM = 0xeee6cf;
   const ROOFMAT = new THREE.MeshStandardMaterial({ color: 0x17171b, emissive: 0x000000, flatShading: true, roughness: .92, metalness: 0 });
-  const GLASSM = new THREE.MeshStandardMaterial({ color: 0x1a2540, emissive: 0xffb347, emissiveIntensity: 0, flatShading: true, roughness: .55, metalness: 0 });
+  const GLASSM = new THREE.MeshStandardMaterial({ color: 0x1a2540, emissive: 0xffb347, emissiveIntensity: 0, flatShading: true, roughness: .55, metalness: 0 }); window.pirakuGlassMat = GLASSM;
   const FR = (wb, db, k, h, x, y, z, c, p) => {
     const g = new THREE.CylinderGeometry(.7071 * k, .7071, 1, 4, 1); g.rotateY(PI / 4); g.translate(0, .5, 0);
     const m = mk(g, c, x, y, z, p); m.scale.set(wb, h, db); return m;
@@ -938,7 +942,7 @@ let activeQuestSystem = null;
 
     const offWhite = 0xf8fafc;
     const warmTrim = 0xe2e8f0;
-    const winGlass = 0x1e3a5f;
+    const winGlass = GLASSM;
 
     // Pelataran & sabuk taman depan
     box(21.4, 0.22, 11.4, 0, 0, 0.2, 0xd6d3d1, pullman, false, true);
