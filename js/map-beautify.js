@@ -201,8 +201,11 @@
       pole.position.y = 2.2;
       const arm = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.07, 0.07), poleMat);
       arm.position.set(0.55, 4.35, 0);
-      const head = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.12, 0.24), lampBulbMat);
-      head.position.set(1.05, 4.3, 0);
+      const hood = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.14, 0.32), poleMat);
+      hood.position.set(1.05, 4.38, 0);
+      const head = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.12, 0.26), lampBulbMat);
+      head.position.set(1.05, 4.28, 0);
+      lg.add(hood);
       const pool = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 7.2), roadGlowMat);
       pool.rotation.x = -Math.PI / 2;
       pool.position.set(1.1, -0.04, 0);
@@ -226,11 +229,12 @@
       }
     }
 
-    populateStreetLamps(-230, -26, 230, -26, 8.4);
-    populateStreetLamps(-230, 3, -24, 3, 6.2);
-    populateStreetLamps(24, 3, 230, 3, 6.2);
-    populateStreetLamps(-21, -24, -21, 230, 5.4);
-    populateStreetLamps(21, -24, 21, 230, 5.4);
+    // Pasang barisan lampu PJU lengkap di area inti Gasibu-Gedung Sate & jalan perpanjangan
+    populateStreetLamps(-220, -26, 220, -26, 8.4);   // Jl. Surapati penuh dari ujung barat ke timur
+    populateStreetLamps(-220, 3, -22, 3, 6.2);     // Jl. Diponegoro Barat
+    populateStreetLamps(22, 3, 220, 3, 6.2);       // Jl. Diponegoro Timur
+    populateStreetLamps(-21, -24, -21, 220, 5.4);  // Jl. Majapahit - Cilamaya
+    populateStreetLamps(21, -24, 21, 220, 5.4);    // Jl. Sentot Alibasyah - Hayam Wuruk
 
     // Jendela Menyala Hotel Pullman Bandung Grand Central (x=-26, z=14)
     const pullmanWinMat = new THREE.MeshBasicMaterial({ color: 0xfde68a, transparent: true, opacity: 0 });
@@ -498,7 +502,7 @@
       }
     });
 
-    scene.fog = new THREE.Fog(0xd8e6ee, 105, 310);
+    scene.fog = new THREE.Fog(0xd8e6ee, 185, 460);
 
   }
 
@@ -557,7 +561,7 @@
 
       const nl = window.__pirakuNightLights;
       if (nl) {
-        nl.lampBulbMat.color.setHex(nightLevel > 0.1 ? 0xffe49e : 0x475569);
+        nl.lampBulbMat.color.setHex(nightLevel > 0.1 ? 0xffe49e : 0xf8fafc);
         nl.roadGlowMat.opacity = nightLevel * 0.65;
         nl.pullmanWinMat.opacity = nightLevel * 0.88;
         nl.pasupatiRgbMat.opacity = nightLevel * 0.92;
