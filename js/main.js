@@ -1847,6 +1847,7 @@ let activeQuestSystem = null;
   window.getMyActivePlayerMesh = () => myPlayerMesh;
   window.pirakuCreateCitizenMesh = createCitizenMesh;
   window.pirakuScene = scene;
+  window.pirakuCamera = typeof camera !== "undefined" ? camera : (typeof cam !== "undefined" ? cam : null);
   window.hideStaticCitizenByIg = (ig, hide) => {
     if (!ig) return;
     const target = String(ig).toLowerCase();

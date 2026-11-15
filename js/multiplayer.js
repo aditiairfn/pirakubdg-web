@@ -23,8 +23,9 @@
   };
 
   function getActiveCamera() {
-    if (typeof cam !== 'undefined' && cam) return cam;
-    if (typeof camera !== 'undefined' && camera) return camera;
+    if (window.pirakuCamera) return window.pirakuCamera;
+    if (typeof cam !== "undefined" && cam) return cam;
+    if (typeof camera !== "undefined" && camera) return camera;
     return null;
   }
 
@@ -567,6 +568,26 @@
     connectGlobalWorld();
     setTimeout(() => { ensureGuestPlayerSpawned(); window.forceBroadcastMyAppearance(); }, 900);
   }
+
+  
+  (function startOnlineNameTagLoop() {
+    function tickTags() {
+      try {
+        injectBubbleLayer();
+        const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+        if (selfMesh) {
+          syncOnlineNameTag("self", selfMesh, getMyIdentity().ig, true);
+        }
+        remotePlayers.forEach((en, sid) => {
+          if (en && en.mesh) {
+            syncOnlineNameTag(sid, en.mesh, en.ig || "Wargi", false);
+          }
+        });
+      } catch (_) {}
+      requestAnimationFrame(tickTags);
+    }
+    requestAnimationFrame(tickTags);
+  })();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPirakuMultiplayer);
