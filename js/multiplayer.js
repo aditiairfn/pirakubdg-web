@@ -57,7 +57,7 @@
     if (tag.textContent !== label) tag.textContent = label;
     const v = new THREE.Vector3();
     mesh.getWorldPosition(v);
-    v.y += 1.48;
+    v.y += 1.85;
     v.project(camObj);
     if (v.z > 1) { tag.style.display = "none"; }
     else {

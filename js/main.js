@@ -1847,6 +1847,22 @@ let activeQuestSystem = null;
   window.getMyActivePlayerMesh = () => myPlayerMesh;
   window.pirakuCreateCitizenMesh = createCitizenMesh;
   window.pirakuScene = scene;
+
+  // Sapu bersih semua pohon di teras pintu masuk depan Museum Geologi
+  setTimeout(() => {
+    if (typeof scene !== "undefined" && scene) {
+      const toRemove = [];
+      scene.traverse(obj => {
+        if (!obj || !obj.position) return;
+        const wx = obj.position.x;
+        const wz = obj.position.z;
+        const isTreeLike = (obj.children && obj.children.length >= 2 && obj.children.length <= 6 && obj.position.y === 0 && wx > 10 && wx < 36 && wz > -24 && wz < 14);
+        if (isTreeLike) toRemove.push(obj);
+      });
+      toRemove.forEach(o => { if (o.parent) o.parent.remove(o); });
+    }
+  }, 500);
+
   window.pirakuCamera = typeof camera !== "undefined" ? camera : (typeof cam !== "undefined" ? cam : null);
   window.hideStaticCitizenByIg = (ig, hide) => {
     if (!ig) return;
