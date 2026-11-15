@@ -1059,10 +1059,6 @@ let activeQuestSystem = null;
     // Atap Limasan Panjang menggunakan ROOFMAT (sama persis dengan warna atap Gedung Sate!)
     FR(16.2, 7.0, 0.58, 1.85, 0, 4.93, -0.6, ROOFMAT, mGeo);
 
-    // Sayap Rendah 1 Lantai di Ujung Kiri (Barat) dengan atap ROOFMAT
-    box(3.4, 2.7, 4.6, -8.8, 0.14, -0.8, wallIvory, mGeo);
-    FR(4.0, 5.2, 0.55, 1.35, -8.8, 2.84, -0.8, ROOFMAT, mGeo);
-
     // Bagian Tengah Pintu Masuk Utama yang Menjorok Sedikit + Tangga Undakan
     box(4.4, 4.1, 0.7, 0, 0.59, 2.35, wallIvory, mGeo);
     box(3.2, 0.45, 1.1, 0, 0.14, 3.1, 0x94a3b8, mGeo);
