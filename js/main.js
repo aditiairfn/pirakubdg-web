@@ -1721,8 +1721,9 @@ let activeQuestSystem = null;
     // Gaya Rambut / Hijab
     if (st.hairStyle === 'hijab') {
       // Kerudung / Hijab rapi menutup kepala hingga bahu
-      mk(new THREE.SphereGeometry(0.275, 16, 12, 0, PI * 2, 0, PI * 0.72), shirtColor, 0, 0.01, -0.02, head);
-      cyl(0.22, 0.27, 0.24, 14, 0, -0.26, -0.02, shirtColor, head);
+      const hijabColor = (shirtColor === 0xf8fafc || shirtColor === 0xe7dec8) ? 0x334155 : 0xf1f5f9;
+      mk(new THREE.SphereGeometry(0.275, 16, 12, 0, PI * 2, 0, PI * 0.72), hijabColor, 0, 0.01, -0.02, head);
+      cyl(0.22, 0.27, 0.24, 14, 0, -0.26, -0.02, hijabColor, head);
     } else if (st.hairStyle === 'ponytail') {
       mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
       mk(SP(0.11, 10, 8), 0x1c1917, 0, 0.06, -0.27, head); // Kuncir belakang
@@ -1812,8 +1813,8 @@ let activeQuestSystem = null;
       role: 'TAMU',
       kecamatan: 'Bandung Wetan',
       wish: 'Wargi tamu lagi jalan-jalan di Gasibu!',
-      color: 0x2563eb,
-      acc: 'none',
+      color: [0x2d6a4f, 0xc2593f, 0x334155, 0x0f766e, 0x78350f][Math.floor(Math.random() * 5)],
+      acc: "none|" + Math.floor(Math.random() * 3) + "|0|short",
       x: (Math.random() - 0.5) * 6,
       z: -6 + (Math.random() - 0.5) * 4,
       upvotes: 0
