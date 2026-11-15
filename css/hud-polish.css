@@ -444,3 +444,6 @@
 
 /* === FIX BOTTOM DOCK LABEL CLIPPING === */
 .bottom-nav-dock { height: calc(62px + env(safe-area-inset-bottom)) !important; padding: 4px 0 calc(6px + env(safe-area-inset-bottom)) 0 !important; }
+
+/* === HEADER USERNAME & LEVEL GAP === */
+#btn-citizen-status { gap: 6px !important; }

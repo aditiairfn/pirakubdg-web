@@ -18,7 +18,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v14">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261115v15">
 </head>
 <body>
 
@@ -423,32 +423,33 @@
         <div style="display:grid; grid-template-columns:108px 1fr; gap:14px; align-items:start;">
           <!-- Kotak Live Preview Avatar -->
           <div style="background:#ebe3cf; border:1.5px dashed #b8ad94; border-radius:14px; padding:10px 6px; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:175px;">
-            <svg id="wardrobe-preview-svg" viewBox="0 0 100 155" width="90" height="140">
-              <ellipse cx="50" cy="144" rx="26" ry="7" fill="rgba(43,70,60,0.18)"/>
-              <!-- Kaki & Celana -->
-              <rect id="pv-leg-l" x="37" y="102" width="10" height="36" rx="4" fill="#1e293b"/>
-              <rect id="pv-leg-r" x="53" y="102" width="10" height="36" rx="4" fill="#1e293b"/>
-              <!-- Baju -->
-              <rect id="pv-shirt" x="28" y="60" width="44" height="46" rx="12" fill="#2d6a4f"/>
-              <!-- Hijab Belakang (jika aktif) -->
-              <path id="pv-hijab-back" d="M26,42 Q26,72 50,74 Q74,72 74,42 Z" fill="#2d6a4f" style="display:none;"/>
+            <svg id="wardrobe-preview-svg" viewBox="0 0 110 165" width="96" height="148">
+              <ellipse cx="55" cy="152" rx="28" ry="7" fill="rgba(43,70,60,0.18)"/>
+              <!-- Hijab / Rambut Belakang -->
+              <path id="pv-hijab-back" d="M27,44 Q25,84 55,86 Q85,84 83,44 Z" fill="#f1f5f9" style="display:none;"/>
+              <g id="pv-hair-back"></g>
+              <!-- Kaki, Celana & Sepatu -->
+              <rect id="pv-leg-l" x="40" y="106" width="11" height="36" rx="4" fill="#1e293b"/>
+              <rect id="pv-leg-r" x="59" y="106" width="11" height="36" rx="4" fill="#1e293b"/>
+              <rect x="38" y="138" width="14" height="6" rx="3" fill="#0f172a"/>
+              <rect x="58" y="138" width="14" height="6" rx="3" fill="#0f172a"/>
+              <!-- Lengan -->
+              <rect id="pv-arm-l" x="23" y="66" width="9" height="34" rx="4.5" fill="#2d6a4f"/>
+              <rect id="pv-arm-r" x="78" y="66" width="9" height="34" rx="4.5" fill="#2d6a4f"/>
+              <!-- Torso Baju + Kerah Putih -->
+              <rect id="pv-shirt" x="31" y="62" width="48" height="48" rx="13" fill="#2d6a4f"/>
+              <path d="M46,62 L55,71 L64,62 Z" fill="#f8fafc"/>
               <!-- Kepala & Kulit -->
-              <circle id="pv-skin" cx="50" cy="40" r="21" fill="#d99b66"/>
-              <!-- Mata -->
-              <circle cx="43" cy="39" r="2.3" fill="#1e293b"/>
-              <circle cx="57" cy="39" r="2.3" fill="#1e293b"/>
-              <!-- Rambut -->
-              <path id="pv-hair" d="M29,37 A21,21 0 0,1 71,37 Q60,31 50,33 Q40,31 29,37 Z" fill="#1c1917"/>
-              <!-- Peci -->
-              <rect id="pv-peci" x="33" y="16" width="34" height="13" rx="3" fill="#111827" style="display:none;"/>
-              <!-- Caping -->
-              <polygon id="pv-caping" points="50,6 16,25 84,25" fill="#d97706" style="display:none;"/>
-              <!-- Kacamata -->
-              <g id="pv-glasses" style="display:none;">
-                <rect x="35" y="35" width="12" height="8" rx="2" fill="#0f172a"/>
-                <rect x="53" y="35" width="12" height="8" rx="2" fill="#0f172a"/>
-                <line x1="47" y1="38" x2="53" y2="38" stroke="#0f172a" stroke-width="2"/>
-              </g>
+              <circle id="pv-skin" cx="55" cy="41" r="22" fill="#c68a5c"/>
+              <!-- Mata, Pipi & Senyum -->
+              <circle cx="47" cy="40" r="2.4" fill="#0f172a"/>
+              <circle cx="63" cy="40" r="2.4" fill="#0f172a"/>
+              <ellipse cx="43" cy="45" rx="3.2" ry="1.8" fill="rgba(239,68,68,0.28)"/>
+              <ellipse cx="67" cy="45" rx="3.2" ry="1.8" fill="rgba(239,68,68,0.28)"/>
+              <path d="M51,47 Q55,51 59,47" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <!-- Rambut Depan & Aksesoris -->
+              <g id="pv-hair-front"><path d="M33,38 A22,22 0 0,1 77,38 Q65,30 55,32 Q45,30 33,38 Z" fill="#111827"/></g>
+              <g id="pv-acc-layer"></g>
             </svg>
             <span id="pv-role-badge" style="margin-top:4px; font-size:9.5px; font-weight:800; color:#263f35; background:#dcd2ba; padding:2px 8px; border-radius:999px;">☕ Barista</span>
           </div>
@@ -739,7 +740,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v29"></script>
+  <script src="./js/main.js?v=20261115v30"></script>
   <script src="js/multiplayer.js?v=20261115v13"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>

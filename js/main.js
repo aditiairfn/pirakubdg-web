@@ -2829,6 +2829,88 @@ let activeQuestSystem = null;
     editColor = hex;
   };
 
+  
+  window.syncWardrobePreviewSVG = function() {
+    const activeColorBtn = document.querySelector("#wd-color-row .wd-swatch.active");
+    const activePantsBtn = document.querySelector("#wd-pants-row .wd-swatch.active");
+    const activeSkinBtn = document.querySelector("#wd-skin-row .wd-swatch.active");
+    const activeHairBtn = document.querySelector("#wd-hair-row .wd-pill.active");
+    const activeAccBtn = document.querySelector("#wd-acc-row .wd-pill.active");
+    const activeRoleBtn = document.querySelector("#wd-role-row .wd-pill.active");
+
+    const shirtCss = activeColorBtn ? activeColorBtn.dataset.css : "#2563eb";
+    const pantsCss = activePantsBtn ? activePantsBtn.dataset.css : "#1e293b";
+    const skinCss = activeSkinBtn ? activeSkinBtn.dataset.css : "#c68a5c";
+    const hairVal = activeHairBtn ? activeHairBtn.dataset.val : "short";
+    const accVal = activeAccBtn ? activeAccBtn.dataset.val : "none";
+    const roleVal = activeRoleBtn ? (activeRoleBtn.dataset.emoji + " " + activeRoleBtn.dataset.role) : "☕ Barista";
+
+    const pvShirt = document.getElementById("pv-shirt");
+    const pvArmL = document.getElementById("pv-arm-l");
+    const pvArmR = document.getElementById("pv-arm-r");
+    const pvLegL = document.getElementById("pv-leg-l");
+    const pvLegR = document.getElementById("pv-leg-r");
+    const pvSkin = document.getElementById("pv-skin");
+    const pvHijab = document.getElementById("pv-hijab-back");
+    const pvHairBack = document.getElementById("pv-hair-back");
+    const pvHairFront = document.getElementById("pv-hair-front");
+    const pvAcc = document.getElementById("pv-acc-layer");
+    const pvBadge = document.getElementById("pv-role-badge");
+
+    if (pvShirt) pvShirt.setAttribute("fill", shirtCss);
+    if (pvArmL) pvArmL.setAttribute("fill", shirtCss);
+    if (pvArmR) pvArmR.setAttribute("fill", shirtCss);
+    if (pvLegL) pvLegL.setAttribute("fill", pantsCss);
+    if (pvLegR) pvLegR.setAttribute("fill", pantsCss);
+    if (pvSkin) pvSkin.setAttribute("fill", skinCss);
+    if (pvBadge) pvBadge.textContent = roleVal;
+
+    if (pvHijab) pvHijab.style.display = hairVal === "hijab" ? "block" : "none";
+    if (pvHairBack) {
+      if (hairVal === "bob") pvHairBack.innerHTML = "<rect x=\"30\" y=\"34\" width=\"50\" height=\"30\" rx=\"12\" fill=\"#1c1917\"/>";
+      else if (hairVal === "ponytail") pvHairBack.innerHTML = "<circle cx=\"79\" cy=\"34\" r=\"8\" fill=\"#1c1917\"/>";
+      else pvHairBack.innerHTML = "";
+    }
+    if (pvHairFront) {
+      if (hairVal === "hijab") {
+        pvHairFront.innerHTML = "<path d=\"M31,42 A24,24 0 0,1 79,42 L77,31 A23,23 0 0,0 33,31 Z\" fill=\"#f1f5f9\"/>";
+      } else if (hairVal === "bun") {
+        pvHairFront.innerHTML = "<circle cx=\"55\" cy=\"16\" r=\"9\" fill=\"#111827\"/><path d=\"M33,38 A22,22 0 0,1 77,38 Q55,30 33,38 Z\" fill=\"#111827\"/>";
+      } else if (hairVal === "curly") {
+        pvHairFront.innerHTML = "<circle cx=\"36\" cy=\"27\" r=\"8\" fill=\"#1c1917\"/><circle cx=\"46\" cy=\"21\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"56\" cy=\"20\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"66\" cy=\"22\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"74\" cy=\"28\" r=\"8\" fill=\"#1c1917\"/>";
+      } else if (hairVal === "mohawk") {
+        pvHairFront.innerHTML = "<rect x=\"50\" y=\"11\" width=\"10\" height=\"16\" rx=\"4\" fill=\"#111827\"/><path d=\"M34,36 A22,22 0 0,1 76,36 Q55,31 34,36 Z\" fill=\"#27272a\"/>";
+      } else if (hairVal === "bob") {
+        pvHairFront.innerHTML = "<path d=\"M31,42 A24,24 0 0,1 79,42 L78,56 L72,56 L72,38 Q55,31 38,38 L38,56 L32,56 Z\" fill=\"#1c1917\"/>";
+      } else {
+        pvHairFront.innerHTML = "<path d=\"M33,38 A22,22 0 0,1 77,38 Q65,30 55,32 Q45,30 33,38 Z\" fill=\"#111827\"/>";
+      }
+    }
+    if (pvAcc) {
+      if (accVal === "glasses") {
+        pvAcc.innerHTML = "<rect x=\"40\" y=\"36\" width=\"12\" height=\"7\" rx=\"2\" fill=\"#0f172a\"/><rect x=\"58\" y=\"36\" width=\"12\" height=\"7\" rx=\"2\" fill=\"#0f172a\"/><line x1=\"52\" y1=\"39\" x2=\"58\" y2=\"39\" stroke=\"#0f172a\" stroke-width=\"2\"/>";
+      } else if (accVal === "peci") {
+        pvAcc.innerHTML = "<rect x=\"37\" y=\"15\" width=\"36\" height=\"12\" rx=\"3\" fill=\"#0f172a\"/>";
+      } else if (accVal === "caping") {
+        pvAcc.innerHTML = "<polygon points=\"55,8 22,24 88,24\" fill=\"#d97706\"/>";
+      } else if (accVal === "cat") {
+        pvAcc.innerHTML = "<text x=\"82\" y=\"146\" font-size=\"18\">🐈</text>";
+      } else {
+        pvAcc.innerHTML = "";
+      }
+    }
+  };
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("#wardrobe-modal .wd-swatch, #wardrobe-modal .wd-pill");
+    if (!btn) return;
+    const row = btn.parentElement;
+    if (row) row.querySelectorAll(".active").forEach(el => el.classList.remove("active"));
+    btn.classList.add("active");
+    if (btn.dataset.hex) editColor = parseInt(btn.dataset.hex, 16);
+    if (btn.dataset.role) { editRole = btn.dataset.role; editEmoji = btn.dataset.emoji || "☕"; }
+    window.syncWardrobePreviewSVG();
+  });
+
   window.saveWardrobeCustomization = async function() {
     if (!myPlayerMesh || isRidingTram) return;
     const btn = document.getElementById("btn-save-wardrobe");
@@ -2838,9 +2920,17 @@ let activeQuestSystem = null;
     const oldRot = myPlayerMesh.rotation.y;
     const cData = myPlayerMesh.userData.a.c;
 
+    const selSkin = document.querySelector("#wd-skin-row .wd-swatch.active")?.dataset?.idx ?? "1";
+    const selPants = document.querySelector("#wd-pants-row .wd-swatch.active")?.dataset?.idx ?? "0";
+    const selHair = document.querySelector("#wd-hair-row .wd-pill.active")?.dataset?.val ?? "short";
+    const selAcc = document.querySelector("#wd-acc-row .wd-pill.active")?.dataset?.val ?? editAcc ?? "none";
+    const selColorHex = document.querySelector("#wd-color-row .wd-swatch.active")?.dataset?.hex;
+    if (selColorHex) editColor = parseInt(selColorHex, 16);
+    const composedAcc = selAcc + "|" + selSkin + "|" + selPants + "|" + selHair;
     cData.role = editRole;
-    cData.acc = editAcc;
+    cData.acc = composedAcc;
     cData.color = editColor;
+    editAcc = composedAcc;
     localStorage.setItem('piraku_my_color', String(editColor));
     localStorage.setItem('piraku_my_acc', String(editAcc));
     if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
