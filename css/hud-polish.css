@@ -392,3 +392,59 @@
   box-shadow: 0 0 8px #22c55e !important;
   flex-shrink: 0 !important;
 }
+
+
+/* === FIX MODAL Z-INDEX DI ATAS FOOTER 6-TAB & TULISAN TOMBOL MASUK/AKUN === */
+.modal-overlay {
+  z-index: 95 !important;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+}
+
+.modal-card {
+  max-height: 82dvh !important;
+  overflow-y: auto !important;
+  z-index: 96 !important;
+}
+
+#btn-citizen-status {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 5px !important;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(147, 197, 253, 0.5) !important;
+  border-radius: 8px !important;
+  height: 30px !important;
+  padding: 0 11px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  max-width: 145px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#btn-citizen-status > * {
+  display: inline !important;
+  height: auto !important;
+  width: auto !important;
+  color: #ffffff !important;
+  font-size: inherit !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#btn-citizen-status div,
+#btn-citizen-status .xp-bar,
+#btn-citizen-status .xp-fill,
+#btn-citizen-status small {
+  display: none !important;
+}
+
+#btn-voice-mic {
+  outline: none !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.28) !important;
+}

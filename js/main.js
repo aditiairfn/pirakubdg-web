@@ -1799,6 +1799,38 @@ let activeQuestSystem = null;
     return cg;
   }
 
+  
+  window.spawnGuestCitizen = function() {
+    if (myPlayerMesh) return myPlayerMesh;
+    const savedIg = localStorage.getItem('piraku_my_ig');
+    if (savedIg) return null;
+    const guestId = 'Tamu_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+    const guestData = {
+      id: -Date.now(),
+      name: guestId,
+      ig: guestId,
+      role: 'TAMU',
+      kecamatan: 'Bandung Wetan',
+      wish: 'Wargi tamu lagi jalan-jalan di Gasibu!',
+      color: 0x2563eb,
+      acc: 'none',
+      x: (Math.random() - 0.5) * 6,
+      z: -6 + (Math.random() - 0.5) * 4,
+      upvotes: 0
+    };
+    const mesh = createCitizenMesh(guestData);
+    setupActivePlayer(mesh, guestData);
+    const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820;
+    if (isTouch) {
+      const jz = document.getElementById('joystick-zone');
+      const jb = document.getElementById('btn-jump-mobile');
+      if (jz) jz.style.display = 'block';
+      if (jb) jb.style.display = 'flex';
+    }
+    return mesh;
+  };
+  window.getMyActivePlayerMesh = () => myPlayerMesh;
+
   function setupActivePlayer(mesh, c) {
     myPlayerMesh = mesh;
     isControlledByPlayer = true;
@@ -1904,7 +1936,7 @@ let activeQuestSystem = null;
       if (counterEl) counterEl.innerText = '1 WARGA';
     }
   }
-  loadCitizensFromDB();
+  loadCitizensFromDB().then(() => { if (!localStorage.getItem("piraku_my_ig") && window.spawnGuestCitizen) window.spawnGuestCitizen(); });
 
   // Ticker Aspirasi
   let currentTickerIndex = 0;

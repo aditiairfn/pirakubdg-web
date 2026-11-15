@@ -34,9 +34,9 @@
     const kec = localStorage.getItem('piraku_my_kec') || 'Bandung';
     let color = 0x2d6a4f;
     let acc = 'none';
-    if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh?.userData?.a?.c) {
-      color = myPlayerMesh.userData.a.c.color || color;
-      acc = myPlayerMesh.userData.a.c.acc || acc;
+    if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))?.userData?.a?.c) {
+      color = (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).userData.a.c.color || color;
+      acc = (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).userData.a.c.acc || acc;
     }
     return { sessionId: mySessionId, ig, kecamatan: kec, color, acc, isGuest: !savedIg };
   }
@@ -70,8 +70,8 @@
 
   function sendChatMessage(msg) {
     const id = getMyIdentity();
-    if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh) {
-      spawnFloatingBubble(myPlayerMesh, id.ig, msg);
+    if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))) {
+      spawnFloatingBubble((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null), id.ig, msg);
     }
     if (mpChannel) {
       mpChannel.send({
@@ -302,30 +302,8 @@
   };
 
   function ensureGuestPlayerSpawned() {
-    if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh) return;
-    if (typeof createCitizenMesh !== 'function' || typeof setupActivePlayer !== 'function') return;
-
-    const id = getMyIdentity();
-    const guestData = {
-      ig: id.ig,
-      kecamatan: id.kecamatan,
-      wish: 'Wargi baru mampir di Gasibu!',
-      color: 0x2563eb,
-      acc: 'none',
-      x: (Math.random() - 0.5) * 6,
-      z: -6 + (Math.random() - 0.5) * 4,
-      isGuest: true
-    };
-    const guestMesh = createCitizenMesh(guestData);
-    if (guestMesh) {
-      setupActivePlayer(guestMesh, guestData);
-      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 820;
-      if (isTouch) {
-        const jz = document.getElementById('joystick-zone');
-        const jb = document.getElementById('btn-jump-mobile');
-        if (jz) jz.style.display = 'block';
-        if (jb) jb.style.display = 'flex';
-      }
+    if (typeof window.spawnGuestCitizen === 'function' && !localStorage.getItem('piraku_my_ig')) {
+      window.spawnGuestCitizen();
     }
   }
 
@@ -335,7 +313,7 @@
 
     // 1. Kirim posisi, rotasi, & outfit kita ke semua warga di satu peta
     if (mpChannel && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
-      if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh && myPlayerMesh.position) {
+      if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null)) && (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position) {
         lastBroadcastTime = now;
         const id = getMyIdentity();
         mpChannel.send({
@@ -347,9 +325,9 @@
             kecamatan: id.kecamatan,
             color: id.color,
             acc: id.acc,
-            x: Number(myPlayerMesh.position.x.toFixed(3)),
-            z: Number(myPlayerMesh.position.z.toFixed(3)),
-            rotY: Number((myPlayerMesh.rotation ? myPlayerMesh.rotation.y : 0).toFixed(3))
+            x: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.x.toFixed(3)),
+            z: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.z.toFixed(3)),
+            rotY: Number(((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation.y : 0).toFixed(3))
           }
         });
       }
@@ -392,9 +370,9 @@
 
       // Proximity audio volume (makin dekat karakter, suara makin jelas)
       const aud = remoteAudioEls.get(sid);
-      if (aud && typeof myPlayerMesh !== 'undefined' && myPlayerMesh) {
-        const pdx = entry.mesh.position.x - myPlayerMesh.position.x;
-        const pdz = entry.mesh.position.z - myPlayerMesh.position.z;
+      if (aud && (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))) {
+        const pdx = entry.mesh.position.x - (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.x;
+        const pdz = entry.mesh.position.z - (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.z;
         const pdist = Math.sqrt(pdx * pdx + pdz * pdz);
         const vol = Math.max(0, Math.min(1, 1 - (pdist / VOICE_MAX_DIST)));
         aud.volume = Number(vol.toFixed(2));
