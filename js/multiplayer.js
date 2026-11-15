@@ -416,7 +416,8 @@
     });
 
     // 3. Posisi bubble chat melayang di atas kepala
-    if (activeMesh) syncOnlineNameTag("self", activeMesh, getMyIdentity().ig, true);
+    const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    if (selfMesh) syncOnlineNameTag("self", selfMesh, getMyIdentity().ig, true);
     remotePlayers.forEach((en, sid) => { if (en.mesh) syncOnlineNameTag(sid, en.mesh, en.ig || "Wargi", false); });
     const activeCam = getActiveCamera();
     if (activeCam && typeof THREE !== 'undefined' && activeBubbles.length > 0) {
