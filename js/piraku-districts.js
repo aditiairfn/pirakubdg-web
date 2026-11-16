@@ -321,10 +321,50 @@
   }
 
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
-  function playAngkotHornSfx() { return; }
+  function playAngkotHornSfx() {
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    try {
+      // "tin-tin!" dua nada pendek
+      [0, 0.16].forEach((off, i) => {
+        const t0 = ctx.currentTime + off;
+        [440, 554].forEach(f => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = "square";
+          osc.frequency.setValueAtTime(f * (i ? 1.06 : 1), t0);
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(0.05, t0 + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.13);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(t0); osc.stop(t0 + 0.14);
+        });
+      });
+    } catch (e) {}
+  }
 
   // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
-  function playBaksoBowlClinkSfx() { return; }
+  function playBaksoBowlClinkSfx() {
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    try {
+      // "ting-ting-ting!" denting porselen
+      [0, 0.14, 0.28].forEach((off, i) => {
+        const t0 = ctx.currentTime + off;
+        [2350, 3520].forEach((f, j) => {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(f * (1 + i * 0.015), t0);
+          g.gain.setValueAtTime(0.0001, t0);
+          g.gain.exponentialRampToValueAtTime(j ? 0.03 : 0.07, t0 + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+          osc.connect(g); g.connect(ctx.destination);
+          osc.start(t0); osc.stop(t0 + 0.24);
+        });
+      });
+    } catch (e) {}
+  }
 
   function createBandungAngkotMesh(bodyCol, stripeCol) {
     const g = new THREE.Group();
