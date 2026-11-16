@@ -339,7 +339,7 @@
         filter.frequency.setValueAtTime(1450, now + offset);
 
         gain.gain.setValueAtTime(0.001, now + offset);
-        gain.gain.linearRampToValueAtTime(0.045, now + offset + 0.015);
+        gain.gain.linearRampToValueAtTime(0.11, now + offset + 0.015);
         gain.gain.exponentialRampToValueAtTime(0.0008, now + offset + duration);
 
         osc.connect(filter);
@@ -364,7 +364,7 @@
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, now + offset);
 
-        const peak = hIdx === 0 ? 0.065 : 0.03;
+        const peak = hIdx === 0 ? 0.13 : 0.06;
         gain.gain.setValueAtTime(0.0005, now + offset);
         gain.gain.linearRampToValueAtTime(peak, now + offset + 0.006);
         gain.gain.exponentialRampToValueAtTime(0.0004, now + offset + 0.16);
@@ -1241,8 +1241,9 @@
         }
       }
 
-      if (pPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
-        const dVeh = Math.hypot(pPos.x - v.mesh.position.x, pPos.z - v.mesh.position.z);
+      const _curPPos = pPos || (window.myPlayerMesh && window.myPlayerMesh.position);
+      if (_curPPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
+        const dVeh = Math.hypot(_curPPos.x - v.mesh.position.x, _curPPos.z - v.mesh.position.z);
         if (dVeh < 6.4) {
           v.lastHorn = nowMs;
           playAngkotHornSfx();
@@ -1285,8 +1286,9 @@
         }
       }
 
-      if (p.isVendor && pPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
-        const dCart = Math.hypot(pPos.x - p.mesh.position.x, pPos.z - p.mesh.position.z);
+      const _curVPos = pPos || (window.myPlayerMesh && window.myPlayerMesh.position);
+      if (p.isVendor && _curVPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
+        const dCart = Math.hypot(_curVPos.x - p.mesh.position.x, _curVPos.z - p.mesh.position.z);
         if (dCart < 5.8) {
           p.lastClink = nowMs;
           playBaksoBowlClinkSfx();
