@@ -155,162 +155,290 @@
     tex.needsUpdate = true;
   }
 
-  window.buildPirakuShopGroup = function(outfitId, vehicleId) {
-    if (typeof THREE === "undefined") return null;
-    const grp = new THREE.Group();
-    grp.name = "piraku-shop-attachments";
+  const activeAnimatedShopGroups = new Set();
+  let shopAnimStarted = false;
+  function ensureShopAnimLoop() {
+    if (shopAnimStarted) return;
+    shopAnimStarted = true;
+    function tick() {
+      const t = performance.now() * 0.0025;
+      activeAnimatedShopGroups.forEach(grp => {
+        if (!grp.parent) {
+          activeAnimatedShopGroups.delete(grp);
+          return;
+        }
+        const outer = grp.getObjectByName("aura-outer");
+        const inner = grp.getObjectByName("aura-inner");
+        if (outer) outer.rotation.z = t;
+        if (inner) inner.rotation.z = -t * 1.6;
+        grp.children.forEach(ch => {
+          if (ch.userData && ch.userData.isAuraOrb) {
+            const idx = ch.userData.orbIdx || 0;
+            const ang = t * 1.2 + (idx / 8) * Math.PI * 2;
+            ch.position.x = Math.cos(ang) * 0.48;
+            ch.position.z = Math.sin(ang) * 0.48;
+            ch.position.y = 0.25 + ((t * 0.45 + idx * 0.14) % 1) * 1.15;
+            ch.rotation.y = t * 2;
+          }
+        });
+      });
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
 
-    if (outfitId === "iket_sunda") {
-      const band = new THREE.Mesh(
-        new THREE.TorusGeometry(0.245, 0.052, 10, 24),
-        new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.65 })
-      );
-      band.rotation.x = Math.PI / 2;
-      band.position.set(0, 1.49, 0);
+  window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId) {
+    if (!cg || typeof THREE === "undefined") return;
+    const headNode = cg.userData?.a?.head || cg;
 
-      const motif = new THREE.Mesh(
-        new THREE.TorusGeometry(0.252, 0.02, 8, 24),
-        new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.45 })
-      );
-      motif.rotation.x = Math.PI / 2;
-      motif.position.set(0, 1.50, 0);
+    // Bersihkan attachment lama di akar karakter maupun di kepala
+    const oldBodyAtt = cg.getObjectByName("piraku-shop-body-att");
+    if (oldBodyAtt) cg.remove(oldBodyAtt);
+    const oldHeadAtt = headNode.getObjectByName("piraku-shop-head-att");
+    if (oldHeadAtt) headNode.remove(oldHeadAtt);
 
-      const frontFold = new THREE.Mesh(
-        new THREE.ConeGeometry(0.13, 0.24, 4),
-        new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.6 })
-      );
-      frontFold.position.set(0, 1.62, 0.06);
-      frontFold.rotation.y = Math.PI / 4;
+    // A. AKSESORIS KEPALA (menempel langsung ke tulang head agar ikut gerak & proporsional)
+    if (outfitId === "iket_sunda" || outfitId === "kacamata_hitam" || outfitId === "helm_biker") {
+      const headGrp = new THREE.Group();
+      headGrp.name = "piraku-shop-head-att";
 
-      const knot = new THREE.Mesh(
-        new THREE.ConeGeometry(0.09, 0.20, 6),
-        new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.5 })
-      );
-      knot.position.set(0, 1.54, -0.23);
-      knot.rotation.x = -0.55;
-      grp.add(band, motif, frontFold, knot);
-    } else if (outfitId === "kacamata_hitam") {
-      const lensMat = new THREE.MeshStandardMaterial({ color: 0x050811, metalness: 0.9, roughness: 0.08 });
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.85, roughness: 0.2 });
-      const leftLens = new THREE.Mesh(new THREE.BoxGeometry(0.145, 0.082, 0.03), lensMat);
-      leftLens.position.set(-0.095, 1.35, 0.235);
-      const rightLens = new THREE.Mesh(new THREE.BoxGeometry(0.145, 0.082, 0.03), lensMat);
-      rightLens.position.set(0.095, 1.35, 0.235);
-      const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.018, 0.025), frameMat);
-      bridge.position.set(0, 1.375, 0.238);
-      const armL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.018, 0.24), frameMat);
-      armL.position.set(-0.175, 1.365, 0.12);
-      const armR = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.018, 0.24), frameMat);
-      armR.position.set(0.175, 1.365, 0.12);
-      grp.add(leftLens, rightLens, bridge, armL, armR);
-    } else if (outfitId === "helm_biker") {
-      const shell = new THREE.Mesh(
-        new THREE.SphereGeometry(0.285, 20, 16),
-        new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.45, roughness: 0.2 })
-      );
-      shell.position.set(0, 1.39, -0.01);
-      const stripe = new THREE.Mesh(
-        new THREE.BoxGeometry(0.075, 0.56, 0.56),
-        new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.25 })
-      );
-      stripe.position.set(0, 1.40, -0.01);
-      const visor = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.27, 0.27, 0.13, 18, 1, true, -0.95, 1.9),
-        new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.1, transparent: true, opacity: 0.78, side: THREE.DoubleSide })
-      );
-      visor.position.set(0, 1.36, 0.03);
-      grp.add(shell, stripe, visor);
-    } else if (outfitId === "aura_emas") {
-      const outerRing = new THREE.Mesh(
-        new THREE.RingGeometry(0.42, 0.58, 32),
-        new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
-      );
-      outerRing.rotation.x = -Math.PI / 2;
-      outerRing.position.y = 0.04;
-
-      const innerRing = new THREE.Mesh(
-        new THREE.RingGeometry(0.24, 0.33, 28),
-        new THREE.MeshBasicMaterial({ color: 0xfef08a, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
-      );
-      innerRing.rotation.x = -Math.PI / 2;
-      innerRing.position.y = 0.05;
-      grp.add(outerRing, innerRing);
-
-      for (let i = 0; i < 6; i++) {
-        const ang = (i / 6) * Math.PI * 2;
-        const orb = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.045, 0),
-          new THREE.MeshBasicMaterial({ color: 0xfde047 })
+      if (outfitId === "iket_sunda") {
+        // Lilitan utama kain iket Sunda di atas dahi
+        const band = new THREE.Mesh(
+          new THREE.TorusGeometry(0.252, 0.046, 12, 28),
+          new THREE.MeshStandardMaterial({ color: 0x2c1810, roughness: 0.72 })
         );
-        orb.position.set(Math.cos(ang) * 0.46, 0.22 + (i % 3) * 0.28, Math.sin(ang) * 0.46);
-        grp.add(orb);
+        band.rotation.x = Math.PI / 2;
+        band.position.set(0, 0.115, -0.01);
+
+        // Lis motif batik emas melingkar
+        const motif = new THREE.Mesh(
+          new THREE.TorusGeometry(0.258, 0.017, 10, 28),
+          new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.35, roughness: 0.4 })
+        );
+        motif.rotation.x = Math.PI / 2;
+        motif.position.set(0, 0.125, -0.01);
+
+        // Lipatan segitiga khas Totopong Sunda di bagian depan atas
+        const frontPeak = new THREE.Mesh(
+          new THREE.ConeGeometry(0.115, 0.21, 4),
+          new THREE.MeshStandardMaterial({ color: 0x5c2d16, roughness: 0.65 })
+        );
+        frontPeak.position.set(0, 0.24, 0.08);
+        frontPeak.rotation.y = Math.PI / 4;
+        frontPeak.rotation.x = 0.18;
+
+        // Simpul & dua ekor kain menjuntai di belakang kepala
+        const knot = new THREE.Mesh(
+          new THREE.SphereGeometry(0.068, 10, 10),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.55 })
+        );
+        knot.position.set(0, 0.11, -0.26);
+
+        const tailL = new THREE.Mesh(
+          new THREE.BoxGeometry(0.045, 0.16, 0.018),
+          new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.7 })
+        );
+        tailL.position.set(-0.032, 0.03, -0.27);
+        tailL.rotation.z = 0.22;
+
+        const tailR = new THREE.Mesh(
+          new THREE.BoxGeometry(0.045, 0.16, 0.018),
+          new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.7 })
+        );
+        tailR.position.set(0.032, 0.03, -0.27);
+        tailR.rotation.z = -0.22;
+
+        headGrp.add(band, motif, frontPeak, knot, tailL, tailR);
+      } else if (outfitId === "kacamata_hitam") {
+        // Kacamata Hitam Dago presisi di koordinat mata wajah
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.85, roughness: 0.18 });
+        const lensMat = new THREE.MeshStandardMaterial({ color: 0x050811, metalness: 0.92, roughness: 0.06 });
+
+        for (const sx of [-0.095, 0.095]) {
+          const rim = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.088, 0.022), frameMat);
+          rim.position.set(sx, -0.01, 0.242);
+          const lens = new THREE.Mesh(new THREE.BoxGeometry(0.116, 0.068, 0.026), lensMat);
+          lens.position.set(sx, -0.01, 0.245);
+          headGrp.add(rim, lens);
+        }
+        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.018, 0.022), frameMat);
+        bridge.position.set(0, 0.008, 0.244);
+
+        const armL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.016, 0.24), frameMat);
+        armL.position.set(-0.162, 0.002, 0.125);
+        const armR = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.016, 0.24), frameMat);
+        armR.position.set(0.162, 0.002, 0.125);
+
+        headGrp.add(bridge, armL, armR);
+      } else if (outfitId === "helm_biker") {
+        // Helm Biker Pasupati menutup rapi rambut + visor melengkung + strip balap
+        const shell = new THREE.Mesh(
+          new THREE.SphereGeometry(0.295, 24, 18, 0, Math.PI * 2, 0, Math.PI * 0.66),
+          new THREE.MeshStandardMaterial({ color: 0xdc2626, metalness: 0.45, roughness: 0.18 })
+        );
+        shell.position.set(0, 0.035, -0.01);
+
+        const racingStripe = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.30, 0.30, 0.075, 22, 1, true, -0.45, 2.5),
+          new THREE.MeshStandardMaterial({ color: 0xfef08a, metalness: 0.5, roughness: 0.25, side: THREE.DoubleSide })
+        );
+        racingStripe.rotation.z = Math.PI / 2;
+        racingStripe.rotation.y = Math.PI / 2;
+        racingStripe.position.set(0, 0.035, -0.01);
+
+        const visor = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.278, 0.278, 0.125, 22, 1, true, -0.88, 1.76),
+          new THREE.MeshStandardMaterial({ color: 0x0ea5e9, metalness: 0.85, roughness: 0.08, transparent: true, opacity: 0.82, side: THREE.DoubleSide })
+        );
+        visor.position.set(0, 0.01, 0.015);
+
+        const chinGuard = new THREE.Mesh(
+          new THREE.TorusGeometry(0.24, 0.026, 8, 20, Math.PI),
+          new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 })
+        );
+        chinGuard.rotation.x = Math.PI / 2;
+        chinGuard.rotation.z = Math.PI;
+        chinGuard.position.set(0, -0.10, 0.04);
+
+        headGrp.add(shell, racingStripe, visor, chinGuard);
       }
+      headNode.add(headGrp);
     }
 
-    if (vehicleId === "sepeda_kota") {
-      const bikeMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, metalness: 0.45, roughness: 0.3 });
-      const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
-      const rimMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8, roughness: 0.2 });
+    // B. AURA EMAS & KENDARAAN SEWA (menempel ke akar karakter cg)
+    if (outfitId === "aura_emas" || vehicleId === "sepeda_kota" || vehicleId === "skuter_listrik") {
+      const bodyGrp = new THREE.Group();
+      bodyGrp.name = "piraku-shop-body-att";
 
-      for (const wz of [-0.42, 0.42]) {
-        const tire = new THREE.Mesh(new THREE.TorusGeometry(0.21, 0.035, 10, 22), tireMat);
-        tire.rotation.y = Math.PI / 2;
-        tire.position.set(0, 0.22, wz);
-        const rim = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.015, 8, 18), rimMat);
-        rim.rotation.y = Math.PI / 2;
-        rim.position.set(0, 0.22, wz);
-        grp.add(tire, rim);
+      if (outfitId === "aura_emas") {
+        const outerRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.45, 0.62, 36),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.92 })
+        );
+        outerRing.name = "aura-outer";
+        outerRing.rotation.x = -Math.PI / 2;
+        outerRing.position.y = 0.045;
+
+        const innerRing = new THREE.Mesh(
+          new THREE.RingGeometry(0.26, 0.36, 32),
+          new THREE.MeshBasicMaterial({ color: 0xfef9c3, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+        );
+        innerRing.name = "aura-inner";
+        innerRing.rotation.x = -Math.PI / 2;
+        innerRing.position.y = 0.055;
+
+        bodyGrp.add(outerRing, innerRing);
+
+        for (let i = 0; i < 8; i++) {
+          const orb = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.048, 0),
+            new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0xfde047 : 0xffffff })
+          );
+          orb.userData = { isAuraOrb: true, orbIdx: i };
+          bodyGrp.add(orb);
+        }
+        activeAnimatedShopGroups.add(bodyGrp);
+        ensureShopAnimLoop();
       }
 
-      const mainFrame = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.74, 8), bikeMat);
-      mainFrame.rotation.x = Math.PI / 2.35;
-      mainFrame.position.set(0, 0.34, 0.02);
+      if (vehicleId === "sepeda_kota") {
+        const frameMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, metalness: 0.45, roughness: 0.28 });
+        const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.85, roughness: 0.15 });
 
-      const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.62, 8), bikeMat);
-      fork.rotation.x = -0.25;
-      fork.position.set(0, 0.52, 0.34);
+        for (const wz of [-0.46, 0.46]) {
+          const tire = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.036, 12, 24), tireMat);
+          tire.rotation.y = Math.PI / 2;
+          tire.position.set(0, 0.23, wz);
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.165, 0.014, 8, 20), chromeMat);
+          rim.rotation.y = Math.PI / 2;
+          rim.position.set(0, 0.23, wz);
+          const spoke1 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.32, 0.012), chromeMat);
+          spoke1.position.set(0, 0.23, wz);
+          const spoke2 = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.012, 0.32), chromeMat);
+          spoke2.position.set(0, 0.23, wz);
+          bodyGrp.add(tire, rim, spoke1, spoke2);
+        }
 
-      const handleBar = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.03, 0.03), rimMat);
-      handleBar.position.set(0, 0.80, 0.27);
+        const topTube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.56, 8), frameMat);
+        topTube.rotation.x = Math.PI / 2;
+        topTube.position.set(0, 0.50, 0.04);
 
-      const basket = new THREE.Mesh(
-        new THREE.BoxGeometry(0.24, 0.14, 0.16),
-        new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.65 })
-      );
-      basket.position.set(0, 0.66, 0.44);
-      grp.add(mainFrame, fork, handleBar, basket);
-    } else if (vehicleId === "skuter_listrik") {
-      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6, roughness: 0.25 });
-      const neonMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+        const downTube = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.024, 0.64, 8), frameMat);
+        downTube.rotation.x = Math.PI / 3.1;
+        downTube.position.set(0, 0.36, 0.12);
 
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.055, 0.86), bodyMat);
-      deck.position.set(0, 0.13, 0);
-      const neonStripL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.025, 0.80), neonMat);
-      neonStripL.position.set(-0.125, 0.13, 0);
-      const neonStripR = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.025, 0.80), neonMat);
-      neonStripR.position.set(0.125, 0.13, 0);
+        const seatTube = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.48, 8), frameMat);
+        seatTube.rotation.x = -0.22;
+        seatTube.position.set(0, 0.38, -0.18);
 
-      for (const wz of [-0.36, 0.38]) {
-        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.07, 16), wheelMat);
-        w.rotation.z = Math.PI / 2;
-        w.position.set(0, 0.11, wz);
-        grp.add(w);
+        const saddle = new THREE.Mesh(
+          new THREE.BoxGeometry(0.14, 0.045, 0.22),
+          new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.6 })
+        );
+        saddle.position.set(0, 0.62, -0.23);
+
+        const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.64, 8), frameMat);
+        fork.rotation.x = -0.24;
+        fork.position.set(0, 0.53, 0.36);
+
+        const handleBar = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.028, 0.028), chromeMat);
+        handleBar.position.set(0, 0.83, 0.28);
+
+        const basket = new THREE.Mesh(
+          new THREE.BoxGeometry(0.25, 0.15, 0.17),
+          new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.65 })
+        );
+        basket.position.set(0, 0.68, 0.46);
+
+        bodyGrp.add(topTube, downTube, seatTube, saddle, fork, handleBar, basket);
+      } else if (vehicleId === "skuter_listrik") {
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.65, roughness: 0.22 });
+        const neonMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.7 });
+
+        const deck = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.055, 0.90), bodyMat);
+        deck.position.set(0, 0.13, 0);
+
+        const underGlow = new THREE.Mesh(
+          new THREE.PlaneGeometry(0.34, 0.96),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.45, side: THREE.DoubleSide })
+        );
+        underGlow.rotation.x = -Math.PI / 2;
+        underGlow.position.set(0, 0.035, 0);
+
+        for (const sx of [-0.13, 0.13]) {
+          const strip = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.025, 0.84), neonMat);
+          strip.position.set(sx, 0.13, 0);
+          bodyGrp.add(strip);
+        }
+
+        for (const wz of [-0.38, 0.40]) {
+          const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.115, 0.115, 0.075, 18), wheelMat);
+          tire.rotation.z = Math.PI / 2;
+          tire.position.set(0, 0.115, wz);
+          const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 14), neonMat);
+          hub.rotation.z = Math.PI / 2;
+          hub.position.set(0, 0.115, wz);
+          bodyGrp.add(tire, hub);
+        }
+
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.03, 0.85, 10), bodyMat);
+        stem.rotation.x = -0.16;
+        stem.position.set(0, 0.54, 0.35);
+
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.032, 0.032), bodyMat);
+        bar.position.set(0, 0.94, 0.28);
+
+        const headlight = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+        headlight.position.set(0, 0.85, 0.33);
+
+        bodyGrp.add(deck, underGlow, stem, bar, headlight);
       }
 
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.028, 0.82, 10), bodyMat);
-      stem.rotation.x = -0.15;
-      stem.position.set(0, 0.52, 0.34);
-
-      const bar = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.032, 0.032), bodyMat);
-      bar.position.set(0, 0.91, 0.28);
-
-      const headlight = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10), neonMat);
-      headlight.position.set(0, 0.82, 0.32);
-      grp.add(deck, neonStripL, neonStripR, stem, bar, headlight);
+      cg.add(bodyGrp);
     }
-
-    return grp;
   };
 
   function syncPlayer3DAttachments() {
@@ -318,12 +446,8 @@
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (!mesh || typeof THREE === "undefined") return;
 
-    const old = mesh.getObjectByName("piraku-shop-attachments");
-    if (old) mesh.remove(old);
-
     const rental = window.PirakuEconomy.getActiveRental();
-    const grp = window.buildPirakuShopGroup(state.equippedOutfit, rental ? rental.item.id : null);
-    if (grp) mesh.add(grp);
+    window.attachPirakuShopToCitizen(mesh, state.equippedOutfit, rental ? rental.item.id : null);
 
     updateGasibuBillboard3D(state.billboardText);
     if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
