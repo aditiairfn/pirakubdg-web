@@ -18,11 +18,21 @@
   const remoteAudioEls = new Map();
   const pendingIceMap = new Map();
   const rtcConfig = {
+    iceCandidatePoolSize: 4,
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun.cloudflare.com:3478' }
+      { urls: 'stun:stun.relay.metered.ca:80' },
+      {
+        urls: [
+          'turn:global.relay.metered.ca:80',
+          'turn:global.relay.metered.ca:80?transport=tcp',
+          'turn:global.relay.metered.ca:443',
+          'turns:global.relay.metered.ca:443?transport=tcp'
+        ],
+        username: 'e8dd65b92f62d3e365b900',
+        credential: 'uWdWNmkhvyqTEAcO'
+      }
     ]
   };
 
@@ -347,7 +357,13 @@
     };
 
     pc.onconnectionstatechange = () => {
-      if (['failed', 'closed'].includes(pc.connectionState)) {
+      if (pc.connectionState === 'connected') {
+        const peerInfo = remotePlayers.get(remoteSid);
+        if (typeof showToast === 'function') {
+          showToast('🔊 Suara tersambung dengan ' + (peerInfo?.ig || 'Wargi') + '!');
+        }
+        unlockPendingRemoteAudios();
+      } else if (['failed', 'closed'].includes(pc.connectionState)) {
         closePeerVoice(remoteSid);
       }
     };
