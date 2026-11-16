@@ -702,6 +702,9 @@
           if (info) {
             const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
             if (en) en.lastSeen = Date.now();
+              if (!peerConnections.has(sid) && mySessionId < sid) {
+                createPeerConnection(sid, true);
+              }
           }
         });
         sendMyLiveSnapshot();
@@ -720,9 +723,9 @@
           entry.targetZ = payload.z;
           entry.targetRotY = payload.rotY;
           entry.lastSeen = Date.now();
-          if (isMicEnabled && payload.sessionId && !peerConnections.has(payload.sessionId)) {
-            createPeerConnection(payload.sessionId, true);
-          }
+          if (payload.sessionId && payload.sessionId !== mySessionId && !peerConnections.has(payload.sessionId) && mySessionId < payload.sessionId) {
+              createPeerConnection(payload.sessionId, true);
+            }
         }
       })
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
