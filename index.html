@@ -27,35 +27,58 @@
     .modal-card { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
   </style>
 
+  
   <style id="piraku-hud-layout-fix">
-    #piraku-wallet-pill {
+    /* 1. Notif Event mini tepat di bawah @pirakubdg, hanya tampil saat event aktif */
+    #piraku-event-pill {
       position: fixed !important;
-      top: 234px !important;
+      top: 62px !important;
       left: 16px !important;
       right: auto !important;
       bottom: auto !important;
-      z-index: 26 !important;
+      transform: none !important;
+      padding: 3px 8px !important;
+      font-size: 9.5px !important;
+      font-weight: 800 !important;
+      border-radius: 999px !important;
+      white-space: nowrap !important;
+      z-index: 22 !important;
     }
-    #piraku-event-pill {
+
+    /* 2. Rapatkan jarak vertikal sisi kiri: Jam -> Minimap -> Koin */
+    .hud-side-left {
+      top: 86px !important;
+      gap: 6px !important;
+      z-index: 24 !important;
+    }
+    #minimap-container, .minimap-box {
+      margin-top: 2px !important;
+      z-index: 35 !important; /* Saat minimap di-klik expand, bebas nimpa koin & jam */
+    }
+    #piraku-wallet-pill {
       position: fixed !important;
-      top: 66px !important;
-      left: 50% !important;
+      top: 236px !important;
+      left: 16px !important;
       right: auto !important;
       bottom: auto !important;
-      transform: translateX(-50%) !important;
       padding: 5px 10px !important;
-      font-size: 10.5px !important;
-      white-space: nowrap !important;
-      z-index: 26 !important;
+      font-size: 11px !important;
+      z-index: 21 !important;
     }
   </style>
   <script>
     setInterval(() => {
-      const ev = document.getElementById("piraku-event-pill");
-      if (ev && ev.parentElement !== document.body) document.body.appendChild(ev);
       const wl = document.getElementById("piraku-wallet-pill");
       if (wl && wl.parentElement !== document.body) document.body.appendChild(wl);
-    }, 800);
+
+      const ev = document.getElementById("piraku-event-pill");
+      if (ev) {
+        if (ev.parentElement !== document.body) document.body.appendChild(ev);
+        // Sembunyikan otomatis kalau cuaca biasa (Cerah Bandung), muncul hanya saat ada event/hujan
+        const txt = (ev.textContent || "").toUpperCase();
+        ev.style.display = txt.includes("CERAH BANDUNG") ? "none" : "inline-flex";
+      }
+    }, 600);
   </script>
 
 </head>
