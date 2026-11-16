@@ -450,7 +450,7 @@ let activeQuestSystem = null;
   window.toggleAmbienceAudio = function() {
     isAmbiencePlaying = !isAmbiencePlaying;
     if (isAmbiencePlaying) {
-      windGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      if (windGain) windGain.gain.setValueAtTime(0, audioCtx.currentTime);
       showToast('Soundscape kota Bandung aktif 🍃');
     } else {
       if (windGain) windGain.gain.setValueAtTime(0, audioCtx.currentTime);
@@ -471,7 +471,7 @@ let activeQuestSystem = null;
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      // osc.start() disabled;
+      osc.start();
       osc.stop(audioCtx.currentTime + duration);
     } catch(e){}
   };
