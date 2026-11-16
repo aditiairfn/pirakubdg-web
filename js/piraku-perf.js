@@ -94,3 +94,50 @@
     }
   }, 400);
 })();
+
+// ================= 2. DISTANCE CULLING & SHADOW OPTIMIZER =================
+(function () {
+  const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 820;
+
+  function runSceneCulling() {
+    const scene = window.pirakuScene;
+    const cam = window.pirakuCamera || window.camera;
+    if (!scene || !cam) return;
+
+    const camPos = cam.position;
+    const maxDistSq = isMobileDevice ? 68 * 68 : 115 * 115;
+
+    scene.traverse(function (obj) {
+      if (!obj.isMesh && !obj.isGroup) return;
+
+      // Matikan castShadow untuk objek dekorasi kecil di HP
+      if (isMobileDevice && obj.isMesh && obj.castShadow) {
+        if (obj.geometry && obj.geometry.boundingSphere) {
+          if (obj.geometry.boundingSphere.radius < 1.2) {
+            obj.castShadow = false;
+          }
+        }
+      }
+
+      // Distance culling untuk objek props/rumah/pohon yang punya posisi dunia
+      if (obj.userData && obj.userData.cullable) {
+        const dx = obj.position.x - camPos.x;
+        const dz = obj.position.z - camPos.z;
+        obj.visible = (dx * dx + dz * dz) <= maxDistSq;
+      }
+    });
+
+    // Culling khusus grup rumah warga & objek jauh
+    const housesGrp = scene.getObjectByName("piraku-district-houses");
+    if (housesGrp) {
+      housesGrp.children.forEach(function (house) {
+        const dx = house.position.x - camPos.x;
+        const dz = house.position.z - camPos.z;
+        house.visible = (dx * dx + dz * dz) <= maxDistSq;
+      });
+    }
+  }
+
+  // Jalankan distance culling tiap 600ms (ringan di CPU, hemat besar di GPU)
+  setInterval(runSceneCulling, 600);
+})();
