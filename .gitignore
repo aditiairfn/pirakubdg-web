@@ -2,3 +2,4 @@
 # Aset GLB besar tidak dipakai (semua prosedural Three.js)
 models/*.glb
 !models/tram*.glb
+.vercel

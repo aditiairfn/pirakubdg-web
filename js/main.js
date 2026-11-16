@@ -3374,35 +3374,60 @@ let activeQuestSystem = null;
   let joyCenter = { x: 0, y: 0 };
 
   if (joystickZone) {
-    joystickZone.addEventListener('touchstart', e => {
-      joyActive = true;
-      const touch = e.touches[0];
-      const rect = joystickZone.getBoundingClientRect();
-      joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-    }, { passive: false });
+    let activeJoyTouchId = null;
 
-    window.addEventListener('touchmove', e => {
-      if (!joyActive) return;
-      const touch = e.touches[0];
-      let dx = touch.clientX - joyCenter.x;
-      let dy = touch.clientY - joyCenter.y;
+    function handleJoyMoveClient(clientX, clientY) {
+      let dx = clientX - joyCenter.x;
+      let dy = clientY - joyCenter.y;
+      const maxR = 32;
       const dist = Math.hypot(dx, dy);
-      const maxR = 36;
-
       if (dist > maxR) {
         dx = (dx / dist) * maxR;
         dy = (dy / dist) * maxR;
       }
-
       if (joystickKnob) joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-      joyVector = { x: dx / maxR, y: dy / maxR };
+      const normX = Math.abs(dx) < 4 ? 0 : dx / maxR;
+      const normY = Math.abs(dy) < 4 ? 0 : dy / maxR;
+      joyVector = { x: normX, y: normY };
+    }
+
+    joystickZone.addEventListener('touchstart', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const t = e.changedTouches[0];
+      activeJoyTouchId = t.identifier;
+      joyActive = true;
+      const rect = joystickZone.getBoundingClientRect();
+      joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+      handleJoyMoveClient(t.clientX, t.clientY);
     }, { passive: false });
 
-    window.addEventListener('touchend', () => {
-      joyActive = false;
-      if (joystickKnob) joystickKnob.style.transform = 'translate(0, 0)';
-      joyVector = { x: 0, y: 0 };
-    });
+    window.addEventListener('touchmove', e => {
+      if (!joyActive || activeJoyTouchId === null) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const t = e.changedTouches[i];
+        if (t.identifier === activeJoyTouchId) {
+          handleJoyMoveClient(t.clientX, t.clientY);
+          break;
+        }
+      }
+    }, { passive: true });
+
+    function endJoyTouch(e) {
+      if (!joyActive) return;
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        if (e.changedTouches[i].identifier === activeJoyTouchId) {
+          activeJoyTouchId = null;
+          joyActive = false;
+          if (joystickKnob) joystickKnob.style.transform = 'translate(0, 0)';
+          joyVector = { x: 0, y: 0 };
+          break;
+        }
+      }
+    }
+
+    window.addEventListener('touchend', endJoyTouch, { passive: true });
+    window.addEventListener('touchcancel', endJoyTouch, { passive: true });
   }
 
   const moveForwardVec = new THREE.Vector3();
@@ -3531,6 +3556,69 @@ let activeQuestSystem = null;
     }
   }
 
+  // ================= MOBILE TAP-TO-WALK & SMOOTH CAMERA FOLLOW =================
+  let pirakuTapWalkTarget = null;
+  let pirakuTapMarker = null;
+  const tapRaycaster = new THREE.Raycaster();
+  const tapNdc = new THREE.Vector2();
+  const tapGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+  function ensureTapMarker() {
+    if (pirakuTapMarker) return pirakuTapMarker;
+    const ringGeo = new THREE.RingGeometry(0.32, 0.52, 24);
+    ringGeo.rotateX(-Math.PI / 2);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0xffcf4a,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    });
+    pirakuTapMarker = new THREE.Mesh(ringGeo, ringMat);
+    pirakuTapMarker.visible = false;
+    scene.add(pirakuTapMarker);
+    return pirakuTapMarker;
+  }
+
+  (function setupTapToWalk() {
+    const domEl = renderer.domElement;
+    let downX = 0, downY = 0, downTime = 0;
+
+    domEl.addEventListener('pointerdown', (e) => {
+      downX = e.clientX;
+      downY = e.clientY;
+      downTime = performance.now();
+    }, { passive: true });
+
+    domEl.addEventListener('pointerup', (e) => {
+      if (!myPlayerMesh || isRidingTram) return;
+      const moveDist = Math.hypot(e.clientX - downX, e.clientY - downY);
+      const elapsed = performance.now() - downTime;
+      // Hanya anggap tap-to-walk jika sentuhan singkat (< 280ms) dan jari tidak menggeser kamera (< 10px)
+      if (moveDist > 10 || elapsed > 280) return;
+
+      const rect = domEl.getBoundingClientRect();
+      tapNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      tapNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      tapRaycaster.setFromCamera(tapNdc, cam);
+
+      const hitPt = new THREE.Vector3();
+      if (tapRaycaster.ray.intersectPlane(tapGroundPlane, hitPt)) {
+        // Batasi area tujuan agar valid di dalam peta
+        if (window.pirakuInDistrict) {
+          hitPt.x = Math.max(-52, Math.min(52, hitPt.x));
+          hitPt.z = Math.max(-52, Math.min(52, hitPt.z));
+        } else {
+          hitPt.x = Math.max(-132, Math.min(61, hitPt.x));
+          hitPt.z = Math.max(-62, Math.min(52, hitPt.z));
+        }
+        pirakuTapWalkTarget = hitPt.clone();
+        const marker = ensureTapMarker();
+        marker.position.set(hitPt.x, 0.08, hitPt.z);
+        marker.visible = true;
+      }
+    }, { passive: true });
+  })();
+
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh || isRidingTram) return;
 
@@ -3544,10 +3632,13 @@ let activeQuestSystem = null;
     if (keys.a) inputRight -= 1;
 
     if (joyActive) {
-      inputForward -= joyVector.y;
-      inputRight += joyVector.x;
+      const mobileSpeedBoost = (window.innerWidth <= 900) ? 0.85 : 0.95;
+      inputForward -= joyVector.y * mobileSpeedBoost;
+      inputRight += joyVector.x * mobileSpeedBoost;
     }
 
+    // === SCREEN-RELATIVE ISOMETRIC CONTROL (ANTI-PUSING) ===
+    // Dorong joystick ke atas = jalan ke atas layar; kiri/kanan = jalan ke kiri/kanan layar
     cam.getWorldDirection(moveForwardVec);
     moveForwardVec.y = 0;
     moveForwardVec.normalize();
@@ -3558,15 +3649,46 @@ let activeQuestSystem = null;
     moveFinalVec.addScaledVector(moveForwardVec, inputForward);
     moveFinalVec.addScaledVector(moveRightVec, inputRight);
 
-    const hasInput = (moveFinalVec.lengthSq() > 0.001);
+    // Jika joystick/keyboard ditekan manual, batalkan auto-walk tap
+    if (moveFinalVec.lengthSq() > 0.002 && pirakuTapWalkTarget) {
+      pirakuTapWalkTarget = null;
+      if (pirakuTapMarker) pirakuTapMarker.visible = false;
+    }
+
+    // Jika sedang auto-walk menuju titik Tap-to-Walk
+    if (pirakuTapWalkTarget) {
+      const dxT = pirakuTapWalkTarget.x - myPlayerMesh.position.x;
+      const dzT = pirakuTapWalkTarget.z - myPlayerMesh.position.z;
+      const distT = Math.hypot(dxT, dzT);
+      if (distT < 0.45) {
+        pirakuTapWalkTarget = null;
+        if (pirakuTapMarker) pirakuTapMarker.visible = false;
+      } else {
+        moveFinalVec.set(dxT / distT, 0, dzT / distT);
+        if (pirakuTapMarker && pirakuTapMarker.visible) {
+          pirakuTapMarker.rotation.z += delta * 2.5;
+        }
+      }
+    }
+
+    const inputMag = Math.min(1.0, moveFinalVec.length());
+    const hasInput = (inputMag > 0.01);
     const a = myPlayerMesh.userData.a;
 
     if (hasInput) {
-      moveFinalVec.normalize();
-      myPlayerMesh.rotation.y = Math.atan2(moveFinalVec.x, moveFinalVec.z);
+      const beforeMoveX = myPlayerMesh.position.x;
+      const beforeMoveZ = myPlayerMesh.position.z;
 
-      myPlayerMesh.position.x += moveFinalVec.x * speed;
-      myPlayerMesh.position.z += moveFinalVec.z * speed;
+      moveFinalVec.normalize();
+      const targetRot = Math.atan2(moveFinalVec.x, moveFinalVec.z);
+      let diffRot = targetRot - myPlayerMesh.rotation.y;
+      while (diffRot > Math.PI) diffRot -= Math.PI * 2;
+      while (diffRot < -Math.PI) diffRot += Math.PI * 2;
+      myPlayerMesh.rotation.y += diffRot * Math.min(1, delta * 14);
+
+      const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92);
+      myPlayerMesh.position.x += moveFinalVec.x * effectiveSpeed;
+      myPlayerMesh.position.z += moveFinalVec.z * effectiveSpeed;
 
       const prevX = myPlayerMesh.position.x;
       const prevZ = myPlayerMesh.position.z;
@@ -3591,6 +3713,18 @@ let activeQuestSystem = null;
       resolvePirakuBuildingCollision(myPlayerMesh.position, prevX, prevZ, 0.48);
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
+
+      // Fixed-Angle Smooth Follow: kamera meluncur menjaga karakter di tengah layar TANPA memutar sudut kota (anti-pusing)
+      if (typeof controls !== 'undefined' && controls && controls.target) {
+        const stepX = myPlayerMesh.position.x - beforeMoveX;
+        const stepZ = myPlayerMesh.position.z - beforeMoveZ;
+        if (Math.abs(stepX) > 0.0001 || Math.abs(stepZ) > 0.0001) {
+          controls.target.x += stepX;
+          controls.target.z += stepZ;
+          cam.position.x += stepX;
+          cam.position.z += stepZ;
+        }
+      }
 
       if (isGrounded) {
         const s = Math.sin(window.clockTime * 15);
