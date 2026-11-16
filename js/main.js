@@ -1912,7 +1912,7 @@ let activeQuestSystem = null;
   window.focusCurrentTickerCitizen = function() {
     const c = registeredCitizensList[currentTickerIndex];
     if (c) {
-      showCitizenSpeech(c);
+      showCitizenSpeech(c, true);
       showToast('Kamera terbang ke ' + c.ig + ' ✨');
     }
   };
@@ -1931,7 +1931,7 @@ let activeQuestSystem = null;
   });
 
   const bubbleEl = document.getElementById('citizen-bubble'), tempV = new THREE.Vector3();
-  function showCitizenSpeech(data) {
+  function showCitizenSpeech(data, focusCam = false) {
     activeCitizenTarget = data;
     document.getElementById('b-ig').innerText = data.ig;
     const cLvl = typeof window.computePirakuLevelFromTotalXp === 'function'
@@ -1948,11 +1948,12 @@ let activeQuestSystem = null;
     document.getElementById('b-upvotes').innerText = data.upvotes || 0;
     bubbleEl.style.display = 'block';
 
-    const curX = data.x;
-    const curZ = data.z;
-
-    gsap.to(controls.target, { x: curX, y: 1.5, z: curZ, duration: 1.2, ease: 'power2.inOut' });
-    gsap.to(cam.position, { x: curX - 3.5, y: 3.2, z: curZ - 5.5, duration: 1.2, ease: 'power2.inOut' });
+    if (focusCam) {
+      const curX = data.x;
+      const curZ = data.z;
+      gsap.to(controls.target, { x: curX, y: 1.5, z: curZ, duration: 1.2, ease: 'power2.inOut' });
+      gsap.to(cam.position, { x: curX - 3.5, y: 3.2, z: curZ - 5.5, duration: 1.2, ease: 'power2.inOut' });
+    }
   }
 
   function hideCitizenSpeech() { activeCitizenTarget = null; if (bubbleEl) bubbleEl.style.display = 'none'; }
@@ -2506,7 +2507,7 @@ let activeQuestSystem = null;
     if (savedIg) {
       const found = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
       if (found) { 
-        showCitizenSpeech(found); 
+        showCitizenSpeech(found, true); 
         showToast('Kamera menyorot kamu! ✨'); 
       } else openJoinModal();
     } else openJoinModal();
