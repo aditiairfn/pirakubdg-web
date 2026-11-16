@@ -1536,20 +1536,20 @@ let activeQuestSystem = null;
   // Koin Piraku
   const coins = [], coinG = new THREE.CylinderGeometry(.55, .55, .12, 14);
   const coinM = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xb45309, emissiveIntensity: .5, metalness: .6, roughness: .35 });
-  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); h.visible=false; coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
+  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); h.visible = true; scene.add(h); coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
   for (let i = 0; i < 16; i++) { const p = TRAMC.getPointAt((i + .5) / 16); addCoin(p.x, 1.7, p.z); }
   for (let i = 0; i < 10; i++) addCoin((rnd() - .5) * 34, 1.1, -2 - rnd() * 8);
   let coinCount = parseInt(localStorage.getItem('piraku_coins') || '0', 10) || 0;
   const coinHud = document.createElement('div');
   coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
-  coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
+  coinHud.textContent = '🪙 ' + coinCount; document.body.appendChild(coinHud);
   window.getPirakuPlayerPos = () => (typeof isRidingTram !== 'undefined' && isRidingTram && typeof tram !== 'undefined' ? tram.position : (typeof myPlayerMesh !== 'undefined' && myPlayerMesh ? myPlayerMesh.position : null));
-  function updateCoins(dt) { return;
+  function updateCoins(dt) {
     if (!isRidingTram && !myPlayerMesh) return;
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
     coins.forEach(c => {
-      if (!c.h.visible) return;
       if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
+      if (!c.h.visible) return;
       c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
       if (Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3.2 : 2.4)) return;
       c.h.visible = false; c.back = 45; coinCount++; localStorage.setItem('piraku_coins', coinCount); coinHud.textContent = '🪙 ' + coinCount;
