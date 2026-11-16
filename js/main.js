@@ -404,7 +404,7 @@ let activeQuestSystem = null;
   const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let isAmbiencePlaying = false, windGain = null, cricketsGain = null;
 
-  function initAmbienceSound() {
+  function initAmbienceSound() { return;
     if (windGain) return;
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -465,7 +465,7 @@ let activeQuestSystem = null;
       if (isAmbiencePlaying && windGain) {
         try {
           windGain.gain.cancelScheduledValues(audioCtx.currentTime);
-          windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.3);
+          windGain.gain.setValueAtTime(0, audioCtx.currentTime);
         } catch(e){}
       }
     }
@@ -479,7 +479,7 @@ let activeQuestSystem = null;
       window._pirakuAutoAmbienceStarted = true;
       initAmbienceSound();
       isAmbiencePlaying = true;
-      if (windGain) windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.5);
+      if (windGain) windGain.gain.setValueAtTime(0, audioCtx.currentTime);
     }, { passive: true });
   });
 
@@ -487,11 +487,11 @@ let activeQuestSystem = null;
     initAmbienceSound();
     isAmbiencePlaying = !isAmbiencePlaying;
     if (isAmbiencePlaying) {
-      windGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.5);
+      windGain.gain.setValueAtTime(0, audioCtx.currentTime);
       showToast('Soundscape kota Bandung aktif 🍃');
     } else {
-      if (windGain) windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
-      if (cricketsGain) cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+      if (windGain) windGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      if (cricketsGain) cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
       showToast('Soundscape dinonaktifkan 🔇');
     }
   };
@@ -1627,7 +1627,7 @@ let activeQuestSystem = null;
     }
 
     if (isAmbiencePlaying && cricketsGain) {
-      cricketsGain.gain.setTargetAtTime(night ? 0.04 : 0, audioCtx.currentTime, 0.8);
+      cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
     }
   }
 

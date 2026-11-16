@@ -326,21 +326,21 @@
     const ctx = getDistrictAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
-    // Pola "tin... tiiin!" klakson mobil/angkot dengan filter lowpass bulat
-    [[0, 0.11], [0.18, 0.24]].forEach(([offset, duration]) => {
-      [440, 554.37].forEach(freq => {
+    // Klakson angkot nada rendah hangat (D4 + F#4 triangle + lowpass 750Hz)
+    [[0, 0.09], [0.16, 0.19]].forEach(([offset, duration]) => {
+      [293.66, 369.99].forEach(freq => {
         const osc = ctx.createOscillator();
         const filter = ctx.createBiquadFilter();
         const gain = ctx.createGain();
-        osc.type = "sawtooth";
+        osc.type = "triangle";
         osc.frequency.setValueAtTime(freq, now + offset);
 
         filter.type = "lowpass";
-        filter.frequency.setValueAtTime(1250, now + offset);
+        filter.frequency.setValueAtTime(750, now + offset);
 
         gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.linearRampToValueAtTime(0.06, now + offset + 0.015);
-        gain.gain.setValueAtTime(0.055, now + offset + duration - 0.03);
+        gain.gain.linearRampToValueAtTime(0.09, now + offset + 0.012);
+        gain.gain.setValueAtTime(0.08, now + offset + duration - 0.025);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + duration);
 
         osc.connect(filter);
@@ -358,22 +358,22 @@
     const ctx = getDistrictAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
-    // Denting sendok vs mangkok porselen bakso ("ting-ting-ting!")
-    [0, 0.18, 0.36].forEach(offset => {
-      [[2350, 0.08], [3520, 0.035]].forEach(([freq, peak]) => {
+    // Ketukan mangkok porselen bakso/cuanki ("tek-tek-tek!" decay singkat 85ms)
+    [0, 0.17, 0.34].forEach(offset => {
+      [[1580, 0.075], [2860, 0.03]].forEach(([freq, peak]) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
         osc.frequency.setValueAtTime(freq, now + offset);
 
         gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.003);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.15);
+        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.002);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.085);
 
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now + offset);
-        osc.stop(now + offset + 0.17);
+        osc.stop(now + offset + 0.1);
       });
     });
   }
