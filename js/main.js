@@ -497,9 +497,7 @@ let activeQuestSystem = null;
   };
 
   window.getPirakuPlayerPos = function() {
-    if (typeof isRidingTram !== "undefined" && isRidingTram && typeof tram !== "undefined" && tram) return tram.position;
-    if (typeof myPlayerMesh !== "undefined" && myPlayerMesh) return myPlayerMesh.position;
-    return null;
+    return (typeof myPlayerMesh !== "undefined" && myPlayerMesh) ? myPlayerMesh.position : null;
   };
   window.playSynthTone = function(freq, type, duration) {
     if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return;
@@ -1536,15 +1534,15 @@ let activeQuestSystem = null;
   // Koin Piraku
   const coins = [], coinG = new THREE.CylinderGeometry(.55, .55, .12, 14);
   const coinM = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xb45309, emissiveIntensity: .5, metalness: .6, roughness: .35 });
-  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); h.visible = true; scene.add(h); coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
+  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); h.visible=false; coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
   for (let i = 0; i < 16; i++) { const p = TRAMC.getPointAt((i + .5) / 16); addCoin(p.x, 1.7, p.z); }
   for (let i = 0; i < 10; i++) addCoin((rnd() - .5) * 34, 1.1, -2 - rnd() * 8);
   let coinCount = parseInt(localStorage.getItem('piraku_coins') || '0', 10) || 0;
   const coinHud = document.createElement('div');
   coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
-  coinHud.textContent = '🪙 ' + coinCount; document.body.appendChild(coinHud);
-  window.getPirakuPlayerPos = () => (typeof isRidingTram !== 'undefined' && isRidingTram && typeof tram !== 'undefined' ? tram.position : (typeof myPlayerMesh !== 'undefined' && myPlayerMesh ? myPlayerMesh.position : null));
-  function updateCoins(dt) {
+  coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
+  window.getPirakuPlayerPos = () => (typeof myPlayerMesh !== "undefined" && myPlayerMesh) ? myPlayerMesh.position : null;
+  function updateCoins(dt) { return;
     if (!isRidingTram && !myPlayerMesh) return;
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
     coins.forEach(c => {

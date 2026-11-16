@@ -324,8 +324,14 @@
   function playAngkotHornSfx() {
     if (isDistrictSoundMuted()) return;
     if (typeof window.playSynthTone === "function") {
-      window.playSynthTone(440, "sawtooth", 0.11);
-      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(554.37, "sawtooth", 0.18); }, 150);
+      window.playSynthTone(440, "sawtooth", 0.16);
+      window.playSynthTone(554.37, "sawtooth", 0.16);
+      setTimeout(() => {
+        if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") {
+          window.playSynthTone(440, "sawtooth", 0.22);
+          window.playSynthTone(554.37, "sawtooth", 0.22);
+        }
+      }, 190);
     }
   }
 
@@ -333,9 +339,9 @@
   function playBaksoBowlClinkSfx() {
     if (isDistrictSoundMuted()) return;
     if (typeof window.playSynthTone === "function") {
-      window.playSynthTone(2380, "sine", 0.11);
-      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(2380, "sine", 0.11); }, 180);
-      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(2650, "sine", 0.14); }, 360);
+      window.playSynthTone(2380, "sine", 0.14);
+      setTimeout(() => { if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") window.playSynthTone(2380, "sine", 0.14); }, 190);
+      setTimeout(() => { if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") window.playSynthTone(2680, "sine", 0.18); }, 380);
     }
   }
 
@@ -1206,7 +1212,7 @@
       const _curPPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
       if (_curPPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
         const dVeh = Math.hypot(_curPPos.x - v.mesh.position.x, _curPPos.z - v.mesh.position.z);
-        if (dVeh < 11.5) {
+        if (dVeh < 14.0) {
           v.lastHorn = nowMs;
           playAngkotHornSfx();
         }
@@ -1251,7 +1257,7 @@
       const _curVPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
       if (p.isVendor && _curVPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
         const dCart = Math.hypot(_curVPos.x - p.mesh.position.x, _curVPos.z - p.mesh.position.z);
-        if (dCart < 9.5) {
+        if (dCart < 12.0) {
           p.lastClink = nowMs;
           playBaksoBowlClinkSfx();
         }
