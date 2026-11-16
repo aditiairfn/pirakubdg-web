@@ -583,31 +583,37 @@
         }
       })
       .on('broadcast', { event: 'rtc-offer' }, async ({ payload }) => {
-        if (!payload || payload.to !== mySessionId || !payload.from) return;
+        if (!payload || !payload.from || payload.from === mySessionId) return;
+        // Tangani offer jika ditujukan ke kita atau broadcast umum
+        if (payload.to && payload.to !== mySessionId) return;
         const pc = createPeerConnection(payload.from, false);
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
-          mpChannel.send({
-            type: 'broadcast',
-            event: 'rtc-answer',
-            payload: { from: mySessionId, to: payload.from, sdp: pc.localDescription }
-          });
-        } catch (_) {}
+          if (mpChannel) {
+            mpChannel.send({
+              type: 'broadcast',
+              event: 'rtc-answer',
+              payload: { from: mySessionId, to: payload.from, sdp: pc.localDescription }
+            });
+          }
+        } catch (e) { console.error("[WebRTC] Error handling offer:", e); }
       })
       .on('broadcast', { event: 'rtc-answer' }, async ({ payload }) => {
-        if (!payload || payload.to !== mySessionId || !payload.from) return;
+        if (!payload || !payload.from || payload.from === mySessionId) return;
+        if (payload.to && payload.to !== mySessionId) return;
         const pc = peerConnections.get(payload.from);
         if (pc) {
-          try { await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)); } catch (_) {}
+          try { await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)); } catch (e) {}
         }
       })
       .on('broadcast', { event: 'rtc-ice' }, async ({ payload }) => {
-        if (!payload || payload.to !== mySessionId || !payload.from || !payload.candidate) return;
+        if (!payload || !payload.from || payload.from === mySessionId || !payload.candidate) return;
+        if (payload.to && payload.to !== mySessionId) return;
         const pc = peerConnections.get(payload.from);
         if (pc) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (_) {}
+          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (e) {}
         }
       })
       .subscribe(async (status) => {
