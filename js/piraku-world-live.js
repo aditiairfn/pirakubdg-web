@@ -40,6 +40,8 @@
         coins: Math.round(state.coins || 0),
         tier_id: state.tier || "tier_1",
         equipped_outfit: state.equippedOutfit || null,
+        tier_id: state.tier || "tier_1",
+        equipped_outfit: state.equippedOutfit || null,
         tier: state.tier || "tier_1",
         equipped_outfit: state.equippedOutfit || null,
         billboard_text: state.billboardText || null,

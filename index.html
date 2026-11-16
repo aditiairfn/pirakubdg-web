@@ -880,7 +880,7 @@
 
   <!-- quests.js disabled -->
   <script src="./js/main.js?v=20261115v54"></script>
-  <script src="js/multiplayer.js?v=20261116v5"></script>
+  <script src="js/multiplayer.js?v=20261116v6"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v26"></script>
@@ -1025,7 +1025,7 @@
 
   <script src="js/piraku-economy.js?v=20261116v5"></script>
   <script src="js/piraku-games.js?v=20261116v2"></script>
-  <script src="js/piraku-world-live.js?v=20261116v5"></script>
+  <script src="js/piraku-world-live.js?v=20261116v6"></script>
   <script src="js/piraku-nav-modals.js?v=20261115v2"></script>
   <script src="js/piraku-districts.js?v=20261116v8"></script>
 
@@ -1053,6 +1053,7 @@
 
   
   
+  
   <style id="piraku-vip-tier-styles">
     @keyframes sultanShimmer {
       0% { background-position: 0% 50%; }
@@ -1065,7 +1066,7 @@
       animation: sultanShimmer 3.5s ease infinite !important;
       color: #f0f9ff !important;
       border: 1.5px solid #7dd3fc !important;
-      box-shadow: 0 0 16px rgba(56, 189, 248, 0.7), 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.75), 0 4px 12px rgba(0, 0, 0, 0.45) !important;
       padding: 4px 10px !important;
       border-radius: 999px !important;
       font-weight: 900 !important;
@@ -1134,7 +1135,7 @@
         window.pirakuRemoteTiers[myIg] = { tierId: t.id, tierName: t.name, tierBadge: t.badge };
       }
 
-      // 1. Desain ulang semua Nametag 3D (diri sendiri maupun pemain lain yang punya gelar)
+      // 1. Desain ulang semua Nametag 3D (diri sendiri maupun pemain lain / tamu)
       document.querySelectorAll("div, span").forEach(el => {
         if (el.children.length > 0) return;
         const raw = (el.textContent || "").trim();
