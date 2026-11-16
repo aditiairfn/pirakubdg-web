@@ -491,8 +491,12 @@
     if (!mpChannel) return;
     const id = getMyIdentity();
     const am = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    const x = am && am.position ? Number(am.position.x.toFixed(3)) : 0;
-    const z = am && am.position ? Number(am.position.z.toFixed(3)) : 2.5;
+    // Ambil posisi dari mesh aktif atau fallback ke titik kecamatan/rumah jika tersimpan
+    const savedKec = localStorage.getItem("piraku_my_kec") || localStorage.getItem("piraku_ktp_kecamatan") || "Bandung Wetan";
+    const defaultX = savedKec.toLowerCase() !== "bandung wetan" ? 25 : 0;
+    const defaultZ = savedKec.toLowerCase() !== "bandung wetan" ? -34 : 2.5;
+    const x = am && am.position ? Number(am.position.x.toFixed(3)) : defaultX;
+    const z = am && am.position ? Number(am.position.z.toFixed(3)) : defaultZ;
     const rotY = am && am.rotation ? Number(am.rotation.y.toFixed(3)) : 0;
     mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, x, z, rotY } });
   }
