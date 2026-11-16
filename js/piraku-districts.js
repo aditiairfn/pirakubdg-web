@@ -321,62 +321,10 @@
   }
 
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
-  function playAngkotHornSfx() {
-    if (isDistrictSoundMuted()) return;
-    const ctx = getDistrictAudioCtx();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    // Klakson angkot nada rendah hangat (D4 + F#4 triangle + lowpass 750Hz)
-    [[0, 0.09], [0.16, 0.19]].forEach(([offset, duration]) => {
-      [293.66, 369.99].forEach(freq => {
-        const osc = ctx.createOscillator();
-        const filter = ctx.createBiquadFilter();
-        const gain = ctx.createGain();
-        osc.type = "triangle";
-        osc.frequency.setValueAtTime(freq, now + offset);
-
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(750, now + offset);
-
-        gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.linearRampToValueAtTime(0.09, now + offset + 0.012);
-        gain.gain.setValueAtTime(0.08, now + offset + duration - 0.025);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + duration);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + duration + 0.02);
-      });
-    });
-  }
+  function playAngkotHornSfx() { return; }
 
   // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
-  function playBaksoBowlClinkSfx() {
-    if (isDistrictSoundMuted()) return;
-    const ctx = getDistrictAudioCtx();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    // Ketukan mangkok porselen bakso/cuanki ("tek-tek-tek!" decay singkat 85ms)
-    [0, 0.17, 0.34].forEach(offset => {
-      [[1580, 0.075], [2860, 0.03]].forEach(([freq, peak]) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, now + offset);
-
-        gain.gain.setValueAtTime(0.0001, now + offset);
-        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.002);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.085);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.1);
-      });
-    });
-  }
+  function playBaksoBowlClinkSfx() { return; }
 
   function createBandungAngkotMesh(bodyCol, stripeCol) {
     const g = new THREE.Group();

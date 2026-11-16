@@ -426,21 +426,21 @@ let activeQuestSystem = null;
       filter.type = 'lowpass';
       filter.frequency.setValueAtTime(420, audioCtx.currentTime);
 
-      windGain = audioCtx.createGain();
+      windGain = audioCtx.createGain(); windGain.gain.value = 0;
       windGain.gain.setValueAtTime(0, audioCtx.currentTime);
 
       whiteNoise.connect(filter);
       filter.connect(windGain);
-      windGain.connect(audioCtx.destination);
+      // windGain disabled
       whiteNoise.start();
 
       const osc = audioCtx.createOscillator();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(4500, audioCtx.currentTime);
-      cricketsGain = audioCtx.createGain();
+      cricketsGain = audioCtx.createGain(); cricketsGain.gain.value = 0;
       cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
       osc.connect(cricketsGain);
-      cricketsGain.connect(audioCtx.destination);
+      // cricketsGain disabled
       osc.start();
     } catch(e){}
   }
