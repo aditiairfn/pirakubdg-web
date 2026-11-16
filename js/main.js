@@ -499,6 +499,20 @@ let activeQuestSystem = null;
     } catch(e){}
   };
 
+  window._pirakuStepTimer = 0;
+  window.playFootstepSfx = function(dt, isMoving, isRunning) {
+    if (!isMoving || !isGrounded) { window._pirakuStepTimer = 0; return; }
+    if (typeof window.isPirakuSfxEnabled === "function" && !window.isPirakuSfxEnabled()) return;
+    window._pirakuStepTimer += dt;
+    const interval = isRunning ? 0.28 : 0.42;
+    if (window._pirakuStepTimer >= interval) {
+      window._pirakuStepTimer = 0;
+      if (typeof window.playSynthTone === "function") {
+        window.playSynthTone(isRunning ? 155 : 125, "triangle", 0.045);
+      }
+    }
+  };
+
   // Dropdown Menu
   window.toggleHudMenu = function(e) {
     if (e) e.stopPropagation();
