@@ -17,6 +17,51 @@
   const peerConnections = new Map();
   const remoteAudioEls = new Map();
   const pendingIceMap = new Map();
+  const speakingPeers = new Map(); // key ("self" atau remoteSid) -> boolean
+  const voiceAnalysers = new Map(); // key -> { ctx, analyser, data, timer }
+  let sharedAudioCtx = null;
+
+  function startVoiceActivityMonitor(key, mediaStream) {
+    stopVoiceActivityMonitor(key);
+    if (!mediaStream) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+      if (sharedAudioCtx.state === "suspended") sharedAudioCtx.resume().catch(() => {});
+      const source = sharedAudioCtx.createMediaStreamSource(mediaStream);
+      const analyser = sharedAudioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.45;
+      source.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const timer = setInterval(() => {
+        if (sharedAudioCtx && sharedAudioCtx.state === "suspended") {
+          sharedAudioCtx.resume().catch(() => {});
+        }
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+        const isTalking = key === "self" ? (isMicEnabled && rms > 0.018) : (rms > 0.015);
+        speakingPeers.set(key, isTalking);
+      }, 90);
+      voiceAnalysers.set(key, { source, analyser, timer });
+    } catch (_) {}
+  }
+
+  function stopVoiceActivityMonitor(key) {
+    const item = voiceAnalysers.get(key);
+    if (item) {
+      clearInterval(item.timer);
+      try { item.source.disconnect(); } catch (_) {}
+      voiceAnalysers.delete(key);
+    }
+    speakingPeers.delete(key);
+  }
 
   const rtcConfig = {
     iceCandidatePoolSize: 8,
@@ -119,7 +164,23 @@
       tag.style.borderColor = tierStyle.border;
       tag.style.color = tierStyle.text;
     }
-    if (tag.textContent !== label) tag.textContent = label;
+    const isSpeaking = !!speakingPeers.get(key);
+    const displayLabel = isSpeaking ? ("🎙️ " + label) : label;
+    if (tag.textContent !== displayLabel) tag.textContent = displayLabel;
+    if (isSpeaking) {
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
+      tag.style.borderColor = "#22c55e";
+      tag.style.boxShadow = "0 0 " + (8 + pulse * 8).toFixed(1) + "px rgba(34, 197, 94, " + (0.55 + pulse * 0.4).toFixed(2) + ")";
+      tag.style.background = "rgba(6, 78, 59, 0.94)";
+      tag.style.color = "#86efac";
+    } else {
+      tag.style.boxShadow = "none";
+      if (!tierStyle) {
+        tag.style.background = "rgba(15,23,42,0.78)";
+        tag.style.borderColor = isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)";
+        tag.style.color = isSelf ? "#fde047" : "#f8fafc";
+      }
+    }
     const v = new THREE.Vector3();
     mesh.getWorldPosition(v);
     v.y += 1.85;
@@ -302,6 +363,7 @@
       peerConnections.delete(remoteSid);
     }
     pendingIceMap.delete(remoteSid);
+    stopVoiceActivityMonitor(remoteSid);
     const aud = remoteAudioEls.get(remoteSid);
     if (aud) {
       aud.srcObject = null;
@@ -358,6 +420,7 @@
       }
       const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
       aud.srcObject = stream;
+      startVoiceActivityMonitor(remoteSid, stream);
       aud.muted = !!window.pirakuVoiceMuted;
       aud.volume = 1.0;
       aud.play().catch(() => {
@@ -418,6 +481,7 @@
           video: false
         });
         isMicEnabled = true;
+        startVoiceActivityMonitor("self", localAudioStream);
         updateMicButtonUi();
         if (typeof showToast === 'function') showToast('Voice Chat aktif! Ngobrol langsung sama wargi sekitar 🎙️');
         if (mpChannel) {
@@ -459,6 +523,7 @@
       }
     } else {
       isMicEnabled = false;
+      stopVoiceActivityMonitor("self");
       if (localAudioStream) {
         localAudioStream.getTracks().forEach(t => t.stop());
         localAudioStream = null;
