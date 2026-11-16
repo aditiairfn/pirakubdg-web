@@ -153,8 +153,10 @@
     if (!listEl) return;
 
     const sb = window.pirakuSupabase;
+    const cleanVoter = (myIg || "").trim().toLowerCase().replace(/^@/, "");
+    const voteLsKey = cleanVoter ? ("piraku_voted_camat_" + dist.id + "_" + cleanVoter) : null;
     let candidates = [];
-    let votedCandidateId = localStorage.getItem("piraku_voted_camat_" + dist.id);
+    let votedCandidateId = voteLsKey ? localStorage.getItem(voteLsKey) : null;
 
     if (sb) {
       try {
@@ -162,7 +164,13 @@
         if (res.data) candidates = res.data;
         if (myIg) {
           const vRes = await sb.from("pemilu_votes").select("candidate_id").eq("district_id", dist.id).ilike("voter_ig", myIg).maybeSingle();
-          if (vRes.data) votedCandidateId = String(vRes.data.candidate_id);
+          if (vRes.data) {
+            votedCandidateId = String(vRes.data.candidate_id);
+            if (voteLsKey) localStorage.setItem(voteLsKey, votedCandidateId);
+          } else if (!vRes.error) {
+            votedCandidateId = null;
+            if (voteLsKey) localStorage.removeItem(voteLsKey);
+          }
         }
       } catch (e) {}
     }
@@ -233,9 +241,18 @@
   window.voteForCamat = async function (candidateId, distId, currentVotes) {
     const myIg = localStorage.getItem("piraku_my_ig");
     if (!myIg) return;
+    const cleanVoter = myIg.trim().toLowerCase().replace(/^@/, "");
+    const voteLsKey = "piraku_voted_camat_" + distId + "_" + cleanVoter;
     const sb = window.pirakuSupabase;
     if (sb) {
       try {
+        const existing = await sb.from("pemilu_votes").select("candidate_id").eq("district_id", distId).ilike("voter_ig", myIg).maybeSingle();
+        if (existing.data) {
+          localStorage.setItem(voteLsKey, String(existing.data.candidate_id));
+          alert("Kamu sudah pernah mencoblos di kecamatan ini!");
+          window.openPemiluCamatModal();
+          return;
+        }
         const res = await sb.from("pemilu_votes").insert([{
           district_id: distId,
           voter_ig: myIg.toLowerCase(),
@@ -243,11 +260,17 @@
         }]);
         if (res.error) {
           alert("Kamu sudah pernah mencoblos di kecamatan ini!");
+          window.openPemiluCamatModal();
           return;
         }
-        await sb.from("pemilu_camat").update({ votes: currentVotes + 1 }).eq("id", candidateId);
-        localStorage.setItem("piraku_voted_camat_" + distId, String(candidateId));
+        const latestCand = await sb.from("pemilu_camat").select("votes").eq("id", candidateId).maybeSingle();
+        const nextVotes = ((latestCand.data && typeof latestCand.data.votes === "number") ? latestCand.data.votes : currentVotes) + 1;
+        await sb.from("pemilu_camat").update({ votes: nextVotes }).eq("id", candidateId);
+        localStorage.setItem(voteLsKey, String(candidateId));
         await window.grantPirakuXP(60, "Menyalurkan Hak Suara Pemilu");
+        if (typeof window.evaluateWeeklyCamatRotation === "function" && Array.isArray(window.registeredCitizensList)) {
+          await window.evaluateWeeklyCamatRotation(window.registeredCitizensList);
+        }
         window.openPemiluCamatModal();
       } catch (e) {}
     }
@@ -311,17 +334,52 @@
     localStorage.setItem("piraku_mission_tut_seen", "1");
   };
 
-  window.openMissionsHubModal = function () {
+  function getCivicUserSuffix() {
+    const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    return ig ? ("_" + ig) : "_guest";
+  }
+
+  async function syncHouseStatusFromCloud() {
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    if (!myIg) return false;
+    const suf = getCivicUserSuffix();
+    // Cek cache memory registeredCitizensList lebih dulu
+    if (Array.isArray(window.registeredCitizensList)) {
+      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
+      if (me && me.has_house) {
+        localStorage.setItem("piraku_has_house" + suf, "1");
+        localStorage.setItem("piraku_house_keys" + suf, "3");
+        return true;
+      }
+    }
+    const sb = window.pirakuSupabase;
+    if (sb) {
+      try {
+        const { data } = await sb.from("warga_piraku").select("has_house, xp").ilike("ig", myIg).maybeSingle();
+        if (data && data.has_house) {
+          localStorage.setItem("piraku_has_house" + suf, "1");
+          localStorage.setItem("piraku_house_keys" + suf, "3");
+          return true;
+        }
+      } catch (e) {}
+    }
+    return localStorage.getItem("piraku_has_house" + suf) === "1";
+  }
+
+  window.openMissionsHubModal = async function () {
     const modal = ensureCivicModal();
     const dist = getActiveDistrictInfo();
     const today = new Date().toISOString().slice(0, 10);
+    const suf = getCivicUserSuffix();
+    await syncHouseStatusFromCloud();
+
     const totalXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10);
     const lvlInfo = window.computePirakuLevelFromTotalXp(totalXp);
     const pct = lvlInfo.isMax ? 100 : Math.min(100, Math.round((lvlInfo.currentXpInLevel / lvlInfo.requiredForNext) * 100));
 
     const myKecHome = localStorage.getItem("piraku_my_kec") || dist.name;
-    const houseKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys") || "0", 10));
-    const hasHouse = localStorage.getItem("piraku_has_house") === "1";
+    const hasHouse = localStorage.getItem("piraku_has_house" + suf) === "1";
+    const houseKeys = hasHouse ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
     const isFirstTimeTut = localStorage.getItem("piraku_mission_tut_seen") !== "1";
 
     const missions = [
@@ -332,7 +390,7 @@
         desc: "Klik Klaim untuk mencatat kehadiranmu hari ini.",
         xp: 50,
         coins: 50,
-        done: localStorage.getItem("piraku_claimed_checkin_" + today) === "1"
+        done: localStorage.getItem("piraku_claimed_checkin_" + today + suf) === "1"
       },
       {
         id: "patrol_" + today,
@@ -341,7 +399,7 @@
         desc: "Jalan-jalan keliling peta kota lalu klaim hadiah patroli.",
         xp: 40,
         coins: 50,
-        done: localStorage.getItem("piraku_claimed_patrol_" + today) === "1"
+        done: localStorage.getItem("piraku_claimed_patrol_" + today + suf) === "1"
       },
       {
         id: "vote_" + today,
@@ -350,7 +408,7 @@
         desc: "Buka tab Pemilu di bawah untuk cek calon atau nyoblos Camat.",
         xp: 60,
         coins: 50,
-        done: localStorage.getItem("piraku_claimed_vote_" + today) === "1"
+        done: localStorage.getItem("piraku_claimed_vote_" + today + suf) === "1"
       },
       {
         id: "gotong_" + today,
@@ -359,7 +417,7 @@
         desc: "Dukung kas pembangunan fasilitas 3D kecamatanmu.",
         xp: 50,
         coins: 50,
-        done: localStorage.getItem("piraku_claimed_gotong_" + today) === "1"
+        done: localStorage.getItem("piraku_claimed_gotong_" + today + suf) === "1"
       }
     ];
 
@@ -438,10 +496,11 @@
       alert("Masuk atau daftar akun warga dulu untuk mengklaim misi!");
       return;
     }
-    localStorage.setItem("piraku_claimed_" + missionKey, "1");
+    const suf = getCivicUserSuffix();
+    localStorage.setItem("piraku_claimed_" + missionKey + suf, "1");
 
-    const curKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys") || "0", 10) + 1);
-    localStorage.setItem("piraku_house_keys", String(curKeys));
+    const curKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) + 1);
+    localStorage.setItem("piraku_house_keys" + suf, String(curKeys));
 
     if (window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === "function") {
       window.PirakuGameBridge.addCoins(coinReward);
@@ -451,7 +510,7 @@
     }
 
     await window.grantPirakuXP(xpReward, title);
-    if (curKeys === 3 && localStorage.getItem("piraku_has_house") !== "1" && typeof window.showToast === "function") {
+    if (curKeys === 3 && localStorage.getItem("piraku_has_house" + suf) !== "1" && typeof window.showToast === "function") {
       window.showToast("🔑 3/3 Kunci Terkumpul! Klik tombol Bangun Rumah 3D di atas!");
     }
     window.openMissionsHubModal();
@@ -462,7 +521,9 @@
     const myKec = localStorage.getItem("piraku_my_kec") || "Bandung Wetan";
     if (!myIg) return;
 
-    localStorage.setItem("piraku_has_house", "1");
+    const suf = getCivicUserSuffix();
+    localStorage.setItem("piraku_has_house" + suf, "1");
+    localStorage.setItem("piraku_house_keys" + suf, "3");
     if (typeof window.playSynthTone === "function") window.playSynthTone(1040, "sine", 0.45);
 
     const sb = window.pirakuSupabase;
@@ -472,6 +533,13 @@
       } catch (e) {}
     }
 
+    if (Array.isArray(window.registeredCitizensList)) {
+      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
+      if (me) me.has_house = true;
+    }
+    if (typeof window.refreshActiveDistrictHouses === "function") {
+      window.refreshActiveDistrictHouses();
+    }
     if (typeof window.syncDistrictHousesInScene === "function") {
       await window.syncDistrictHousesInScene(myKec);
     }
