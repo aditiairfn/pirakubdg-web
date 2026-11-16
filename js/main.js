@@ -459,6 +459,7 @@ let activeQuestSystem = null;
   };
 
   window.playSynthTone = function(freq, type, duration) {
+    if (window.pirakuSoundMuted) return;
     try {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();

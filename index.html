@@ -121,6 +121,22 @@
   window.pirakuVoiceMuted = (window.pirakuAudioMode === "sfx_only" || window.pirakuAudioMode === "mute_all");
 
   // Cegat seluruh Web Audio API (loncat, koin, klakson, denting bakso, minigame) saat SFX di-mute
+  window._pirakuAudioContexts = window._pirakuAudioContexts || [];
+  const OrigAC = window.AudioContext || window.webkitAudioContext;
+  if (OrigAC && !window._pirakuACWrapped) {
+    window._pirakuACWrapped = true;
+    const WrappedAC = function() {
+      const ctx = new OrigAC(...arguments);
+      window._pirakuAudioContexts.push(ctx);
+      if (window.pirakuSoundMuted && ctx.state === "running") {
+        ctx.suspend().catch(() => {});
+      }
+      return ctx;
+    };
+    WrappedAC.prototype = OrigAC.prototype;
+    window.AudioContext = WrappedAC;
+    if (window.webkitAudioContext) window.webkitAudioContext = WrappedAC;
+  }
   const OrigOscStart = window.OscillatorNode && window.OscillatorNode.prototype.start;
   if (OrigOscStart) {
     window.OscillatorNode.prototype.start = function() {
@@ -147,6 +163,16 @@
     window.pirakuSoundMuted = (mode === "voice_only" || mode === "mute_all");
     // Voice chat nyala hanya pada mode "all" dan "voice_only"
     window.pirakuVoiceMuted = (mode === "sfx_only" || mode === "mute_all");
+    if (Array.isArray(window._pirakuAudioContexts)) {
+      window._pirakuAudioContexts.forEach(ctx => {
+        if (!ctx) return;
+        if (window.pirakuSoundMuted) {
+          if (ctx.state === "running") ctx.suspend().catch(() => {});
+        } else {
+          if (ctx.state === "suspended") ctx.resume().catch(() => {});
+        }
+      });
+    }
 
     document.querySelectorAll("audio, video").forEach(el => {
       const isVoice = (el.id && el.id.includes("voice")) || (el.dataset && el.dataset.voice === "1") || el.srcObject instanceof MediaStream;
@@ -917,10 +943,10 @@
         <span id="pubg-audio-main-icon" style="display:inline-flex;align-items:center;gap:3px;"></span>
       </button>
       <div id="pubg-audio-popover" style="display:none;pointer-events:auto;">
-        <button type="button" data-amode="all" onclick="setPubgAudioMode('all')"></button>
-        <button type="button" data-amode="sfx_only" onclick="setPubgAudioMode('sfx_only')"></button>
-        <button type="button" data-amode="voice_only" onclick="setPubgAudioMode('voice_only')"></button>
-        <button type="button" data-amode="mute_all" onclick="setPubgAudioMode('mute_all')"></button>
+        <button type="button" data-amode="all" onpointerdown="event.preventDefault();event.stopPropagation();setPubgAudioMode('all')" onclick="event.stopPropagation();setPubgAudioMode('all')"></button>
+        <button type="button" data-amode="sfx_only" onpointerdown="event.preventDefault();event.stopPropagation();setPubgAudioMode('sfx_only')" onclick="event.stopPropagation();setPubgAudioMode('sfx_only')"></button>
+        <button type="button" data-amode="voice_only" onpointerdown="event.preventDefault();event.stopPropagation();setPubgAudioMode('voice_only')" onclick="event.stopPropagation();setPubgAudioMode('voice_only')"></button>
+        <button type="button" data-amode="mute_all" onpointerdown="event.preventDefault();event.stopPropagation();setPubgAudioMode('mute_all')" onclick="event.stopPropagation();setPubgAudioMode('mute_all')"></button>
       </div>
     </div>
     <button class="hud-pill-btn" id="btn-voice-mic" onclick="toggleVoiceChat()" title="Aktifkan obrolan suara jarak dekat" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span>Mic Off</span></button>
@@ -1013,8 +1039,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261115v54"></script>
-  <script src="js/multiplayer.js?v=20261116v11"></script>
+  <script src="./js/main.js?v=20261116v28"></script>
+  <script src="js/multiplayer.js?v=20261116v28"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v26"></script>

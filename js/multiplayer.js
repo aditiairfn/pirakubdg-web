@@ -256,6 +256,11 @@
     }
   }
 
+  window.syncVoiceMuteState = function(isMuted) {
+    remoteAudioEls.forEach(aud => {
+      if (aud) aud.muted = !!isMuted;
+    });
+  };
   function closePeerVoice(remoteSid) {
     const pc = peerConnections.get(remoteSid);
     if (pc) {
@@ -299,6 +304,7 @@
         remoteAudioEls.set(remoteSid, aud);
       }
       aud.srcObject = e.streams[0];
+      aud.muted = !!window.pirakuVoiceMuted;
       aud.play().catch(() => {});
     };
 
@@ -440,6 +446,7 @@
 
       // Proximity audio volume (makin dekat karakter, suara makin jelas)
       const aud = remoteAudioEls.get(sid);
+      if (aud) aud.muted = !!window.pirakuVoiceMuted;
       if (aud && (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))) {
         const pdx = entry.mesh.position.x - (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.x;
         const pdz = entry.mesh.position.z - (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.z;
