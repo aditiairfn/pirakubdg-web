@@ -31,15 +31,33 @@
   }
 
   function getMyIdentity() {
-    const savedIg = localStorage.getItem('piraku_my_ig');
-    const ig = savedIg ? savedIg : ('Tamu_' + mySessionId.slice(-4));
-    const kec = localStorage.getItem('piraku_my_kec') || 'Bandung';
-    const activeMesh = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : null;
+    const savedIg = localStorage.getItem("piraku_my_ig");
+    const ig = savedIg ? savedIg : ("Tamu_" + mySessionId.slice(-4));
+    const kec = localStorage.getItem("piraku_my_kec") || "Bandung";
+    const activeMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     const cData = activeMesh?.userData?.a?.c;
-    const color = (cData && cData.color !== undefined) ? cData.color : (parseInt(localStorage.getItem('piraku_my_color') || '', 10) || 0x2563eb);
-    const acc = (cData && cData.acc) ? cData.acc : (localStorage.getItem('piraku_my_acc') || 'none');
-    const role = (cData && cData.role) ? cData.role : 'WARGA';
-    return { sessionId: mySessionId, ig, kecamatan: kec, color, acc, role, isGuest: !savedIg };
+    const color = (cData && cData.color !== undefined) ? cData.color : (parseInt(localStorage.getItem("piraku_my_color") || "", 10) || 0x2563eb);
+    const acc = (cData && cData.acc) ? cData.acc : (localStorage.getItem("piraku_my_acc") || "none");
+    const role = (cData && cData.role) ? cData.role : "WARGA";
+    const eco = window.PirakuEconomy;
+    const tierObj = eco && typeof eco.getTierObj === "function" ? eco.getTierObj() : { id: "tier_1", name: "Warga Baru", badge: "🌱" };
+    const shopOutfit = eco && typeof eco.getState === "function" ? eco.getState().equippedOutfit : null;
+    const activeRental = eco && typeof eco.getActiveRental === "function" ? eco.getActiveRental() : null;
+    const shopVehicle = activeRental ? activeRental.item.id : null;
+    return {
+      sessionId: mySessionId,
+      ig,
+      kecamatan: kec,
+      color,
+      acc,
+      role,
+      tierId: tierObj.id,
+      tierName: tierObj.name,
+      tierBadge: tierObj.badge,
+      shopOutfit,
+      shopVehicle,
+      isGuest: !savedIg
+    };
   }
 
   
@@ -54,6 +72,18 @@
       tag.style.cssText = "position:absolute;left:0;top:0;transform:translate(-50%,-100%);padding:2px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:0.2px;white-space:nowrap;pointer-events:none;background:rgba(15,23,42,0.78);color:" + (isSelf ? "#fde047" : "#f8fafc") + ";border:1px solid " + (isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)") + ";";
       layer.appendChild(tag);
       onlineNameTags.set(key, tag);
+    }
+    const tierStyle = key.includes("tier_4")
+      ? { bg: "rgba(8,47,73,0.92)", border: "#38bdf8", text: "#bae6fd" }
+      : key.includes("tier_3")
+      ? { bg: "rgba(69,26,3,0.92)", border: "#f59e0b", text: "#fde68a" }
+      : key.includes("tier_2")
+      ? { bg: "rgba(30,27,75,0.90)", border: "#818cf8", text: "#e0e7ff" }
+      : null;
+    if (tierStyle) {
+      tag.style.background = tierStyle.bg;
+      tag.style.borderColor = tierStyle.border;
+      tag.style.color = tierStyle.text;
     }
     if (tag.textContent !== label) tag.textContent = label;
     const v = new THREE.Vector3();
