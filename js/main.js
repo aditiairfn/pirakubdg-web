@@ -471,9 +471,25 @@ let activeQuestSystem = null;
   };
 
   window.playSynthTone = function(freq, type, duration) {
-    if (window.pirakuSoundMuted === true || window.pirakuAudioMode === "voice_only" || window.pirakuAudioMode === "mute_all") return;
+    if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return;
     try {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+          try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+          } catch(e){}
+        }).catch(() => {});
+        return;
+      }
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;

@@ -319,7 +319,7 @@
 
   let districtAudioCtx = null;
   function getDistrictAudioCtx() {
-    if (window.pirakuSoundMuted === true || window.pirakuAudioMode === "voice_only" || window.pirakuAudioMode === "mute_all") return null;
+    if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return null;
     if (!districtAudioCtx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (AC) districtAudioCtx = new AC();
