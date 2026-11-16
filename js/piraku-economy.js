@@ -760,18 +760,22 @@
         a.armR.rotation.x = -0.88;
         a.armL.rotation.z = 0.08;
         a.armR.rotation.z = -0.08;
-        a.legL.rotation.x = -0.20;
-        a.legR.rotation.x = 0.24;
+        a.legL.position.set(-0.08, 0.48, 0.14);
+        a.legR.position.set(0.08, 0.48, -0.14);
+        a.legL.rotation.x = -0.15;
+        a.legR.rotation.x = 0.18;
       } else if (veh === "sepeda_kota") {
         cg.userData._wasRidingShopVeh = true;
         const isMoving = Boolean(a.walk) || (typeof window.getMyActivePlayerMesh === "function" && window.getMyActivePlayerMesh() === cg && (Math.abs(window.joyX || 0) > 0.05 || Math.abs(window.joyY || 0) > 0.05));
-        const pedal = isMoving ? Math.sin(t * 4.5) * 0.30 : 0;
+        const pedal = isMoving ? Math.sin(t * 4.5) * 0.32 : 0;
         a.body.position.y = 0.16;
         a.body.rotation.x = 0.15;
         a.armL.rotation.x = -0.80;
         a.armR.rotation.x = -0.80;
         a.armL.rotation.z = 0.12;
         a.armR.rotation.z = -0.12;
+        a.legL.position.y = 0.46;
+        a.legR.position.y = 0.46;
         a.legL.rotation.x = -0.58 + pedal;
         a.legR.rotation.x = -0.58 - pedal;
       } else if (cg.userData._wasRidingShopVeh) {
@@ -780,6 +784,8 @@
         a.body.rotation.x = 0;
         a.armL.rotation.z = 0;
         a.armR.rotation.z = 0;
+        a.legL.position.set(-0.1, 0.36, 0);
+        a.legR.position.set(0.1, 0.36, 0);
       }
     });
   };
