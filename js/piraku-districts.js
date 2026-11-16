@@ -66,7 +66,8 @@
     return { cur, next };
   }
 
-  const STORAGE_KEY = "piraku_districts_v1";
+  const STORAGE_KEY = "piraku_districts_v2";
+  try { localStorage.removeItem("piraku_districts_v1"); } catch (e) {}
   let localInvest = {};
   try { localInvest = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) {}
 
@@ -99,7 +100,23 @@
   }
 
   function getCoinsFor(d) {
-    return Number(localInvest[d.id] || (d.id === "coblong" ? 850 : d.id === "lengkong" ? 300 : 150));
+    return Number(localInvest[d.id] || 0);
+  }
+
+  async function resetAllDistrictsInSupabaseOnce() {
+    const sb = window.pirakuSupabase;
+    if (!sb || localStorage.getItem("piraku_districts_reset_v2") === "1") return;
+    try {
+      const rows = DISTRICTS.map(d => ({
+        district_id: d.id,
+        district_name: d.name,
+        zone_group: d.zone,
+        invested_coins: 0,
+        updated_at: new Date().toISOString()
+      }));
+      await sb.from("piraku_districts").upsert(rows, { onConflict: "district_id" });
+      localStorage.setItem("piraku_districts_reset_v2", "1");
+    } catch (e) {}
   }
 
   async function syncDistrictsFromSupabase() {
@@ -685,9 +702,10 @@
             const c = getCoinsFor(d);
             const lvInfo = getLevelInfo(c);
             const isCurrentMap = activeMapId === d.id;
-            const investBtnHtml = profile.isRegistered
+            const isOwnDistrict = profile.isRegistered && profile.district.id === d.id;
+            const investBtnHtml = isOwnDistrict
               ? `<button data-invest="${d.id}" data-amt="50" style="padding:6px 8px;border-radius:8px;border:none;background:#f59e0b;color:#0f172a;font-size:10.5px;font-weight:800;cursor:pointer;">+50</button>`
-              : `<button disabled title="Daftar KTP untuk menyumbang" style="padding:6px 8px;border-radius:8px;border:none;background:#334155;color:#64748b;font-size:10.5px;font-weight:800;cursor:not-allowed;">🔒 +50</button>`;
+              : `<button disabled title="${profile.isRegistered ? "Hanya warga ber-KTP " + d.name + " yang bisa membangun" : "Daftar KTP untuk menyumbang"}" style="padding:6px 8px;border-radius:8px;border:none;background:#334155;color:#64748b;font-size:10px;font-weight:800;cursor:not-allowed;">🔒 ${profile.isRegistered ? "KTP Lain" : "Tamu"}</button>`;
             return `
               <div style="padding:10px 12px;border-radius:14px;background:#1e293b;border:1px solid ${isCurrentMap ? "#38bdf8" : "rgba(148,163,184,0.2)"};display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div>
@@ -717,7 +735,8 @@
     });
     modal.querySelectorAll("[data-invest]").forEach(b => {
       b.onclick = () => {
-        if (!getCitizenProfile().isRegistered) return;
+        const prof = getCitizenProfile();
+        if (!prof.isRegistered || prof.district.id !== b.dataset.invest) return;
         const d = DISTRICTS.find(x => x.id === b.dataset.invest);
         const amt = Number(b.dataset.amt || 50);
         if (!d || !window.PirakuEconomy) return;
@@ -749,7 +768,7 @@
   setTimeout(() => {
     populateSignupKecamatan();
     updateMapIndicatorHUD(CENTRAL_HUB);
-    syncDistrictsFromSupabase();
+    resetAllDistrictsInSupabaseOnce().then(() => syncDistrictsFromSupabase());
     requestAnimationFrame(tickDistrictLoop);
   }, 1500);
 })();
