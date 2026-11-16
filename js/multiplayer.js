@@ -356,6 +356,15 @@
       });
     };
 
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === 'failed') {
+        if (typeof showToast === 'function') {
+          showToast('⚠️ Koneksi suara terblokir NAT/ISP (butuh TURN relay aktif)');
+        }
+        try { pc.restartIce(); } catch (_) {}
+      }
+    };
+
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === 'connected') {
         const peerInfo = remotePlayers.get(remoteSid);
