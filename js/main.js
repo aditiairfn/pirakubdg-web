@@ -401,7 +401,7 @@ let activeQuestSystem = null;
   let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
 
   // Web Audio Synth Generator
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let isAmbiencePlaying = false, windGain = null, cricketsGain = null;
 
   function initAmbienceSound() {
@@ -452,8 +452,8 @@ let activeQuestSystem = null;
       windGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.5);
       showToast('Soundscape kota Bandung aktif 🍃');
     } else {
-      if (windGain) windGain.gain.setTargetAtTime(window.pirakuSoundMuted ? 0 : 0, audioCtx.currentTime, 0.3);
-      if (cricketsGain) cricketsGain.gain.setTargetAtTime(window.pirakuSoundMuted ? 0 : 0, audioCtx.currentTime, 0.3);
+      if (windGain) windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
+      if (cricketsGain) cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.3);
       showToast('Soundscape dinonaktifkan 🔇');
     }
   };
