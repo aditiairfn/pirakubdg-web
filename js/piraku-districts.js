@@ -1,4 +1,4 @@
-// ================= PIRAKUBDG 30 KECAMATAN KOMPLEK BUILDER (ISOLATED ROOMS + HORIZON + GROUNDING) =================
+// ================= PIRAKUBDG 30 KECAMATAN KOMPLEK BUILDER (FIXED PLAYER, RAIN, HUD & GABLE HOUSES) =================
 (function() {
   const DISTRICTS = [
     { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x15803d, accent: 0xfacc15, isMainMap: true },
@@ -115,100 +115,103 @@
     { x: 13, z: -13, rotY: Math.PI },  { x: 20, z: -13, rotY: Math.PI },  { x: 27, z: -13, rotY: Math.PI },  { x: 13, z: -22, rotY: 0 },  { x: 20, z: -22, rotY: 0 }
   ];
 
-  // Arsitektur Rumah Komplek Detail (Pondasi Batu, Teras Berkanopi, Tiang, Carport, Atap Bertingkat)
-  function createDetailedHouseMesh(idx, lv) {
+  // Membuat Geometri Atap Pelana (Segitiga Prisma Asli dengan Overhang)
+  function createGableRoof(width, height, depth, color) {
+    const shape = new THREE.Shape();
+    shape.moveTo(-width / 2, 0);
+    shape.lineTo(width / 2, 0);
+    shape.lineTo(0, height);
+    shape.closePath();
+    const geom = new THREE.ExtrudeGeometry(shape, { depth: depth, bevelEnabled: false });
+    geom.translate(0, 0, -depth / 2);
+    return new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color, roughness: 0.55 }));
+  }
+
+  // Arsitektur Rumah Komplek Modern Tropis (Atap Pelana Bertingkat, Teras Kayu, Balkon, Cerobong)
+  function createModernHouseMesh(idx, lv) {
     const g = new THREE.Group();
     const isTwoStory = (lv >= 2 && idx % 2 === 1) || lv >= 4;
-    const wallPalette = [0xfefce8, 0xf8fafc, 0xe0f2fe, 0xffedd5, 0xfce7f3];
-    const accentPalette = [0xb45309, 0x1d4ed8, 0x0f766e, 0x991b1b, 0x4338ca];
-    const wallMat = new THREE.MeshStandardMaterial({ color: wallPalette[idx % wallPalette.length], roughness: 0.62 });
-    const trimMat = new THREE.MeshStandardMaterial({ color: accentPalette[idx % accentPalette.length], roughness: 0.5 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.55 });
-    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 });
+    const wallPalette = [0xfefce8, 0xf8fafc, 0xf1f5f9, 0xffedd5, 0xe0f2fe];
+    const roofPalette = [0x9a3412, 0x334155, 0xb45309, 0x7f1d1d];
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallPalette[idx % wallPalette.length], roughness: 0.65 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const woodMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.7 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.8 });
+    const roofColor = roofPalette[idx % roofPalette.length];
 
-    // 1. Paving Halaman & Carport
-    const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.06, 6.4), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
-    yard.position.y = 0.03;
-    const lawn = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 2.2), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 }));
-    lawn.position.set(-1.3, 0.04, 1.8);
+    // 1. Halaman Paving & Taman Bunga Depan
+    const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.05, 6.4), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
+    yard.position.y = 0.025;
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.07, 2.2), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 }));
+    lawn.position.set(-1.3, 0.035, 1.8);
     g.add(yard, lawn);
 
-    // 2. Pagar Tembok Rendah + Pilar Gerbang
-    const fence1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 0.18), wallMat);
-    fence1.position.set(-1.5, 0.3, 3.1);
-    const pillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.85, 0.32), stoneMat);
-    pillar1.position.set(-0.25, 0.44, 3.1);
-    const pillar2 = pillar1.clone(); pillar2.position.x = 1.1;
-    g.add(fence1, pillar1, pillar2);
+    // 2. Pagar Rendah & Pilar Gerbang
+    const fence = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 0.16), wallMat);
+    fence.position.set(-1.45, 0.28, 3.05);
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), trimMat);
+    p1.position.set(-0.15, 0.42, 3.05);
+    const p2 = p1.clone(); p2.position.x = 1.15;
+    g.add(fence, p1, p2);
 
-    // 3. Pondasi Batu Alam & Badan Utama Rumah
-    const plinth = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.32, 3.8), stoneMat);
-    plinth.position.set(-0.4, 0.2, -0.7);
-    const h1 = 2.3;
-    const body1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, h1, 3.6), wallMat);
-    body1.position.set(-0.4, 0.36 + h1 / 2, -0.7);
-    body1.castShadow = true; body1.receiveShadow = true;
-    g.add(plinth, body1);
+    // 3. Badan Rumah Lantai 1 (Asimetris L-Shape Modern)
+    const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.35, 3.6), wallMat);
+    mainBody.position.set(-0.5, 1.22, -0.7);
+    mainBody.castShadow = true; mainBody.receiveShadow = true;
 
-    // 4. Teras Depan Beratap Kanopi + 2 Tiang Penyangga
-    const porchFloor = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 1.2), stoneMat);
-    porchFloor.position.set(-0.8, 0.16, 1.6);
-    const porchRoof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.16, 1.35), trimMat);
-    porchRoof.position.set(-0.8, 2.15, 1.65);
-    const postL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.95, 0.16), trimMat);
-    postL.position.set(-2.0, 1.2, 2.15);
-    const postR = postL.clone(); postR.position.x = 0.4;
-    g.add(porchFloor, porchRoof, postL, postR);
+    const sideWing = new THREE.Mesh(new THREE.BoxGeometry(1.4, 2.1, 2.6), wallMat);
+    sideWing.position.set(1.8, 1.1, -0.4);
+    g.add(mainBody, sideWing);
 
-    // 5. Pintu Panel Kayu & Jendela Berbingkai
-    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.7, 0.14), stoneMat);
-    doorFrame.position.set(-1.1, 1.15, 1.12);
-    const door = new THREE.Mesh(new THREE.BoxGeometry(0.84, 1.6, 0.16), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-    door.position.set(-1.1, 1.12, 1.14);
+    // 4. Teras Kayu & Kanopi Teras
+    const deck = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.18, 1.2), woodMat);
+    deck.position.set(-0.9, 0.12, 1.55);
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.14, 1.35), trimMat);
+    canopy.position.set(-0.9, 2.12, 1.6);
+    const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.95, 8), trimMat);
+    colL.position.set(-2.1, 1.12, 2.15);
+    const colR = colL.clone(); colR.position.x = 0.25;
+    g.add(deck, canopy, colL, colR);
 
-    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.0, 0.14), trimMat);
-    winFrame.position.set(0.65, 1.45, 1.12);
-    const winGlass = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.82, 0.16), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-    winGlass.position.set(0.65, 1.45, 1.14);
-    g.add(doorFrame, door, winFrame, winGlass);
+    // 5. Pintu Kayu & Jendela Kaca Gelap Berbingkai Putih
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.65, 0.12), woodMat);
+    door.position.set(-1.2, 1.05, 1.12);
+    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.05, 0.12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+    winFrame.position.set(0.45, 1.4, 1.12);
+    const winPane = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.88, 0.14), glassMat);
+    winPane.position.set(0.45, 1.4, 1.13);
+    g.add(door, winFrame, winPane);
 
-    // 6. Carport Samping Berkanopi
-    const carportRoof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 3.2), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-    carportRoof.position.set(2.1, 2.1, 0.6);
-    const cpPost = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.05, 6), stoneMat);
-    cpPost.position.set(2.65, 1.05, 2.0);
-    g.add(carportRoof, cpPost);
-
-    // 7. Lantai 2 & Balkon (untuk rumah tingkat) atau Atap Limas Bertingkat
+    // 6. Atap Pelana Utama + Atap Sayap + Cerobong
     if (isTwoStory) {
-      const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.95, 3.2), wallMat);
-      body2.position.set(-0.4, 2.66 + 0.97, -0.8);
-      const balcony = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 0.9), trimMat);
-      balcony.position.set(-0.8, 2.85, 1.15);
-      const win2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.85, 0.14), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
-      win2.position.set(-0.4, 3.65, 0.82);
-      const fascia2 = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.18, 3.8), trimMat);
-      fascia2.position.set(-0.4, 4.65, -0.8);
-      const roof2 = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.4, 4), roofMat);
-      roof2.rotation.y = Math.PI / 4;
-      roof2.position.set(-0.4, 5.4, -0.8);
-      g.add(body2, balcony, win2, fascia2, roof2);
+      const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.9, 3.1), wallMat);
+      body2.position.set(-0.5, 3.3, -0.8);
+      const balcony = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.42, 0.85), trimMat);
+      balcony.position.set(-0.9, 2.75, 1.05);
+      const win2 = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.85, 0.12), glassMat);
+      win2.position.set(-0.5, 3.5, 0.77);
+      const roofTop = createGableRoof(4.1, 1.45, 3.6, roofColor);
+      roofTop.position.set(-0.5, 4.25, -0.8);
+      const roofSide = createGableRoof(1.9, 0.85, 3.0, roofColor);
+      roofSide.position.set(1.8, 2.15, -0.4);
+      g.add(body2, balcony, win2, roofTop, roofSide);
     } else {
-      const fascia1 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.18, 4.2), trimMat);
-      fascia1.position.set(-0.4, 2.7, -0.7);
-      const roof1 = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.45, 4), roofMat);
-      roof1.rotation.y = Math.PI / 4;
-      roof1.position.set(-0.4, 3.48, -0.7);
-      g.add(fascia1, roof1);
+      const roofMain = createGableRoof(4.4, 1.55, 4.1, roofColor);
+      roofMain.position.set(-0.5, 2.38, -0.7);
+      const roofSide = createGableRoof(1.8, 0.8, 3.0, roofColor);
+      roofSide.position.set(1.8, 2.15, -0.4);
+      const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.9, 0.35), trimMat);
+      chimney.position.set(-1.6, 3.4, -1.3);
+      g.add(roofMain, roofSide, chimney);
     }
 
-    // 8. Mobil di Carport (Lv.3+)
+    // 7. Mobil di Carport (Lv.3+)
     if (lv >= 3 && idx % 2 === 0) {
       const carCols = [0xef4444, 0x2563eb, 0xf8fafc, 0x0f172a];
       const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCols[idx % carCols.length], metalness: 0.4, roughness: 0.3 }));
-      carBody.position.set(2.05, 0.35, 0.8);
-      const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.1), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
-      carCabin.position.set(2.05, 0.72, 0.7);
+      carBody.position.set(1.95, 0.32, 1.5);
+      const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.1), glassMat);
+      carCabin.position.set(1.95, 0.68, 1.4);
       g.add(carBody, carCabin);
     }
 
@@ -236,7 +239,8 @@
     const playerMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (hiddenMainObjects.length === 0) {
       sc.children.forEach(obj => {
-        if (obj === playerMesh || obj.isLight || obj.isCamera || obj === customDistrictGroup) return;
+        // Jangan pernah sembunyikan pemain, cahaya, kamera, atau partikel cuaca (Points)
+        if (obj === playerMesh || obj.isLight || obj.isCamera || obj.isPoints || obj === customDistrictGroup) return;
         if (obj.visible) {
           obj.visible = false;
           hiddenMainObjects.push(obj);
@@ -252,13 +256,13 @@
 
     const grp = new THREE.Group();
     grp.name = "piraku-komplek-district-map";
-    // Turunkan elevasi dasar komplek ke -0.14 agar kaki & bayangan pemain menapak 100% di atas permukaan (tidak tenggelam)
-    grp.position.y = -0.14;
+    // Samakan elevasi dasar dengan peta utama Gedung Sate (y = 0.0) agar karakter & partikel hujan pas 100%
+    grp.position.y = 0.0;
 
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
 
-    // 1. Hamparan Lanskap Horizon Sangat Luas (760 x 760) + Cincin Pegunungan Bandung di Kejauhan
+    // 1. Hamparan Horizon Luas & Cincin Pegunungan Bandung
     const horizonGround = new THREE.Mesh(
       new THREE.PlaneGeometry(760, 760),
       new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.95 })
@@ -267,7 +271,6 @@
     horizonGround.position.y = -0.02;
     grp.add(horizonGround);
 
-    // Siluet Pegunungan Bandung Melingkar di Cakrawala (radius 155–220)
     const hillMats = [
       new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.92 }),
       new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.92 }),
@@ -283,7 +286,7 @@
       grp.add(mountain);
     }
 
-    // 2. Area Utama Kawasan Komplek (110 x 110) + Jalan Raya Penghubung ke Luar Kota
+    // 2. Tanah & Jalan Komplek
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(110, 110),
       new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.88 })
@@ -296,32 +299,31 @@
     const curbMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.7 });
 
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 320), roadMat);
-    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.015, 0);
+    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.01, 0);
     const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(320, 7.2), roadMat);
-    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.015, 0);
+    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.01, 0);
 
     const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.015, -17.5);
+    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.01, -17.5);
     const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.015, 17.5);
+    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.01, 17.5);
     grp.add(roadNS, roadEW, gangN, gangS);
 
-    // Marka Jalan
     const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
     for (let m = -84; m <= 84; m += 6) {
       if (Math.abs(m) < 10) continue;
       const m1 = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 2.4), markMat);
-      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.025, m);
+      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.02, m);
       const m2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.24), markMat);
-      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.025, 0);
+      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.02, 0);
       grp.add(m1, m2);
     }
 
     // 3. Bundaran Taman Tengah Komplek
     const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(7.5, 32), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
-    roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.028, 0);
+    roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.022, 0);
     const roundPaving = new THREE.Mesh(new THREE.RingGeometry(7.5, 9.2, 32), curbMat);
-    roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.025, 0);
+    roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.02, 0);
     grp.add(roundGrass, roundPaving);
 
     const monH = 1.8 + cur.lv * 0.75;
@@ -331,7 +333,7 @@
     pillar.position.y = 0.8 + monH / 2;
     grp.add(ped, pillar);
 
-    // 4. Gapura Masuk Komplek & Pos Satpam (Selatan)
+    // 4. Gapura Masuk & Pos Satpam
     const gateCv = document.createElement("canvas");
     gateCv.width = 512; gateCv.height = 112;
     const gctx = gateCv.getContext("2d");
@@ -350,19 +352,19 @@
 
     const posBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.4), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
     posBox.position.set(-6.2, 1.1, 28);
-    const posRoof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.1, 4), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
-    posRoof.rotation.y = Math.PI / 4; posRoof.position.set(-6.2, 2.75, 28);
+    const posRoof = createGableRoof(2.8, 1.0, 2.8, 0x991b1b);
+    posRoof.position.set(-6.2, 2.2, 28);
     grp.add(gateBanner, gateColL, gateColR, posBox, posRoof);
 
-    // 5. 20 Kavling Rumah Komplek Bertingkat Sesuai Level
+    // 5. 20 Kavling Rumah Komplek
     KAVLING_SLOTS.forEach((slot, idx) => {
-      const unit = idx < cur.houses ? createDetailedHouseMesh(idx, cur.lv) : createEmptyLotMesh();
+      const unit = idx < cur.houses ? createModernHouseMesh(idx, cur.lv) : createEmptyLotMesh();
       unit.position.set(slot.x, 0, slot.z);
       unit.rotation.y = slot.rotY;
       grp.add(unit);
     });
 
-    // 6. Fasilitas Umum Komplek (Mushola Lv.2+, Warung Kopi Lv.3+, Balai RW Lv.4+)
+    // 6. Fasilitas Umum Komplek
     if (cur.lv >= 2) {
       const mushola = new THREE.Group();
       const mBody = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.6, 4.6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
@@ -422,11 +424,15 @@
     sc.add(grp);
     customDistrictGroup = grp;
 
-    if (playerMesh && playerMesh.position) {
-      playerMesh.position.set(0, 0.14, 24);
-      if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
-        playerMesh.userData.a.c.x = 0;
-        playerMesh.userData.a.c.z = 24;
+    // Pastikan pemain terlihat jelas & berada tepat di permukaan jalan
+    if (playerMesh) {
+      playerMesh.visible = true;
+      if (playerMesh.position) {
+        playerMesh.position.set(0, 0.22, 23);
+        if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
+          playerMesh.userData.a.c.x = 0;
+          playerMesh.userData.a.c.z = 23;
+        }
       }
     }
   }
@@ -490,11 +496,14 @@
     hiddenMainObjects = [];
 
     const playerMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    if (playerMesh && playerMesh.position) {
-      playerMesh.position.set(0, 0.14, -4);
-      if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
-        playerMesh.userData.a.c.x = 0;
-        playerMesh.userData.a.c.z = -4;
+    if (playerMesh) {
+      playerMesh.visible = true;
+      if (playerMesh.position) {
+        playerMesh.position.set(0, 0.14, -4);
+        if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
+          playerMesh.userData.a.c.x = 0;
+          playerMesh.userData.a.c.z = -4;
+        }
       }
     }
   }
@@ -503,7 +512,6 @@
     const d = DISTRICTS.find(x => x.id === districtId) || DISTRICTS[0];
     activeMapId = d.id;
 
-    // Pindahkan room multiplayer & WebRTC voice chat ke channel kecamatan yang dipilih (isolasi penuh antar-server/map)
     if (typeof window.switchMultiplayerMapRoom === "function") {
       window.switchMultiplayerMapRoom(d.id);
     }
@@ -529,7 +537,7 @@
     if (!banner || !titleEl || !subEl) return;
     const { cur } = getLevelInfo(getCoinsFor(d));
     titleEl.textContent = d.isMainMap ? `🏛️ PUSAT KOTA: ${d.name.toUpperCase()}` : `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
-    subEl.textContent = d.isMainMap ? d.landmark : `${cur.title} (${cur.houses}/20 Kavling • Room Terisolasi)`;
+    subEl.textContent = d.isMainMap ? d.landmark : `${cur.title} (${cur.houses}/20 Kavling)`;
     banner.style.opacity = "1";
     banner.style.transform = "translateX(-50%) translateY(0px)";
     clearTimeout(banner._t);
@@ -544,7 +552,8 @@
     if (!pill && document.body) {
       pill = document.createElement("div");
       pill.id = "piraku-active-map-pill";
-      pill.style.cssText = "position:fixed;bottom:146px;left:16px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(250,204,21,0.55);color:#fde047;font-size:11px;font-weight:800;z-index:26;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,0.4);";
+      // Naikkan ke bottom: 228px agar duduk rapi tepat di ATAS tombol Obrolan (bottom: 186px)
+      pill.style.cssText = "position:fixed;bottom:228px;left:16px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.9);backdrop-filter:blur(10px);border:1.5px solid rgba(250,204,21,0.55);color:#fde047;font-size:11px;font-weight:800;z-index:26;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,0.4);";
       document.body.appendChild(pill);
     }
     if (!pill) return;
@@ -558,6 +567,7 @@
 
   function tickDistrictLoop() {
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    if (mesh && !mesh.visible) mesh.visible = true;
     for (let i = districtCoins.length - 1; i >= 0; i--) {
       const c = districtCoins[i];
       c.rotation.z += 0.08;
