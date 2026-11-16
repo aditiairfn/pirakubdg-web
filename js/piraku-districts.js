@@ -308,13 +308,8 @@
   
   
   function isDistrictSoundMuted() {
-    if (window.pirakuSoundMuted === true || window.pirakuMuted === true || window.isMuted === true) return true;
-    const btns = document.querySelectorAll("button");
-    for (let i = 0; i < btns.length; i++) {
-      const txt = (btns[i].textContent || "").trim().toLowerCase();
-      if (txt.includes("sound off") || txt.includes("mute")) return true;
-    }
-    return false;
+    if (typeof window.isPirakuSfxEnabled === "function") return !window.isPirakuSfxEnabled();
+    return window.pirakuSoundMuted === true;
   }
 
   let districtAudioCtx = null;
