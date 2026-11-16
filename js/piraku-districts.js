@@ -1,15 +1,13 @@
-// ================= PIRAKUBDG 30 KECAMATAN SEPARATE 3D MAPS & DEVELOPMENT ENGINE =================
+// ================= PIRAKUBDG 30 KECAMATAN MULTI-MAP ENGINE (HD STYLISH & SAFE SYNC) =================
 (function() {
   const DISTRICTS = [
-    // BANDUNG TENGAH
-    { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x15803d, accent: 0xfacc15, isMainMap: true },
+    { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x14532d, accent: 0xfacc15, isMainMap: true },
     { id: "sumur_bandung", name: "Sumur Bandung", zone: "Tengah", icon: "🎭", landmark: "Jl. Braga & Balai Kota", theme: "heritage", ground: 0x166534, accent: 0x38bdf8 },
     { id: "lengkong", name: "Lengkong", zone: "Tengah", icon: "🍜", landmark: "Burangrang & Kuliner Malam", theme: "culinary", ground: 0x15803d, accent: 0xf97316 },
     { id: "regol", name: "Regol", zone: "Tengah", icon: "🕌", landmark: "Alun-Alun & Masjid Raya", theme: "alunalun", ground: 0x16a34a, accent: 0x22c55e },
     { id: "batununggal", name: "Batununggal", zone: "Tengah", icon: "🏢", landmark: "Gatot Subroto & Laswi", theme: "urban", ground: 0x1e293b, accent: 0xa855f7 },
     { id: "kiaracondong", name: "Kiaracondong", zone: "Tengah", icon: "🚆", landmark: "Stasiun Kiaracondong", theme: "transit", ground: 0x14532d, accent: 0xec4899 },
 
-    // BANDUNG UTARA
     { id: "coblong", name: "Coblong", zone: "Utara", icon: "🎓", landmark: "Monju, Dago & Kampus ITB", theme: "campus", ground: 0x14532d, accent: 0x3b82f6 },
     { id: "cidadap", name: "Cidadap", zone: "Utara", icon: "🌲", landmark: "Ciumbuleuit & Punclut", theme: "forest", ground: 0x064e3b, accent: 0x16a34a },
     { id: "sukasari", name: "Sukasari", zone: "Utara", icon: "🏫", landmark: "Setiabudi & Isola UPI", theme: "campus", ground: 0x14532d, accent: 0x0ea5e9 },
@@ -17,7 +15,6 @@
     { id: "cibeunying_kaler", name: "Cibeunying Kaler", zone: "Utara", icon: "🎨", landmark: "Cigadung & Taman Makam Pahlawan", theme: "forest", ground: 0x15803d, accent: 0xeab308 },
     { id: "cibeunying_kidul", name: "Cibeunying Kidul", zone: "Utara", icon: "🎸", landmark: "Cicaheum & Saung Angklung Udjo", theme: "heritage", ground: 0x166534, accent: 0x14b8a6 },
 
-    // BANDUNG TIMUR
     { id: "antapani", name: "Antapani", zone: "Timur", icon: "🌉", landmark: "Flyover Pelangi Antapani", theme: "transit", ground: 0x15803d, accent: 0xf59e0b },
     { id: "arcamanik", name: "Arcamanik", zone: "Timur", icon: "🏟️", landmark: "SPOrT Jabar Arcamanik", theme: "stadium", ground: 0x16a34a, accent: 0x22c55e },
     { id: "mandalajati", name: "Mandalajati", zone: "Timur", icon: "⛰️", landmark: "Sindanglaya & Bukit Moko", theme: "forest", ground: 0x065f46, accent: 0x10b981 },
@@ -27,12 +24,10 @@
     { id: "cibiru", name: "Cibiru", zone: "Timur", icon: "📚", landmark: "Bunderan Cibiru & UIN", theme: "campus", ground: 0x14532d, accent: 0x8b5cf6 },
     { id: "gedebage", name: "Gedebage", zone: "Timur", icon: "⚽", landmark: "Stadion GBLA, Masjid Al Jabbar & Whoosh", theme: "stadium", ground: 0x0f766e, accent: 0xfacc15 },
 
-    // BANDUNG SELATAN
     { id: "rancasari", name: "Rancasari", zone: "Selatan", icon: "🌿", landmark: "Ciwastra & Derwati", theme: "alunalun", ground: 0x15803d, accent: 0x22c55e },
     { id: "buahbatu", name: "Buahbatu", zone: "Selatan", icon: "🚗", landmark: "Margacinta & Gerbang Tol Buahbatu", theme: "transit", ground: 0x166534, accent: 0x3b82f6 },
     { id: "bandung_kidul", name: "Bandung Kidul", zone: "Selatan", icon: "🏞️", landmark: "Mengger & Batununggal Indah", theme: "urban", ground: 0x15803d, accent: 0x14b8a6 },
 
-    // BANDUNG BARAT
     { id: "cicendo", name: "Cicendo", zone: "Barat", icon: "✈️", landmark: "Bandara Husein & Stasiun Bandung", theme: "transit", ground: 0x1e293b, accent: 0x38bdf8 },
     { id: "andir", name: "Andir", zone: "Barat", icon: "🏮", landmark: "Cibadak Culinary Night & Pasar Baru", theme: "culinary", ground: 0x166534, accent: 0xef4444 },
     { id: "astanaanyar", name: "Astanaanyar", zone: "Barat", icon: "🧵", landmark: "Tegalega & Monumen Bandung Lautan Api", theme: "alunalun", ground: 0x15803d, accent: 0xf97316 },
@@ -62,7 +57,8 @@
   let localInvest = {};
   try { localInvest = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) {}
 
-  let myDistrictName = localStorage.getItem("piraku_my_kecamatan") || "Bandung Wetan";
+  let savedKtp = localStorage.getItem("piraku_ktp_kecamatan") || localStorage.getItem("piraku_user_kecamatan") || localStorage.getItem("piraku_my_kecamatan") || "Bandung Wetan";
+  let myDistrictName = DISTRICTS.find(d => d.name.toLowerCase() === savedKtp.toLowerCase()) ? DISTRICTS.find(d => d.name.toLowerCase() === savedKtp.toLowerCase()).name : "Bandung Wetan";
   let activeMapId = "bandung_wetan";
 
   function saveLocal() {
@@ -82,8 +78,8 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
-      const { data } = await sb.from("piraku_districts").select("district_id, invested_coins");
-      if (data && data.length > 0) {
+      const { data, error } = await sb.from("piraku_districts").select("district_id, invested_coins");
+      if (!error && data && data.length > 0) {
         data.forEach(row => {
           if (typeof row.invested_coins === "number") {
             localInvest[row.district_id] = Math.max(localInvest[row.district_id] || 0, row.invested_coins);
@@ -108,7 +104,7 @@
     } catch (e) {}
   }
 
-  // ================= 1. ENGINE MULTI-MAP TERPISAH PER KECAMATAN =================
+  // ================= 1. ENGINE MULTI-MAP 3D HD TERPISAH PER KECAMATAN =================
   let hiddenMainObjects = [];
   let customDistrictGroup = null;
   let districtCoins = [];
@@ -117,7 +113,6 @@
     const sc = window.pirakuScene;
     if (!sc || typeof THREE === "undefined") return;
 
-    // 1. Sembunyikan seluruh objek peta utama Gedung Sate (kecuali lampu, kamera, dan mesh karakter pemain)
     const playerMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (hiddenMainObjects.length === 0) {
       sc.children.forEach(obj => {
@@ -129,7 +124,6 @@
       });
     }
 
-    // 2. Hapus map kecamatan sebelumnya jika ada
     if (customDistrictGroup) {
       sc.remove(customDistrictGroup);
       customDistrictGroup = null;
@@ -137,86 +131,91 @@
     districtCoins = [];
 
     const grp = new THREE.Group();
-    grp.name = "piraku-dedicated-district-map";
+    grp.name = "piraku-hd-district-map";
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
 
-    // Tanah Lapang & Taman Wilayah Kecamatan (88 x 88)
+    // Tanah Rumput HD Bertekstur Lembut
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(92, 92),
-      new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.88 })
+      new THREE.PlaneGeometry(96, 96),
+      new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.9 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     grp.add(ground);
 
-    // Jalan Raya Utama Persilangan Utara-Selatan & Barat-Timur
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.85 });
-    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 92), roadMat);
-    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(14, 0.02, 0);
-    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(92, 7.5), roadMat);
-    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.02, 14);
+    // Jalan Aspal Utama Simpang 4
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
+    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 96), roadMat);
+    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.02, 0);
+    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(96, 8.5), roadMat);
+    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.02, 0);
     grp.add(roadNS, roadEW);
 
-    // Plaza Alun-Alun Tengah Kecamatan + Lintasan Pedestrian
+    // Marka Jalan Kuning Tengah
+    const lineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    const lineNS = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 96), lineMat);
+    lineNS.rotation.x = -Math.PI / 2; lineNS.position.set(0, 0.03, 0);
+    const lineEW = new THREE.Mesh(new THREE.PlaneGeometry(96, 0.35), lineMat);
+    lineEW.rotation.x = -Math.PI / 2; lineEW.position.set(0, 0.03, 0);
+    grp.add(lineNS, lineEW);
+
+    // Alun-Alun / Plaza Bundar di Tengah Distrik
     const plaza = new THREE.Mesh(
-      new THREE.CircleGeometry(11.5, 36),
-      new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 })
+      new THREE.CircleGeometry(13, 36),
+      new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.6 })
     );
-    plaza.rotation.x = -Math.PI / 2; plaza.position.set(0, 0.03, -4);
-    const track = new THREE.Mesh(
-      new THREE.RingGeometry(11.5, 13.8, 36),
+    plaza.rotation.x = -Math.PI / 2; plaza.position.set(0, 0.035, 0);
+    const plazaRing = new THREE.Mesh(
+      new THREE.RingGeometry(13, 15.5, 36),
       new THREE.MeshBasicMaterial({ color: d.accent, side: THREE.DoubleSide })
     );
-    track.rotation.x = -Math.PI / 2; track.position.set(0, 0.035, -4);
-    grp.add(plaza, track);
+    plazaRing.rotation.x = -Math.PI / 2; plazaRing.position.set(0, 0.04, 0);
+    grp.add(plaza, plazaRing);
 
-    // Landmark Khas Kecamatan di Tengah Plaza
+    // Landmark 3D Eksklusif di Tengah Alun-Alun
     const landmarkGroup = new THREE.Group();
-    landmarkGroup.position.set(0, 0, -4);
+    landmarkGroup.position.set(0, 0, 0);
 
     if (d.theme === "stadium") {
-      // Kubah Masjid Al Jabbar / Stadion GBLA
       const dome = new THREE.Mesh(
-        new THREE.SphereGeometry(4.2, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.3, roughness: 0.25 })
+        new THREE.SphereGeometry(4.5, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.3, roughness: 0.2 })
       );
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(4.6, 0.35, 10, 32),
+        new THREE.TorusGeometry(4.9, 0.4, 10, 32),
         new THREE.MeshStandardMaterial({ color: d.accent })
       );
-      ring.rotation.x = Math.PI / 2; ring.position.y = 0.35;
+      ring.rotation.x = Math.PI / 2; ring.position.y = 0.4;
       landmarkGroup.add(dome, ring);
     } else if (d.theme === "campus" || d.theme === "heritage") {
-      // Gerbang Ikonik Kampus / Balai Kecamatan Atap Sunda
       const base = new THREE.Mesh(
-        new THREE.BoxGeometry(6.5, 3.2, 3.6),
-        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 })
+        new THREE.BoxGeometry(7, 3.5, 4),
+        new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.55 })
       );
-      base.position.y = 1.6;
+      base.position.y = 1.75;
       const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(5.2, 2.4, 4),
-        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.5 })
+        new THREE.ConeGeometry(5.5, 2.6, 4),
+        new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.45 })
       );
-      roof.rotation.y = Math.PI / 4; roof.position.y = 4.4;
+      roof.rotation.y = Math.PI / 4; roof.position.y = 4.8;
       landmarkGroup.add(base, roof);
     } else {
-      // Tugu Monumen & Menara Ikon Kecamatan
       const ped = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.4, 3.0, 1.2, 16),
+        new THREE.CylinderGeometry(2.8, 3.4, 1.4, 16),
         new THREE.MeshStandardMaterial({ color: 0x334155 })
       );
-      ped.position.y = 0.6;
+      ped.position.y = 0.7;
       const spire = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.45, 1.1, 6.2, 12),
-        new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.5, roughness: 0.25 })
+        new THREE.CylinderGeometry(0.5, 1.2, 7, 12),
+        new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.6, roughness: 0.2 })
       );
-      spire.position.y = 4.2;
+      spire.position.y = 4.7;
       landmarkGroup.add(ped, spire);
     }
     grp.add(landmarkGroup);
 
-    // Papan Gerbang Selamat Datang 3D Kecamatan
+    // Papan Gerbang Selamat Datang 3D
     const signCv = document.createElement("canvas");
     signCv.width = 512; signCv.height = 128;
     const sctx = signCv.getContext("2d");
@@ -227,55 +226,62 @@
     sctx.fillStyle = "#e2e8f0"; sctx.font = "18px sans-serif";
     sctx.fillText(d.landmark.slice(0, 38), 256, 88);
     const signMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(7.2, 1.8),
+      new THREE.PlaneGeometry(7.5, 1.9),
       new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCv) })
     );
-    signMesh.position.set(0, 3.2, -16.5);
-    const poleL = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 4.2, 8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
-    poleL.position.set(-3.3, 2.1, -16.5);
-    const poleR = poleL.clone(); poleR.position.x = 3.3;
+    signMesh.position.set(0, 3.4, -18);
+    const poleL = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 4.5, 8), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+    poleL.position.set(-3.5, 2.25, -18);
+    const poleR = poleL.clone(); poleR.position.x = 3.5;
     grp.add(signMesh, poleL, poleR);
 
-    // Bangunan Kreatif & Rumah Warga (Jumlah bertambah sesuai Level 1..5!)
-    const bCount = 6 + cur.lv * 4;
-    const bColors = [0xf8fafc, 0xfef3c7, 0xe0f2fe, 0xfce7f3, 0xdcfce7];
+    // Gedung-Gedung Komersial & Perumahan (Bertambah sesuai Level 1..5)
+    const bCount = 8 + cur.lv * 4;
+    const bMatPool = [
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 }),
+      new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.6 }),
+      new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.6 }),
+      new THREE.MeshStandardMaterial({ color: 0xfce7f3, roughness: 0.6 }),
+      new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.3 })
+    ];
     for (let i = 0; i < bCount; i++) {
       const ang = (i / bCount) * Math.PI * 2;
-      const rad = 21 + (i % 3) * 6.5;
+      const rad = 22 + (i % 3) * 7;
       const bx = Math.cos(ang) * rad;
-      const bz = Math.sin(ang) * rad - 2;
-      if (Math.abs(bx - 14) < 5.5 || Math.abs(bz - 14) < 5.5) continue;
-      const bh = 2.6 + ((i * 7) % 5) * (0.6 + cur.lv * 0.25);
+      const bz = Math.sin(ang) * rad;
+      if (Math.abs(bx) < 7 || Math.abs(bz) < 7) continue;
+      const bh = 3.0 + ((i * 5) % 6) * (0.7 + cur.lv * 0.28);
       const bMesh = new THREE.Mesh(
-        new THREE.BoxGeometry(3.6, bh, 3.6),
-        new THREE.MeshStandardMaterial({ color: bColors[i % bColors.length], roughness: 0.65 })
+        new THREE.BoxGeometry(4.0, bh, 4.0),
+        bMatPool[i % bMatPool.length]
       );
       bMesh.position.set(bx, bh / 2, bz);
+      bMesh.castShadow = true; bMesh.receiveShadow = true;
       grp.add(bMesh);
     }
 
-    // Pepohonan Rindang Sekeliling Kecamatan
-    for (let t = 0; t < 24; t++) {
-      const ang = (t / 24) * Math.PI * 2 + 0.15;
-      const tr = 16.5 + (t % 2) * 14;
+    // Pohon Rindang & Lampu Taman Estetik Sekeliling Plaza
+    for (let t = 0; t < 28; t++) {
+      const ang = (t / 28) * Math.PI * 2 + 0.1;
+      const tr = 17.5 + (t % 2) * 12;
       const tx = Math.cos(ang) * tr;
-      const tz = Math.sin(ang) * tr - 2;
-      if (Math.abs(tx - 14) < 5 || Math.abs(tz - 14) < 5) continue;
-      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-      trunk.position.set(tx, 0.7, tz);
-      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.15, 0), new THREE.MeshStandardMaterial({ color: 0x15803d }));
-      crown.position.set(tx, 2.0, tz);
+      const tz = Math.sin(ang) * tr;
+      if (Math.abs(tx) < 5.5 || Math.abs(tz) < 5.5) continue;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.5, 6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      trunk.position.set(tx, 0.75, tz);
+      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.3, 0), new THREE.MeshStandardMaterial({ color: 0x15803d }));
+      crown.position.set(tx, 2.1, tz);
       grp.add(trunk, crown);
     }
 
-    // 6 Koin Emas Eksplorasi di Dalam Map Kecamatan
-    const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 16);
-    const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.45, metalness: 0.7, roughness: 0.2 });
+    // 6 Koin Emas Eksplorasi di Peta Kecamatan
+    const coinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 16);
+    const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.2 });
     for (let c = 0; c < 6; c++) {
       const ang = (c / 6) * Math.PI * 2;
       const cm = new THREE.Mesh(coinGeo, coinMat);
       cm.rotation.x = Math.PI / 2;
-      cm.position.set(Math.cos(ang) * 12.6, 0.85, -4 + Math.sin(ang) * 12.6);
+      cm.position.set(Math.cos(ang) * 14, 0.85, Math.sin(ang) * 14);
       grp.add(cm);
       districtCoins.push(cm);
     }
@@ -283,12 +289,11 @@
     sc.add(grp);
     customDistrictGroup = grp;
 
-    // Tempatkan pemain di pintu masuk selatan alun-alun kecamatan
     if (playerMesh && playerMesh.position) {
-      playerMesh.position.set(0, 0.14, 7.5);
+      playerMesh.position.set(0, 0.14, 9.5);
       if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
         playerMesh.userData.a.c.x = 0;
-        playerMesh.userData.a.c.z = 7.5;
+        playerMesh.userData.a.c.z = 9.5;
       }
     }
   }
@@ -319,10 +324,9 @@
     activeMapId = d.id;
 
     if (d.isMainMap) {
-      pill.style.display = "none";
+      restoreMainGedungSateMap();
     } else {
-      pill.style.display = "flex";
-      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name} ▾</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Gd. Sate</button>`;
+      buildDedicatedDistrictScene(d);
     }
 
     updateMapIndicatorHUD(d);
@@ -359,9 +363,10 @@
     }
     if (!pill) return;
     if (d.isMainMap) {
-      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">🗺️ Pusat: Bandung Wetan ▾</span>`;
+      pill.style.display = "none";
     } else {
-      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name}</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Gd. Sate</button>`;
+      pill.style.display = "flex";
+      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name} ▾</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Gd. Sate</button>`;
     }
   }
 
@@ -382,7 +387,7 @@
     requestAnimationFrame(tickDistrictCoins);
   }
 
-  // ================= 2. MODAL DIRECTORY & PEMBANGUNAN 30 KECAMATAN =================
+  // ================= 2. MODAL DIREKTORI & PEMBANGUNAN 30 KECAMATAN =================
   let filterZone = "Semua";
 
   window.openDistrictsHubModal = function() {
@@ -413,7 +418,7 @@
       <div style="width:100%;max-width:430px;background:linear-gradient(180deg,#0f172a,#131c31);border:1.5px solid rgba(250,204,21,0.45);border-radius:22px;padding:16px;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.82);max-height:84dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div>
-            <div style="font-size:10.5px;color:#facc15;font-weight:800;letter-spacing:.7px;">MULTI-MAP • 30 KECAMATAN BANDUNG</div>
+            <div style="font-size:10.5px;color:#facc15;font-weight:800;letter-spacing:.7px;">MULTI-MAP HD • 30 KECAMATAN BANDUNG</div>
             <div style="font-size:18px;font-weight:800;">Peta & Wilayah Kecamatan 🏙️</div>
           </div>
           <button id="dt-close" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
@@ -441,7 +446,7 @@
           ${zones.map(z => `<button data-zone="${z}" style="padding:5px 10px;border-radius:999px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${filterZone === z ? "#38bdf8" : "#1e293b"};color:${filterZone === z ? "#0f172a" : "#cbd5e1"};">${z}</button>`).join("")}
         </div>
 
-        <!-- Daftar 30 Kecamatan dengan Maps Masing-Masing -->
+        <!-- Daftar 30 Kecamatan dengan Maps HD Masing-Masing -->
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${filtered.map(d => {
             const rankIdx = ranked.findIndex(r => r.id === d.id) + 1;
