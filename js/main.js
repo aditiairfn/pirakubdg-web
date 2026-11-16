@@ -3474,6 +3474,7 @@ let activeQuestSystem = null;
   // ================= SISTEM COLLISION BANGUNAN & RUMAH WARGA OTOMATIS =================
   let pirakuBuildingColliders = [];
   let pirakuLastColliderScan = 0;
+  window.resetPirakuColliders = function() { pirakuBuildingColliders = []; pirakuLastColliderScan = 0; };
 
   function rebuildPirakuBuildingColliders() {
     if (!scene || typeof THREE === "undefined") return;

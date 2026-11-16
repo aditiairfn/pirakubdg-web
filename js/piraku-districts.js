@@ -150,6 +150,7 @@
   }
 
   let hiddenMainObjects = [];
+    if (typeof window.resetPirakuColliders === "function") window.resetPirakuColliders();
   let customDistrictGroup = null;
   let districtCoins = [];
 
@@ -331,29 +332,147 @@
     ground.receiveShadow = true;
     grp.add(ground);
 
-    const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.82 });
-    const curbMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.7 });
+    // Tekstur paving trotoar & aspal khas Bandung Wetan
+    const paveCv = document.createElement("canvas");
+    paveCv.width = 128; paveCv.height = 128;
+    const pctx = paveCv.getContext("2d");
+    pctx.fillStyle = "#64748b"; pctx.fillRect(0, 0, 128, 128);
+    for (let py = 0; py < 4; py++) {
+      for (let px = 0; px < 4; px++) {
+        pctx.fillStyle = (px + py) % 2 === 0 ? "#94a3b8" : "#cbd5e1";
+        pctx.fillRect(px * 32 + 2, py * 32 + 2, 28, 28);
+      }
+    }
+    const paveTex = new THREE.CanvasTexture(paveCv);
+    paveTex.wrapS = paveTex.wrapT = THREE.RepeatWrapping;
+    paveTex.repeat.set(3, 64);
 
+    const roadMat = new THREE.MeshStandardMaterial({ color: 0x1f2937, roughness: 0.86, metalness: 0.05 });
+    const curbMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
+    const sidewalkMat = new THREE.MeshStandardMaterial({ map: paveTex, roughness: 0.88 });
+
+    // Jalan Raya Utama NS & EW + Trotoar Paving Kiri-Kanan + Kanstin
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 320), roadMat);
-    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.01, 0);
+    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.012, 0); roadNS.receiveShadow = true;
     const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(320, 7.2), roadMat);
-    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.01, 0);
+    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.012, 0); roadEW.receiveShadow = true;
 
-    const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.01, -17.5);
-    const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.01, 17.5);
-    grp.add(roadNS, roadEW, gangN, gangS);
+    const swNS_L = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.09, 320), sidewalkMat);
+    swNS_L.position.set(-4.4, 0.045, 0); swNS_L.receiveShadow = true;
+    const swNS_R = swNS_L.clone(); swNS_R.position.x = 4.4;
 
+    const swEW_N = new THREE.Mesh(new THREE.BoxGeometry(320, 0.09, 1.6), sidewalkMat);
+    swEW_N.position.set(0, 0.045, -4.4); swEW_N.receiveShadow = true;
+    const swEW_S = swEW_N.clone(); swEW_S.position.z = 4.4;
+
+    // Jalan Komplek / Gang Utara & Selatan + Trotoar
+    const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
+    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.012, -17.5);
+    const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
+    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.012, 17.5);
+    const gangSwN1 = new THREE.Mesh(new THREE.BoxGeometry(72, 0.07, 1.1), sidewalkMat);
+    gangSwN1.position.set(0, 0.035, -20.25);
+    const gangSwN2 = gangSwN1.clone(); gangSwN2.position.z = -14.75;
+    const gangSwS1 = gangSwN1.clone(); gangSwS1.position.z = 14.75;
+    const gangSwS2 = gangSwN1.clone(); gangSwS2.position.z = 20.25;
+
+    grp.add(roadNS, roadEW, swNS_L, swNS_R, swEW_N, swEW_S, gangN, gangS, gangSwN1, gangSwN2, gangSwS1, gangSwS2);
+
+    // Marka Jalan Putih Tengah & Garis Tepi Kuning Khas Bandung Wetan
     const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-    for (let m = -84; m <= 84; m += 6) {
-      if (Math.abs(m) < 10) continue;
-      const m1 = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 2.4), markMat);
-      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.02, m);
-      const m2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.24), markMat);
-      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.02, 0);
+    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+    for (let m = -84; m <= 84; m += 5.5) {
+      if (Math.abs(m) < 11) continue;
+      const m1 = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 2.3), markMat);
+      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.022, m);
+      const m2 = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.22), markMat);
+      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.022, 0);
       grp.add(m1, m2);
     }
+    [-3.35, 3.35].forEach(off => {
+      const eNS = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 160), edgeMat);
+      eNS.rotation.x = -Math.PI / 2; eNS.position.set(off, 0.02, 0);
+      const eEW = new THREE.Mesh(new THREE.PlaneGeometry(160, 0.14), edgeMat);
+      eEW.rotation.x = -Math.PI / 2; eEW.position.set(0, 0.02, off);
+      grp.add(eNS, eEW);
+    });
+
+    // Zebra Cross 6-Strip di 4 Sisi Bundaran
+    for (let zc = -2.5; zc <= 2.5; zc += 1.0) {
+      const cwN = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 2.2), markMat);
+      cwN.rotation.x = -Math.PI / 2; cwN.position.set(zc, 0.024, -10.8);
+      const cwS = cwN.clone(); cwS.position.z = 10.8;
+      const cwW = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), markMat);
+      cwW.rotation.x = -Math.PI / 2; cwW.position.set(-10.8, 0.024, zc);
+      const cwE = cwW.clone(); cwE.position.x = 10.8;
+      grp.add(cwN, cwS, cwW, cwE);
+    }
+
+    // Deretan Lampu Jalan PJU Klasik Bandung + Pohon Rindang di Trotoar
+    const pjuPoleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.35 });
+    const pjuBulbMat = new THREE.MeshStandardMaterial({ color: 0xfef9c3, emissive: 0xfde047, emissiveIntensity: 1.5 });
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
+    const leafMats = [
+      new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }),
+      new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.82 }),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.78 })
+    ];
+
+    function addStreetLamp(lx, lz, armDirX, armDirZ) {
+      const lamp = new THREE.Group();
+      const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 0.45, 8), pjuPoleMat);
+      base.position.y = 0.225;
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.095, 4.2, 8), pjuPoleMat);
+      pole.position.y = 2.1;
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(armDirX !== 0 ? 1.1 : 0.08, 0.07, armDirZ !== 0 ? 1.1 : 0.08), pjuPoleMat);
+      arm.position.set(armDirX * 0.5, 4.15, armDirZ * 0.5);
+      const hood = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.16, 8), pjuPoleMat);
+      hood.position.set(armDirX * 0.95, 4.08, armDirZ * 0.95);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), pjuBulbMat);
+      bulb.position.set(armDirX * 0.95, 3.96, armDirZ * 0.95);
+      lamp.add(base, pole, arm, hood, bulb);
+      lamp.position.set(lx, 0.08, lz);
+      grp.add(lamp);
+    }
+
+    function addBandungTree(tx, tz, scale = 1) {
+      const tree = new THREE.Group();
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14 * scale, 0.22 * scale, 2.2 * scale, 8), trunkMat);
+      trunk.position.y = 1.1 * scale;
+      const c1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.25 * scale, 1), leafMats[0]);
+      c1.position.set(0, 2.8 * scale, 0);
+      const c2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.95 * scale, 1), leafMats[1]);
+      c2.position.set(0.65 * scale, 2.45 * scale, 0.35 * scale);
+      const c3 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9 * scale, 1), leafMats[2]);
+      c3.position.set(-0.6 * scale, 2.55 * scale, -0.3 * scale);
+      tree.add(trunk, c1, c2, c3);
+      tree.position.set(tx, 0.08, tz);
+      grp.add(tree);
+    }
+
+    for (let pos = -48; pos <= 48; pos += 14) {
+      if (Math.abs(pos) < 12) continue;
+      // Lampu PJU sepanjang jalan utama Utara-Selatan & Timur-Barat
+      addStreetLamp(-4.5, pos, 1, 0);
+      addStreetLamp(4.5, pos, -1, 0);
+      addStreetLamp(pos, -4.5, 0, 1);
+      addStreetLamp(pos, 4.5, 0, -1);
+      // Pohon peneduh di sela-sela lampu
+      addBandungTree(-5.6, pos + 7, 0.95);
+      addBandungTree(5.6, pos + 7, 1.0);
+      addBandungTree(pos + 7, -5.6, 0.95);
+      addBandungTree(pos + 7, 5.6, 1.0);
+    }
+
+    // 4 Lampu Taman + Bangku Taman di Sekeliling Bundaran Kecamatan
+    const benchMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.7 });
+    [[-6.2, -6.2], [6.2, -6.2], [-6.2, 6.2], [6.2, 6.2]].forEach(([bx, bz]) => {
+      addStreetLamp(bx, bz, bx < 0 ? 0.6 : -0.6, bz < 0 ? 0.6 : -0.6);
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 0.55), benchMat);
+      bench.position.set(bx * 0.85, 0.25, bz * 0.85);
+      bench.lookAt(0, 0.25, 0);
+      grp.add(bench);
+    });
 
     const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(7.5, 32), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
     roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.022, 0);
