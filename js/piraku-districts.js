@@ -853,19 +853,50 @@
       districtCoins.push(cm);
     });
 
-    // Armada Angkot Bandung & Mobil Warga (Muter Bundaran + Lintas Poros Jalan)
+    // Armada Angkot Bandung & Mobil Warga (Masuk dari 4 ruas jalan -> melingkar bundaran -> belok kiri/lurus/kanan keluar!)
+    const R_CIRCLE = 10.0;
+    const ENTRY_R = 11.4;
+    // 4 Arah Masuk (arm: 0=Utara(-Z), 1=Timur(+X), 2=Selatan(+Z), 3=Barat(-X))
+    // Sudut titik temu jalur kiri Indonesia dengan lingkaran R=10.0:
+    // Utara(-Z, x=+1.8) -> ang ~ -1.39 rad | Barat(-X, z=-1.8) -> ang ~ 2.96 rad | Selatan(+Z, x=-1.8) -> ang ~ 1.75 rad | Timur(+X, z=+1.8) -> ang ~ -0.18 rad
+    const ARM_DEFS = [
+      { name: "N", axis: "z", dir: 1, laneX: 1.8, laneZ: 0, entryAng: -1.39, exitAng: -1.75 }, // Datang dari Utara (-Z -> +Z)
+      { name: "W", axis: "x", dir: 1, laneX: 0, laneZ: -1.8, entryAng: 2.96, exitAng: 3.32 },  // Datang dari Barat (-X -> +X)
+      { name: "S", axis: "z", dir: -1, laneX: -1.8, laneZ: 0, entryAng: 1.75, exitAng: 1.39 }, // Datang dari Selatan (+Z -> -Z)
+      { name: "E", axis: "x", dir: -1, laneX: 0, laneZ: 1.8, entryAng: -0.18, exitAng: 0.18 }   // Datang dari Timur (+X -> -X)
+    ];
+    // Jalan keluar berpasangan sesuai aturan lalu lintas Indonesia (sisi kiri jalan):
+    // Keluar ke Selatan(+Z, x=+1.8): exitAng = 1.39 | Keluar ke Timur(+X, z=+1.8): exitAng = 0.18 | Keluar ke Utara(-Z, x=-1.8): exitAng = -1.75 | Keluar ke Barat(-X, z=-1.8): exitAng = 2.96
+    const EXIT_ARMS = [
+      { axis: "z", dir: 1, laneX: 1.8, exitAng: 1.39 },   // Keluar ke Selatan (+Z)
+      { axis: "x", dir: 1, laneZ: 1.8, exitAng: 0.18 },   // Keluar ke Timur (+X)
+      { axis: "z", dir: -1, laneX: -1.8, exitAng: -1.75 }, // Keluar ke Utara (-Z)
+      { axis: "x", dir: -1, laneZ: -1.8, exitAng: 2.96 }   // Keluar ke Barat (-X)
+    ];
+
     const angkotConfigs = [
-      { mode: "roundabout", angle: 0, speed: 0.42, radius: 10.0, body: 0x16a34a, stripe: 0xfacc15 },
-      { mode: "roundabout", angle: Math.PI, speed: 0.42, radius: 10.0, body: 0x2563eb, stripe: 0xf8fafc },
-      { mode: "laneNS", dir: 1, pos: -38, laneOffset: -1.8, speed: 7.5, body: 0xfef3c7, stripe: 0xdc2626 },
-      { mode: "laneNS", dir: -1, pos: 34, laneOffset: 1.8, speed: 8.2, carColor: 0xf8fafc },
-      { mode: "laneEW", dir: 1, pos: -36, laneOffset: 1.8, speed: 7.8, carColor: 0xef4444 },
-      { mode: "laneEW", dir: -1, pos: 38, laneOffset: -1.8, speed: 8.0, carColor: 0x0f172a }
+      { armIdx: 0, startDist: -46, turnSteps: 2, speed: 7.4, body: 0x16a34a, stripe: 0xfacc15 }, // Angkot Hijau-Kuning (Utara -> lurus Selatan)
+      { armIdx: 2, startDist: 44, turnSteps: 1, speed: 7.2, body: 0x2563eb, stripe: 0xf8fafc },  // Angkot Biru (Selatan -> belok kiri Timur)
+      { armIdx: 1, startDist: -42, turnSteps: 3, speed: 7.0, body: 0xfef3c7, stripe: 0xdc2626 }, // Angkot Krem-Merah (Barat -> belok kanan Utara)
+      { armIdx: 3, startDist: 48, turnSteps: 2, speed: 8.2, carColor: 0xf8fafc },                // Mobil Putih (Timur -> lurus Barat)
+      { armIdx: 0, startDist: -24, turnSteps: 1, speed: 7.8, carColor: 0xef4444 },               // Mobil Merah (Utara -> belok kiri Barat)
+      { armIdx: 2, startDist: 22, turnSteps: 3, speed: 8.0, carColor: 0x0f172a }                 // Mobil Hitam (Selatan -> belok kanan Timur)
     ];
     angkotConfigs.forEach(cfg => {
       const veh = cfg.body ? createBandungAngkotMesh(cfg.body, cfg.stripe) : createPrivateCarMesh(cfg.carColor);
       grp.add(veh);
-      districtTraffic.push({ mesh: veh, ...cfg });
+      districtTraffic.push({
+        mesh: veh,
+        state: "approach", // approach -> circle -> exit
+        armIdx: cfg.armIdx,
+        dist: cfg.startDist,
+        turnSteps: cfg.turnSteps,
+        speed: cfg.speed,
+        circleAng: 0,
+        traveledAng: 0,
+        targetAngSpan: Math.PI,
+        exitArm: EXIT_ARMS[0]
+      });
     });
 
     // NPC Warga Lokal Jalan Santai di Trotoar Paving
@@ -1074,47 +1105,97 @@
     const pPos = activePlayer && activePlayer.position ? activePlayer.position : null;
     const nowMs = performance.now();
 
-    // Update lalu lintas Angkot Bandung & Mobil Warga (semua belok mulus memutari bundaran!)
-    districtTraffic.forEach(v => {
+    // Update lalu lintas Angkot Bandung & Mobil Warga (approach -> melingkar bundaran -> keluar jalan tujuan)
+    districtTraffic.forEach((v, idx) => {
       if (!v.mesh) return;
-      const R = 10.0; // Radius jalur aspal bundaran
-      const entryDist = 11.6;
+      const R = 10.0;
+      const ENTRY_R = 11.4;
+      const ARM_DEFS = [
+        { axis: "z", dir: 1, laneX: 1.8, entryAng: -1.39 },
+        { axis: "x", dir: 1, laneZ: -1.8, entryAng: 2.96 },
+        { axis: "z", dir: -1, laneX: -1.8, entryAng: 1.75 },
+        { axis: "x", dir: -1, laneZ: 1.8, entryAng: -0.18 }
+      ];
+      const EXIT_ARMS = [
+        { axis: "z", dir: 1, laneX: 1.8 },   // 0: Selatan (+Z)
+        { axis: "x", dir: 1, laneZ: 1.8 },   // 1: Timur (+X)
+        { axis: "z", dir: -1, laneX: -1.8 }, // 2: Utara (-Z)
+        { axis: "x", dir: -1, laneZ: -1.8 }  // 3: Barat (-X)
+      ];
 
-      if (v.mode === "roundabout") {
-        v.angle += v.speed * dt;
-        const nx = Math.cos(v.angle) * R;
-        const nz = Math.sin(v.angle) * R;
-        v.mesh.position.set(nx, 0.02, nz);
-        v.mesh.rotation.y = Math.atan2(-Math.sin(v.angle), Math.cos(v.angle));
-      } else if (v.mode === "laneNS") {
-        if (!v.inCircle) {
-          v.pos += v.dir * v.speed * dt;
-          if (v.pos > 52) v.pos = -52;
-          if (v.pos < -52) v.pos = 52;
-          // Cek saat menyentuh bibir bundaran -> masuk ke lintasan melingkar CCW
-          if ((v.dir > 0 && v.pos >= -entryDist && v.pos < -entryDist + 1.2) ||
-              (v.dir < 0 && v.pos <= entryDist && v.pos > entryDist - 1.2)) {
-            v.inCircle = true;
-            // dir > 0 datang dari Utara (-Z) di sisi kiri jalan (x = +1.8), masuk bundaran di sudut ~ -PI/2
-            v.circleStartAngle = v.dir > 0 ? -Math.PI / 2 + 0.18 : Math.PI / 2 + 0.18;
-            v.circleProgress = 0;
-            v.laneOffset = v.dir > 0 ? 1.8 : -1.8;
-          } else {
-            const xLane = v.dir > 0 ? 1.8 : -1.8;
-            v.mesh.position.set(xLane, 0.02, v.pos);
-            v.mesh.rotation.y = v.dir > 0 ? 0 : Math.PI;
-          }
+      // Cek jarak dengan kendaraan lain di depannya agar tidak saling menumpuk
+      let blocked = false;
+      const fwdX = Math.sin(v.mesh.rotation.y);
+      const fwdZ = Math.cos(v.mesh.rotation.y);
+      for (let j = 0; j < districtTraffic.length; j++) {
+        if (j === idx || !districtTraffic[j].mesh) continue;
+        const other = districtTraffic[j].mesh.position;
+        const dx = other.x - v.mesh.position.x;
+        const dz = other.z - v.mesh.position.z;
+        const distOther = Math.hypot(dx, dz);
+        if (distOther > 0.1 && distOther < 4.3) {
+          const dot = (dx * fwdX + dz * fwdZ) / distOther;
+          if (dot > 0.72) { blocked = true; break; }
         }
-        if (v.inCircle) {
-          const angSpeed = v.speed / R;
-          v.circleProgress += angSpeed * dt;
-          const curAng = v.circleStartAngle - v.circleProgress; // CCW memutari pulau taman
-          v.mesh.position.set(Math.cos(curAng) * R, 0.02, Math.sin(curAng) * R);
-          v.mesh.rotation.y = Math.atan2(Math.sin(curAng), -Math.cos(curAng));
-          if (v.circleProgress >= Math.PI - 0.36) {
-            v.inCircle = false;
-            v.pos = v.dir > 0 ? entryDist + 0.3 : -entryDist - 0.3;
-          }
+      }
+      const effSpeed = blocked ? 0 : v.speed;
+
+      if (v.state === "approach") {
+        const arm = ARM_DEFS[v.armIdx];
+        v.dist += arm.dir * effSpeed * dt;
+        if (arm.axis === "z") {
+          v.mesh.position.set(arm.laneX, 0.02, v.dist);
+          v.mesh.rotation.y = arm.dir > 0 ? 0 : Math.PI;
+        } else {
+          v.mesh.position.set(v.dist, 0.02, arm.laneZ);
+          v.mesh.rotation.y = arm.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        }
+        // Saat menyentuh bibir bundaran (±11.4m), transisi mulus masuk ke lingkaran bundaran
+        if ((arm.dir > 0 && v.dist >= -ENTRY_R) || (arm.dir < 0 && v.dist <= ENTRY_R)) {
+          v.state = "circle";
+          v.circleAng = arm.entryAng;
+          v.traveledAng = 0;
+          // turnSteps: 1 = belok kiri (90°), 2 = lurus (180°), 3 = belok kanan (270°)
+          v.targetAngSpan = v.turnSteps * (Math.PI / 2) - 0.34;
+          // Pilih ruas keluar sesuai arah putaran CCW dari armIdx
+          // armIdx 0(Utara): 1->Barat(3), 2->Selatan(0), 3->Timur(1)
+          const exitMap = [
+            [3, 0, 1], // dari Utara
+            [0, 1, 2], // dari Barat
+            [1, 2, 3], // dari Selatan
+            [2, 3, 0]  // dari Timur
+          ];
+          const chosenExitIdx = exitMap[v.armIdx][(v.turnSteps - 1) % 3];
+          v.exitArm = EXIT_ARMS[chosenExitIdx];
+        }
+      } else if (v.state === "circle") {
+        const angStep = (effSpeed / R) * dt;
+        v.circleAng -= angStep; // CCW mengikuti aturan bundaran kiri
+        v.traveledAng += angStep;
+        v.mesh.position.set(Math.cos(v.circleAng) * R, 0.02, Math.sin(v.circleAng) * R);
+        v.mesh.rotation.y = Math.atan2(Math.sin(v.circleAng), -Math.cos(v.circleAng));
+
+        if (v.traveledAng >= v.targetAngSpan) {
+          v.state = "exit";
+          v.dist = v.exitArm.dir > 0 ? ENTRY_R : -ENTRY_R;
+        }
+      } else if (v.state === "exit") {
+        const ex = v.exitArm;
+        v.dist += ex.dir * effSpeed * dt;
+        if (ex.axis === "z") {
+          v.mesh.position.set(ex.laneX, 0.02, v.dist);
+          v.mesh.rotation.y = ex.dir > 0 ? 0 : Math.PI;
+        } else {
+          v.mesh.position.set(v.dist, 0.02, ex.laneZ);
+          v.mesh.rotation.y = ex.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        }
+        // Setelah keluar jauh (±54m), spawn ulang dari ruas jalan acak dengan pilihan belok baru
+        if (Math.abs(v.dist) > 54) {
+          v.armIdx = (v.armIdx + 1 + Math.floor(Math.random() * 3)) % 4;
+          v.turnSteps = 1 + Math.floor(Math.random() * 3); // 1=kiri, 2=lurus, 3=kanan
+          const nextArm = ARM_DEFS[v.armIdx];
+          v.dist = nextArm.dir > 0 ? -54 : 54;
+          v.state = "approach";
         }
       } else if (v.mode === "laneEW") {
         if (!v.inCircle) {
