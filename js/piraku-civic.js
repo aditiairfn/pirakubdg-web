@@ -619,4 +619,193 @@
 
   updateBottomDockByMode();
   setInterval(updateBottomDockByMode, 800);
+
+  // ================= 6. HUB MINIGAME (TAB GAME) =================
+  const origOpenArcade = window.openArcadeHubModal;
+  window.openArcadeHubModal = function () {
+    if (typeof origOpenArcade === "function" && origOpenArcade !== window.openArcadeHubModal) {
+      try {
+        origOpenArcade();
+        const existingModal = document.querySelector("#arcade-hub-modal, #piraku-arcade-modal");
+        if (existingModal && existingModal.style.display !== "none") return;
+      } catch (e) {}
+    }
+
+    const modal = ensureCivicModal();
+    const myCoins = parseInt(localStorage.getItem("piraku_coins") || "0", 10);
+    modal.style.display = "flex";
+    modal.innerHTML = [
+      '<div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#0e2f2a;border:1.5px solid rgba(255,207,74,0.4);border-radius:22px;padding:18px;color:#fff;font-family:\'Bricolage Grotesque\',sans-serif;">',
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">',
+          '<div>',
+            '<div style="font-size:10px;font-weight:800;color:#ffcf4a;letter-spacing:1px;">🎮 ARENA WARGA BANDUNG</div>',
+            '<h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Minigame & Kuis Kota</h3>',
+          '</div>',
+          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-weight:800;cursor:pointer;">✕</button>',
+        '</div>',
+        '<div style="background:rgba(0,0,0,0.28);border-radius:12px;padding:9px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;">',
+          '<span>Saldo Koin Kamu:</span>',
+          '<span style="font-weight:800;color:#ffcf4a;">🪙 ' + myCoins + ' Koin</span>',
+        '</div>',
+        '<div id="arcade-game-stage" style="display:flex;flex-direction:column;gap:10px;">',
+          '<div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">',
+            '<div>',
+              '<div style="font-weight:800;font-size:13.5px;color:#4ade80;">🧠 Kuis Seputar Bandung</div>',
+              '<div style="font-size:11px;color:#cbd5e1;margin-top:2px;">Jawab pertanyaan trivia Bandung, dapat +30 XP & +40 Koin!</div>',
+            '</div>',
+            '<button onclick="startBandungTriviaGame()" style="padding:8px 13px;border:none;border-radius:10px;background:#10b981;color:#fff;font-weight:800;font-size:11.5px;cursor:pointer;">Main</button>',
+          '</div>',
+          '<div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">',
+            '<div>',
+              '<div style="font-weight:800;font-size:13.5px;color:#ffcf4a;">🎲 Lempar Dadu Angkot</div>',
+              '<div style="font-size:11px;color:#cbd5e1;margin-top:2px;">Uji hoki narik penumpang di Dago–Cicaheum!</div>',
+            '</div>',
+            '<button onclick="playAngkotDiceGame()" style="padding:8px 13px;border:none;border-radius:10px;background:#f59e0b;color:#0e2f2a;font-weight:800;font-size:11.5px;cursor:pointer;">Gaskeun</button>',
+          '</div>',
+        '</div>',
+      '</div>'
+    ].join('');
+  };
+
+  window.startBandungTriviaGame = function () {
+    const questions = [
+      { q: "Gedung Sate dibangun pada tahun berapa?", opts: ["1920", "1945", "1955"], ans: 0 },
+      { q: "Nama jalan ikonik tempat Konferensi Asia Afrika 1955?", opts: ["Jl. Braga", "Jl. Asia Afrika", "Jl. Dago"], ans: 1 },
+      { q: "Julukan terkenal untuk Kota Bandung adalah...", opts: ["Kota Hujan", "Parijs van Java", "Kota Pahlawan"], ans: 1 },
+      { q: "Makanan khas Bandung berbahan aci dicolok bumbu kacang?", opts: ["Cilok", "Pempek", "Gudeg"], ans: 0 }
+    ];
+    const item = questions[Math.floor(Math.random() * questions.length)];
+    const stage = document.getElementById("arcade-game-stage");
+    if (!stage) return;
+    stage.innerHTML = [
+      '<div style="background:rgba(0,0,0,0.35);border-radius:14px;padding:14px;">',
+        '<div style="font-size:11px;font-weight:800;color:#4ade80;margin-bottom:6px;">PERTANYAAN TRIVIA</div>',
+        '<div style="font-size:14px;font-weight:800;margin-bottom:12px;">' + item.q + '</div>',
+        item.opts.map(function (opt, i) {
+          return '<button onclick="answerBandungTrivia(' + (i === item.ans) + ')" style="display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:7px;border:1px solid rgba(255,255,255,0.2);border-radius:10px;background:rgba(255,255,255,0.08);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer;">' + opt + '</button>';
+        }).join(''),
+      '</div>'
+    ].join('');
+  };
+
+  window.answerBandungTrivia = async function (isCorrect) {
+    if (isCorrect) {
+      const c = parseInt(localStorage.getItem("piraku_coins") || "0", 10) + 40;
+      localStorage.setItem("piraku_coins", String(c));
+      if (window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === "function") {
+        window.PirakuGameBridge.addCoins(40);
+      }
+      await window.grantPirakuXP(30, "Menang Kuis Bandung");
+    } else if (typeof window.showToast === "function") {
+      window.showToast("Yah kurang tepat! Coba pertanyaan berikutnya ya 😄");
+    }
+    window.openArcadeHubModal();
+  };
+
+  window.playAngkotDiceGame = async function () {
+    const win = Math.random() > 0.35;
+    if (win) {
+      const reward = 35;
+      const c = parseInt(localStorage.getItem("piraku_coins") || "0", 10) + reward;
+      localStorage.setItem("piraku_coins", String(c));
+      await window.grantPirakuXP(25, "Tarik Angkot Hoki");
+    } else if (typeof window.showToast === "function") {
+      window.showToast("🚦 Kena macet di Pasteur! Coba narik lagi.");
+    }
+    window.openArcadeHubModal();
+  };
+
+  // ================= 7. UPGRADE KONTROL MOBILE (JOYSTICK LEGA + ANTI-CONFLICT KAMERA) =================
+  function setupSmoothMobileJoystick() {
+    const isTouch = ("ontouchstart" in window) || navigator.maxTouchPoints > 0 || window.innerWidth <= 900;
+    if (!isTouch) return;
+
+    // Cegah browser zoom/scroll liar di canvas 3D
+    const style = document.createElement("style");
+    style.textContent = [
+      "html, body, canvas { touch-action: none !important; overscroll-behavior: none !important; -webkit-user-select: none !important; user-select: none !important; }",
+      "#mobile-joystick-zone, #joystick-zone, .virtual-joystick { width: 136px !important; height: 136px !important; bottom: 86px !important; left: 18px !important; z-index: 9500 !important; touch-action: none !important; }"
+    ].join("\n");
+    document.head.appendChild(style);
+
+    // Jika belum ada joystick bawaan yang responsif, pasang joystick analog mulus yang memicu WASD/Arrow
+    if (!document.getElementById("piraku-pro-joystick")) {
+      const zone = document.createElement("div");
+      zone.id = "piraku-pro-joystick";
+      zone.style.cssText = "position:fixed;left:18px;bottom:84px;width:126px;height:126px;border-radius:50%;background:rgba(14,47,42,0.42);border:2px solid rgba(255,255,255,0.28);backdrop-filter:blur(4px);z-index:9600;touch-action:none;display:flex;align-items:center;justify-content:center;";
+
+      const knob = document.createElement("div");
+      knob.style.cssText = "width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#ffcf4a,#f59e0b);box-shadow:0 4px 14px rgba(0,0,0,0.45);transition:transform 0.05s linear;pointer-events:none;";
+      zone.appendChild(knob);
+      document.body.appendChild(zone);
+
+      const keysState = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+      function setKey(code, pressed) {
+        if (keysState[code] === pressed) return;
+        keysState[code] = pressed;
+        window.dispatchEvent(new KeyboardEvent(pressed ? "keydown" : "keyup", { key: code, code: code, bubbles: true }));
+      }
+
+      let activeTouchId = null;
+      function updateStick(clientX, clientY) {
+        const rect = zone.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        let dx = clientX - cx;
+        let dy = clientY - cy;
+        const maxR = 46;
+        const dist = Math.hypot(dx, dy);
+        if (dist > maxR) {
+          dx = (dx / dist) * maxR;
+          dy = (dy / dist) * maxR;
+        }
+        knob.style.transform = "translate(" + dx + "px, " + dy + "px)";
+
+        const deadzone = 12;
+        setKey("ArrowUp", dy < -deadzone);
+        setKey("ArrowDown", dy > deadzone);
+        setKey("ArrowLeft", dx < -deadzone);
+        setKey("ArrowRight", dx > deadzone);
+      }
+
+      function resetStick() {
+        activeTouchId = null;
+        knob.style.transform = "translate(0px, 0px)";
+        setKey("ArrowUp", false);
+        setKey("ArrowDown", false);
+        setKey("ArrowLeft", false);
+        setKey("ArrowRight", false);
+      }
+
+      zone.addEventListener("touchstart", function (e) {
+        e.stopPropagation();
+        const t = e.changedTouches[0];
+        activeTouchId = t.identifier;
+        updateStick(t.clientX, t.clientY);
+      }, { passive: false });
+
+      zone.addEventListener("touchmove", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === activeTouchId) {
+            updateStick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+            break;
+          }
+        }
+      }, { passive: false });
+
+      zone.addEventListener("touchend", function (e) {
+        e.stopPropagation();
+        resetStick();
+      }, { passive: true });
+      zone.addEventListener("touchcancel", resetStick, { passive: true });
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupSmoothMobileJoystick);
+  } else {
+    setupSmoothMobileJoystick();
+  }
 })();
