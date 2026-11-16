@@ -11,17 +11,16 @@
   const activeBubbles = [];
   let lastBroadcastTime = 0;
 
-  // State WebRTC Voice Chat dengan Dynamic TURN Cloudflare Calls
-  let localAudioStream = null;
-  let isMicEnabled = false;
-  const peerConnections = new Map();
+  // State WebRTC Voice Chat & TURN Cloudflare Calls
+  window.localAudioStream = null;
+  window.isMicEnabled = false;
+  window.peerConnections = new Map();
   const remoteAudioEls = new Map();
   const pendingIceMap = new Map();
   const speakingPeers = new Map();
   const voiceAnalysers = new Map();
   let sharedAudioCtx = null;
 
-  // Default ICE servers (STUN fallback jika Edge Function sedang memuat)
   let activeRtcConfig = {
     iceCandidatePoolSize: 8,
     bundlePolicy: 'max-bundle',
@@ -32,7 +31,7 @@
     ]
   };
 
-  // Ambil kredensial TURN dinamis dari Supabase Edge Function (Cloudflare Calls)
+  // Ambil kredensial TURN dinamis dari Supabase Edge Function
   async function fetchCloudflareTurnCredentials() {
     try {
       const res = await fetch('https://myilyqnawceobqedjbfa.supabase.co/functions/v1/get-turn-credentials', {
@@ -49,7 +48,6 @@
     }
   }
 
-  // Panggil saat multiplayer dimuat
   fetchCloudflareTurnCredentials();
 
   function startVoiceActivityMonitor(key, mediaStream) {
@@ -77,7 +75,7 @@
           sum += v * v;
         }
         const rms = Math.sqrt(sum / data.length);
-        const isTalking = key === "self" ? (isMicEnabled && rms > 0.018) : (rms > 0.015);
+        const isTalking = key === "self" ? (window.isMicEnabled && rms > 0.018) : (rms > 0.015);
         speakingPeers.set(key, isTalking);
       }, 90);
       voiceAnalysers.set(key, { source, analyser, timer });
@@ -94,15 +92,14 @@
     speakingPeers.delete(key);
   }
 
-  // Gunakan activeRtcConfig saat membuat peer connection
   function createPeerConnection(targetSid, isInitiator) {
-    if (peerConnections.has(targetSid)) return peerConnections.get(targetSid);
+    if (window.peerConnections.has(targetSid)) return window.peerConnections.get(targetSid);
     
     const pc = new RTCPeerConnection(activeRtcConfig);
-    peerConnections.set(targetSid, pc);
+    window.peerConnections.set(targetSid, pc);
 
-    if (localAudioStream) {
-      localAudioStream.getTracks().forEach(track => pc.addTrack(track, localAudioStream));
+    if (window.localAudioStream) {
+      window.localAudioStream.getTracks().forEach(track => pc.addTrack(track, window.localAudioStream));
     }
 
     pc.onicecandidate = (event) => {
@@ -146,4 +143,65 @@
 
     return pc;
   }
+
+  // Inisialisasi Supabase Realtime Channel untuk Posisi & Nametag Wargi
+  function initMultiplayer() {
+    if (!window.supabase || !window.supabase.channel) {
+      setTimeout(initMultiplayer, 1000);
+      return;
+    }
+
+    if (mpChannel) {
+      window.supabase.removeChannel(mpChannel);
+    }
+
+    mpChannel = window.supabase.channel(getRoomChannelName(), {
+      config: { broadcast: { self: false } }
+    });
+
+    mpChannel
+      .on('broadcast', { event: 'player-move' }, ({ payload }) => {
+        if (!payload || payload.sid === mySessionId) return;
+        remotePlayers.set(payload.sid, {
+          x: payload.x, y: payload.y, z: payload.z,
+          rot: payload.rot, name: payload.name || 'Wargi',
+          anim: payload.anim, lastSeen: Date.now()
+        });
+      })
+      .on('broadcast', { event: 'rtc-offer' }, async ({ payload }) => {
+        if (!payload || payload.to !== mySessionId) return;
+        const pc = createPeerConnection(payload.from, false);
+        await pc.setRemoteDescription(new RTCSessionDescription(payload.offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        mpChannel.send({
+          type: 'broadcast',
+          event: 'rtc-answer',
+          payload: { from: mySessionId, to: payload.from, answer: answer }
+        });
+      })
+      .on('broadcast', { event: 'rtc-answer' }, async ({ payload }) => {
+        if (!payload || payload.to !== mySessionId) return;
+        const pc = window.peerConnections.get(payload.from);
+        if (pc) {
+          await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+        }
+      })
+      .on('broadcast', { event: 'rtc-ice' }, async ({ payload }) => {
+        if (!payload || payload.to !== mySessionId) return;
+        const pc = createPeerConnection(payload.from, false);
+        if (payload.candidate) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (_) {}
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log("Terhubung ke ruang multiplayer:", getRoomChannelName());
+        }
+      });
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    initMultiplayer();
+  });
 })();
