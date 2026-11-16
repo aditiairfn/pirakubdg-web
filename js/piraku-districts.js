@@ -153,6 +153,10 @@
     if (typeof window.resetPirakuColliders === "function") window.resetPirakuColliders();
   let customDistrictGroup = null;
   let districtCoins = [];
+    districtTraffic = [];
+    districtPedestrians = [];
+  let districtTraffic = [];
+  let districtPedestrians = [];
 
   const KAVLING_SLOTS = [
     { x: -13, z: 13, rotY: 0 }, { x: -20, z: 13, rotY: 0 }, { x: -27, z: 13, rotY: 0 }, { x: -13, z: 22, rotY: Math.PI }, { x: -20, z: 22, rotY: Math.PI },
@@ -266,6 +270,149 @@
       p.position.set(sx, 0.38, sz);
       g.add(p);
     });
+    return g;
+  }
+
+  
+  function createBandungAngkotMesh(bodyCol, stripeCol) {
+    const g = new THREE.Group();
+    g.userData.isCar = true;
+    const bodyMat = new THREE.MeshStandardMaterial({ color: bodyCol, roughness: 0.45, metalness: 0.2 });
+    const stripeMat = new THREE.MeshStandardMaterial({ color: stripeCol, roughness: 0.5 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.8 });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 });
+    const headLightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+
+    // Bodi minibus angkot + strip khas Bandung
+    const lower = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.55, 2.85), bodyMat);
+    lower.position.y = 0.52;
+    const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.41, 0.16, 2.87), stripeMat);
+    stripe.position.y = 0.58;
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.32, 0.56, 2.35), bodyMat);
+    cabin.position.set(0, 1.05, -0.15);
+    const windF = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.42, 0.08), glassMat);
+    windF.position.set(0, 1.04, 1.03);
+    const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.36, 1.9), glassMat);
+    sideGlass.position.set(0, 1.06, -0.15);
+    // Papan trayek di atas atap depan
+    const trayek = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.18, 0.24), stripeMat);
+    trayek.position.set(0, 1.4, 0.85);
+
+    g.add(lower, stripe, cabin, windF, sideGlass, trayek);
+
+    // Lampu depan & belakang
+    [-0.46, 0.46].forEach(lx => {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.06), headLightMat);
+      hl.position.set(lx, 0.52, 1.43);
+      const tl = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.06), tailLightMat);
+      tl.position.set(lx, 0.52, -1.43);
+      g.add(hl, tl);
+    });
+
+    // 4 Roda
+    [[-0.68, 0.85], [0.68, 0.85], [-0.68, -0.85], [0.68, -0.85]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.18, 12), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.26, wz);
+      g.add(w);
+    });
+    return g;
+  }
+
+  function createPrivateCarMesh(color) {
+    const g = new THREE.Group();
+    g.userData.isCar = true;
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.45 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.8 });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.36, 0.48, 2.75), mat);
+    body.position.y = 0.46;
+    const top = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.44, 1.45), mat);
+    top.position.set(0, 0.9, -0.15);
+    const glass = new THREE.Mesh(new THREE.BoxGeometry(1.21, 0.34, 1.32), glassMat);
+    glass.position.set(0, 0.9, -0.15);
+    const hlL = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.1, 0.05), new THREE.MeshBasicMaterial({ color: 0xfef9c3 }));
+    hlL.position.set(-0.44, 0.48, 1.38);
+    const hlR = hlL.clone(); hlR.position.x = 0.44;
+    g.add(body, top, glass, hlL, hlR);
+    [[-0.66, 0.82], [0.66, 0.82], [-0.66, -0.82], [0.66, -0.82]].forEach(([wx, wz]) => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.16, 12), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.24, wz);
+      g.add(w);
+    });
+    return g;
+  }
+
+  function createDistrictNpcMesh(shirtCol, hasHijab) {
+    const g = new THREE.Group();
+    g.userData.isCar = true; // Tandai dinamis agar tidak masuk static building collider
+    const skinMat = new THREE.MeshStandardMaterial({ color: 0xe0ac69, roughness: 0.7 });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: shirtCol, roughness: 0.75 });
+    const pantsMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 });
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.2, 0.46, 10), shirtMat);
+    torso.position.y = 0.62;
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 12, 10), skinMat);
+    head.position.y = 1.04;
+    g.add(torso, head);
+
+    if (hasHijab) {
+      const hijab = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.7 }));
+      hijab.position.set(0, 1.05, -0.03);
+      g.add(hijab);
+    } else {
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.55), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+      hair.position.y = 1.07;
+      g.add(hair);
+    }
+
+    const legL = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.38, 0.12), pantsMat);
+    legL.position.set(-0.09, 0.2, 0);
+    const legR = legL.clone(); legR.position.x = 0.09;
+    const armL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.36, 0.09), shirtMat);
+    armL.position.set(-0.24, 0.62, 0);
+    const armR = armL.clone(); armR.position.x = 0.24;
+    g.add(legL, legR, armL, armR);
+    g.userData.limbs = { legL, legR, armL, armR };
+    return g;
+  }
+
+  function createStreetVendorCartMesh(awningCol, boxCol) {
+    const g = new THREE.Group();
+    g.userData.isCar = true;
+    const cartMat = new THREE.MeshStandardMaterial({ color: boxCol, roughness: 0.6 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.65 });
+    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827 });
+
+    // Gerobak dorong bakso/cuanki/bandrek
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.65, 1.45), cartMat);
+    base.position.set(0, 0.52, 0.2);
+    const showcase = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.48, 0.9), glassMat);
+    showcase.position.set(0, 1.08, 0.35);
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.34, 12), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.8, roughness: 0.2 }));
+    pot.position.set(0, 0.98, -0.25);
+
+    // Payung tenda warna-warni khas PKL Bandung
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.9, 6), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+    pole.position.set(0, 1.35, 0.15);
+    const umbrella = new THREE.Mesh(new THREE.ConeGeometry(1.15, 0.45, 10), new THREE.MeshStandardMaterial({ color: awningCol, roughness: 0.7 }));
+    umbrella.position.set(0, 2.25, 0.15);
+
+    // Roda gerobak
+    [-0.45, 0.45].forEach(wx => {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.08, 12), wheelMat);
+      w.rotation.z = Math.PI / 2;
+      w.position.set(wx, 0.24, 0.2);
+      g.add(w);
+    });
+
+    // Abang tukang dagang yang mendorong di belakang gerobak
+    const vendor = createDistrictNpcMesh(0xfacc15, false);
+    vendor.position.set(0, 0, -0.85);
+    g.add(base, showcase, pot, pole, umbrella, vendor);
+    g.userData.limbs = vendor.userData.limbs;
     return g;
   }
 
@@ -570,6 +717,47 @@
       districtCoins.push(cm);
     });
 
+    // Armada Angkot Bandung & Mobil Warga (Muter Bundaran + Lintas Poros Jalan)
+    const angkotConfigs = [
+      { mode: "roundabout", angle: 0, speed: 0.42, radius: 11.4, body: 0x16a34a, stripe: 0xfacc15 },
+      { mode: "roundabout", angle: Math.PI, speed: 0.42, radius: 11.4, body: 0x2563eb, stripe: 0xf8fafc },
+      { mode: "laneNS", dir: 1, pos: -38, laneOffset: -1.8, speed: 7.5, body: 0xfef3c7, stripe: 0xdc2626 },
+      { mode: "laneNS", dir: -1, pos: 34, laneOffset: 1.8, speed: 8.2, carColor: 0xf8fafc },
+      { mode: "laneEW", dir: 1, pos: -36, laneOffset: 1.8, speed: 7.8, carColor: 0xef4444 },
+      { mode: "laneEW", dir: -1, pos: 38, laneOffset: -1.8, speed: 8.0, carColor: 0x0f172a }
+    ];
+    angkotConfigs.forEach(cfg => {
+      const veh = cfg.body ? createBandungAngkotMesh(cfg.body, cfg.stripe) : createPrivateCarMesh(cfg.carColor);
+      grp.add(veh);
+      districtTraffic.push({ mesh: veh, ...cfg });
+    });
+
+    // NPC Warga Lokal Jalan Santai di Trotoar Paving
+    const npcConfigs = [
+      { axis: "z", fixed: -4.4, pos: -28, dir: 1, speed: 1.55, col: 0x3b82f6, hijab: true },
+      { axis: "z", fixed: 4.4, pos: 24, dir: -1, speed: 1.45, col: 0x10b981, hijab: false },
+      { axis: "x", fixed: -4.4, pos: -22, dir: 1, speed: 1.5, col: 0xf97316, hijab: true },
+      { axis: "x", fixed: 4.4, pos: 26, dir: -1, speed: 1.6, col: 0xa855f7, hijab: false },
+      { axis: "z", fixed: -4.4, pos: 14, dir: 1, speed: 1.4, col: 0xec4899, hijab: true },
+      { axis: "x", fixed: 4.4, pos: -16, dir: 1, speed: 1.5, col: 0x0ea5e9, hijab: false }
+    ];
+    npcConfigs.forEach((nc, idx) => {
+      const npc = createDistrictNpcMesh(nc.col, nc.hijab);
+      grp.add(npc);
+      districtPedestrians.push({ mesh: npc, phase: idx * 1.3, isVendor: false, ...nc });
+    });
+
+    // Tukang Dagang Keliling (Gerobak Bakso/Cuanki & Bandrek Keliling Komplek)
+    const vendorConfigs = [
+      { axis: "x", fixed: -16.4, pos: -24, dir: 1, speed: 1.05, awning: 0xef4444, box: 0x2563eb },
+      { axis: "x", fixed: 16.4, pos: 22, dir: -1, speed: 1.0, awning: 0xf59e0b, box: 0x15803d }
+    ];
+    vendorConfigs.forEach((vc, idx) => {
+      const cart = createStreetVendorCartMesh(vc.awning, vc.box);
+      grp.add(cart);
+      districtPedestrians.push({ mesh: cart, phase: idx * 2.1, isVendor: true, ...vc });
+    });
+
     sc.add(grp);
     customDistrictGroup = grp;
 
@@ -642,6 +830,8 @@
       customDistrictGroup = null;
     }
     districtCoins = [];
+    districtTraffic = [];
+    districtPedestrians = [];
     hiddenMainObjects.forEach(obj => { obj.visible = true; });
     hiddenMainObjects = [];
 
@@ -739,6 +929,71 @@
         }
       }
     }
+        const dt = 0.016;
+    const nowSec = performance.now() * 0.001;
+
+    // Update lalu lintas Angkot Bandung & Mobil Warga
+    districtTraffic.forEach(v => {
+      if (!v.mesh) return;
+      if (v.mode === "roundabout") {
+        v.angle += v.speed * dt;
+        const nx = Math.cos(v.angle) * v.radius;
+        const nz = Math.sin(v.angle) * v.radius;
+        v.mesh.position.set(nx, 0.02, nz);
+        v.mesh.rotation.y = Math.atan2(-Math.sin(v.angle), Math.cos(v.angle));
+      } else if (v.mode === "laneNS") {
+        v.pos += v.dir * v.speed * dt;
+        // Perlambat sedikit saat melintasi bundaran tengah agar tidak menabrak
+        if (Math.abs(v.pos) < 13) v.pos += v.dir * v.speed * dt * 0.65;
+        if (v.pos > 52) v.pos = -52;
+        if (v.pos < -52) v.pos = 52;
+        v.mesh.position.set(v.laneOffset, 0.02, v.pos);
+        v.mesh.rotation.y = v.dir > 0 ? 0 : Math.PI;
+      } else if (v.mode === "laneEW") {
+        v.pos += v.dir * v.speed * dt;
+        if (Math.abs(v.pos) < 13) v.pos += v.dir * v.speed * dt * 0.65;
+        if (v.pos > 52) v.pos = -52;
+        if (v.pos < -52) v.pos = 52;
+        v.mesh.position.set(v.pos, 0.02, v.laneOffset);
+        v.mesh.rotation.y = v.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
+    });
+
+    // Update langkah NPC Trotoar & Tukang Dagang Keliling
+    districtPedestrians.forEach(p => {
+      if (!p.mesh) return;
+      p.pos += p.dir * p.speed * dt;
+      const limit = p.isVendor ? 31 : 44;
+      if (p.pos > limit) { p.pos = limit; p.dir = -1; }
+      if (p.pos < -limit) { p.pos = -limit; p.dir = 1; }
+      // Lompati persimpangan tengah (-10..10) untuk pejalan kaki poros utama
+      if (!p.isVendor && Math.abs(p.pos) < 10.2) {
+        p.pos = p.dir > 0 ? 10.3 : -10.3;
+      }
+
+      const groundY = p.isVendor ? 0.02 : 0.09;
+      if (p.axis === "z") {
+        p.mesh.position.set(p.fixed, groundY, p.pos);
+        p.mesh.rotation.y = p.dir > 0 ? 0 : Math.PI;
+      } else {
+        p.mesh.position.set(p.pos, groundY, p.fixed);
+        p.mesh.rotation.y = p.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
+
+      const limbs = p.mesh.userData.limbs;
+      if (limbs) {
+        const swing = Math.sin(nowSec * (p.isVendor ? 6.5 : 9.0) + p.phase) * 0.55;
+        limbs.legL.rotation.x = swing;
+        limbs.legR.rotation.x = -swing;
+        if (!p.isVendor) {
+          limbs.armL.rotation.x = -swing * 0.85;
+          limbs.armR.rotation.x = swing * 0.85;
+        } else {
+          limbs.armL.rotation.x = -0.55;
+          limbs.armR.rotation.x = -0.55;
+        }
+      }
+    });
     drawKomplekMinimapFrame();
     requestAnimationFrame(tickDistrictLoop);
   }
