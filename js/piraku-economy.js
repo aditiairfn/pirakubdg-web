@@ -182,6 +182,44 @@
           }
         });
       });
+      
+      // Pose berkendara realistis untuk karakter sendiri maupun pemain lain yang naik Skuter / Sepeda
+      if (window.pirakuScene) {
+        window.pirakuScene.traverse(cg => {
+          const a = cg?.userData?.a;
+          if (!a || !a.body || !a.armL || !a.armR || !a.legL || !a.legR) return;
+          const veh = cg.userData._activeShopVehicle;
+          if (veh === "skuter_listrik") {
+            cg.userData._wasRidingShopVeh = true;
+            a.body.position.y = 0.14;
+            a.body.rotation.x = 0.08;
+            a.armL.rotation.x = -0.88;
+            a.armR.rotation.x = -0.88;
+            a.armL.rotation.z = 0.08;
+            a.armR.rotation.z = -0.08;
+            a.legL.rotation.x = -0.20;
+            a.legR.rotation.x = 0.24;
+          } else if (veh === "sepeda_kota") {
+            cg.userData._wasRidingShopVeh = true;
+            const isMoving = Boolean(a.walk) || (typeof window.getMyActivePlayerMesh === "function" && window.getMyActivePlayerMesh() === cg && (Math.abs(window.joyX || 0) > 0.05 || Math.abs(window.joyY || 0) > 0.05));
+            const pedal = isMoving ? Math.sin(t * 4.5) * 0.30 : 0;
+            a.body.position.y = 0.16;
+            a.body.rotation.x = 0.15;
+            a.armL.rotation.x = -0.80;
+            a.armR.rotation.x = -0.80;
+            a.armL.rotation.z = 0.12;
+            a.armR.rotation.z = -0.12;
+            a.legL.rotation.x = -0.58 + pedal;
+            a.legR.rotation.x = -0.58 - pedal;
+          } else if (cg.userData._wasRidingShopVeh) {
+            cg.userData._wasRidingShopVeh = false;
+            a.body.position.y = 0;
+            a.body.rotation.x = 0;
+            a.armL.rotation.z = 0;
+            a.armR.rotation.z = 0;
+          }
+        });
+      }
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
@@ -189,7 +227,8 @@
 
   window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId) {
     if (!cg || typeof THREE === "undefined" || !cg.userData || !cg.userData.a || !cg.userData.a.head) return;
-    const headNode = cg.userData?.a?.head || cg;
+    cg.userData._activeShopVehicle = vehicleId || null;
+    const headNode = cg.userData.a.head;
 
     // Bersihkan attachment lama di akar karakter maupun di kepala
     const oldBodyAtt = cg.getObjectByName("piraku-shop-body-att");
@@ -448,6 +487,7 @@
 
     const rental = window.PirakuEconomy.getActiveRental();
     window.attachPirakuShopToCitizen(mesh, state.equippedOutfit, rental ? rental.item.id : null);
+    ensureShopAnimLoop();
 
     updateGasibuBillboard3D(state.billboardText);
     if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
