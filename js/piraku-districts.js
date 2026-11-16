@@ -238,9 +238,11 @@
 
     const playerMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (hiddenMainObjects.length === 0) {
+      const keepVisible = new Set();
+      let p = playerMesh;
+      while (p) { keepVisible.add(p); p = p.parent; }
       sc.children.forEach(obj => {
-        // Jangan pernah sembunyikan pemain, cahaya, kamera, atau partikel cuaca (Points)
-        if (obj === playerMesh || obj.isLight || obj.isCamera || obj.isPoints || obj === customDistrictGroup) return;
+        if (keepVisible.has(obj) || obj.isLight || obj.isCamera || obj.isPoints || obj === customDistrictGroup) return;
         if (obj.visible) {
           obj.visible = false;
           hiddenMainObjects.push(obj);
@@ -568,7 +570,7 @@
 
   function tickDistrictLoop() {
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    if (mesh && !mesh.visible) mesh.visible = true;
+    if (mesh) { let p = mesh; while (p) { if (!p.visible) p.visible = true; p = p.parent; } }
     for (let i = districtCoins.length - 1; i >= 0; i--) {
       const c = districtCoins[i];
       c.rotation.z += 0.08;
