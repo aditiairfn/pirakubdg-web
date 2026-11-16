@@ -1934,7 +1934,15 @@ let activeQuestSystem = null;
   function showCitizenSpeech(data) {
     activeCitizenTarget = data;
     document.getElementById('b-ig').innerText = data.ig;
-    document.getElementById('b-role').innerText = (data.role || 'WARGA').toUpperCase();
+    const cLvl = typeof window.computePirakuLevelFromTotalXp === 'function'
+      ? window.computePirakuLevelFromTotalXp(data.xp || 0).level
+      : (parseInt(data.level, 10) || 1);
+    const roleEl = document.getElementById('b-role');
+    if (roleEl) {
+      roleEl.innerText = 'LVL ' + cLvl;
+      roleEl.style.background = cLvl >= 99 ? 'linear-gradient(135deg,#ffcf4a,#f59e0b)' : 'rgba(255,207,74,0.2)';
+      roleEl.style.color = cLvl >= 99 ? '#0e2f2a' : '#ffcf4a';
+    }
     document.getElementById('b-kec').innerText = 'Kec. ' + (data.kecamatan || 'Bandung Wetan');
     document.getElementById('b-wish').innerText = '“' + data.wish + '”';
     document.getElementById('b-upvotes').innerText = data.upvotes || 0;

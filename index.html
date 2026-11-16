@@ -8,7 +8,7 @@
   <meta property="og:title" content="Simulasi Tata Kota Bandung">
   <meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
-  <link rel="stylesheet" href="./css/style.css?v=20261116v53">
+  <link rel="stylesheet" href="./css/style.css?v=20261116v55">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -17,8 +17,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
-  <link rel="stylesheet" href="css/clean-hud.css?v=20261116v53">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261116v53">
+  <link rel="stylesheet" href="css/clean-hud.css?v=20261116v55">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261116v55">
   <style id="piraku-zindex-fix">
     body > div[style*="pointer-events: none"][style*="position: absolute"],
     body > div[style*="pointer-events:none"][style*="position:absolute"] { z-index: 5 !important; isolation: isolate !important; }
@@ -293,14 +293,14 @@
     <div class="bubble-card" style="width:196px;max-width:196px;padding:8px 10px;border-radius:14px;box-shadow:0 8px 20px rgba(15,23,42,.22);">
       <div class="bubble-header" style="margin-bottom:2px;gap:4px;">
         <span class="bubble-ig" id="b-ig" style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@user</span>
-        <span class="bubble-role" id="b-role" style="font-size:8.5px;padding:1px 6px;">WARGA</span>
+        <span class="bubble-role" id="b-role" style="font-size:8.5px;padding:1px 6px;">LVL 1</span>
       </div>
       <span class="bubble-kec" id="b-kec" style="display:block;font-size:9.5px;margin-bottom:6px;opacity:.85;">Kec. Bandung Wetan</span>
       <p class="bubble-quote" id="b-wish" style="display:none;"></p>
       <div class="bubble-emotes" style="display:flex;gap:4px;margin-bottom:5px;">
-        <button class="btn-emote-action" style="flex:1;padding:4px 2px;font-size:10px;border-radius:8px;" onclick="triggerEmote('kopi')">☕ Ngopi</button>
+        
         <button class="btn-emote-action" style="flex:1;padding:4px 2px;font-size:10px;border-radius:8px;" onclick="triggerEmote('lambai')">👋 Lambai</button>
-        <button class="btn-emote-action" style="flex:1;padding:4px 2px;font-size:10px;border-radius:8px;" onclick="triggerEmote('bel')">🚲 Bel</button>
+        
       </div>
       <div class="bubble-actions" style="display:flex;justify-content:center;">
         <button class="btn-upvote" style="width:100%;padding:4px 8px;font-size:10.5px;border-radius:8px;justify-content:center;" onclick="upvoteCurrentCitizen()">❤️ <span id="b-upvotes">0</span> Setuju</button>
@@ -1018,11 +1018,11 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261116v53"></script>
-  <script src="js/multiplayer.js?v=20261116v53"></script>
-  <script src="./js/rpg-ui.js?v=20261116v53"></script>
-  <script src="js/gedungsate-horizon.js?v=20261116v53"></script>
-  <script src="js/map-beautify.js?v=20261116v53"></script>
+  <script src="./js/main.js?v=20261116v55"></script>
+  <script src="js/multiplayer.js?v=20261116v55"></script>
+  <script src="./js/rpg-ui.js?v=20261116v55"></script>
+  <script src="js/gedungsate-horizon.js?v=20261116v55"></script>
+  <script src="js/map-beautify.js?v=20261116v55"></script>
   <script>
     function closeScenarioPanel() {
       const bp = document.getElementById("bottom-control-panel");
@@ -1162,12 +1162,12 @@
     })();
   </script>
 
-  <script src="js/piraku-economy.js?v=20261116v53"></script>
-  <script src="js/piraku-games.js?v=20261116v53"></script>
-  <script src="js/piraku-world-live.js?v=20261116v53"></script>
-  <script src="js/piraku-nav-modals.js?v=20261116v53"></script>
-    <script src="js/piraku-vfx.js?v=20261116v53"></script>
-  <script src="js/piraku-districts.js?v=20261116v53"></script>
+  <script src="js/piraku-economy.js?v=20261116v55"></script>
+  <script src="js/piraku-games.js?v=20261116v55"></script>
+  <script src="js/piraku-world-live.js?v=20261116v55"></script>
+  <script src="js/piraku-nav-modals.js?v=20261116v55"></script>
+    <script src="js/piraku-vfx.js?v=20261116v55"></script>
+  <script src="js/piraku-districts.js?v=20261116v55"></script>
 
   
 
@@ -1333,6 +1333,6 @@
     }, 450);
   </script>
 
-  <script src="js/piraku-civic.js?v=20261116v53"></script>
+  <script src="js/piraku-civic.js?v=20261116v55"></script>
 </body>
 </html>
