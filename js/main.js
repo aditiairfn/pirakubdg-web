@@ -3482,8 +3482,8 @@ let activeQuestSystem = null;
     const tmpBox = new THREE.Box3();
     const tmpSize = new THREE.Vector3();
     const tmpCenter = new THREE.Vector3();
+    const localSize = new THREE.Vector3();
 
-    // Kumpulkan semua root karakter, mobil, trem, koin agar tidak dianggap tembok
     const dynamicRoots = new Set();
     if (typeof citizensGroup !== "undefined" && citizensGroup) dynamicRoots.add(citizensGroup);
     if (typeof tram !== "undefined" && tram) dynamicRoots.add(tram);
@@ -3491,15 +3491,26 @@ let activeQuestSystem = null;
 
     scene.traverse(obj => {
       if (!obj || !obj.isMesh || !obj.visible) return;
-      // Lewati objek transparan (aura, kaca air, kaca visor, ring indikator)
       const mat = Array.isArray(obj.material) ? obj.material[0] : obj.material;
       if (mat && mat.transparent && (mat.opacity === undefined || mat.opacity < 0.85)) return;
 
-      // Lewati jika berada di dalam grup karakter / trem / kendaraan dinamis
+      // Pastikan SELURUH parent sampai root scene benar-benar visible & bukan grup dinamis
       let p = obj;
       while (p) {
+        if (p.visible === false) return;
         if (dynamicRoots.has(p) || p.userData?.a || p.userData?.isCar || p.userData?.isCoin || p.name === "piraku-shop-body-att" || p.name === "piraku-shop-head-att") return;
         p = p.parent;
+      }
+
+      // Cek ukuran lokal geometri agar objek tipis/miring (kabel/rel/garis jalan) tidak jadi kotak raksasa di ruang kosong
+      if (obj.geometry) {
+        if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
+        if (obj.geometry.boundingBox) {
+          obj.geometry.boundingBox.getSize(localSize);
+          localSize.multiply(obj.getWorldScale(new THREE.Vector3()));
+          if (localSize.y < 1.1 || localSize.x < 0.65 || localSize.z < 0.65) return;
+          if (localSize.x > 28 || localSize.z > 28) return;
+        }
       }
 
       tmpBox.setFromObject(obj);
@@ -3507,15 +3518,13 @@ let activeQuestSystem = null;
       tmpBox.getSize(tmpSize);
       tmpBox.getCenter(tmpCenter);
 
-      // Hanya ambil struktur bangunan/tembok/rumah/pilar yang berdiri di zona jalan kaki (y_min < 2.2, tinggi >= 1.1m)
-      // Abaikan lantai/aspal/lapangan (tinggi < 1.1m atau bentang > 48m)
-      if (tmpSize.y < 1.1 || tmpSize.y > 45) return;
+      if (tmpSize.y < 1.1 || tmpSize.y > 42) return;
       if (tmpSize.x < 0.65 || tmpSize.z < 0.65) return;
-      if (tmpSize.x > 46 || tmpSize.z > 46) return;
-      if (tmpBox.min.y > 2.2 || tmpBox.max.y < 1.0) return;
+      if (tmpSize.x > 28 || tmpSize.z > 28) return;
+      if (tmpBox.min.y > 1.8 || tmpBox.max.y < 1.0) return;
 
-      // Abaikan dek atas Flyover Pasupati (y > 2.5 di koridor z -29..-23) agar pemain bisa lewat di bawah & di atas jembatan
-      if (tmpCenter.z > -30.5 && tmpCenter.z < -21.5 && tmpBox.min.y > 1.8) return;
+      // Abaikan area Flyover Pasupati
+      if (tmpCenter.z > -31 && tmpCenter.z < -21 && tmpBox.min.y > 1.4) return;
 
       boxes.push({
         minX: tmpBox.min.x,
