@@ -1204,24 +1204,85 @@ let activeQuestSystem = null;
   const citizenHousesGroup = new THREE.Group(); scene.add(citizenHousesGroup);
   const houseOwnersRegistry = {};
 
+  function makeHouseOwnerPlaque(igText) {
+    const cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 64;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#0e2f2a';
+    ctx.fillRect(0, 0, 256, 64);
+    ctx.strokeStyle = '#ffcf4a';
+    ctx.lineWidth = 6;
+    ctx.strokeRect(3, 3, 250, 58);
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '800 26px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(igText || '@warga', 128, 33);
+    const tex = new THREE.CanvasTexture(cv);
+    return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+  }
+
   function spawnCitizenHouse(c, index) {
     if (houseOwnersRegistry[c.ig]) return houseOwnersRegistry[c.ig];
     const hg = new THREE.Group();
-    const hx = 25 + (index % 4) * 6;
-    const hz = -34 - Math.floor(index / 4) * 6;
+    const hx = 25 + (index % 4) * 6.4;
+    const hz = -34 - Math.floor(index / 4) * 6.8;
     hg.position.set(hx, 0, hz);
 
-    box(3.4, 2.4, 3.4, 0, 0.1, 0, 0xf8fafc, hg);
-    hip(4.0, 4.0, 1.5, 0, 2.5, 0, 0x9a3412, hg);
-    box(0.9, 1.5, 0.1, 0, 0.1, 1.72, 0x78350f, hg);
-    box(3.8, 0.15, 1.6, 0, 0.05, 2.4, 0xcbd5e1, hg);
-    box(2.4, 0.45, 0.1, 0, 3.6, 0, 0x0f172a, hg);
-    
+    const wallColors = [0xfafaf9, 0xfef3c7, 0xf1f5f9, 0xfff7ed];
+    const roofColors = [0x9a3412, 0x334155, 0x7c2d12, 0x1e293b];
+    const wCol = wallColors[index % wallColors.length];
+    const rCol = roofColors[index % roofColors.length];
+
+    // Kavling halaman rumput & jalan setapak paving batu
+    box(4.8, 0.12, 5.2, 0, 0, 0.3, 0x4d7c3f, hg, false, true);
+    box(1.3, 0.15, 2.2, 0.25, 0, 1.85, 0xcbd5e1, hg, false, true);
+
+    // Bodi utama rumah & aksen dinding batu alam di sisi kiri
+    box(3.8, 2.45, 3.2, 0, 0.12, -0.3, wCol, hg);
+    box(1.05, 2.5, 3.26, -1.38, 0.12, -0.3, 0x64748b, hg);
+
+    // Lis plafon putih & atap limas genteng modern
+    box(4.15, 0.16, 3.55, 0, 2.57, -0.3, 0xffffff, hg);
+    hip(4.35, 3.75, 1.5, 0, 2.73, -0.3, rCol, hg);
+
+    // Kanopi teras depan + 2 tiang pilar kayu
+    box(2.5, 0.14, 1.25, 0.1, 2.02, 1.65, rCol, hg);
+    box(0.13, 1.9, 0.13, -1.0, 0.12, 2.15, 0x78350f, hg);
+    box(0.13, 1.9, 0.13, 1.2, 0.12, 2.15, 0x78350f, hg);
+
+    // Pintu kayu berbingkai + gagang kuningan
+    box(0.92, 1.72, 0.1, 0.25, 0.12, 1.31, 0x451a03, hg);
+    box(0.78, 1.62, 0.12, 0.25, 0.12, 1.32, 0x92400e, hg);
+    box(0.06, 0.18, 0.06, 0.52, 0.85, 1.39, 0xfbbf24, hg, false);
+
+    // 2 Jendela kaca modern (menyala kuning hangat saat malam via GLASSM)
+    [-0.95, 1.25].forEach(wx => {
+      box(0.82, 1.02, 0.1, wx, 0.85, 1.31, 0x334155, hg, false);
+      box(0.68, 0.88, 0.12, wx, 0.92, 1.32, GLASSM, hg, false);
+    });
+
+    // Pagar depan rendah & 2 pot tanaman hias di teras
+    box(1.4, 0.42, 0.12, -1.65, 0.12, 2.78, 0x78350f, hg);
+    box(1.4, 0.42, 0.12, 1.65, 0.12, 2.78, 0x78350f, hg);
+    [-0.55, 1.05].forEach(px => {
+      cyl(0.18, 0.14, 0.28, 8, px, 0.12, 1.65, 0xb45309, hg);
+      mk(new THREE.SphereGeometry(0.24, 8, 6), 0x22c55e, px, 0.52, 1.65, hg);
+    });
+
+    // Papan Nama IG Pemilik Rumah di atas kanopi depan
+    const signMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.1, 0.52),
+      makeHouseOwnerPlaque(c.ig)
+    );
+    signMesh.position.set(0.1, 2.42, 2.28);
+    hg.add(signMesh);
+
     hg.scale.set(0.001, 0.001, 0.001);
     citizenHousesGroup.add(hg);
     gsap.to(hg.scale, { x: 1, y: 1, z: 1, duration: 0.8, ease: 'back.out' });
 
-    const houseData = { hx, hz, porchX: hx, porchZ: hz + 2.4, group: hg };
+    const houseData = { hx, hz, porchX: hx + 0.25, porchZ: hz + 2.35, group: hg };
     houseOwnersRegistry[c.ig] = houseData;
     return houseData;
   }

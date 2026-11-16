@@ -414,3 +414,148 @@
     window.openMissionsHubModal();
   };
 })();
+
+// ================= 4. UPGRADE VISUAL RUMAH 3D TROPIS & SPAWN PER KECAMATAN =================
+(function () {
+  let districtHousesGroup = null;
+  let lastRenderedDistrict = "";
+
+  function makeHouseNameSign(igText) {
+    const cv = document.createElement("canvas");
+    cv.width = 256; cv.height = 64;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#0e2f2a";
+    ctx.beginPath();
+    ctx.roundRect(4, 4, 248, 56, 14);
+    ctx.fill();
+    ctx.strokeStyle = "#ffcf4a";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.font = '800 24px "Bricolage Grotesque", system-ui, sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(igText, 128, 33);
+    const tex = new THREE.CanvasTexture(cv);
+    return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+  }
+
+  window.buildTropicalBandungHouse = function (citizen, index) {
+    const T = window.THREE;
+    if (!T) return null;
+
+    const hg = new T.Group();
+    const paletteWall = [0xfafaf9, 0xfef3c7, 0xf1f5f9, 0xfff7ed];
+    const paletteRoof = [0x9a3412, 0x1e293b, 0x7c2d12, 0x334155];
+    const wallCol = paletteWall[index % paletteWall.length];
+    const roofCol = paletteRoof[index % paletteRoof.length];
+
+    const mWall = new T.MeshStandardMaterial({ color: wallCol, roughness: 0.85, flatShading: true });
+    const mWood = new T.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8, flatShading: true });
+    const mStone = new T.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9, flatShading: true });
+    const mRoof = new T.MeshStandardMaterial({ color: roofCol, roughness: 0.85, flatShading: true });
+    const mGrass = new T.MeshStandardMaterial({ color: 0x4d7c3f, roughness: 0.9 });
+    const mGlass = window.pirakuGlassMat || new T.MeshStandardMaterial({ color: 0x1e293b, emissive: 0xffb347, emissiveIntensity: 0.4 });
+
+    const addBox = (w, h, d, x, y, z, mat) => {
+      const mesh = new T.Mesh(new T.BoxGeometry(w, h, d), mat);
+      mesh.position.set(x, y + h / 2, z);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      hg.add(mesh);
+      return mesh;
+    };
+
+    // Kavling halaman rumput & jalur paving depan
+    addBox(4.8, 0.12, 5.4, 0, 0, 0.3, mGrass);
+    addBox(1.4, 0.15, 2.2, 0, 0, 1.9, mStone);
+
+    // Bodi utama rumah & aksen batu alam samping
+    addBox(3.8, 2.5, 3.2, 0, 0.12, -0.3, mWall);
+    addBox(1.1, 2.55, 3.28, -1.35, 0.12, -0.3, mStone);
+
+    // Atap Limas Bertingkat + Lis Putih
+    addBox(4.1, 0.16, 3.5, 0, 2.62, -0.3, new T.MeshStandardMaterial({ color: 0xffffff }));
+    const roofGeo = new T.ConeGeometry(0.7071, 1, 4);
+    roofGeo.rotateY(Math.PI / 4);
+    const mainRoof = new T.Mesh(roofGeo, mRoof);
+    mainRoof.scale.set(4.3, 1.55, 3.7);
+    mainRoof.position.set(0, 2.78 + 0.775, -0.3);
+    mainRoof.castShadow = true;
+    hg.add(mainRoof);
+
+    // Kanopi teras depan + 2 pilar kayu
+    addBox(2.4, 0.14, 1.2, 0, 2.05, 1.65, mRoof);
+    addBox(0.14, 1.95, 0.14, -1.05, 0.12, 2.1, mWood);
+    addBox(0.14, 1.95, 0.14, 1.05, 0.12, 2.1, mWood);
+
+    // Pintu kayu utama + 2 jendela kaca hangat
+    addBox(0.85, 1.65, 0.12, 0.25, 0.12, 1.32, mWood);
+    addBox(0.75, 0.95, 0.12, -0.85, 0.85, 1.32, mGlass);
+    addBox(0.75, 0.95, 0.12, 1.25, 0.85, 1.32, mGlass);
+
+    // Pagar depan rendah & tanaman hias
+    addBox(1.5, 0.45, 0.12, -1.65, 0.12, 2.85, mWood);
+    addBox(1.5, 0.45, 0.12, 1.65, 0.12, 2.85, mWood);
+
+    // Papan Nama IG Pemilik Rumah di atas kanopi
+    const signMesh = new T.Mesh(new T.PlaneGeometry(2.2, 0.55), makeHouseNameSign(citizen.ig || "@warga"));
+    signMesh.position.set(0, 2.48, 2.28);
+    hg.add(signMesh);
+
+    return hg;
+  };
+
+  window.syncDistrictHousesInScene = async function (districtName) {
+    const scene = window.pirakuScene;
+    const sb = window.pirakuSupabase;
+    if (!scene || !sb || !districtName || districtName.toLowerCase() === "bandung wetan") return;
+
+    if (districtHousesGroup) {
+      scene.remove(districtHousesGroup);
+      districtHousesGroup = null;
+    }
+
+    districtHousesGroup = new window.THREE.Group();
+    districtHousesGroup.name = "piraku-district-houses";
+    scene.add(districtHousesGroup);
+
+    try {
+      const { data } = await sb
+        .from("warga_publik")
+        .select("*")
+        .eq("has_house", true)
+        .ilike("kecamatan", districtName)
+        .order("house_index", { ascending: true });
+
+      if (!data || data.length === 0) return;
+
+      data.forEach((c, idx) => {
+        const house = window.buildTropicalBandungHouse(c, idx);
+        if (!house) return;
+        // Jejer rapi di zona kavling perumahan distrik (sisi timur-utara)
+        const col = idx % 4;
+        const row = Math.floor(idx / 4);
+        const hx = 25 + col * 6.2;
+        const hz = -34 - row * 6.8;
+        house.position.set(hx, 0, hz);
+        districtHousesGroup.add(house);
+      });
+    } catch (e) {}
+  };
+
+  // Pantau perpindahan distrik otomatis agar rumah warga selalu sesuai kecamatan aktif
+  setInterval(() => {
+    const pill = document.getElementById("piraku-active-map-pill");
+    let activeName = "Bandung Wetan";
+    if (pill && pill.style.display !== "none") {
+      const txt = pill.querySelector("span")?.textContent || "";
+      const clean = txt.replace(/^[^\w]+/, "").replace(/▾$/, "").trim();
+      if (clean) activeName = clean;
+    }
+    if (activeName !== lastRenderedDistrict) {
+      lastRenderedDistrict = activeName;
+      window.syncDistrictHousesInScene(activeName);
+    }
+  }, 1500);
+})();
