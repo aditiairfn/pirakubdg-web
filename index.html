@@ -880,7 +880,7 @@
 
   <!-- quests.js disabled -->
   <script src="./js/main.js?v=20261115v54"></script>
-  <script src="js/multiplayer.js?v=20261116v4"></script>
+  <script src="js/multiplayer.js?v=20261116v5"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v26"></script>
@@ -1025,7 +1025,7 @@
 
   <script src="js/piraku-economy.js?v=20261116v5"></script>
   <script src="js/piraku-games.js?v=20261116v2"></script>
-  <script src="js/piraku-world-live.js?v=20261116v2"></script>
+  <script src="js/piraku-world-live.js?v=20261116v5"></script>
   <script src="js/piraku-nav-modals.js?v=20261115v2"></script>
   <script src="js/piraku-districts.js?v=20261116v8"></script>
 
@@ -1052,64 +1052,141 @@
   </script>
 
   
+  
+  <style id="piraku-vip-tier-styles">
+    @keyframes sultanShimmer {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .nametag-tier-4 {
+      background: linear-gradient(120deg, #06182c 0%, #0e7490 45%, #38bdf8 50%, #0e7490 55%, #06182c 100%) !important;
+      background-size: 220% 220% !important;
+      animation: sultanShimmer 3.5s ease infinite !important;
+      color: #f0f9ff !important;
+      border: 1.5px solid #7dd3fc !important;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.7), 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+      padding: 4px 10px !important;
+      border-radius: 999px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.3px !important;
+    }
+    .nametag-tier-3 {
+      background: linear-gradient(135deg, #291503 0%, #92400e 50%, #b45309 100%) !important;
+      color: #fef3c7 !important;
+      border: 1.5px solid #fbbf24 !important;
+      box-shadow: 0 0 14px rgba(251, 191, 36, 0.55) !important;
+      padding: 3px 9px !important;
+      border-radius: 999px !important;
+      font-weight: 800 !important;
+    }
+    .nametag-tier-2 {
+      background: linear-gradient(135deg, #1e1b4b 0%, #3730a3 100%) !important;
+      color: #e0e7ff !important;
+      border: 1.5px solid #818cf8 !important;
+      padding: 3px 9px !important;
+      border-radius: 999px !important;
+      font-weight: 800 !important;
+    }
+    .popup-card-tier-4 {
+      background: linear-gradient(160deg, #071324 0%, #0c2744 60%, #083344 100%) !important;
+      color: #f8fafc !important;
+      border: 2px solid #38bdf8 !important;
+      box-shadow: 0 16px 38px rgba(8, 47, 73, 0.75), 0 0 24px rgba(56, 189, 248, 0.45) !important;
+    }
+    .popup-card-tier-4 #b-kec { color: #bae6fd !important; }
+    .popup-card-tier-4 .btn-emote-action {
+      background: rgba(15, 23, 42, 0.85) !important;
+      color: #e0f2fe !important;
+      border: 1px solid rgba(56, 189, 248, 0.4) !important;
+    }
+    .popup-card-tier-3 {
+      background: linear-gradient(160deg, #1f1204 0%, #451a03 100%) !important;
+      color: #fef3c7 !important;
+      border: 2px solid #f59e0b !important;
+      box-shadow: 0 14px 32px rgba(69, 26, 3, 0.65) !important;
+    }
+    .popup-card-tier-2 {
+      background: linear-gradient(160deg, #13112b 0%, #1e1b4b 100%) !important;
+      color: #eef2ff !important;
+      border: 2px solid #818cf8 !important;
+    }
+  </style>
   <script id="piraku-ktp-title-sync">
+    function resolveTierForUsername(rawName) {
+      const clean = String(rawName || "").toLowerCase().replace(/^@/, "").split("•")[0].trim();
+      const myIg = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "").trim();
+      if (clean && clean === myIg && window.PirakuEconomy && typeof window.PirakuEconomy.getTierObj === "function") {
+        const t = window.PirakuEconomy.getTierObj();
+        return { tierId: t.id, tierName: t.name, tierBadge: t.badge };
+      }
+      const rem = (window.pirakuRemoteTiers || {})[clean];
+      if (rem && rem.tierId && rem.tierId !== "tier_1") return rem;
+      return null;
+    }
+
     setInterval(() => {
       const eco = window.PirakuEconomy;
-      if (!eco || typeof eco.getTierObj !== "function") return;
-      const tier = eco.getTierObj();
-      const myIg = (localStorage.getItem("piraku_my_ig") || "yelclaw").replace(/^@/, "");
-      const hasPaidTier = tier && tier.id && tier.id !== "tier_1";
+      const myIg = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "").trim();
+      if (myIg && eco && typeof eco.getTierObj === "function") {
+        const t = eco.getTierObj();
+        window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
+        window.pirakuRemoteTiers[myIg] = { tierId: t.id, tierName: t.name, tierBadge: t.badge };
+      }
 
-      // 1. Update semua bubble nametag 3D milik sendiri (termasuk bubble putih bawaan index.html)
+      // 1. Desain ulang semua Nametag 3D (diri sendiri maupun pemain lain yang punya gelar)
       document.querySelectorAll("div, span").forEach(el => {
         if (el.children.length > 0) return;
-        const txt = (el.textContent || "").trim();
-        if (txt === "@" + myIg || txt === myIg) {
-          if (hasPaidTier) {
-            el.textContent = "@" + myIg + " • " + tier.badge + " " + tier.name;
-            if (tier.id === "tier_4") {
-              el.style.border = "1.5px solid #38bdf8";
-              el.style.boxShadow = "0 4px 14px rgba(56,189,248,0.45)";
-            } else if (tier.id === "tier_3") {
-              el.style.border = "1.5px solid #f59e0b";
-              el.style.boxShadow = "0 4px 14px rgba(245,158,11,0.4)";
-            }
-          }
+        const raw = (el.textContent || "").trim();
+        if (!raw.startsWith("@") || raw.length > 48) return;
+        const baseHandle = raw.split("•")[0].trim();
+        const tierInfo = resolveTierForUsername(baseHandle);
+        el.classList.remove("nametag-tier-2", "nametag-tier-3", "nametag-tier-4");
+        if (tierInfo && tierInfo.tierId !== "tier_1") {
+          const desired = baseHandle + " • " + tierInfo.tierBadge + " " + tierInfo.tierName;
+          if (el.textContent !== desired) el.textContent = desired;
+          el.classList.add("nametag-" + tierInfo.tierId.replace("_", "-"));
         }
       });
 
-      // 2. Tempelkan badge Gelar di Kartu Popup Klik Warga (di sebelah role BARISTA/WARGA)
-      const roleBadges = Array.from(document.querySelectorAll("div, span")).filter(el => {
-        const t = (el.textContent || "").trim();
-        return ["BARISTA", "WARGA", "SENIMAN", "MAHASISWA", "KREATOR"].includes(t) && el.parentElement;
-      });
-      roleBadges.forEach(rb => {
-        const parent = rb.parentElement;
-        let tChip = parent.querySelector(".piraku-popup-tier-chip");
-        if (!hasPaidTier) {
-          if (tChip) tChip.remove();
-          return;
+      // 2. Desain ulang Kartu Popup Klik Warga sesuai pemilik karakter yang diklik
+      const kecEl = document.getElementById("b-kec");
+      const cardEl = kecEl ? kecEl.parentElement : null;
+      if (cardEl) {
+        const nameEl = cardEl.querySelector("strong, b, h3, h4, .bubble-name, [id^=b-name], [id^=b-ig]") || cardEl.firstElementChild;
+        const targetHandle = nameEl ? nameEl.textContent : "";
+        const targetTier = resolveTierForUsername(targetHandle);
+        cardEl.classList.remove("popup-card-tier-2", "popup-card-tier-3", "popup-card-tier-4");
+        let banner = cardEl.querySelector(".piraku-vip-banner");
+        if (targetTier && targetTier.tierId !== "tier_1") {
+          cardEl.classList.add("popup-card-" + targetTier.tierId.replace("_", "-"));
+          if (!banner) {
+            banner = document.createElement("div");
+            banner.className = "piraku-vip-banner";
+            cardEl.insertBefore(banner, cardEl.firstChild);
+          }
+          const isSultan = targetTier.tierId === "tier_4";
+          banner.style.cssText = "margin:-4px -4px 7px -4px;padding:4px 8px;border-radius:8px;font-size:9.5px;font-weight:900;letter-spacing:0.6px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px;background:" + (isSultan ? "linear-gradient(90deg,#0284c7,#38bdf8,#0284c7)" : "linear-gradient(90deg,#b45309,#f59e0b)") + ";color:" + (isSultan ? "#041322" : "#1c0a00") + ";";
+          banner.textContent = targetTier.tierBadge + " " + targetTier.tierName + (isSultan ? " • VIP BANDUNG" : "");
+        } else if (banner) {
+          banner.remove();
         }
-        if (!tChip) {
-          tChip = document.createElement("span");
-          tChip.className = "piraku-popup-tier-chip";
-          tChip.style.cssText = "display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;margin-left:5px;background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;";
-          parent.insertBefore(tChip, rb);
-        }
-        tChip.textContent = tier.badge + " " + tier.name;
-      });
+      }
 
       // 3. Tampilkan Gelar di Modal Akun / KTP Digital
-      const ktpBox = document.querySelector("#modal-account .modal-card, #account-ktp-card, #ktp-preview-card");
-      if (ktpBox) {
-        let badgeEl = document.getElementById("ktp-active-tier-pill");
-        if (!badgeEl) {
-          badgeEl = document.createElement("div");
-          badgeEl.id = "ktp-active-tier-pill";
-          badgeEl.style.cssText = "margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.45);color:#bae6fd;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:space-between;";
-          ktpBox.insertBefore(badgeEl, ktpBox.children[2] || null);
+      if (eco && typeof eco.getTierObj === "function") {
+        const myTier = eco.getTierObj();
+        const ktpBox = document.querySelector("#modal-account .modal-card, #account-ktp-card, #ktp-preview-card");
+        if (ktpBox) {
+          let badgeEl = document.getElementById("ktp-active-tier-pill");
+          if (!badgeEl) {
+            badgeEl = document.createElement("div");
+            badgeEl.id = "ktp-active-tier-pill";
+            badgeEl.style.cssText = "margin-top:8px;padding:7px 11px;border-radius:10px;background:linear-gradient(90deg,rgba(14,116,144,0.35),rgba(56,189,248,0.2));border:1px solid #38bdf8;color:#e0f2fe;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:space-between;";
+            ktpBox.insertBefore(badgeEl, ktpBox.children[2] || null);
+          }
+          badgeEl.innerHTML = "<span>Status Gelar KTP</span><span>" + myTier.badge + " " + myTier.name + "</span>";
         }
-        badgeEl.innerHTML = "<span>Status Gelar KTP</span><span>" + tier.badge + " " + tier.name + "</span>";
       }
     }, 450);
   </script>

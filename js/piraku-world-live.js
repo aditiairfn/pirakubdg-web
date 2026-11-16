@@ -28,6 +28,7 @@
   }
 
   // ================= 1. SINKRONISASI DOMPET & BILLBOARD KE SUPABASE =================
+  window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
   window.syncPirakuWalletToSupabase = async function(state) {
     const sb = window.pirakuSupabase;
     if (!sb || !state) return;
@@ -37,6 +38,8 @@
         citizen_key: idObj.key,
         display_name: idObj.displayName,
         coins: Math.round(state.coins || 0),
+        tier_id: state.tier || "tier_1",
+        equipped_outfit: state.equippedOutfit || null,
         tier: state.tier || "tier_1",
         equipped_outfit: state.equippedOutfit || null,
         billboard_text: state.billboardText || null,
