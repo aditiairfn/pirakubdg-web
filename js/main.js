@@ -449,19 +449,24 @@ let activeQuestSystem = null;
     const sfxOn = (typeof window.isPirakuSfxEnabled === "function") ? window.isPirakuSfxEnabled() : !window.pirakuSoundMuted;
     if (!sfxOn) {
       if (windGain) {
-        try { windGain.gain.cancelScheduledValues(audioCtx.currentTime); } catch(e){}
-        windGain.gain.value = 0;
-        windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+        try {
+          windGain.gain.cancelScheduledValues(audioCtx.currentTime);
+          windGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        } catch(e){}
       }
       if (cricketsGain) {
-        try { cricketsGain.gain.cancelScheduledValues(audioCtx.currentTime); } catch(e){}
-        cricketsGain.gain.value = 0;
-        cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+        try {
+          cricketsGain.gain.cancelScheduledValues(audioCtx.currentTime);
+          cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        } catch(e){}
       }
     } else {
       if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
       if (isAmbiencePlaying && windGain) {
-        windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.3);
+        try {
+          windGain.gain.cancelScheduledValues(audioCtx.currentTime);
+          windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.3);
+        } catch(e){}
       }
     }
   };
@@ -1525,9 +1530,9 @@ let activeQuestSystem = null;
   const coinHud = document.createElement('div');
   coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
   coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
+  window.getPirakuPlayerPos = () => (typeof isRidingTram !== 'undefined' && isRidingTram && typeof tram !== 'undefined' ? tram.position : (typeof myPlayerMesh !== 'undefined' && myPlayerMesh ? myPlayerMesh.position : null));
   function updateCoins(dt) { return;
     if (!isRidingTram && !myPlayerMesh) return;
-    window.getPirakuPlayerPos = () => (isRidingTram && typeof tram !== 'undefined' ? tram.position : (typeof myPlayerMesh !== 'undefined' && myPlayerMesh ? myPlayerMesh.position : null));
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
     coins.forEach(c => {
       if (!c.h.visible) return;
