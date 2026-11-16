@@ -1,6 +1,6 @@
 // ================= PIRAKUBDG ECONOMY, WALLET, 10-MIN VEHICLE RENTAL & 3D SHOP =================
 (function() {
-  const STORAGE_KEY = "piraku_economy_v1";
+  const STORAGE_KEY = "piraku_economy_v2";
 
   const CATALOG = {
     outfit: [
@@ -40,7 +40,7 @@
       rentalExpiresAt: 0,
       tier: "tier_1",
       billboardText: "WILUJENG SUMPING DI PIRAKU BANDUNG!",
-      history: [{ label: "Bonus Warga Baru Piraku", delta: 500, ts: Date.now() }]
+      history: [{ label: "Bonus Warga Baru Piraku", delta: 25, ts: Date.now() }]
     };
   }
 
