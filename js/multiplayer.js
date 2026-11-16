@@ -662,3 +662,23 @@
     setTimeout(initPirakuMultiplayer, 300);
   }
 })();
+
+
+// --- AUTO-RECONNECT VOICE CHAT FIX ---
+window.forceReconnectVoiceChat = async function() {
+  console.log("[VoiceChat] Memulai ulang koneksi audio multiplayer...");
+  try {
+    if (typeof localStream !== "undefined" && localStream) {
+      localStream.getTracks().forEach(t => t.stop());
+    }
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    if (typeof showToast === "function") {
+      showToast("🎙️ Mikrofon tersambung kembali!");
+    }
+  } catch (err) {
+    console.error("[VoiceChat] Gagal mengakses mic:", err);
+    if (typeof showToast === "function") {
+      showToast("⚠️ Izinkan akses mikrofon di browser untuk Voice Chat!");
+    }
+  }
+};
