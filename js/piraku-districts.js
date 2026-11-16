@@ -1,4 +1,4 @@
-// ================= PIRAKUBDG 30 KECAMATAN KOMPLEK BUILDER & DYNAMIC MINIMAP =================
+// ================= PIRAKUBDG 30 KECAMATAN KOMPLEK BUILDER (ISOLATED ROOMS + HORIZON + GROUNDING) =================
 (function() {
   const DISTRICTS = [
     { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x15803d, accent: 0xfacc15, isMainMap: true },
@@ -104,86 +104,112 @@
     } catch (e) {}
   }
 
-  // ================= 1. KOMPLEK PERUMAHAN 4 BLOK & 5 LEVEL EVOLUSI =================
   let hiddenMainObjects = [];
   let customDistrictGroup = null;
   let districtCoins = [];
 
-  // 20 Titik Kavling Terstruktur dalam 4 Blok Perumahan (Barat Laut, Timur Laut, Barat Daya, Tenggara)
   const KAVLING_SLOTS = [
-    // Blok A (Barat Daya - dekat gerbang)
     { x: -13, z: 13, rotY: 0 }, { x: -20, z: 13, rotY: 0 }, { x: -27, z: 13, rotY: 0 }, { x: -13, z: 22, rotY: Math.PI }, { x: -20, z: 22, rotY: Math.PI },
-    // Blok B (Tenggara - dekat gerbang)
     { x: 13, z: 13, rotY: 0 },  { x: 20, z: 13, rotY: 0 },  { x: 27, z: 13, rotY: 0 },  { x: 13, z: 22, rotY: Math.PI },  { x: 20, z: 22, rotY: Math.PI },
-    // Blok C (Barat Laut)
     { x: -13, z: -13, rotY: Math.PI }, { x: -20, z: -13, rotY: Math.PI }, { x: -27, z: -13, rotY: Math.PI }, { x: -13, z: -22, rotY: 0 }, { x: -20, z: -22, rotY: 0 },
-    // Blok D (Timur Laut)
     { x: 13, z: -13, rotY: Math.PI },  { x: 20, z: -13, rotY: Math.PI },  { x: 27, z: -13, rotY: Math.PI },  { x: 13, z: -22, rotY: 0 },  { x: 20, z: -22, rotY: 0 }
   ];
 
-  function createHouseMesh(idx, lv) {
+  // Arsitektur Rumah Komplek Detail (Pondasi Batu, Teras Berkanopi, Tiang, Carport, Atap Bertingkat)
+  function createDetailedHouseMesh(idx, lv) {
     const g = new THREE.Group();
     const isTwoStory = (lv >= 2 && idx % 2 === 1) || lv >= 4;
     const wallPalette = [0xfefce8, 0xf8fafc, 0xe0f2fe, 0xffedd5, 0xfce7f3];
-    const roofPalette = [0x9a3412, 0x1e293b, 0xb45309, 0x7f1d1d];
-    const wallMat = new THREE.MeshStandardMaterial({ color: wallPalette[idx % wallPalette.length], roughness: 0.65 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: roofPalette[idx % roofPalette.length], roughness: 0.55 });
+    const accentPalette = [0xb45309, 0x1d4ed8, 0x0f766e, 0x991b1b, 0x4338ca];
+    const wallMat = new THREE.MeshStandardMaterial({ color: wallPalette[idx % wallPalette.length], roughness: 0.62 });
+    const trimMat = new THREE.MeshStandardMaterial({ color: accentPalette[idx % accentPalette.length], roughness: 0.5 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.55 });
+    const stoneMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.85 });
 
-    // Halaman & Pagar Rendah Komplek
-    const yard = new THREE.Mesh(
-      new THREE.BoxGeometry(5.2, 0.08, 6.2),
-      new THREE.MeshStandardMaterial({ color: 0xdbeafe, roughness: 0.85 })
-    );
-    yard.position.y = 0.04;
-    g.add(yard);
+    // 1. Paving Halaman & Carport
+    const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.06, 6.4), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
+    yard.position.y = 0.03;
+    const lawn = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.08, 2.2), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 }));
+    lawn.position.set(-1.3, 0.04, 1.8);
+    g.add(yard, lawn);
 
-    const fenceMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc });
-    const fenceF1 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 0.14), fenceMat);
-    fenceF1.position.set(-1.5, 0.25, 3.0);
-    const fenceF2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.45, 0.14), fenceMat);
-    fenceF2.position.set(1.75, 0.25, 3.0);
-    g.add(fenceF1, fenceF2);
+    // 2. Pagar Tembok Rendah + Pilar Gerbang
+    const fence1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.55, 0.18), wallMat);
+    fence1.position.set(-1.5, 0.3, 3.1);
+    const pillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.85, 0.32), stoneMat);
+    pillar1.position.set(-0.25, 0.44, 3.1);
+    const pillar2 = pillar1.clone(); pillar2.position.x = 1.1;
+    g.add(fence1, pillar1, pillar2);
 
-    // Badan Rumah Lantai 1
-    const h1 = 2.2;
-    const body1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, h1, 3.8), wallMat);
-    body1.position.set(0, h1 / 2 + 0.08, -0.5);
+    // 3. Pondasi Batu Alam & Badan Utama Rumah
+    const plinth = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.32, 3.8), stoneMat);
+    plinth.position.set(-0.4, 0.2, -0.7);
+    const h1 = 2.3;
+    const body1 = new THREE.Mesh(new THREE.BoxGeometry(4.2, h1, 3.6), wallMat);
+    body1.position.set(-0.4, 0.36 + h1 / 2, -0.7);
     body1.castShadow = true; body1.receiveShadow = true;
-    g.add(body1);
+    g.add(plinth, body1);
 
-    // Pintu & Jendela Hangat
-    const door = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.55, 0.12), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-    door.position.set(-0.7, 0.86, 1.42);
-    const winMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-    const win1 = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.85, 0.12), winMat);
-    win1.position.set(0.95, 1.15, 1.42);
-    g.add(door, win1);
+    // 4. Teras Depan Beratap Kanopi + 2 Tiang Penyangga
+    const porchFloor = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.25, 1.2), stoneMat);
+    porchFloor.position.set(-0.8, 0.16, 1.6);
+    const porchRoof = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.16, 1.35), trimMat);
+    porchRoof.position.set(-0.8, 2.15, 1.65);
+    const postL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 1.95, 0.16), trimMat);
+    postL.position.set(-2.0, 1.2, 2.15);
+    const postR = postL.clone(); postR.position.x = 0.4;
+    g.add(porchFloor, porchRoof, postL, postR);
 
+    // 5. Pintu Panel Kayu & Jendela Berbingkai
+    const doorFrame = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.7, 0.14), stoneMat);
+    doorFrame.position.set(-1.1, 1.15, 1.12);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.84, 1.6, 0.16), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+    door.position.set(-1.1, 1.12, 1.14);
+
+    const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.0, 0.14), trimMat);
+    winFrame.position.set(0.65, 1.45, 1.12);
+    const winGlass = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.82, 0.16), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+    winGlass.position.set(0.65, 1.45, 1.14);
+    g.add(doorFrame, door, winFrame, winGlass);
+
+    // 6. Carport Samping Berkanopi
+    const carportRoof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.12, 3.2), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+    carportRoof.position.set(2.1, 2.1, 0.6);
+    const cpPost = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 2.05, 6), stoneMat);
+    cpPost.position.set(2.65, 1.05, 2.0);
+    g.add(carportRoof, cpPost);
+
+    // 7. Lantai 2 & Balkon (untuk rumah tingkat) atau Atap Limas Bertingkat
     if (isTwoStory) {
-      const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.9, 3.4), wallMat);
-      body2.position.set(0, h1 + 0.95, -0.5);
-      const win2 = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.75, 0.12), winMat);
-      win2.position.set(0, h1 + 1.0, 1.22);
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(3.1, 1.45, 4), roofMat);
-      roof.rotation.y = Math.PI / 4;
-      roof.position.set(0, h1 + 2.6, -0.5);
-      g.add(body2, win2, roof);
+      const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.8, 1.95, 3.2), wallMat);
+      body2.position.set(-0.4, 2.66 + 0.97, -0.8);
+      const balcony = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 0.9), trimMat);
+      balcony.position.set(-0.8, 2.85, 1.15);
+      const win2 = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.85, 0.14), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+      win2.position.set(-0.4, 3.65, 0.82);
+      const fascia2 = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.18, 3.8), trimMat);
+      fascia2.position.set(-0.4, 4.65, -0.8);
+      const roof2 = new THREE.Mesh(new THREE.ConeGeometry(3.2, 1.4, 4), roofMat);
+      roof2.rotation.y = Math.PI / 4;
+      roof2.position.set(-0.4, 5.4, -0.8);
+      g.add(body2, balcony, win2, fascia2, roof2);
     } else {
-      const roof = new THREE.Mesh(new THREE.ConeGeometry(3.4, 1.5, 4), roofMat);
-      roof.rotation.y = Math.PI / 4;
-      roof.position.set(0, h1 + 0.82, -0.5);
-      g.add(roof);
+      const fascia1 = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.18, 4.2), trimMat);
+      fascia1.position.set(-0.4, 2.7, -0.7);
+      const roof1 = new THREE.Mesh(new THREE.ConeGeometry(3.5, 1.45, 4), roofMat);
+      roof1.rotation.y = Math.PI / 4;
+      roof1.position.set(-0.4, 3.48, -0.7);
+      g.add(fascia1, roof1);
     }
 
-    // Mobil Warga di Carport (muncul di rumah level 3+)
-    if (lv >= 3 && idx % 3 === 0) {
-      const carCols = [0xef4444, 0x3b82f6, 0xf8fafc, 0x0f172a];
-      const car = new THREE.Mesh(
-        new THREE.BoxGeometry(1.1, 0.55, 2.0),
-        new THREE.MeshStandardMaterial({ color: carCols[idx % carCols.length], metalness: 0.4, roughness: 0.3 })
-      );
-      car.position.set(1.45, 0.36, 1.6);
-      g.add(car);
+    // 8. Mobil di Carport (Lv.3+)
+    if (lv >= 3 && idx % 2 === 0) {
+      const carCols = [0xef4444, 0x2563eb, 0xf8fafc, 0x0f172a];
+      const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCols[idx % carCols.length], metalness: 0.4, roughness: 0.3 }));
+      carBody.position.set(2.05, 0.35, 0.8);
+      const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.1), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      carCabin.position.set(2.05, 0.72, 0.7);
+      g.add(carBody, carCabin);
     }
 
     return g;
@@ -191,14 +217,11 @@
 
   function createEmptyLotMesh() {
     const g = new THREE.Group();
-    const soil = new THREE.Mesh(
-      new THREE.BoxGeometry(5.0, 0.05, 6.0),
-      new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.95 })
-    );
-    soil.position.y = 0.03;
+    const soil = new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.04, 6.0), new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.95 }));
+    soil.position.y = 0.02;
     g.add(soil);
     const stakeMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
-    [[-2.3, -2.8], [2.3, -2.8], [-2.3, 2.8], [2.3, 2.8]].forEach(([sx, sz]) => {
+    [[-2.4, -2.8], [2.4, -2.8], [-2.4, 2.8], [2.4, 2.8]].forEach(([sx, sz]) => {
       const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.75, 6), stakeMat);
       p.position.set(sx, 0.38, sz);
       g.add(p);
@@ -229,71 +252,86 @@
 
     const grp = new THREE.Group();
     grp.name = "piraku-komplek-district-map";
+    // Turunkan elevasi dasar komplek ke -0.14 agar kaki & bayangan pemain menapak 100% di atas permukaan (tidak tenggelam)
+    grp.position.y = -0.14;
+
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
 
-    // 1. Hamparan Tanah Hijau Komplek (110 x 110)
+    // 1. Hamparan Lanskap Horizon Sangat Luas (760 x 760) + Cincin Pegunungan Bandung di Kejauhan
+    const horizonGround = new THREE.Mesh(
+      new THREE.PlaneGeometry(760, 760),
+      new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.95 })
+    );
+    horizonGround.rotation.x = -Math.PI / 2;
+    horizonGround.position.y = -0.02;
+    grp.add(horizonGround);
+
+    // Siluet Pegunungan Bandung Melingkar di Cakrawala (radius 155–220)
+    const hillMats = [
+      new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.92 }),
+      new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.92 }),
+      new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.9 })
+    ];
+    for (let m = 0; m < 28; m++) {
+      const ang = (m / 28) * Math.PI * 2;
+      const dist = 165 + (m % 3) * 26;
+      const mRad = 32 + (m % 4) * 14;
+      const mHeight = 22 + (m % 5) * 9;
+      const mountain = new THREE.Mesh(new THREE.ConeGeometry(mRad, mHeight, 7), hillMats[m % hillMats.length]);
+      mountain.position.set(Math.cos(ang) * dist, mHeight / 2 - 1, Math.sin(ang) * dist);
+      grp.add(mountain);
+    }
+
+    // 2. Area Utama Kawasan Komplek (110 x 110) + Jalan Raya Penghubung ke Luar Kota
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(110, 110),
-      new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.9 })
+      new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.88 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     grp.add(ground);
 
-    // 2. Jalan Utama Komplek (Boulevard Utara-Selatan & Barat-Timur) + Jalan Gang Blok
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.82 });
     const curbMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.7 });
 
-    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 100), roadMat);
-    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.02, 0);
-    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(100, 7.2), roadMat);
-    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.02, 0);
+    const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 320), roadMat);
+    roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.015, 0);
+    const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(320, 7.2), roadMat);
+    roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.015, 0);
 
-    // Jalan Gang Blok Utara & Selatan
     const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.02, -17.5);
+    gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.015, -17.5);
     const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.2), roadMat);
-    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.02, 17.5);
-
+    gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.015, 17.5);
     grp.add(roadNS, roadEW, gangN, gangS);
 
-    // Marka Jalan Putus-Putus
+    // Marka Jalan
     const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-    for (let m = -42; m <= 42; m += 6) {
+    for (let m = -84; m <= 84; m += 6) {
       if (Math.abs(m) < 10) continue;
       const m1 = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 2.4), markMat);
-      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.03, m);
+      m1.rotation.x = -Math.PI / 2; m1.position.set(0, 0.025, m);
       const m2 = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.24), markMat);
-      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.03, 0);
+      m2.rotation.x = -Math.PI / 2; m2.position.set(m, 0.025, 0);
       grp.add(m1, m2);
     }
 
-    // 3. Bundaran Taman / Lapang Tengah Komplek
-    const roundGrass = new THREE.Mesh(
-      new THREE.CircleGeometry(7.5, 32),
-      new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 })
-    );
-    roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.035, 0);
-    const roundPaving = new THREE.Mesh(
-      new THREE.RingGeometry(7.5, 9.2, 32),
-      curbMat
-    );
-    roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.032, 0);
+    // 3. Bundaran Taman Tengah Komplek
+    const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(7.5, 32), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
+    roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.028, 0);
+    const roundPaving = new THREE.Mesh(new THREE.RingGeometry(7.5, 9.2, 32), curbMat);
+    roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.025, 0);
     grp.add(roundGrass, roundPaving);
 
-    // Tugu / Monumen Tengah Bundaran (berkembang megah di Lv.5)
     const monH = 1.8 + cur.lv * 0.75;
     const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.1, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x334155 }));
     ped.position.y = 0.4;
-    const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.35, 0.65, monH, 12),
-      new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.55, roughness: 0.25 })
-    );
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.65, monH, 12), new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.55, roughness: 0.25 }));
     pillar.position.y = 0.8 + monH / 2;
     grp.add(ped, pillar);
 
-    // 4. Gapura Gerbang Komplek & Pos Ronda/Satpam di Pintu Masuk Selatan (z = 29)
+    // 4. Gapura Masuk Komplek & Pos Satpam (Selatan)
     const gateCv = document.createElement("canvas");
     gateCv.width = 512; gateCv.height = 112;
     const gctx = gateCv.getContext("2d");
@@ -304,32 +342,27 @@
     gctx.fillStyle = "#e2e8f0"; gctx.font = "17px sans-serif";
     gctx.fillText(`${cur.title} (${cur.houses}/20 Kavling Terbangun)`, 256, 82);
 
-    const gateBanner = new THREE.Mesh(
-      new THREE.PlaneGeometry(8.4, 1.8),
-      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv) })
-    );
+    const gateBanner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv) }));
     gateBanner.position.set(0, 4.2, 29);
     const gateColL = new THREE.Mesh(new THREE.BoxGeometry(0.7, 5.2, 0.7), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
     gateColL.position.set(-4.3, 2.6, 29);
     const gateColR = gateColL.clone(); gateColR.position.x = 4.3;
 
-    // Pos Satpam / Pos Ronda
     const posBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.4), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
     posBox.position.set(-6.2, 1.1, 28);
     const posRoof = new THREE.Mesh(new THREE.ConeGeometry(2.1, 1.1, 4), new THREE.MeshStandardMaterial({ color: 0x991b1b }));
     posRoof.rotation.y = Math.PI / 4; posRoof.position.set(-6.2, 2.75, 28);
     grp.add(gateBanner, gateColL, gateColR, posBox, posRoof);
 
-    // 5. Bangun 20 Kavling Rumah Komplek Sesuai Level (Lv.1 = 4 rumah, Lv.5 = 20 rumah penuh!)
+    // 5. 20 Kavling Rumah Komplek Bertingkat Sesuai Level
     KAVLING_SLOTS.forEach((slot, idx) => {
-      const unit = idx < cur.houses ? createHouseMesh(idx, cur.lv) : createEmptyLotMesh();
+      const unit = idx < cur.houses ? createDetailedHouseMesh(idx, cur.lv) : createEmptyLotMesh();
       unit.position.set(slot.x, 0, slot.z);
       unit.rotation.y = slot.rotY;
       grp.add(unit);
     });
 
-    // 6. Fasilitas Umum Komplek Bertahap per Level
-    // Lv.2+: Mushola Komplek di sudut Barat Laut
+    // 6. Fasilitas Umum Komplek (Mushola Lv.2+, Warung Kopi Lv.3+, Balai RW Lv.4+)
     if (cur.lv >= 2) {
       const mushola = new THREE.Group();
       const mBody = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.6, 4.6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
@@ -340,8 +373,6 @@
       mushola.position.set(-29, 0, -22);
       grp.add(mushola);
     }
-
-    // Lv.3+: Warung Kopi / Pujasera Komplek di Timur Laut
     if (cur.lv >= 3) {
       const cafe = new THREE.Group();
       const cBase = new THREE.Mesh(new THREE.BoxGeometry(5.0, 2.4, 3.6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
@@ -352,30 +383,38 @@
       cafe.position.set(29, 0, -22);
       grp.add(cafe);
     }
-
-    // Lv.4+: Balai Pertemuan RW 2 Lantai di Tenggara
     if (cur.lv >= 4) {
       const balai = new THREE.Mesh(new THREE.BoxGeometry(6.2, 4.2, 4.4), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
       balai.position.set(29, 2.1, 22);
       grp.add(balai);
     }
 
-    // 7. Pohon Peneduh Trotoar Komplek
-    [[-9, -9], [9, -9], [-9, 9], [9, 9], [-24, -6], [24, -6], [-24, 6], [24, 6]].forEach(([tx, tz]) => {
+    // 7. Pepohonan & Lampu Jalan PJU
+    const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
+    const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    [[-9, -9], [9, -9], [-9, 9], [9, 9], [-24, -6], [24, -6], [-24, 6], [24, 6], [-38, -28], [38, -28], [-38, 28], [38, 28]].forEach(([tx, tz], i) => {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
       trunk.position.set(tx, 0.7, tz);
-      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.15, 0), new THREE.MeshStandardMaterial({ color: 0x16a34a }));
+      const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2, 0), new THREE.MeshStandardMaterial({ color: 0x16a34a }));
       crown.position.set(tx, 1.95, tz);
       grp.add(trunk, crown);
+
+      if (i < 8) {
+        const pju = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 3.4, 6), poleMat);
+        pju.position.set(tx * 0.55, 1.7, tz * 0.55);
+        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), bulbMat);
+        lamp.position.set(tx * 0.55, 3.45, tz * 0.55);
+        grp.add(pju, lamp);
+      }
     });
 
-    // 8. 6 Koin Emas Harian di Jalan Komplek
+    // 8. 6 Koin Emas Harian Komplek
     const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 16);
     const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.2 });
     [[0, 12], [0, -12], [12, 0], [-12, 0], [17, 17.5], [-17, -17.5]].forEach(([cx, cz]) => {
       const cm = new THREE.Mesh(coinGeo, coinMat);
       cm.rotation.x = Math.PI / 2;
-      cm.position.set(cx, 0.85, cz);
+      cm.position.set(cx, 0.95, cz);
       grp.add(cm);
       districtCoins.push(cm);
     });
@@ -383,7 +422,6 @@
     sc.add(grp);
     customDistrictGroup = grp;
 
-    // Tempatkan pemain tepat di depan Gerbang Masuk Komplek menghadap Bundaran Tengah
     if (playerMesh && playerMesh.position) {
       playerMesh.position.set(0, 0.14, 24);
       if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
@@ -393,18 +431,14 @@
     }
   }
 
-  // ================= 2. MINIMAP RADAR KOMPLEK REAL-TIME =================
   let komplekMinimapOverlay = null;
-
   function updateKomplekMinimap(d) {
     const miniContainer = document.getElementById("minimap-container") || document.querySelector(".minimap-box, [id*='minimap']");
     if (!miniContainer) return;
-
     if (d.isMainMap) {
       if (komplekMinimapOverlay) komplekMinimapOverlay.style.display = "none";
       return;
     }
-
     if (!komplekMinimapOverlay) {
       komplekMinimapOverlay = document.createElement("canvas");
       komplekMinimapOverlay.width = 120;
@@ -415,7 +449,6 @@
     }
     komplekMinimapOverlay.style.display = "block";
     komplekMinimapOverlay.dataset.districtName = d.name;
-    komplekMinimapOverlay.dataset.districtLv = getLevelInfo(getCoinsFor(d)).cur.lv;
   }
 
   function drawKomplekMinimapFrame() {
@@ -423,50 +456,24 @@
       const ctx = komplekMinimapOverlay.getContext("2d");
       const w = 120, h = 120, cx = 60, cy = 60;
       ctx.clearRect(0, 0, w, h);
-
-      // Latar Radar Komplek
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(0, 0, w, h);
-
-      // 4 Blok Kavling Hijau
+      ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, w, h);
       ctx.fillStyle = "#166534";
-      ctx.fillRect(14, 18, 38, 34);
-      ctx.fillRect(68, 18, 38, 34);
-      ctx.fillRect(14, 68, 38, 34);
-      ctx.fillRect(68, 68, 38, 34);
-
-      // Jalan Komplek Simpang 4
+      ctx.fillRect(14, 18, 38, 34); ctx.fillRect(68, 18, 38, 34);
+      ctx.fillRect(14, 68, 38, 34); ctx.fillRect(68, 68, 38, 34);
       ctx.fillStyle = "#334155";
-      ctx.fillRect(54, 8, 12, 104);
-      ctx.fillRect(8, 54, 104, 12);
-
-      // Bundaran Tengah
-      ctx.beginPath();
-      ctx.arc(cx, cy, 11, 0, Math.PI * 2);
-      ctx.fillStyle = "#22c55e";
-      ctx.fill();
-      ctx.strokeStyle = "#facc15";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-
-      // Label Nama Kecamatan di Atas Radar
-      ctx.fillStyle = "#fde047";
-      ctx.font = "bold 9px sans-serif";
-      ctx.textAlign = "center";
+      ctx.fillRect(54, 8, 12, 104); ctx.fillRect(8, 54, 104, 12);
+      ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2);
+      ctx.fillStyle = "#22c55e"; ctx.fill();
+      ctx.strokeStyle = "#facc15"; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = "#fde047"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
       ctx.fillText((komplekMinimapOverlay.dataset.districtName || "KOMPLEK").toUpperCase().slice(0, 14), cx, 14);
-
-      // Titik Posisi Pemain Real-Time
       const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
       if (mesh && mesh.position) {
         const px = Math.max(12, Math.min(108, cx + (mesh.position.x / 45) * 46));
         const pz = Math.max(16, Math.min(108, cy + (mesh.position.z / 45) * 46));
-        ctx.beginPath();
-        ctx.arc(px, pz, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "#38bdf8";
-        ctx.fill();
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, pz, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#38bdf8"; ctx.fill();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
       }
     }
   }
@@ -496,6 +503,11 @@
     const d = DISTRICTS.find(x => x.id === districtId) || DISTRICTS[0];
     activeMapId = d.id;
 
+    // Pindahkan room multiplayer & WebRTC voice chat ke channel kecamatan yang dipilih (isolasi penuh antar-server/map)
+    if (typeof window.switchMultiplayerMapRoom === "function") {
+      window.switchMultiplayerMapRoom(d.id);
+    }
+
     if (d.isMainMap) {
       restoreMainGedungSateMap();
     } else {
@@ -517,7 +529,7 @@
     if (!banner || !titleEl || !subEl) return;
     const { cur } = getLevelInfo(getCoinsFor(d));
     titleEl.textContent = d.isMainMap ? `🏛️ PUSAT KOTA: ${d.name.toUpperCase()}` : `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
-    subEl.textContent = d.isMainMap ? d.landmark : `${cur.title} (${cur.houses}/20 Kavling)`;
+    subEl.textContent = d.isMainMap ? d.landmark : `${cur.title} (${cur.houses}/20 Kavling • Room Terisolasi)`;
     banner.style.opacity = "1";
     banner.style.transform = "translateX(-50%) translateY(0px)";
     clearTimeout(banner._t);
@@ -562,7 +574,6 @@
     requestAnimationFrame(tickDistrictLoop);
   }
 
-  // ================= 3. MODAL DIREKTORI & PEMBANGUNAN KOMPLEK 30 KECAMATAN =================
   let filterZone = "Semua";
 
   window.openDistrictsHubModal = function() {

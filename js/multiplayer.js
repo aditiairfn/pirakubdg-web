@@ -1,7 +1,8 @@
 // ================= PIRAKUBDG GLOBAL REALTIME MULTIPLAYER & PROXIMITY VOICE CHAT =================
 (function() {
   const SEND_INTERVAL_MS = 90;
-  const GLOBAL_CHANNEL_NAME = 'pirakubdg-global-world-v1';
+  let currentWorldRoomId = 'bandung_wetan';
+  function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
 
   let mpChannel = null;
@@ -467,12 +468,39 @@
       } catch (_) {}
     }
   };
+  window.switchMultiplayerMapRoom = function(newRoomId) {
+    const nextRoom = (newRoomId || "bandung_wetan").toLowerCase();
+    if (nextRoom === currentWorldRoomId && mpChannel) return;
+    currentWorldRoomId = nextRoom;
+
+    // Bersihkan seluruh avatar, nametag, dan koneksi suara WebRTC dari room kecamatan sebelumnya
+    Array.from(remotePlayers.keys()).forEach(sid => {
+      try { removeRemoteAvatar(sid); } catch (e) {}
+    });
+    remotePlayers.clear();
+    peerConnections.forEach((pc, sid) => {
+      try { pc.close(); } catch (e) {}
+    });
+    peerConnections.clear();
+    remoteAudioEls.forEach((el) => {
+      try { el.pause(); el.remove(); } catch (e) {}
+    });
+    remoteAudioEls.clear();
+
+    if (mpChannel && typeof supabaseClient !== "undefined" && supabaseClient) {
+      try { supabaseClient.removeChannel(mpChannel); } catch (e) {}
+      mpChannel = null;
+    }
+    updateOnlineCount(1);
+    connectGlobalWorld();
+  };
+
   function connectGlobalWorld() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
     if (mpChannel) return;
 
     const myInfo = getMyIdentity();
-    mpChannel = supabaseClient.channel(GLOBAL_CHANNEL_NAME, {
+    mpChannel = supabaseClient.channel(getRoomChannelName(), {
       config: {
         presence: { key: mySessionId },
         broadcast: { self: false }
