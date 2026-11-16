@@ -2560,6 +2560,13 @@ let activeQuestSystem = null;
 
     // Header AutoDetect Button
     window.updateAutoDetectButton = function() {
+    try {
+      const titleEl = document.getElementById("my-citizen-title");
+      const curLvl = parseInt(localStorage.getItem("piraku_my_level") || "99", 10);
+      if (typeof window.getPirakuCitizenTitle === "function" && titleEl) {
+        titleEl.textContent = window.getPirakuCitizenTitle(curLvl);
+      }
+    } catch(e) {}
     const savedIg = localStorage.getItem("piraku_my_ig");
     const savedXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10);
     const lvlData = typeof window.computePirakuLevelFromTotalXp === "function"
