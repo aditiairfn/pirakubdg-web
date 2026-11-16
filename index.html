@@ -122,9 +122,35 @@
 
   // Cegat seluruh Web Audio API (loncat, koin, klakson, denting bakso, minigame) saat SFX di-mute
   window._pirakuAudioContexts = window._pirakuAudioContexts || [];
+  window._pirakuMasterGains = window._pirakuMasterGains || [];
+
   const OrigAC = window.AudioContext || window.webkitAudioContext;
   if (OrigAC && !window._pirakuACWrapped) {
     window._pirakuACWrapped = true;
+    const OrigConnect = AudioNode.prototype.connect;
+    const OrigResume = OrigAC.prototype.resume;
+
+    OrigAC.prototype.resume = function() {
+      if (window.pirakuSoundMuted) return Promise.resolve();
+      return OrigResume.apply(this, arguments);
+    };
+
+    AudioNode.prototype.connect = function(dest) {
+      if (dest && dest.context && dest === dest.context.destination && !this._isPirakuMasterGain) {
+        const ctx = dest.context;
+        if (!ctx._pirakuMasterGain) {
+          const g = ctx.createGain();
+          g._isPirakuMasterGain = true;
+          g.gain.value = window.pirakuSoundMuted ? 0 : 1;
+          OrigConnect.call(g, dest);
+          ctx._pirakuMasterGain = g;
+          window._pirakuMasterGains.push(g);
+        }
+        return OrigConnect.call(this, ctx._pirakuMasterGain);
+      }
+      return OrigConnect.apply(this, arguments);
+    };
+
     const WrappedAC = function() {
       const ctx = new OrigAC(...arguments);
       window._pirakuAudioContexts.push(ctx);
@@ -163,6 +189,11 @@
     window.pirakuSoundMuted = (mode === "voice_only" || mode === "mute_all");
     // Voice chat nyala hanya pada mode "all" dan "voice_only"
     window.pirakuVoiceMuted = (mode === "sfx_only" || mode === "mute_all");
+    if (Array.isArray(window._pirakuMasterGains)) {
+      window._pirakuMasterGains.forEach(g => {
+        try { g.gain.value = window.pirakuSoundMuted ? 0 : 1; } catch (e) {}
+      });
+    }
     if (Array.isArray(window._pirakuAudioContexts)) {
       window._pirakuAudioContexts.forEach(ctx => {
         if (!ctx) return;
@@ -172,46 +203,6 @@
           if (ctx.state === "suspended") ctx.resume().catch(() => {});
         }
       });
-    }
-
-    document.querySelectorAll("audio, video").forEach(el => {
-      const isVoice = (el.id && el.id.includes("voice")) || (el.dataset && el.dataset.voice === "1") || el.srcObject instanceof MediaStream;
-      el.muted = isVoice ? window.pirakuVoiceMuted : window.pirakuSoundMuted;
-    });
-
-    const mainBtn = document.getElementById("btn-global-sound");
-    if (mainBtn) {
-      mainBtn.classList.remove("mode-all", "mode-sfx_only", "mode-voice_only", "mode-mute_all");
-      mainBtn.classList.add("mode-" + mode);
-    }
-
-    const SPK_ON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
-    const SPK_OFF = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><line x1="22" y1="9" x2="16" y2="15"/><line x1="16" y1="9" x2="22" y2="15"/></svg>';
-    const MIC_ON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
-    const MIC_OFF = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
-
-    const SEP = '<span style="opacity:0.3;color:#cbd5e1;">|</span>';
-    const BADGE_ALL = SPK_ON + SEP + MIC_ON;
-    const BADGE_SFX = SPK_ON + SEP + MIC_OFF;
-    const BADGE_VOICE = SPK_OFF + SEP + MIC_ON;
-    const BADGE_MUTE = SPK_OFF + SEP + MIC_OFF;
-
-    const iconWrap = document.getElementById("pubg-audio-main-icon");
-    if (iconWrap) {
-      iconWrap.style.gap = "5px";
-      iconWrap.style.display = "inline-flex";
-      iconWrap.style.alignItems = "center";
-      if (mode === "all") iconWrap.innerHTML = BADGE_ALL;
-      else if (mode === "sfx_only") iconWrap.innerHTML = BADGE_SFX;
-      else if (mode === "voice_only") iconWrap.innerHTML = BADGE_VOICE;
-      else iconWrap.innerHTML = BADGE_MUTE;
-    }
-
-    const ITEMS = {
-      all: { badge: BADGE_ALL, label: "Semua Nyala", activeBg: "rgba(34, 197, 94, 0.22)", activeBorder: "rgba(74, 222, 128, 0.65)" },
-      sfx_only: { badge: BADGE_SFX, label: "Game Saja", activeBg: "rgba(56, 189, 248, 0.22)", activeBorder: "rgba(56, 189, 248, 0.65)" },
-      voice_only: { badge: BADGE_VOICE, label: "Obrolan Saja", activeBg: "rgba(250, 204, 21, 0.22)", activeBorder: "rgba(250, 204, 21, 0.65)" },
-      mute_all: { badge: BADGE_MUTE, label: "Mute Total", activeBg: "rgba(239, 68, 68, 0.22)", activeBorder: "rgba(248, 113, 113, 0.65)" }
     };
 
     const pop = document.getElementById("pubg-audio-popover");
