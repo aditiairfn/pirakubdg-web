@@ -473,28 +473,12 @@ let activeQuestSystem = null;
   window.playSynthTone = function(freq, type, duration) {
     if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return;
     try {
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume().then(() => {
-          try {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = type;
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + duration);
-          } catch(e){}
-        }).catch(() => {});
-        return;
-      }
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -1508,12 +1492,12 @@ let activeQuestSystem = null;
   coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
   function updateCoins(dt) { return;
     if (!isRidingTram && !myPlayerMesh) return;
-    const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0, reborn = curMode === 'reborn';
+    const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
     coins.forEach(c => {
       if (!c.h.visible) return;
       if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
       c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
-      if (!reborn || Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3 : 2.2)) return;
+      if (Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3 : 2.2)) return;
       c.h.visible = false; c.back = 45; coinCount++; localStorage.setItem('piraku_coins', coinCount); coinHud.textContent = '🪙 ' + coinCount;
       if (window.playSynthTone) window.playSynthTone(880 + (coinCount % 5) * 80, 'triangle', .12);
       if (coinCount % 10 === 0) showToast('🪙 ' + coinCount + ' koin terkumpul! Warga teladan Bandung 👏');
