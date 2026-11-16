@@ -38,7 +38,7 @@
     const total = Math.round(baseCoins * (ch.mult || 1) * modeMult + (ch.bonus || 0));
     saveHighScore(gameId, total);
     if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-      const balancedReward = Math.max(4, Math.min(25, Math.round(total * 0.25)));
+      const balancedReward = Math.max(5, Math.min(10, Math.round(total * 0.12)));
       window.PirakuEconomy.addCoins(balancedReward, reason + " (" + ch.name + ")");
     }
     return total;

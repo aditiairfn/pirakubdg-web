@@ -7,7 +7,7 @@
       { id: "iket_sunda", name: "Iket Sunda / Totopong", price: 45, icon: "🧣", desc: "Iket kepala khas Sunda langsung terpasang di karakter 3D." },
       { id: "kacamata_hitam", name: "Kacamata Hitam Dago", price: 35, icon: "🕶️", desc: "Kacamata gaya buat nongkrong sore di Gasibu." },
       { id: "helm_biker", name: "Helm Biker Pasupati", price: 65, icon: "🪖", desc: "Helm visor gelap siap melintas di Flyover Pasupati." },
-      { id: "aura_emas", name: "Aura Langkah Emas", price: 100, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
+      { id: "aura_emas", name: "Aura Langkah Emas", price: 250, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
     ],
     mobility: [
       { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 12, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
@@ -15,9 +15,9 @@
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
-      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 80, desc: "Lencana bintang di label nama + prioritas polling." },
-      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 200, desc: "Mahkota emas di label nama + gelar Sesepuh." },
-      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 450, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
+      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 150, desc: "Lencana bintang di label nama + prioritas polling." },
+      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 650, desc: "Mahkota emas di label nama + gelar Sesepuh." },
+      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 2500, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
     ]
   };
 

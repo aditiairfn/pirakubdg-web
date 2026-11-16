@@ -65,7 +65,7 @@
     if (curLvl > lastKnownCitizenLvl) {
       const gainedLevels = curLvl - lastKnownCitizenLvl;
       lastKnownCitizenLvl = curLvl;
-      const bonusCoins = gainedLevels * 50;
+      const bonusCoins = gainedLevels * 25;
       if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
         window.PirakuEconomy.addCoins(bonusCoins, "Bonus Naik Level " + curLvl);
       }
