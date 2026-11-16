@@ -153,10 +153,10 @@
     if (typeof window.resetPirakuColliders === "function") window.resetPirakuColliders();
   let customDistrictGroup = null;
   let districtCoins = [];
-    districtTraffic = [];
-    districtPedestrians = [];
   let districtTraffic = [];
   let districtPedestrians = [];
+    districtTraffic = [];
+    districtPedestrians = [];
 
   const KAVLING_SLOTS = [
     { x: -13, z: 13, rotY: 0 }, { x: -20, z: 13, rotY: 0 }, { x: -27, z: 13, rotY: 0 }, { x: -13, z: 22, rotY: Math.PI }, { x: -20, z: 22, rotY: Math.PI },
@@ -507,6 +507,8 @@
       customDistrictGroup = null;
     }
     districtCoins = [];
+    districtTraffic = [];
+    districtPedestrians = [];
 
     const grp = new THREE.Group();
     grp.name = "piraku-komplek-district-map";
@@ -898,6 +900,8 @@
       customDistrictGroup = null;
     }
     districtCoins = [];
+    districtTraffic = [];
+    districtPedestrians = [];
     districtTraffic = [];
     districtPedestrians = [];
     hiddenMainObjects.forEach(obj => { obj.visible = true; });
