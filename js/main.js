@@ -614,7 +614,7 @@ let activeQuestSystem = null;
 
   // Tanah
   box(1400, .5, 1400, 0, -.5, 0, 0xdde1d0, null, false, true);
-  box(160, .08, 140, 0, -.04, 0, MAT(0x567e51), null, false, true);
+  box(260, .08, 220, 0, -.04, 0, MAT(0x567e51), null, false, true);
   {
     const mc = [0x8aa89a, 0x7a9a8c, 0x93b0a6, 0x86a395];
     for (let i = 0; i < 28; i++) {
@@ -1232,69 +1232,70 @@ let activeQuestSystem = null;
     return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
   }
 
+  // --- REGISTRY HUNIAN & PEMILU CAMAT PER KECAMATAN (UNTUK SERVER DISTRIK) ---
+  window.weeklyCamatByKec = {};
+
+  window.evaluateWeeklyCamatRotation = async function(citizensList) {
+    if (!Array.isArray(citizensList) || citizensList.length === 0) return;
+    const topCandidateByKec = {};
+
+    if (typeof supabaseClient !== "undefined" && supabaseClient) {
+      try {
+        const { data } = await supabaseClient
+          .from("pemilu_camat")
+          .select("district_id, kecamatan, candidate_ig, votes")
+          .order("votes", { ascending: false });
+        if (Array.isArray(data)) {
+          data.forEach(row => {
+            const rawK = String(row.kecamatan || row.district_id || "").trim().toLowerCase();
+            if (!rawK) return;
+            if (!topCandidateByKec[rawK] && (Number(row.votes) || 0) > 0) {
+              topCandidateByKec[rawK] = {
+                ig: String(row.candidate_ig || "").toLowerCase(),
+                votes: Number(row.votes) || 0
+              };
+            }
+          });
+        }
+      } catch (e) {}
+    }
+
+    const byKec = {};
+    citizensList.forEach(c => {
+      if (!c || !c.ig) return;
+      const k = String(c.kecamatan || "Bandung Wetan").trim().toLowerCase();
+      if (!byKec[k]) byKec[k] = [];
+      byKec[k].push(c);
+    });
+
+    for (const [kLow, members] of Object.entries(byKec)) {
+      const topVoteInfo = topCandidateByKec[kLow];
+      const ranked = [...members].sort((a, b) => {
+        const aTop = topVoteInfo && String(a.ig || "").toLowerCase() === topVoteInfo.ig ? 1 : 0;
+        const bTop = topVoteInfo && String(b.ig || "").toLowerCase() === topVoteInfo.ig ? 1 : 0;
+        if (bTop !== aTop) return bTop - aTop;
+        const xpDiff = (Number(b.xp) || 0) - (Number(a.xp) || 0);
+        if (xpDiff !== 0) return xpDiff;
+        return (Number(a.id) || 0) - (Number(b.id) || 0);
+      });
+      const winner = ranked[0];
+      const hasVotes = Boolean(topVoteInfo && topVoteInfo.votes > 0);
+      if (winner && (hasVotes || (Number(winner.xp) || 0) > 0)) {
+        window.weeklyCamatByKec[kLow] = winner.ig;
+        members.forEach(m => { m.is_camat = (m.ig === winner.ig); });
+      }
+    }
+
+    // Jika pemain sedang berada di dalam server komplek distrik, perbarui bangunannya secara langsung
+    if (window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
+      window.refreshActiveDistrictHouses();
+    }
+  };
+
   function spawnCitizenHouse(c, index) {
-    if (houseOwnersRegistry[c.ig]) return houseOwnersRegistry[c.ig];
-    const hg = new THREE.Group();
-    const hx = 25 + (index % 4) * 6.4;
-    const hz = -34 - Math.floor(index / 4) * 6.8;
-    hg.position.set(hx, 0, hz);
-
-    const wallColors = [0xfafaf9, 0xfef3c7, 0xf1f5f9, 0xfff7ed];
-    const roofColors = [0x9a3412, 0x334155, 0x7c2d12, 0x1e293b];
-    const wCol = wallColors[index % wallColors.length];
-    const rCol = roofColors[index % roofColors.length];
-
-    // Kavling halaman rumput & jalan setapak paving batu
-    box(4.8, 0.12, 5.2, 0, 0, 0.3, 0x4d7c3f, hg, false, true);
-    box(1.3, 0.15, 2.2, 0.25, 0, 1.85, 0xcbd5e1, hg, false, true);
-
-    // Bodi utama rumah & aksen dinding batu alam di sisi kiri
-    box(3.8, 2.45, 3.2, 0, 0.12, -0.3, wCol, hg);
-    box(1.05, 2.5, 3.26, -1.38, 0.12, -0.3, 0x64748b, hg);
-
-    // Lis plafon putih & atap limas genteng modern
-    box(4.15, 0.16, 3.55, 0, 2.57, -0.3, 0xffffff, hg);
-    hip(4.35, 3.75, 1.5, 0, 2.73, -0.3, rCol, hg);
-
-    // Kanopi teras depan + 2 tiang pilar kayu
-    box(2.5, 0.14, 1.25, 0.1, 2.02, 1.65, rCol, hg);
-    box(0.13, 1.9, 0.13, -1.0, 0.12, 2.15, 0x78350f, hg);
-    box(0.13, 1.9, 0.13, 1.2, 0.12, 2.15, 0x78350f, hg);
-
-    // Pintu kayu berbingkai + gagang kuningan
-    box(0.92, 1.72, 0.1, 0.25, 0.12, 1.31, 0x451a03, hg);
-    box(0.78, 1.62, 0.12, 0.25, 0.12, 1.32, 0x92400e, hg);
-    box(0.06, 0.18, 0.06, 0.52, 0.85, 1.39, 0xfbbf24, hg, false);
-
-    // 2 Jendela kaca modern (menyala kuning hangat saat malam via GLASSM)
-    [-0.95, 1.25].forEach(wx => {
-      box(0.82, 1.02, 0.1, wx, 0.85, 1.31, 0x334155, hg, false);
-      box(0.68, 0.88, 0.12, wx, 0.92, 1.32, GLASSM, hg, false);
-    });
-
-    // Pagar depan rendah & 2 pot tanaman hias di teras
-    box(1.4, 0.42, 0.12, -1.65, 0.12, 2.78, 0x78350f, hg);
-    box(1.4, 0.42, 0.12, 1.65, 0.12, 2.78, 0x78350f, hg);
-    [-0.55, 1.05].forEach(px => {
-      cyl(0.18, 0.14, 0.28, 8, px, 0.12, 1.65, 0xb45309, hg);
-      mk(new THREE.SphereGeometry(0.24, 8, 6), 0x22c55e, px, 0.52, 1.65, hg);
-    });
-
-    // Papan Nama IG Pemilik Rumah di atas kanopi depan
-    const signMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.1, 0.52),
-      makeHouseOwnerPlaque(c.ig)
-    );
-    signMesh.position.set(0.1, 2.42, 2.28);
-    hg.add(signMesh);
-
-    hg.scale.set(0.001, 0.001, 0.001);
-    citizenHousesGroup.add(hg);
-    gsap.to(hg.scale, { x: 1, y: 1, z: 1, duration: 0.8, ease: 'back.out' });
-
-    const houseData = { hx, hz, porchX: hx + 0.25, porchZ: hz + 2.35, group: hg };
-    houseOwnersRegistry[c.ig] = houseData;
-    return houseData;
+    // Rumah 3D kini dirender khusus di dalam server komplek masing-masing kecamatan (js/piraku-districts.js)
+    const safe = getSafeGasibuPos();
+    return { hx: safe.x, hz: safe.z, porchX: safe.x, porchZ: safe.z };
   }
 
   // Gedung Bertingkat
@@ -1618,7 +1619,7 @@ let activeQuestSystem = null;
 
   // ================= SISTEM WARGA & KARAKTER UTAMA =================
   const citizensGroup = new THREE.Group(); scene.add(citizensGroup);
-  const clickableObjects = [], registeredCitizensList = [];
+  const clickableObjects = [], registeredCitizensList = []; window.registeredCitizensList = registeredCitizensList;
   let activeCitizenTarget = null;
   const animC = [], SKIN = [0xf1c9a0, 0xe0ac80, 0xc68a5c, 0x9a6a45];
   const SP = (r, w = 12, h = 8) => new THREE.SphereGeometry(r, w, h);
@@ -1978,7 +1979,32 @@ let activeQuestSystem = null;
       if (counterEl) counterEl.innerText = '1 WARGA';
     }
   }
-  loadCitizensFromDB().then(() => { if (!localStorage.getItem("piraku_my_ig") && window.spawnGuestCitizen) window.spawnGuestCitizen(); });
+  loadCitizensFromDB().then(() => {
+    const savedIg = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase();
+    if (savedIg && Array.isArray(registeredCitizensList)) {
+      const me = registeredCitizensList.find(c => String(c.ig || "").trim().toLowerCase() === savedIg);
+      if (me) {
+        if (typeof me.xp === "number") localStorage.setItem("piraku_my_xp", String(me.xp));
+        if (typeof me.level === "number") localStorage.setItem("piraku_my_level", String(me.level));
+        if (me.kecamatan) localStorage.setItem("piraku_my_kec", me.kecamatan);
+        if (me.color !== undefined) localStorage.setItem("piraku_my_color", String(me.color));
+        if (me.acc) localStorage.setItem("piraku_my_acc", String(me.acc));
+        if (me.has_house) {
+          const suf = "_" + savedIg.replace(/^@/, "");
+          localStorage.setItem("piraku_has_house" + suf, "1");
+          localStorage.setItem("piraku_house_keys" + suf, "3");
+        }
+        if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+      } else if (registeredCitizensList.length > 0 || supabaseClient) {
+        // Sesi lama di browser ini sudah tidak ada di database (misal pasca-reset) -> bersihkan otomatis
+        ["piraku_my_ig", "piraku_my_level", "piraku_my_xp", "piraku_my_kec", "piraku_ktp_kecamatan", "piraku_my_color", "piraku_my_acc", "piraku_my_inventory"].forEach(k => localStorage.removeItem(k));
+        if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+        if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+      }
+    }
+    if (typeof window.evaluateWeeklyCamatRotation === "function") window.evaluateWeeklyCamatRotation(registeredCitizensList);
+    if (!localStorage.getItem("piraku_my_ig") && window.spawnGuestCitizen) window.spawnGuestCitizen();
+  });
 
   // Ticker Aspirasi
   let currentTickerIndex = 0;
@@ -2011,9 +2037,80 @@ let activeQuestSystem = null;
       mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
       const hits = raycaster.intersectObjects(clickableObjects);
+      if (window.pirakuInDistrict) {
+        const distGrp = scene.getObjectByName("piraku-komplek-district-map");
+        if (distGrp) {
+          const dHits = raycaster.intersectObjects(distGrp.children, true);
+          const aptHit = dHits.find(h => h.object && h.object.userData && h.object.userData.isKecamatanApartment);
+          if (aptHit) {
+            hideCitizenSpeech();
+            if (typeof window.openActiveDistrictApartmentModal === "function") {
+              window.openActiveDistrictApartmentModal();
+            }
+            return;
+          }
+        }
+      }
       if (hits.length > 0) showCitizenSpeech(hits[0].object.userData); else hideCitizenSpeech();
     }
   });
+
+  window.openKecamatanApartmentModal = function(kecKey) {
+    const cleanKec = getKecamatanKey(kecKey);
+    const state = ensureKecamatanSlotState(cleanKec);
+    const occupantIgs = state.apartmentOccupants || [];
+
+    let modal = document.getElementById("kec-apartment-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "kec-apartment-modal";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.74);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+      modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+      modal.innerHTML = `
+        <div style="background:#0f172a;border:1px solid rgba(56,189,248,0.35);border-radius:18px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.65);">
+          <div style="padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div id="kec-apt-title" style="font-weight:800;color:#38bdf8;font-size:15px;">🏢 Apartemen Kecamatan</div>
+              <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga setelah 20 kavling tapak terisi</div>
+            </div>
+            <button onclick="document.getElementById('kec-apartment-modal').style.display='none'" style="background:rgba(148,163,184,0.15);border:none;color:#f8fafc;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
+          </div>
+          <div id="kec-apt-body" style="padding:12px 14px;overflow-y:auto;flex:1;"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+
+    const titleEl = document.getElementById("kec-apt-title");
+    const subEl = document.getElementById("kec-apt-sub");
+    const bodyEl = document.getElementById("kec-apt-body");
+    if (titleEl) titleEl.innerText = "🏢 Apartemen Kec. " + cleanKec;
+    if (subEl) subEl.innerText = occupantIgs.length + " Penghuni Terdaftar (Unit Warga ke-21 dst.)";
+
+    if (bodyEl) {
+      if (occupantIgs.length === 0) {
+        bodyEl.innerHTML = "<div style=\"padding:16px;text-align:center;color:#94a3b8;font-size:12px;\">Belum ada penghuni unit apartemen di kecamatan ini.</div>";
+      } else {
+        bodyEl.innerHTML = occupantIgs.map((ig, i) => {
+          const cit = (registeredCitizensList || []).find(c => String(c.ig || "").toLowerCase() === String(ig).toLowerCase()) || { ig };
+          const floor = Math.floor(i / 4) + 1;
+          const unitNo = floor * 100 + (i % 4) + 1;
+          return `
+            <div style="background:rgba(30,41,59,0.75);border:1px solid rgba(148,163,184,0.2);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:800;color:#f8fafc;font-size:13px;">${cit.ig}</span>
+                <span style="background:rgba(56,189,248,0.16);color:#38bdf8;font-weight:700;font-size:10.5px;padding:2px 8px;border-radius:999px;">Lt. ${floor} • Unit ${unitNo}</span>
+              </div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${cit.role || "Warga"} • Lvl ${cit.level || 1} (${cit.xp || 0} XP)</div>
+              ${cit.wish ? `<div style="font-size:11px;color:#cbd5e1;margin-top:4px;font-style:italic;">"${String(cit.wish).slice(0, 80)}"</div>` : ""}
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    modal.style.display = "flex";
+  };
 
   const bubbleEl = document.getElementById('citizen-bubble'), tempV = new THREE.Vector3();
   function showCitizenSpeech(data, focusCam = false) {
@@ -2273,7 +2370,8 @@ let activeQuestSystem = null;
           const fillEl = document.getElementById('poll-fill-' + item.id);
           if (countEl) countEl.innerText = (item.votes || 0) + ' Suara';
           if (fillEl) fillEl.style.width = Math.round(((item.votes || 0) / totalVotes) * 100) + '%';
-          if (localStorage.getItem('voted_policy') === item.id && btn) {
+          const pIg = (localStorage.getItem('piraku_my_ig') || 'guest').toLowerCase().replace(/^@/, '');
+          if (localStorage.getItem('voted_policy_' + pIg) === item.id && btn) {
             btn.classList.add('voted');
           }
         });
@@ -2282,11 +2380,16 @@ let activeQuestSystem = null;
   }
 
   window.votePolicy = async function(policyId) {
-    if (localStorage.getItem('voted_policy')) {
+    const pIg = (localStorage.getItem('piraku_my_ig') || '').toLowerCase().replace(/^@/, '');
+    if (!pIg) {
+      showToast('Login atau daftar akun warga dulu untuk ikut polling! 🗳️');
+      return;
+    }
+    if (localStorage.getItem('voted_policy_' + pIg)) {
       showToast('Kamu sudah menyalurkan suara di polling ini! 🗳️');
       return;
     }
-    localStorage.setItem('voted_policy', policyId);
+    localStorage.setItem('voted_policy_' + pIg, policyId);
     showToast('Suara kamu sah tercatat! +1 🗳️');
     window.playSynthTone(880, 'sine', 0.2);
 
@@ -2439,10 +2542,16 @@ let activeQuestSystem = null;
         localStorage.setItem('piraku_my_level', user.level || 1);
         localStorage.setItem('piraku_my_xp', user.xp || 0);
         localStorage.setItem('piraku_my_kec', user.kecamatan || 'Bandung Wetan');
+        if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
 
         let foundMesh = animC.find(a => String(a.userData?.a?.c?.ig || '').toLowerCase() === String(user.ig || '').toLowerCase());
         if (!foundMesh) {
           foundMesh = createCitizenMesh(user);
+        }
+        const myHouse = houseOwnersRegistry[user.ig] || spawnCitizenHouse(user, registeredCitizensList.length);
+        if (myHouse && foundMesh) {
+          foundMesh.position.set(myHouse.porchX, 0, myHouse.porchZ);
+          foundMesh.rotation.y = 0;
         }
         setupActivePlayer(foundMesh, user);
 
@@ -2496,7 +2605,10 @@ let activeQuestSystem = null;
           return;
         }
 
-        const safeSpawn = getSafeGasibuPos();
+        const draftCit = { ig: formattedIg, kecamatan, has_house: false };
+        const assignedHouse = spawnCitizenHouse(draftCit, registeredCitizensList.length);
+        const spawnX = assignedHouse ? assignedHouse.porchX : getSafeGasibuPos().x;
+        const spawnZ = assignedHouse ? assignedHouse.porchZ : getSafeGasibuPos().z;
         const newCit = { 
           name, 
           ig: formattedIg, 
@@ -2510,8 +2622,8 @@ let activeQuestSystem = null;
           level: 1, 
           xp: 0, 
           device_token: myDeviceToken,
-          x: parseFloat(safeSpawn.x.toFixed(2)), 
-          z: parseFloat(safeSpawn.z.toFixed(2))
+          x: parseFloat(spawnX.toFixed(2)), 
+          z: parseFloat(spawnZ.toFixed(2))
         };
 
         const { data, error } = await supabaseClient.from('warga_piraku').insert([newCit]).select();
@@ -2533,6 +2645,7 @@ let activeQuestSystem = null;
         localStorage.setItem('piraku_my_level', 1);
         localStorage.setItem('piraku_my_xp', 0);
         localStorage.setItem('piraku_my_kec', newCit.kecamatan);
+        if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
         window.updateAutoDetectButton();
 
         btn.disabled = false; btn.innerText = 'Daftar Jadi Warga Resmi 📜';
@@ -2610,6 +2723,12 @@ let activeQuestSystem = null;
       localStorage.removeItem('piraku_my_ig'); 
       localStorage.removeItem('piraku_my_level');
       localStorage.removeItem('piraku_my_xp');
+      localStorage.removeItem('piraku_my_kec');
+      localStorage.removeItem('piraku_ktp_kecamatan');
+      localStorage.removeItem('piraku_my_color');
+      localStorage.removeItem('piraku_my_acc');
+      localStorage.removeItem('piraku_my_inventory');
+      if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
       myPlayerMesh = null;
       isControlledByPlayer = false;
       activeQuestSystem = null;
@@ -2688,21 +2807,29 @@ let activeQuestSystem = null;
     if (!handle) { alert('Masukkan handle IG kamu!'); return; }
     const cleanIg = (handle.startsWith('@') ? handle : '@' + handle).toLowerCase();
 
-    let s = (parseInt(localStorage.getItem('user_streak') || '0') % 7) + 1;
-    localStorage.setItem('user_streak', s);
+    const streakKey = 'user_streak_' + cleanIg.replace(/^@/, '');
+    let s = (parseInt(localStorage.getItem(streakKey) || '0') % 7) + 1;
+    localStorage.setItem(streakKey, s);
 
-    let curLvl = parseInt(localStorage.getItem('piraku_my_level') || '1');
-    curLvl += 1;
-    localStorage.setItem('piraku_my_level', curLvl);
+    if (typeof window.grantPirakuXP === "function") {
+      await window.grantPirakuXP(100, "Absen Harian Warga (H-" + s + ")");
+    } else {
+      let curLvl = Math.min(99, parseInt(localStorage.getItem('piraku_my_level') || '1') + 1);
+      localStorage.setItem('piraku_my_level', curLvl);
+    }
     window.updateAutoDetectButton();
     
     if (s === 7) {
-      showToast('🎉 SELAMAT H-7! Rumah kamu terbit di perumahan Bandung!');
+      showToast('🎉 SELAMAT H-7! Rumah kamu terbit di komplek kecamatan!');
       window.playSynthTone(1050, 'sine', 0.5);
 
       const targetCitizen = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === cleanIg);
       if (targetCitizen) {
         targetCitizen.has_house = true;
+        if (supabaseClient) {
+          try { await supabaseClient.from('warga_piraku').update({ has_house: true }).ilike('ig', cleanIg); } catch (e) {}
+        }
+        if (typeof window.refreshActiveDistrictHouses === "function") window.refreshActiveDistrictHouses();
         const hData = spawnCitizenHouse(targetCitizen, registeredCitizensList.length);
         
         const animObj = animC.find(a => ((a.userData?.a?.c?.ig || '')).toLowerCase() === cleanIg);

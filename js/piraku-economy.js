@@ -1,6 +1,10 @@
 // ================= PIRAKUBDG ECONOMY, WALLET, 10-MIN VEHICLE RENTAL & 3D SHOP =================
 (function() {
-  const STORAGE_KEY = "piraku_economy_v2";
+  function getAccountStorageKey() {
+    const rawIg = (localStorage.getItem("piraku_my_ig") || localStorage.getItem("piraku_citizen_name") || localStorage.getItem("piraku_username") || "").trim().toLowerCase().replace(/^@/, "");
+    const guestId = localStorage.getItem("piraku_guest_id") || "guest";
+    return "piraku_economy_v2_" + (rawIg || guestId);
+  }
 
   const CATALOG = {
     outfit: [
@@ -21,17 +25,9 @@
     ]
   };
 
-  function loadState() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (typeof parsed.coins === "number") {
-          if (typeof parsed.rentalExpiresAt !== "number") parsed.rentalExpiresAt = 0;
-          return parsed;
-        }
-      }
-    } catch (e) {}
+  let activeAccountKey = getAccountStorageKey();
+
+  function getDefaultState() {
     return {
       coins: 25,
       owned: ["tier_1"],
@@ -44,13 +40,60 @@
     };
   }
 
+  function loadState() {
+    activeAccountKey = getAccountStorageKey();
+    try {
+      const raw = localStorage.getItem(activeAccountKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed.coins === "number") {
+          if (!Array.isArray(parsed.owned)) parsed.owned = ["tier_1"];
+          if (typeof parsed.rentalExpiresAt !== "number") parsed.rentalExpiresAt = 0;
+          return parsed;
+        }
+      }
+    } catch (e) {}
+    return getDefaultState();
+  }
+
   let state = loadState();
-  function saveState() {
-    if (typeof window.syncPirakuWalletToSupabase === "function") window.syncPirakuWalletToSupabase(state);
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  function saveState(skipRemote) {
+    activeAccountKey = getAccountStorageKey();
+    if (!skipRemote && typeof window.syncPirakuWalletToSupabase === "function") {
+      window.syncPirakuWalletToSupabase(state);
+    }
+    try { localStorage.setItem(activeAccountKey, JSON.stringify(state)); } catch (e) {}
     updateWalletHUD();
     syncPlayer3DAttachments();
   }
+
+  async function pullAccountWalletFromCloud() {
+    const newKey = getAccountStorageKey();
+    if (newKey !== activeAccountKey) {
+      state = loadState();
+      updateWalletHUD();
+      syncPlayer3DAttachments();
+    }
+    if (typeof window.hydratePirakuWalletFromSupabase === "function") {
+      const cloud = await window.hydratePirakuWalletFromSupabase();
+      if (cloud) {
+        state.coins = cloud.coins;
+        state.owned = cloud.owned;
+        state.tier = cloud.tier;
+        state.equippedOutfit = cloud.equippedOutfit;
+        state.equippedVehicle = cloud.equippedVehicle;
+        state.rentalExpiresAt = cloud.rentalExpiresAt;
+        state.billboardText = cloud.billboardText;
+        saveState(true);
+        const modal = document.getElementById("piraku-economy-modal");
+        if (modal && modal.style.display === "flex") renderEconomyModal();
+      } else {
+        // Akun baru yang belum punya record di piraku_wallets -> simpan initial state-nya ke Supabase
+        saveState(false);
+      }
+    }
+  }
+  window.reloadPirakuEconomyForCurrentUser = pullAccountWalletFromCloud;
 
   window.PirakuEconomy = {
     getCoins: () => state.coins,
@@ -737,13 +780,16 @@
     } catch (e) {}
   }, 1500);
 
-  setTimeout(() => {
-    try {
-      if (typeof window.syncPirakuWalletToSupabase === "function") {
-        window.syncPirakuWalletToSupabase(state);
-      }
-    } catch (e) {}
-  }, 2200);
+  setTimeout(pullAccountWalletFromCloud, 1200);
+  setInterval(() => {
+    const curKey = getAccountStorageKey();
+    if (curKey !== activeAccountKey) {
+      state = loadState();
+      updateWalletHUD();
+      syncPlayer3DAttachments();
+      pullAccountWalletFromCloud();
+    }
+  }, 1500);
 
   window.applyPirakuRidingPoses = function() {
     if (!window.pirakuScene) return;
@@ -791,3 +837,5 @@
   };
 
 })();
+
+try { localStorage.removeItem("piraku_economy_v2"); } catch (e) {}

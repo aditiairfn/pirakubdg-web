@@ -802,3 +802,100 @@ if (typeof window.toggleMyMic === "function" && !window.__micAutoReconnectPatche
     }
   };
 }
+
+
+// --- CLEAN UI: SEMBUNYIKAN TOMBOL RECONNECT MELAYANG & AUTO-RECONNECT DI MIC ---
+(function() {
+  const hideFloatingReconnect = () => {
+    document.querySelectorAll("button").forEach(btn => {
+      if ((btn.innerText || "").includes("Reconnect Mic")) {
+        btn.remove();
+      }
+    });
+  };
+  hideFloatingReconnect();
+  setInterval(hideFloatingReconnect, 500);
+
+  if (!window.__pirakuMicAutoHooked) {
+    window.__pirakuMicAutoHooked = true;
+    document.addEventListener("click", function(e) {
+      const micBtn = e.target.closest("button");
+      if (!micBtn) return;
+      const txt = (micBtn.innerText || micBtn.title || "").toLowerCase();
+      if (txt.includes("mic off") || micBtn.id.toLowerCase().includes("mic")) {
+        setTimeout(() => {
+          if (typeof window.reconnectMyPeerConnections === "function") {
+            window.reconnectMyPeerConnections();
+          } else if (typeof window.initWebRTCVoice === "function") {
+            window.initWebRTCVoice();
+          }
+        }, 250);
+      }
+    }, true);
+  }
+})();
+
+
+// --- V104: PROXIMITY VOICE FILTER & SPATIAL VOLUME ATTENUATION ---
+(function() {
+  if (window.__pirakuProximityVoiceActive) return;
+  window.__pirakuProximityVoiceActive = true;
+
+  const MAX_VOICE_RADIUS = 45; // Batas jarak maksimal suara tersambung (unit dunia 3D)
+  const FULL_VOLUME_RADIUS = 10; // Jarak ngobrol dekat (volume 100%)
+
+  function getDistance3D(posA, posB) {
+    if (!posA || !posB) return Infinity;
+    const dx = (posA.x || 0) - (posB.x || 0);
+    const dz = (posA.z || 0) - (posB.z || 0);
+    return Math.sqrt(dx * dx + dz * dz);
+  }
+
+  // Loop pengecekan jarak tiap 500ms untuk mengatur volume & koneksi peer
+  setInterval(() => {
+    const myPos = window.myPlayerPosition || (window.playerMesh && window.playerMesh.position);
+    const peers = window.peerConnections || window.rtcPeers || {};
+    const remotePlayers = window.remotePlayers || window.otherPlayers || {};
+
+    if (!myPos) return;
+
+    Object.keys(peers).forEach(peerId => {
+      const target = remotePlayers[peerId];
+      const targetPos = target && (target.position || target.mesh?.position || target);
+      const dist = getDistance3D(myPos, targetPos);
+
+      // 1. Atur volume elemen audio sesuai jarak (spatial fade-out)
+      const audioEl = document.getElementById("audio-" + peerId) || document.querySelector(`audio[data-peer="${peerId}"]`);
+      if (audioEl) {
+        if (dist <= FULL_VOLUME_RADIUS) {
+          audioEl.volume = 1.0;
+        } else if (dist >= MAX_VOICE_RADIUS) {
+          audioEl.volume = 0.0;
+        } else {
+          const ratio = 1 - ((dist - FULL_VOLUME_RADIUS) / (MAX_VOICE_RADIUS - FULL_VOLUME_RADIUS));
+          audioEl.volume = Math.max(0, Math.min(1, ratio));
+        }
+      }
+
+      // 2. Putus koneksi peer jika warga sudah keluar jauh dari radius (> 50 unit)
+      if (dist > MAX_VOICE_RADIUS + 5) {
+        const pc = peers[peerId];
+        if (pc && typeof pc.close === "function") {
+          pc.close();
+          delete peers[peerId];
+        }
+        if (audioEl) audioEl.remove();
+      }
+    });
+  }, 500);
+
+  // Guard saat menerima sinyal offer/connect baru: tolak jika di luar radius
+  window.isPeerWithinVoiceRadius = function(peerId) {
+    const myPos = window.myPlayerPosition || (window.playerMesh && window.playerMesh.position);
+    const remotePlayers = window.remotePlayers || window.otherPlayers || {};
+    const target = remotePlayers[peerId];
+    const targetPos = target && (target.position || target.mesh?.position || target);
+    if (!myPos || !targetPos) return true; // Izinkan dulu jika posisi belum ter-sync awal
+    return getDistance3D(myPos, targetPos) <= MAX_VOICE_RADIUS;
+  };
+})();

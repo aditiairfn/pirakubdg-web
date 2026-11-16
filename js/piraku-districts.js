@@ -785,12 +785,157 @@
     posRoof.position.set(-6.2, 2.2, 28);
     grp.add(gateBanner, gateColL, gateColR, posBox, posRoof);
 
+    // --- HUNIAN SERVER KECAMATAN: SLOT #0 CAMAT MINGGUAN + 19 WARGA (TANAH KOSONG -> MISI -> RUMAH) + APARTEMEN KE-21+ ---
+    function makeDistrictPlaque(labelText, isCamatPlaque) {
+      const cv = document.createElement("canvas");
+      cv.width = 256; cv.height = 64;
+      const ctx = cv.getContext("2d");
+      ctx.fillStyle = isCamatPlaque ? "rgba(180, 83, 9, 0.94)" : "rgba(15, 23, 42, 0.88)";
+      ctx.fillRect(0, 0, 256, 64);
+      ctx.strokeStyle = isCamatPlaque ? "#fde047" : "#38bdf8";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, 252, 60);
+      ctx.fillStyle = isCamatPlaque ? "#fef08a" : "#f8fafc";
+      ctx.font = "bold 20px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(labelText || "").slice(0, 22), 128, 32);
+      const tex = new THREE.CanvasTexture(cv);
+      return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+    }
+
+    const kecLow = String(d.name || "").trim().toLowerCase();
+    const idLow = String(d.id || "").trim().toLowerCase();
+    const allCitizens = Array.isArray(window.registeredCitizensList) ? window.registeredCitizensList : [];
+    const districtMembers = allCitizens.filter(c => {
+      const ck = String(c.kecamatan || "").trim().toLowerCase();
+      return ck === kecLow || ck === idLow;
+    });
+
+    const camatIg = (window.weeklyCamatByKec && (window.weeklyCamatByKec[kecLow] || window.weeklyCamatByKec[idLow])) || null;
+    const camatMember = camatIg
+      ? districtMembers.find(m => String(m.ig || "").toLowerCase() === String(camatIg).toLowerCase())
+      : null;
+    const regularMembers = districtMembers.filter(m => !camatMember || m.ig !== camatMember.ig);
+
+    // 20 Kavling Tapak: Slot #0 = Rumah Dinas Camat, Slot #1..#19 = 19 Warga Pertama
+    const landedAssignees = [camatMember || null];
+    for (let s = 0; s < 19; s++) {
+      landedAssignees.push(regularMembers[s] || null);
+    }
+
     KAVLING_SLOTS.forEach((slot, idx) => {
-      const unit = idx < cur.houses ? createModernHouseMesh(idx, cur.lv) : createEmptyLotMesh();
+      const resident = landedAssignees[idx];
+      const isCamatSlot = (idx === 0);
+      let unit;
+      let plaqueLabel = "";
+
+      if (resident) {
+        if (resident.has_house || isCamatSlot) {
+          unit = createModernHouseMesh(idx, isCamatSlot ? Math.max(3, cur.lv) : cur.lv);
+          plaqueLabel = isCamatSlot ? ("👑 CAMAT " + resident.ig) : resident.ig;
+        } else {
+          // Belum menyelesaikan misi rumah -> Kavling Tanah Kosong milik warga
+          unit = createEmptyLotMesh();
+          plaqueLabel = resident.ig + " (Lahan)";
+        }
+      } else {
+        unit = createEmptyLotMesh();
+        plaqueLabel = isCamatSlot ? "Kavling Dinas Camat" : ("Kavling #" + (idx + 1));
+      }
+
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.56), makeDistrictPlaque(plaqueLabel, isCamatSlot && Boolean(resident)));
+      sign.position.set(0, isCamatSlot && resident ? 4.8 : 1.15, 2.75);
+      unit.add(sign);
+
       unit.position.set(slot.x, 0, slot.z);
       unit.rotation.y = slot.rotY;
       grp.add(unit);
     });
+
+    // Warga ke-20 ke atas di regularMembers (total warga > 20) -> Tower Apartemen Kecamatan
+    const apartmentResidents = regularMembers.slice(19);
+    if (apartmentResidents.length > 0) {
+      const aptGroup = new THREE.Group();
+      aptGroup.position.set(-35, 0, 22);
+
+      const podium = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.25, 6.8), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+      podium.position.y = 0.125;
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(6.0, 11.5, 5.4), new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 }));
+      tower.position.y = 6.0;
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(6.3, 0.35, 5.7), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+      roof.position.y = 11.9;
+      aptGroup.add(podium, tower, roof);
+
+      const glassMatApt = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.15 });
+      for (let fl = 0; fl < 4; fl++) {
+        const fy = 1.8 + fl * 2.5;
+        [-1.8, 0, 1.8].forEach(wx => {
+          const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.35, 5.5), glassMatApt);
+          win.position.set(wx, fy, 0);
+          aptGroup.add(win);
+        });
+      }
+
+      const aptPlaque = new THREE.Mesh(
+        new THREE.PlaneGeometry(4.6, 0.72),
+        makeDistrictPlaque("🏢 APT. " + d.name.toUpperCase() + " (" + apartmentResidents.length + ")", false)
+      );
+      aptPlaque.position.set(0, 12.6, 2.9);
+      aptGroup.add(aptPlaque);
+
+      // Klik Tower Apartemen untuk membuka daftar penghuninya
+      aptGroup.traverse(ch => {
+        if (ch.isMesh) {
+          ch.userData = { isKecamatanApartment: true, kecKey: d.name, occupants: apartmentResidents };
+        }
+      });
+      grp.add(aptGroup);
+
+      window.openActiveDistrictApartmentModal = function() {
+        let modal = document.getElementById("kec-apartment-modal");
+        if (!modal) {
+          modal = document.createElement("div");
+          modal.id = "kec-apartment-modal";
+          modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.74);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+          modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+          modal.innerHTML = `
+            <div style="background:#0f172a;border:1px solid rgba(56,189,248,0.35);border-radius:18px;width:100%;max-width:420px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.65);">
+              <div style="padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div id="kec-apt-title" style="font-weight:800;color:#38bdf8;font-size:15px;">🏢 Apartemen Kecamatan</div>
+                  <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga ke-21 dst.</div>
+                </div>
+                <button onclick="document.getElementById('kec-apartment-modal').style.display='none'" style="background:rgba(148,163,184,0.15);border:none;color:#f8fafc;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
+              </div>
+              <div id="kec-apt-body" style="padding:12px 14px;overflow-y:auto;flex:1;"></div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+        }
+        document.getElementById("kec-apt-title").innerText = "🏢 Apartemen Kec. " + d.name;
+        document.getElementById("kec-apt-sub").innerText = apartmentResidents.length + " Penghuni Terdaftar (Warga ke-21 dst.)";
+        document.getElementById("kec-apt-body").innerHTML = apartmentResidents.map((cit, i) => {
+          const floor = Math.floor(i / 4) + 1;
+          const unitNo = floor * 100 + (i % 4) + 1;
+          return `
+            <div style="background:rgba(30,41,59,0.75);border:1px solid rgba(148,163,184,0.2);border-radius:12px;padding:10px 12px;margin-bottom:8px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:800;color:#f8fafc;font-size:13px;">${cit.ig}</span>
+                <span style="background:rgba(56,189,248,0.16);color:#38bdf8;font-weight:700;font-size:10.5px;padding:2px 8px;border-radius:999px;">Lt. ${floor} • Unit ${unitNo}</span>
+              </div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${cit.role || "Warga"} • Lvl ${cit.level || 1} (${cit.xp || 0} XP)</div>
+              ${cit.wish ? `<div style="font-size:11px;color:#cbd5e1;margin-top:4px;font-style:italic;">"${String(cit.wish).slice(0, 80)}"</div>` : ""}
+            </div>
+          `;
+        }).join("");
+        modal.style.display = "flex";
+      };
+    }
+
+    window.refreshActiveDistrictHouses = function() {
+      if (window.pirakuInDistrict) buildDedicatedDistrictScene(d);
+    };
 
     if (cur.lv >= 2) {
       const mushola = new THREE.Group();
