@@ -30,8 +30,8 @@
           'turn:global.relay.metered.ca:443',
           'turns:global.relay.metered.ca:443?transport=tcp'
         ],
-        username: 'e8dd65b92f62d3e365b900',
-        credential: 'uWdWNmkhvyqTEAcO'
+        username: 'yelclaw',
+        credential: '1603'
       }
     ]
   };
