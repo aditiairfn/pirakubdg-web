@@ -308,7 +308,7 @@
   
   
   function isDistrictSoundMuted() {
-    if (window.pirakuMuted === true || window.isMuted === true) return true;
+    if (window.pirakuSoundMuted === true || window.pirakuMuted === true || window.isMuted === true) return true;
     const btns = document.querySelectorAll("button");
     for (let i = 0; i < btns.length; i++) {
       const txt = (btns[i].textContent || "").trim().toLowerCase();
