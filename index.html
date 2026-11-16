@@ -1051,23 +1051,67 @@
     setTimeout(window.applyGlobalGameSoundState, 600);
   </script>
 
+  
   <script id="piraku-ktp-title-sync">
     setInterval(() => {
       const eco = window.PirakuEconomy;
       if (!eco || typeof eco.getTierObj !== "function") return;
       const tier = eco.getTierObj();
+      const myIg = (localStorage.getItem("piraku_my_ig") || "yelclaw").replace(/^@/, "");
+      const hasPaidTier = tier && tier.id && tier.id !== "tier_1";
+
+      // 1. Update semua bubble nametag 3D milik sendiri (termasuk bubble putih bawaan index.html)
+      document.querySelectorAll("div, span").forEach(el => {
+        if (el.children.length > 0) return;
+        const txt = (el.textContent || "").trim();
+        if (txt === "@" + myIg || txt === myIg) {
+          if (hasPaidTier) {
+            el.textContent = "@" + myIg + " • " + tier.badge + " " + tier.name;
+            if (tier.id === "tier_4") {
+              el.style.border = "1.5px solid #38bdf8";
+              el.style.boxShadow = "0 4px 14px rgba(56,189,248,0.45)";
+            } else if (tier.id === "tier_3") {
+              el.style.border = "1.5px solid #f59e0b";
+              el.style.boxShadow = "0 4px 14px rgba(245,158,11,0.4)";
+            }
+          }
+        }
+      });
+
+      // 2. Tempelkan badge Gelar di Kartu Popup Klik Warga (di sebelah role BARISTA/WARGA)
+      const roleBadges = Array.from(document.querySelectorAll("div, span")).filter(el => {
+        const t = (el.textContent || "").trim();
+        return ["BARISTA", "WARGA", "SENIMAN", "MAHASISWA", "KREATOR"].includes(t) && el.parentElement;
+      });
+      roleBadges.forEach(rb => {
+        const parent = rb.parentElement;
+        let tChip = parent.querySelector(".piraku-popup-tier-chip");
+        if (!hasPaidTier) {
+          if (tChip) tChip.remove();
+          return;
+        }
+        if (!tChip) {
+          tChip = document.createElement("span");
+          tChip.className = "piraku-popup-tier-chip";
+          tChip.style.cssText = "display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;margin-left:5px;background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;";
+          parent.insertBefore(tChip, rb);
+        }
+        tChip.textContent = tier.badge + " " + tier.name;
+      });
+
+      // 3. Tampilkan Gelar di Modal Akun / KTP Digital
       const ktpBox = document.querySelector("#modal-account .modal-card, #account-ktp-card, #ktp-preview-card");
       if (ktpBox) {
         let badgeEl = document.getElementById("ktp-active-tier-pill");
         if (!badgeEl) {
           badgeEl = document.createElement("div");
           badgeEl.id = "ktp-active-tier-pill";
-          badgeEl.style.cssText = "margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(250,204,21,0.14);border:1px solid rgba(250,204,21,0.45);color:#fde047;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:space-between;";
+          badgeEl.style.cssText = "margin-top:8px;padding:6px 10px;border-radius:10px;background:rgba(56,189,248,0.14);border:1px solid rgba(56,189,248,0.45);color:#bae6fd;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:space-between;";
           ktpBox.insertBefore(badgeEl, ktpBox.children[2] || null);
         }
         badgeEl.innerHTML = "<span>Status Gelar KTP</span><span>" + tier.badge + " " + tier.name + "</span>";
       }
-    }, 900);
+    }, 450);
   </script>
 
 </body>
