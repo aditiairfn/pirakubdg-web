@@ -605,6 +605,9 @@
     const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(320, 7.2), roadMat);
     roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.012, 0); roadEW.receiveShadow = true;
 
+    const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
     // Aspal bundaran melingkar di pusat perempatan (radius 6.8m - 13.2m)
     const roundaboutAsphalt = new THREE.Mesh(new THREE.RingGeometry(6.8, 13.2, 48), roadMat);
     roundaboutAsphalt.rotation.x = -Math.PI / 2; roundaboutAsphalt.position.set(0, 0.014, 0); roundaboutAsphalt.receiveShadow = true;
@@ -656,8 +659,7 @@
     grp.add(roadNS, roadEW, roundaboutAsphalt, gangN, gangS);
 
     // Marka Jalan Putih Tengah & Garis Tepi Kuning Khas Bandung Wetan
-    const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-    const edgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+
     for (let m = -84; m <= 84; m += 5.5) {
       if (Math.abs(m) < 11) continue;
       const m1 = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 2.3), markMat);
