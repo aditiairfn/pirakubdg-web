@@ -542,6 +542,16 @@ let activeQuestSystem = null;
   controls.minDistance = 3;
   controls.maxDistance = 155; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
+  if (window.innerWidth <= 900) {
+    controls.enablePan = false;
+    controls.rotateSpeed = 0.52;
+    controls.zoomSpeed = 0.55;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    if (typeof THREE !== 'undefined' && THREE.TOUCH) {
+      controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
+    }
+  }
 
   // Pencahayaan — pagi cerah Bandung (langit biru lembut, matahari rendah, kabut tipis)
   const amb = new THREE.AmbientLight(0xfff5ea, 0.48);            // pengisi lembut, diturunkan agar kontras matahari terasa
@@ -1834,9 +1844,23 @@ let activeQuestSystem = null;
     if (typeof joyX !== "undefined") joyX = 0;
     if (typeof joyY !== "undefined") joyY = 0;
     if (typeof joyActive !== "undefined") joyActive = false;
+          if (typeof controls !== "undefined" && controls) {
+            const wasDamping = controls.enableDamping;
+            controls.enableDamping = false;
+            controls.enabled = true;
+            controls.update();
+            controls.enableDamping = wasDamping;
+          }
     if (typeof joyX !== "undefined") joyX = 0;
     if (typeof joyY !== "undefined") joyY = 0;
     if (typeof joyActive !== "undefined") joyActive = false;
+          if (typeof controls !== "undefined" && controls) {
+            const wasDamping = controls.enableDamping;
+            controls.enableDamping = false;
+            controls.enabled = true;
+            controls.update();
+            controls.enableDamping = wasDamping;
+          }
     if (c && c.color !== undefined) localStorage.setItem('piraku_my_color', String(c.color));
     if (c && c.acc) localStorage.setItem('piraku_my_acc', String(c.acc));
     if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
@@ -3371,6 +3395,13 @@ let activeQuestSystem = null;
   const joystickKnob = document.getElementById('joystick-knob');
   let joyVector = { x: 0, y: 0 };
   let joyActive = false;
+          if (typeof controls !== "undefined" && controls) {
+            const wasDamping = controls.enableDamping;
+            controls.enableDamping = false;
+            controls.enabled = true;
+            controls.update();
+            controls.enableDamping = wasDamping;
+          }
   let joyCenter = { x: 0, y: 0 };
 
   if (joystickZone) {
@@ -3396,7 +3427,7 @@ let activeQuestSystem = null;
       e.stopPropagation();
       const t = e.changedTouches[0];
       activeJoyTouchId = t.identifier;
-      joyActive = true;
+      joyActive = true; if (typeof controls !== "undefined" && controls) controls.enabled = false;
       const rect = joystickZone.getBoundingClientRect();
       joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       handleJoyMoveClient(t.clientX, t.clientY);
@@ -3419,6 +3450,13 @@ let activeQuestSystem = null;
         if (e.changedTouches[i].identifier === activeJoyTouchId) {
           activeJoyTouchId = null;
           joyActive = false;
+          if (typeof controls !== "undefined" && controls) {
+            const wasDamping = controls.enableDamping;
+            controls.enableDamping = false;
+            controls.enabled = true;
+            controls.update();
+            controls.enableDamping = wasDamping;
+          }
           if (joystickKnob) joystickKnob.style.transform = 'translate(0, 0)';
           joyVector = { x: 0, y: 0 };
           break;
@@ -3556,68 +3594,8 @@ let activeQuestSystem = null;
     }
   }
 
-  // ================= MOBILE TAP-TO-WALK & SMOOTH CAMERA FOLLOW =================
   let pirakuTapWalkTarget = null;
   let pirakuTapMarker = null;
-  const tapRaycaster = new THREE.Raycaster();
-  const tapNdc = new THREE.Vector2();
-  const tapGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-
-  function ensureTapMarker() {
-    if (pirakuTapMarker) return pirakuTapMarker;
-    const ringGeo = new THREE.RingGeometry(0.32, 0.52, 24);
-    ringGeo.rotateX(-Math.PI / 2);
-    const ringMat = new THREE.MeshBasicMaterial({
-      color: 0xffcf4a,
-      transparent: true,
-      opacity: 0.85,
-      side: THREE.DoubleSide
-    });
-    pirakuTapMarker = new THREE.Mesh(ringGeo, ringMat);
-    pirakuTapMarker.visible = false;
-    scene.add(pirakuTapMarker);
-    return pirakuTapMarker;
-  }
-
-  (function setupTapToWalk() {
-    const domEl = renderer.domElement;
-    let downX = 0, downY = 0, downTime = 0;
-
-    domEl.addEventListener('pointerdown', (e) => {
-      downX = e.clientX;
-      downY = e.clientY;
-      downTime = performance.now();
-    }, { passive: true });
-
-    domEl.addEventListener('pointerup', (e) => {
-      if (!myPlayerMesh || isRidingTram) return;
-      const moveDist = Math.hypot(e.clientX - downX, e.clientY - downY);
-      const elapsed = performance.now() - downTime;
-      // Hanya anggap tap-to-walk jika sentuhan singkat (< 280ms) dan jari tidak menggeser kamera (< 10px)
-      if (moveDist > 10 || elapsed > 280) return;
-
-      const rect = domEl.getBoundingClientRect();
-      tapNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      tapNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      tapRaycaster.setFromCamera(tapNdc, cam);
-
-      const hitPt = new THREE.Vector3();
-      if (tapRaycaster.ray.intersectPlane(tapGroundPlane, hitPt)) {
-        // Batasi area tujuan agar valid di dalam peta
-        if (window.pirakuInDistrict) {
-          hitPt.x = Math.max(-52, Math.min(52, hitPt.x));
-          hitPt.z = Math.max(-52, Math.min(52, hitPt.z));
-        } else {
-          hitPt.x = Math.max(-132, Math.min(61, hitPt.x));
-          hitPt.z = Math.max(-62, Math.min(52, hitPt.z));
-        }
-        pirakuTapWalkTarget = hitPt.clone();
-        const marker = ensureTapMarker();
-        marker.position.set(hitPt.x, 0.08, hitPt.z);
-        marker.visible = true;
-      }
-    }, { passive: true });
-  })();
 
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh || isRidingTram) return;
@@ -3684,7 +3662,7 @@ let activeQuestSystem = null;
       let diffRot = targetRot - myPlayerMesh.rotation.y;
       while (diffRot > Math.PI) diffRot -= Math.PI * 2;
       while (diffRot < -Math.PI) diffRot += Math.PI * 2;
-      myPlayerMesh.rotation.y += diffRot * Math.min(1, delta * 14);
+      myPlayerMesh.rotation.y += diffRot * Math.min(0.35, Math.min(delta, 0.05) * 10);
 
       const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92);
       myPlayerMesh.position.x += moveFinalVec.x * effectiveSpeed;
@@ -3714,11 +3692,11 @@ let activeQuestSystem = null;
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
-      // Fixed-Angle Smooth Follow: kamera meluncur menjaga karakter di tengah layar TANPA memutar sudut kota (anti-pusing)
+      // Sinkronisasi posisi kamera tepat sebelum controls.update() & renderer.render() dalam frame yang sama
       if (typeof controls !== 'undefined' && controls && controls.target) {
         const stepX = myPlayerMesh.position.x - beforeMoveX;
         const stepZ = myPlayerMesh.position.z - beforeMoveZ;
-        if (Math.abs(stepX) > 0.0001 || Math.abs(stepZ) > 0.0001) {
+        if (Math.abs(stepX) > 0.00001 || Math.abs(stepZ) > 0.00001) {
           controls.target.x += stepX;
           controls.target.z += stepZ;
           cam.position.x += stepX;
@@ -3795,12 +3773,15 @@ let activeQuestSystem = null;
     clockTime += 0.016;
     window.clockTime = clockTime;
 
-    controls.update();
     applyGrowth();
     updTrees(clockTime);
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    if (controls) {
+      controls.update();
+    }
+    cam.updateMatrixWorld();
     if (myPlayerMesh) updateDistrictTriggers(myPlayerMesh.position);
     // Sinkronisasi posisi avatar pemain lain (js/multiplayer.js) — broadcast + interpolasi.
     if (typeof window.updateMultiplayerFrame === 'function') window.updateMultiplayerFrame(0.016);

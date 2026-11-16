@@ -28,7 +28,7 @@
     const updates = [
       { ver: "v2.4 • Terbaru", badge: "BARU", title: "Ekonomi Koin Piraku & Toko Kota 3D", desc: "Kumpulkan Koin Piraku dari mini-game dan tukarkan dengan Iket Sunda, Kacamata Dago, Helm Biker, Aura Emas, Megafon, atau sewa Layar LED Gasibu 3D." },
       { ver: "v2.3", badge: "FITUR", title: "Sewa Sepeda Boseh & Skuter Listrik (10 Menit)", desc: "Sewa Sepeda (1.35x speed) atau Skuter Listrik (1.65x speed) selama 10 menit lengkap dengan countdown timer di HUD." },
-      { ver: "v2.2", badge: "ARCADE", title: "4 Mini-Game HD & Pilih Karakter", desc: "Mainkan Badminton GOR Gasibu, Angkot Ngebut Surapati, Mancing Taman Lansia, & Bakar Sate Gedung Sate dengan pilihan 4 karakter ber-perk." },
+      { ver: "v2.2", badge: "ARCADE", title: "4 Mini-Game HD 1-Jempol (Padel Club, Angkot, Mancing, Sate)", desc: "Mainkan Padel Club Gasibu, Angkot Ngebut Surapati, Mancing Taman Lansia, & Bakar Sate Gedung Sate dengan pilihan 4 karakter ber-perk." },
       { ver: "v2.1", badge: "LIVE", title: "Event Kota Dinamis & Podium 3D Top 3 Sultan", desc: "Cuaca & event berganti otomatis tiap jam (CFD Gasibu, Hujan Sore, Festival Monju) + Podium 3D Top 3 Sultan di utara Gasibu." },
       { ver: "v2.0", badge: "KOTA", title: "Flyover Pasupati, Jalur Jalan & Minimap Radar", desc: "Akses naik ke jembatan layang Pasupati, batas wilayah Bandung Wetan, serta radar minimap interaktif." }
     ];

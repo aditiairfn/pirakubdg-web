@@ -8,7 +8,7 @@
   <meta property="og:title" content="Simulasi Tata Kota Bandung">
   <meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
-  <link rel="stylesheet" href="./css/style.css?v=20261116v77">
+  <link rel="stylesheet" href="./css/style.css?v=20261116v86">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -17,8 +17,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
-  <link rel="stylesheet" href="css/clean-hud.css?v=20261116v77">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261116v77">
+  <link rel="stylesheet" href="css/clean-hud.css?v=20261116v86">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261116v86">
   <style id="piraku-zindex-fix">
     body > div[style*="pointer-events: none"][style*="position: absolute"],
     body > div[style*="pointer-events:none"][style*="position:absolute"] { z-index: 5 !important; isolation: isolate !important; }
@@ -257,7 +257,7 @@
     border: 1.5px solid rgba(255, 255, 255, 0.35) !important;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
     opacity: 0.45 !important; transition: opacity 0.15s ease !important;
-    -webkit-backdrop-filter: blur(3px) !important;
+    -webkit-
     padding: 0 !important;
     transform: none !important;
     z-index: 9100 !important;
@@ -287,8 +287,79 @@
     z-index: 9600 !important;
   }
 </style>
+<style id="piraku-boot-loader-css">
+  #bottom-control-panel { display: none !important; }
+  #bottom-control-panel.piraku-panel-open { display: block !important; }
+  @media (max-width: 900px), (pointer: coarse) {
+    #joystick-zone { display: block !important; visibility: visible !important; }
+    #joystick-zone.piraku-joy-hidden { display: none !important; }
+  }
+  #piraku-boot-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 2147483647;
+    background: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: #f8fafc;
+    font-family: system-ui, -apple-system, sans-serif;
+    transition: opacity 0.4s ease;
+  }
+  #piraku-boot-loader.fade-out {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .piraku-loader-logo {
+    width: 164px;
+    max-width: 55vw;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+    animation: pirakuLogoPulse 1.4s ease-in-out infinite alternate;
+  }
+  @keyframes pirakuLogoPulse {
+    from { transform: scale(0.97); opacity: 0.9; }
+    to { transform: scale(1.03); opacity: 1; }
+  }
+  .piraku-loader-bar {
+    width: 170px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.14);
+    overflow: hidden;
+  }
+  .piraku-loader-fill {
+    width: 45%;
+    height: 100%;
+    background: #38bdf8;
+    border-radius: 99px;
+    animation: pirakuLoadSlide 1s ease-in-out infinite alternate;
+  }
+  .piraku-loader-sub {
+    font-size: 12px;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
+  }
+  @keyframes pirakuLoadSlide {
+    from { transform: translateX(-20%); width: 40%; }
+    to { transform: translateX(140%); width: 55%; }
+  }
+</style>
 </head>
 <body>
+<div id="piraku-boot-loader">
+  <img class="piraku-loader-logo" src="assets/Pirakubdg%20Bandung%20Cityscape%20Logo.png" alt="Piraku Bandung" onerror="this.outerHTML='<div style=\'font-size:22px;font-weight:800;letter-spacing:-0.02em\'>Piraku Bandung</div>'">
+  <div class="piraku-loader-bar"><div class="piraku-loader-fill"></div></div>
+  <div class="piraku-loader-sub">Nyiapkeun jalan &amp; warga kota...</div>
+</div>
 
   <div id="toast-notif">Link Profil berhasil disalin! 📋</div>
 
@@ -1063,11 +1134,11 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261116v77"></script>
-  <script src="js/multiplayer.js?v=20261116v77"></script>
-  <script src="./js/rpg-ui.js?v=20261116v77"></script>
-  <script src="js/gedungsate-horizon.js?v=20261116v77"></script>
-  <script src="js/map-beautify.js?v=20261116v77"></script>
+  <script src="./js/main.js?v=20261116v86"></script>
+  <script src="js/multiplayer.js?v=20261116v86"></script>
+  <script src="./js/rpg-ui.js?v=20261116v86"></script>
+  <script src="js/gedungsate-horizon.js?v=20261116v86"></script>
+  <script src="js/map-beautify.js?v=20261116v86"></script>
   <script>
     function closeScenarioPanel() {
       const bp = document.getElementById("bottom-control-panel");
@@ -1207,12 +1278,12 @@
     })();
   </script>
 
-  <script src="js/piraku-economy.js?v=20261116v77"></script>
-  <script src="js/piraku-games.js?v=20261116v77"></script>
-  <script src="js/piraku-world-live.js?v=20261116v77"></script>
-  <script src="js/piraku-nav-modals.js?v=20261116v77"></script>
-    <script src="js/piraku-vfx.js?v=20261116v77"></script>
-  <script src="js/piraku-districts.js?v=20261116v77"></script>
+  <script src="js/piraku-economy.js?v=20261116v86"></script>
+  <script src="js/piraku-games.js?v=20261116v86"></script>
+  <script src="js/piraku-world-live.js?v=20261116v86"></script>
+  <script src="js/piraku-nav-modals.js?v=20261116v86"></script>
+    <script src="js/piraku-vfx.js?v=20261116v86"></script>
+  <script src="js/piraku-districts.js?v=20261116v86"></script>
 
   
 
@@ -1378,17 +1449,45 @@
     }, 450);
   </script>
 
-  <script src="js/piraku-civic.js?v=20261116v77"></script>
-  <script src="js/piraku-perf.js?v=20261116v77"></script>
+  <script src="js/piraku-civic.js?v=20261116v86"></script>
+  <script src="js/piraku-perf.js?v=20261116v86"></script>
+
+
 <script id="piraku-panel-visibility-sync">
-  setInterval(function () {
+  window.syncPirakuHudWithScenario = function () {
     const panel = document.getElementById('bottom-control-panel');
-    const isPanelOpen = panel && !panel.classList.contains('hidden') && panel.style.display !== 'none';
+    if (!panel) return;
+    const isOpened = panel.dataset.userOpened === '1' && !panel.classList.contains('hidden');
+    panel.classList.toggle('piraku-panel-open', isOpened);
     const joy = document.getElementById('joystick-zone');
     const chatBtns = document.querySelectorAll('button[title="Buka Balai Obrolan Warga"], .btn-chat-fab');
-    if (joy) joy.style.visibility = isPanelOpen ? 'hidden' : 'visible';
-    chatBtns.forEach(function (b) { b.style.visibility = isPanelOpen ? 'hidden' : 'visible'; });
-  }, 200);
+    if (joy) { joy.classList.toggle('piraku-joy-hidden', isOpened); joy.style.display = isOpened ? 'none' : 'block'; }
+    chatBtns.forEach(function (b) { b.style.display = isOpened ? 'none' : ''; });
+  };
+  document.addEventListener('click', function () {
+    setTimeout(window.syncPirakuHudWithScenario, 30);
+  }, { passive: true });
+
+  (function () {
+    const bootStart = Date.now();
+    function hidePirakuLoader() {
+      window.syncPirakuHudWithScenario();
+      const elapsed = Date.now() - bootStart;
+      const waitMore = Math.max(0, 1200 - elapsed);
+      setTimeout(function () {
+        const loader = document.getElementById('piraku-boot-loader');
+        if (loader) {
+          loader.classList.add('fade-out');
+          setTimeout(function () { loader.remove(); }, 420);
+        }
+      }, waitMore);
+    }
+    if (document.readyState === 'complete') {
+      hidePirakuLoader();
+    } else {
+      window.addEventListener('load', hidePirakuLoader);
+    }
+  })();
 </script>
 </body>
 </html>

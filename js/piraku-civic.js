@@ -616,6 +616,6 @@
   }
 
   updateBottomDockByMode();
-  setInterval(updateBottomDockByMode, 800);
+  document.addEventListener("click", function(){ setTimeout(updateBottomDockByMode, 120); }, { passive: true });
 
   })();
