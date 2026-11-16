@@ -323,26 +323,59 @@
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
   function playAngkotHornSfx() {
     if (isDistrictSoundMuted()) return;
-    if (typeof window.playSynthTone === "function") {
-      window.playSynthTone(440, "sawtooth", 0.16);
-      window.playSynthTone(554.37, "sawtooth", 0.16);
-      setTimeout(() => {
-        if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") {
-          window.playSynthTone(440, "sawtooth", 0.22);
-          window.playSynthTone(554.37, "sawtooth", 0.22);
-        }
-      }, 190);
-    }
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // Pola "tin... tiiin!" klakson mobil/angkot dengan filter lowpass bulat
+    [[0, 0.11], [0.18, 0.24]].forEach(([offset, duration]) => {
+      [440, 554.37].forEach(freq => {
+        const osc = ctx.createOscillator();
+        const filter = ctx.createBiquadFilter();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, now + offset);
+
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1250, now + offset);
+
+        gain.gain.setValueAtTime(0.0001, now + offset);
+        gain.gain.linearRampToValueAtTime(0.06, now + offset + 0.015);
+        gain.gain.setValueAtTime(0.055, now + offset + duration - 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + duration + 0.02);
+      });
+    });
   }
 
   // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
   function playBaksoBowlClinkSfx() {
     if (isDistrictSoundMuted()) return;
-    if (typeof window.playSynthTone === "function") {
-      window.playSynthTone(2380, "sine", 0.14);
-      setTimeout(() => { if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") window.playSynthTone(2380, "sine", 0.14); }, 190);
-      setTimeout(() => { if (!isDistrictSoundMuted() && typeof window.playSynthTone === "function") window.playSynthTone(2680, "sine", 0.18); }, 380);
-    }
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    // Denting sendok vs mangkok porselen bakso ("ting-ting-ting!")
+    [0, 0.18, 0.36].forEach(offset => {
+      [[2350, 0.08], [3520, 0.035]].forEach(([freq, peak]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + offset);
+
+        gain.gain.setValueAtTime(0.0001, now + offset);
+        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.003);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.15);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.17);
+      });
+    });
   }
 
   function createBandungAngkotMesh(bodyCol, stripeCol) {
