@@ -669,11 +669,15 @@
       grp.add(m1, m2);
     }
     [-3.35, 3.35].forEach(off => {
-      const eNS = new THREE.Mesh(new THREE.PlaneGeometry(0.14, 160), edgeMat);
-      eNS.rotation.x = -Math.PI / 2; eNS.position.set(off, 0.02, 0);
-      const eEW = new THREE.Mesh(new THREE.PlaneGeometry(160, 0.14), edgeMat);
-      eEW.rotation.x = -Math.PI / 2; eEW.position.set(0, 0.02, off);
-      grp.add(eNS, eEW);
+      const eLen = 147.2;
+      const eCenter = 12.8 + eLen / 2;
+      [eCenter, -eCenter].forEach(cPos => {
+        const eNS = new THREE.Mesh(new THREE.PlaneGeometry(0.14, eLen), edgeMat);
+        eNS.rotation.x = -Math.PI / 2; eNS.position.set(off, 0.02, cPos);
+        const eEW = new THREE.Mesh(new THREE.PlaneGeometry(eLen, 0.14), edgeMat);
+        eEW.rotation.x = -Math.PI / 2; eEW.position.set(cPos, 0.02, off);
+        grp.add(eNS, eEW);
+      });
     });
 
     // Zebra Cross 6-Strip di 4 Sisi Bundaran
@@ -1070,30 +1074,75 @@
     const pPos = activePlayer && activePlayer.position ? activePlayer.position : null;
     const nowMs = performance.now();
 
-    // Update lalu lintas Angkot Bandung & Mobil Warga
+    // Update lalu lintas Angkot Bandung & Mobil Warga (semua belok mulus memutari bundaran!)
     districtTraffic.forEach(v => {
       if (!v.mesh) return;
+      const R = 10.0; // Radius jalur aspal bundaran
+      const entryDist = 11.6;
+
       if (v.mode === "roundabout") {
         v.angle += v.speed * dt;
-        const nx = Math.cos(v.angle) * v.radius;
-        const nz = Math.sin(v.angle) * v.radius;
+        const nx = Math.cos(v.angle) * R;
+        const nz = Math.sin(v.angle) * R;
         v.mesh.position.set(nx, 0.02, nz);
         v.mesh.rotation.y = Math.atan2(-Math.sin(v.angle), Math.cos(v.angle));
       } else if (v.mode === "laneNS") {
-        v.pos += v.dir * v.speed * dt;
-        // Perlambat sedikit saat melintasi bundaran tengah agar tidak menabrak
-        if (Math.abs(v.pos) < 13) v.pos += v.dir * v.speed * dt * 0.65;
-        if (v.pos > 52) v.pos = -52;
-        if (v.pos < -52) v.pos = 52;
-        v.mesh.position.set(v.laneOffset, 0.02, v.pos);
-        v.mesh.rotation.y = v.dir > 0 ? 0 : Math.PI;
+        if (!v.inCircle) {
+          v.pos += v.dir * v.speed * dt;
+          if (v.pos > 52) v.pos = -52;
+          if (v.pos < -52) v.pos = 52;
+          // Cek saat menyentuh bibir bundaran -> masuk ke lintasan melingkar CCW
+          if ((v.dir > 0 && v.pos >= -entryDist && v.pos < -entryDist + 1.2) ||
+              (v.dir < 0 && v.pos <= entryDist && v.pos > entryDist - 1.2)) {
+            v.inCircle = true;
+            // dir > 0 datang dari Utara (-Z) di sisi kiri jalan (x = +1.8), masuk bundaran di sudut ~ -PI/2
+            v.circleStartAngle = v.dir > 0 ? -Math.PI / 2 + 0.18 : Math.PI / 2 + 0.18;
+            v.circleProgress = 0;
+            v.laneOffset = v.dir > 0 ? 1.8 : -1.8;
+          } else {
+            const xLane = v.dir > 0 ? 1.8 : -1.8;
+            v.mesh.position.set(xLane, 0.02, v.pos);
+            v.mesh.rotation.y = v.dir > 0 ? 0 : Math.PI;
+          }
+        }
+        if (v.inCircle) {
+          const angSpeed = v.speed / R;
+          v.circleProgress += angSpeed * dt;
+          const curAng = v.circleStartAngle - v.circleProgress; // CCW memutari pulau taman
+          v.mesh.position.set(Math.cos(curAng) * R, 0.02, Math.sin(curAng) * R);
+          v.mesh.rotation.y = Math.atan2(Math.sin(curAng), -Math.cos(curAng));
+          if (v.circleProgress >= Math.PI - 0.36) {
+            v.inCircle = false;
+            v.pos = v.dir > 0 ? entryDist + 0.3 : -entryDist - 0.3;
+          }
+        }
       } else if (v.mode === "laneEW") {
-        v.pos += v.dir * v.speed * dt;
-        if (Math.abs(v.pos) < 13) v.pos += v.dir * v.speed * dt * 0.65;
-        if (v.pos > 52) v.pos = -52;
-        if (v.pos < -52) v.pos = 52;
-        v.mesh.position.set(v.pos, 0.02, v.laneOffset);
-        v.mesh.rotation.y = v.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+        if (!v.inCircle) {
+          v.pos += v.dir * v.speed * dt;
+          if (v.pos > 52) v.pos = -52;
+          if (v.pos < -52) v.pos = 52;
+          if ((v.dir > 0 && v.pos >= -entryDist && v.pos < -entryDist + 1.2) ||
+              (v.dir < 0 && v.pos <= entryDist && v.pos > entryDist - 1.2)) {
+            v.inCircle = true;
+            v.circleStartAngle = v.dir > 0 ? Math.PI + 0.18 : 0.18;
+            v.circleProgress = 0;
+          } else {
+            const zLane = v.dir > 0 ? -1.8 : 1.8;
+            v.mesh.position.set(v.pos, 0.02, zLane);
+            v.mesh.rotation.y = v.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+          }
+        }
+        if (v.inCircle) {
+          const angSpeed = v.speed / R;
+          v.circleProgress += angSpeed * dt;
+          const curAng = v.circleStartAngle - v.circleProgress;
+          v.mesh.position.set(Math.cos(curAng) * R, 0.02, Math.sin(curAng) * R);
+          v.mesh.rotation.y = Math.atan2(Math.sin(curAng), -Math.cos(curAng));
+          if (v.circleProgress >= Math.PI - 0.36) {
+            v.inCircle = false;
+            v.pos = v.dir > 0 ? entryDist + 0.3 : -entryDist - 0.3;
+          }
+        }
       }
 
       if (pPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
