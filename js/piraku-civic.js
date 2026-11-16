@@ -1,4 +1,4 @@
-// piraku-civic.js — Sistem Pemilu Camat, Jalur Cepat Rumah 3D (3 Kunci), Warga Distrik & Leveling Max 99
+// piraku-civic.js — Sistem Pemilu Camat, Tutorial & Jalur Cepat Rumah 3D (3 Kunci), Warga Distrik & Leveling Max 99
 (function () {
   "use strict";
 
@@ -307,7 +307,17 @@
     }).join("");
   };
 
-  // ================= 3. MODAL PUSAT MISI (JALUR CEPAT RUMAH 3D) =================
+  // ================= 3. MODAL PUSAT MISI + TUTORIAL GOALS WARGA =================
+  window.toggleMissionTutorialBox = function () {
+    const box = document.getElementById("mission-tutorial-content");
+    const arrow = document.getElementById("mission-tutorial-arrow");
+    if (!box) return;
+    const isHidden = box.style.display === "none";
+    box.style.display = isHidden ? "block" : "none";
+    if (arrow) arrow.innerText = isHidden ? "▲ Tutup" : "▼ Lihat Panduan";
+    localStorage.setItem("piraku_mission_tut_seen", "1");
+  };
+
   window.openMissionsHubModal = function () {
     const modal = ensureCivicModal();
     const dist = getActiveDistrictInfo();
@@ -319,13 +329,14 @@
     const myKecHome = localStorage.getItem("piraku_my_kec") || dist.name;
     const houseKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys") || "0", 10));
     const hasHouse = localStorage.getItem("piraku_has_house") === "1";
+    const isFirstTimeTut = localStorage.getItem("piraku_mission_tut_seen") !== "1";
 
     const missions = [
       {
         id: "checkin_" + today,
         cat: "HARIAN",
-        title: "Absen Harian Warga",
-        desc: "Klaim kehadiran harian +1 Kunci Rumah.",
+        title: "1. Absen Harian Warga",
+        desc: "Klik Klaim untuk mencatat kehadiranmu hari ini.",
         xp: 50,
         coins: 50,
         done: localStorage.getItem("piraku_claimed_checkin_" + today) === "1"
@@ -333,8 +344,8 @@
       {
         id: "patrol_" + today,
         cat: "EKSPLORASI",
-        title: `Patroli Wilayah ${dist.name}`,
-        desc: "Tinjau lingkungan kecamatan +1 Kunci Rumah.",
+        title: `2. Patroli Wilayah ${dist.name}`,
+        desc: "Jalan-jalan keliling peta kota lalu klaim hadiah patroli.",
         xp: 40,
         coins: 50,
         done: localStorage.getItem("piraku_claimed_patrol_" + today) === "1"
@@ -342,8 +353,8 @@
       {
         id: "vote_" + today,
         cat: "DEMOKRASI",
-        title: "Partisipasi Pemilu Camat",
-        desc: "Cek bilik suara atau nyoblos Camat +1 Kunci Rumah.",
+        title: "3. Partisipasi Pemilu Camat",
+        desc: "Buka tab Pemilu di bawah untuk cek calon atau nyoblos Camat.",
         xp: 60,
         coins: 50,
         done: localStorage.getItem("piraku_claimed_vote_" + today) === "1"
@@ -351,8 +362,8 @@
       {
         id: "gotong_" + today,
         cat: "GOTONG ROYONG",
-        title: `Gotong Royong ${dist.name}`,
-        desc: "Bantu kas pembangunan distrik +1 Kunci Rumah.",
+        title: `4. Gotong Royong ${dist.name}`,
+        desc: "Dukung kas pembangunan fasilitas 3D kecamatanmu.",
         xp: 50,
         coins: 50,
         done: localStorage.getItem("piraku_claimed_gotong_" + today) === "1"
@@ -362,25 +373,40 @@
     modal.style.display = "flex";
     modal.innerHTML = `
       <div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#0e2f2a;border:1.5px solid rgba(74,222,128,0.35);border-radius:22px;padding:18px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
           <div>
-            <div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & KAVLING RUMAH</div>
-            <h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Misi Warga ${dist.name}</h3>
+            <div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & PANDUAN WARGA</div>
+            <h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Misi & Goals di ${dist.name}</h3>
           </div>
           <button onclick="document.getElementById('piraku-civic-modal').style.display='none'" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-weight:800;cursor:pointer;">✕</button>
         </div>
 
+        <!-- KOTAK TUTORIAL & GOALS UTAMA WARGA -->
+        <div style="background:rgba(15,23,42,0.65);border:1px solid rgba(56,189,248,0.4);border-radius:14px;padding:10px 12px;margin-bottom:12px;">
+          <div onclick="toggleMissionTutorialBox()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">
+            <span style="font-size:12px;font-weight:800;color:#38bdf8;">📖 Tutorial: Cara Main & Goals Utama</span>
+            <span id="mission-tutorial-arrow" style="font-size:10.5px;font-weight:700;color:#bae6fd;">${isFirstTimeTut ? "▲ Tutup" : "▼ Lihat Panduan"}</span>
+          </div>
+          <div id="mission-tutorial-content" style="display:${isFirstTimeTut ? "block" : "none"};margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:#e2e8f0;line-height:1.5;">
+            <div style="margin-bottom:6px;"><b style="color:#ffcf4a;">🏠 Goal 1 — Punya Rumah 3D Sendiri:</b> Selesaikan <b>3 misi apa saja</b> di bawah untuk mengumpulkan <b>3 Kunci 🔑</b>, lalu bangun Rumah Tropis lengkap dengan papan nama IG kamu di <b>Kec. ${myKecHome}</b>.</div>
+            <div style="margin-bottom:6px;"><b style="color:#4ade80;">⭐ Goal 2 — Naik Level (Max Lvl 99):</b> Tiap misi memberi <b>XP</b>. Capai minimal <b>Level 2</b> untuk membuka hak mendaftar jadi <b>Calon Camat</b>!</div>
+            <div style="margin-bottom:6px;"><b style="color:#f472b6;">🗳️ Goal 3 — Pemilu Camat:</b> Buka tab <b>Pemilu</b> untuk mencoblos atau berkampanye menjadi pemimpin kecamatan domisilimu.</div>
+            <div><b style="color:#fbbf24;">🪙 Goal 4 — Koin Pembangunan:</b> Koin hasil misi dipakai untuk patungan upgrade fasilitas kota di kecamatanmu.</div>
+          </div>
+        </div>
+
+        <!-- STATUS KUNCI RUMAH 3D -->
         <div style="background:linear-gradient(135deg,rgba(255,207,74,0.22),rgba(16,185,129,0.2));border:1.5px solid rgba(255,207,74,0.55);border-radius:14px;padding:12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Kunci Rumah 3D: ${hasHouse ? "SUDAH BERDIRI ✓" : houseKeys + " / 3 🔑"}</span>
+            <span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Progres Rumah 3D: ${hasHouse ? "SUDAH BERDIRI ✓" : houseKeys + " / 3 Kunci 🔑"}</span>
             <span style="font-size:10px;font-weight:800;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;">Kec. ${myKecHome}</span>
           </div>
           <div style="font-size:11px;color:#f1f5f9;margin-top:5px;line-height:1.4;">
             ${hasHouse
               ? '🎉 <b>Rumah 3D Tropis</b> kamu sudah berdiri di komplek perumahan <b>Kec. ' + myKecHome + '</b>!'
               : houseKeys >= 3
-                ? '🔥 Kunci sudah lengkap! Klik tombol di bawah untuk langsung mendirikan <b>Rumah 3D</b> milikmu sekarang!'
-                : 'Selesaikan <b>3 misi apa saja</b> hari ini untuk mengumpulkan <b>3 Kunci Rumah 🔑</b> dan bangun rumahmu langsung!'}
+                ? '🔥 Kunci sudah lengkap (3/3)! Klik tombol emas di bawah untuk langsung mendirikan <b>Rumah 3D</b> milikmu!'
+                : `Butuh <b>${3 - houseKeys} Kunci 🔑 lagi</b> (selesaikan ${3 - houseKeys} misi di bawah) untuk membangun rumahmu!`}
           </div>
           ${(!hasHouse && houseKeys >= 3) ? `
             <button onclick="buildMyInstantHouse()" style="width:100%;margin-top:9px;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12.5px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">
@@ -389,6 +415,7 @@
           ` : ""}
         </div>
 
+        <!-- PROGRESS BAR LEVEL -->
         <div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:11px 12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">${lvlInfo.isMax ? "MAX LEVEL 99 👑" : `LEVEL ${lvlInfo.level}`} · ${window.getPirakuCitizenTitle(lvlInfo.level)}</span>
@@ -399,6 +426,7 @@
           </div>
         </div>
 
+        <!-- DAFTAR MISI -->
         <div style="display:flex;flex-direction:column;gap:9px;">
           ${missions.map(m => `
             <div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
@@ -406,7 +434,7 @@
                 <span style="font-size:9px;font-weight:800;background:rgba(255,207,74,0.2);color:#ffcf4a;padding:2px 6px;border-radius:5px;">${m.cat}</span>
                 <div style="font-weight:800;font-size:13px;margin-top:3px;">${m.title}</div>
                 <div style="font-size:11px;color:#cbd5e1;margin-top:2px;">${m.desc}</div>
-                <div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">+${m.xp} XP · +${m.coins} 🪙 · +1 🔑</div>
+                <div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">Hadiah: +${m.xp} XP · +${m.coins} 🪙 · +1 🔑</div>
               </div>
               <button ${m.done ? "disabled" : `onclick="claimPirakuMission('${m.id}', ${m.xp}, ${m.coins}, '${m.title}')"`} style="flex-shrink:0;padding:8px 12px;border:none;border-radius:10px;background:${m.done ? "rgba(255,255,255,0.12)" : "#10b981"};color:${m.done ? "#94a3b8" : "#fff"};font-weight:800;font-size:11px;cursor:${m.done ? "default" : "pointer"};">
                 ${m.done ? "Selesai ✓" : "Klaim"}
@@ -437,7 +465,7 @@
 
     await window.grantPirakuXP(xpReward, title);
     if (curKeys === 3 && localStorage.getItem("piraku_has_house") !== "1" && typeof window.showToast === "function") {
-      window.showToast("🔑 3/3 Kunci Terkumpul! Buka tab Misi untuk bangun Rumah 3D kamu!");
+      window.showToast("🔑 3/3 Kunci Terkumpul! Klik tombol Bangun Rumah 3D di atas!");
     }
     window.openMissionsHubModal();
   };
