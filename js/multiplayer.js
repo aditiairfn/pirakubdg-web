@@ -17,24 +17,40 @@
   const peerConnections = new Map();
   const remoteAudioEls = new Map();
   const pendingIceMap = new Map();
-  const rtcConfig = {
-    iceCandidatePoolSize: 4,
+  const METERED_DOMAIN = 'yelclaw.metered.live';
+  const METERED_API_KEY = ''; // Opsional: isi API Key Metered untuk 50GB/bln TURN privat
+
+  let rtcConfig = {
+    iceCandidatePoolSize: 6,
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun.relay.metered.ca:80' },
       {
         urls: [
-          'turn:global.relay.metered.ca:80',
-          'turn:global.relay.metered.ca:80?transport=tcp',
-          'turn:global.relay.metered.ca:443',
-          'turns:global.relay.metered.ca:443?transport=tcp'
+          'turn:openrelay.metered.ca:80',
+          'turn:openrelay.metered.ca:443',
+          'turn:openrelay.metered.ca:443?transport=tcp'
         ],
-        username: 'yelclaw',
-        credential: '1603'
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
       }
     ]
   };
+
+  async function refreshTurnCredentials() {
+    if (!METERED_API_KEY) return;
+    try {
+      const res = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`);
+      if (res.ok) {
+        const iceServers = await res.json();
+        if (Array.isArray(iceServers) && iceServers.length > 0) {
+          rtcConfig = { iceCandidatePoolSize: 6, iceServers };
+        }
+      }
+    } catch (_) {}
+  }
+  refreshTurnCredentials();
 
   function unlockPendingRemoteAudios() {
     remoteAudioEls.forEach((aud) => {
@@ -644,6 +660,9 @@
           entry.targetZ = payload.z;
           entry.targetRotY = payload.rotY;
           entry.lastSeen = Date.now();
+          if (isMicEnabled && payload.sessionId && !peerConnections.has(payload.sessionId)) {
+            createPeerConnection(payload.sessionId, true);
+          }
         }
       })
       .on('broadcast', { event: 'chat' }, ({ payload }) => {
@@ -658,6 +677,11 @@
         if (payload.to && payload.to !== mySessionId) return;
         const pc = createPeerConnection(payload.from, false);
         try {
+          // Anti-glare: jika kedua pihak bersamaan mengirim offer, pihak dengan ID lebih besar mengalah (rollback)
+          if (pc.signalingState !== 'stable') {
+            if (mySessionId < payload.from) return;
+            await pc.setLocalDescription({ type: 'rollback' });
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
           // Flush ICE candidates yang datang lebih dulu sebelum remoteDescription siap
           const queued = pendingIceMap.get(payload.from) || [];
