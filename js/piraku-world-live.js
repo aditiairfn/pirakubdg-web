@@ -31,24 +31,58 @@
   // ================= 1. SINKRONISASI DOMPET & BILLBOARD KE SUPABASE =================
   window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
   window.pirakuRemoteOutfits = window.pirakuRemoteOutfits || {};
+  const TIER_META = {
+    tier_2: { tierId: "tier_2", tierName: "Wargi Aktif", tierBadge: "⭐" },
+    tier_3: { tierId: "tier_3", tierName: "Sesepuh Bandung", tierBadge: "👑" },
+    tier_4: { tierId: "tier_4", tierName: "Sultan Dago", tierBadge: "💎" }
+  };
+
+  async function loadAllRemoteTiersFromSupabase() {
+    const sb = window.pirakuSupabase;
+    if (!sb) return;
+    try {
+      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit");
+      if (!error && Array.isArray(data)) {
+        data.forEach(r => {
+          const k1 = String(r.citizen_key || "").toLowerCase().replace(/^@/, "").trim();
+          const k2 = String(r.display_name || "").toLowerCase().replace(/^@/, "").trim();
+          if (r.equipped_outfit) {
+            if (k1) window.pirakuRemoteOutfits[k1] = r.equipped_outfit;
+            if (k2) window.pirakuRemoteOutfits[k2] = r.equipped_outfit;
+          }
+          const meta = TIER_META[r.tier_id];
+          if (!meta) return;
+          if (k1) window.pirakuRemoteTiers[k1] = meta;
+          if (k2) window.pirakuRemoteTiers[k2] = meta;
+        });
+      }
+    } catch (e) {}
+  }
+  window.refreshPirakuRemoteTiers = loadAllRemoteTiersFromSupabase;
+  setTimeout(loadAllRemoteTiersFromSupabase, 1000);
+  setInterval(loadAllRemoteTiersFromSupabase, 10000);
+
   window.syncPirakuWalletToSupabase = async function(state) {
     const sb = window.pirakuSupabase;
     if (!sb || !state) return;
     const idObj = getCitizenIdentity();
     try {
-      await sb.from("piraku_wallets").upsert({
+      const payload = {
         citizen_key: idObj.key,
         display_name: idObj.displayName,
         coins: Math.round(state.coins || 0),
         tier_id: state.tier || "tier_1",
         equipped_outfit: state.equippedOutfit || null,
-        tier_id: state.tier || "tier_1",
-        equipped_outfit: state.equippedOutfit || null,
-        tier: state.tier || "tier_1",
-        equipped_outfit: state.equippedOutfit || null,
         billboard_text: state.billboardText || null,
         updated_at: new Date().toISOString()
-      }, { onConflict: "citizen_key" });
+      };
+      const { error } = await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+      if (error) {
+        // Fallback jika kolom tier_id belum ditambahkan di tabel Supabase
+        delete payload.tier_id;
+        delete payload.equipped_outfit;
+        await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+      }
     } catch (e) {}
   };
 
