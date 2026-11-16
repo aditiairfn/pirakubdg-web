@@ -1,13 +1,23 @@
-// ================= PIRAKUBDG 30 KECAMATAN KOMPLEK BUILDER (FIXED PLAYER, RAIN, HUD & GABLE HOUSES) =================
+// ================= PIRAKUBDG 29 KECAMATAN KOMPLEK + PUSAT KOTA BANDUNG WETAN =================
 (function() {
+  const CENTRAL_HUB = {
+    id: "bandung_wetan",
+    name: "Bandung Wetan",
+    zone: "Pusat Kota",
+    icon: "🏛️",
+    landmark: "Gedung Sate, Lapangan Gasibu & Pusat Pemerintahan",
+    isMainMap: true
+  };
+
   const DISTRICTS = [
-    { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x15803d, accent: 0xfacc15, isMainMap: true },
+    // BANDUNG TENGAH (Non-Pusat)
     { id: "sumur_bandung", name: "Sumur Bandung", zone: "Tengah", icon: "🎭", landmark: "Jl. Braga & Balai Kota", theme: "heritage", ground: 0x166534, accent: 0x38bdf8 },
     { id: "lengkong", name: "Lengkong", zone: "Tengah", icon: "🍜", landmark: "Burangrang & Kuliner Malam", theme: "culinary", ground: 0x15803d, accent: 0xf97316 },
     { id: "regol", name: "Regol", zone: "Tengah", icon: "🕌", landmark: "Alun-Alun & Masjid Raya", theme: "alunalun", ground: 0x16a34a, accent: 0x22c55e },
     { id: "batununggal", name: "Batununggal", zone: "Tengah", icon: "🏢", landmark: "Gatot Subroto & Laswi", theme: "urban", ground: 0x15803d, accent: 0xa855f7 },
     { id: "kiaracondong", name: "Kiaracondong", zone: "Tengah", icon: "🚆", landmark: "Stasiun Kiaracondong", theme: "transit", ground: 0x14532d, accent: 0xec4899 },
 
+    // BANDUNG UTARA
     { id: "coblong", name: "Coblong", zone: "Utara", icon: "🎓", landmark: "Monju, Dago & Kampus ITB", theme: "campus", ground: 0x14532d, accent: 0x3b82f6 },
     { id: "cidadap", name: "Cidadap", zone: "Utara", icon: "🌲", landmark: "Ciumbuleuit & Punclut", theme: "forest", ground: 0x064e3b, accent: 0x16a34a },
     { id: "sukasari", name: "Sukasari", zone: "Utara", icon: "🏫", landmark: "Setiabudi & Isola UPI", theme: "campus", ground: 0x14532d, accent: 0x0ea5e9 },
@@ -15,6 +25,7 @@
     { id: "cibeunying_kaler", name: "Cibeunying Kaler", zone: "Utara", icon: "🎨", landmark: "Cigadung & Taman Makam Pahlawan", theme: "forest", ground: 0x15803d, accent: 0xeab308 },
     { id: "cibeunying_kidul", name: "Cibeunying Kidul", zone: "Utara", icon: "🎸", landmark: "Cicaheum & Saung Angklung Udjo", theme: "heritage", ground: 0x166534, accent: 0x14b8a6 },
 
+    // BANDUNG TIMUR
     { id: "antapani", name: "Antapani", zone: "Timur", icon: "🌉", landmark: "Flyover Pelangi Antapani", theme: "transit", ground: 0x15803d, accent: 0xf59e0b },
     { id: "arcamanik", name: "Arcamanik", zone: "Timur", icon: "🏟️", landmark: "SPOrT Jabar Arcamanik", theme: "stadium", ground: 0x16a34a, accent: 0x22c55e },
     { id: "mandalajati", name: "Mandalajati", zone: "Timur", icon: "⛰️", landmark: "Sindanglaya & Bukit Moko", theme: "forest", ground: 0x065f46, accent: 0x10b981 },
@@ -24,10 +35,12 @@
     { id: "cibiru", name: "Cibiru", zone: "Timur", icon: "📚", landmark: "Bunderan Cibiru & UIN", theme: "campus", ground: 0x14532d, accent: 0x8b5cf6 },
     { id: "gedebage", name: "Gedebage", zone: "Timur", icon: "⚽", landmark: "Stadion GBLA, Masjid Al Jabbar & Whoosh", theme: "stadium", ground: 0x0f766e, accent: 0xfacc15 },
 
+    // BANDUNG SELATAN
     { id: "rancasari", name: "Rancasari", zone: "Selatan", icon: "🌿", landmark: "Ciwastra & Derwati", theme: "alunalun", ground: 0x15803d, accent: 0x22c55e },
     { id: "buahbatu", name: "Buahbatu", zone: "Selatan", icon: "🚗", landmark: "Margacinta & Gerbang Tol Buahbatu", theme: "transit", ground: 0x166534, accent: 0x3b82f6 },
     { id: "bandung_kidul", name: "Bandung Kidul", zone: "Selatan", icon: "🏞️", landmark: "Mengger & Batununggal Indah", theme: "urban", ground: 0x15803d, accent: 0x14b8a6 },
 
+    // BANDUNG BARAT
     { id: "cicendo", name: "Cicendo", zone: "Barat", icon: "✈️", landmark: "Bandara Husein & Stasiun Bandung", theme: "transit", ground: 0x166534, accent: 0x38bdf8 },
     { id: "andir", name: "Andir", zone: "Barat", icon: "🏮", landmark: "Cibadak Culinary Night & Pasar Baru", theme: "culinary", ground: 0x166534, accent: 0xef4444 },
     { id: "astanaanyar", name: "Astanaanyar", zone: "Barat", icon: "🧵", landmark: "Tegalega & Monumen Bandung Lautan Api", theme: "alunalun", ground: 0x15803d, accent: 0xf97316 },
@@ -57,21 +70,36 @@
   let localInvest = {};
   try { localInvest = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}"); } catch (e) {}
 
-  let savedKtp = localStorage.getItem("piraku_ktp_kecamatan") || localStorage.getItem("piraku_user_kecamatan") || localStorage.getItem("piraku_my_kecamatan") || "Bandung Wetan";
-  let myDistrictName = DISTRICTS.find(d => d.name.toLowerCase() === savedKtp.toLowerCase()) ? DISTRICTS.find(d => d.name.toLowerCase() === savedKtp.toLowerCase()).name : "Bandung Wetan";
   let activeMapId = "bandung_wetan";
 
+  // Deteksi status warga terdaftar (ber-KTP) vs Tamu secara otomatis dari data akun
+  function getCitizenProfile() {
+    const ig = (localStorage.getItem("piraku_my_ig") || "").trim();
+    const ktpDomText = (document.getElementById("ktp-kec")?.textContent || "").trim();
+    const rawKec = (
+      localStorage.getItem("piraku_my_kec") ||
+      localStorage.getItem("piraku_ktp_kecamatan") ||
+      localStorage.getItem("piraku_user_kecamatan") ||
+      ktpDomText ||
+      ""
+    ).trim();
+
+    const isRegistered = Boolean(ig && !ig.toLowerCase().startsWith("tamu_"));
+    const matched = DISTRICTS.find(d => d.name.toLowerCase() === rawKec.toLowerCase()) || DISTRICTS.find(d => d.id === "coblong") || DISTRICTS[0];
+
+    return {
+      isRegistered,
+      ig: isRegistered ? ig : "Tamu",
+      district: matched
+    };
+  }
+
   function saveLocal() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(localInvest));
-      localStorage.setItem("piraku_my_kecamatan", myDistrictName);
-    } catch (e) {}
-    const ktpEl = document.getElementById("ktp-kec");
-    if (ktpEl) ktpEl.textContent = myDistrictName;
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(localInvest)); } catch (e) {}
   }
 
   function getCoinsFor(d) {
-    return Number(localInvest[d.id] || (d.id === "bandung_wetan" ? 1200 : d.id === "coblong" ? 850 : 150));
+    return Number(localInvest[d.id] || (d.id === "coblong" ? 850 : d.id === "lengkong" ? 300 : 150));
   }
 
   async function syncDistrictsFromSupabase() {
@@ -115,7 +143,6 @@
     { x: 13, z: -13, rotY: Math.PI },  { x: 20, z: -13, rotY: Math.PI },  { x: 27, z: -13, rotY: Math.PI },  { x: 13, z: -22, rotY: 0 },  { x: 20, z: -22, rotY: 0 }
   ];
 
-  // Membuat Geometri Atap Pelana (Segitiga Prisma Asli dengan Overhang)
   function createGableRoof(width, height, depth, color) {
     const shape = new THREE.Shape();
     shape.moveTo(-width / 2, 0);
@@ -127,7 +154,6 @@
     return new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color, roughness: 0.55 }));
   }
 
-  // Arsitektur Rumah Komplek Modern Tropis (Atap Pelana Bertingkat, Teras Kayu, Balkon, Cerobong)
   function createModernHouseMesh(idx, lv) {
     const g = new THREE.Group();
     const isTwoStory = (lv >= 2 && idx % 2 === 1) || lv >= 4;
@@ -139,14 +165,12 @@
     const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.8 });
     const roofColor = roofPalette[idx % roofPalette.length];
 
-    // 1. Halaman Paving & Taman Bunga Depan
     const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.05, 6.4), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
     yard.position.y = 0.025;
     const lawn = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.07, 2.2), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.9 }));
     lawn.position.set(-1.3, 0.035, 1.8);
     g.add(yard, lawn);
 
-    // 2. Pagar Rendah & Pilar Gerbang
     const fence = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 0.16), wallMat);
     fence.position.set(-1.45, 0.28, 3.05);
     const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), trimMat);
@@ -154,7 +178,6 @@
     const p2 = p1.clone(); p2.position.x = 1.15;
     g.add(fence, p1, p2);
 
-    // 3. Badan Rumah Lantai 1 (Asimetris L-Shape Modern)
     const mainBody = new THREE.Mesh(new THREE.BoxGeometry(3.8, 2.35, 3.6), wallMat);
     mainBody.position.set(-0.5, 1.22, -0.7);
     mainBody.castShadow = true; mainBody.receiveShadow = true;
@@ -163,7 +186,6 @@
     sideWing.position.set(1.8, 1.1, -0.4);
     g.add(mainBody, sideWing);
 
-    // 4. Teras Kayu & Kanopi Teras
     const deck = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.18, 1.2), woodMat);
     deck.position.set(-0.9, 0.12, 1.55);
     const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.14, 1.35), trimMat);
@@ -173,7 +195,6 @@
     const colR = colL.clone(); colR.position.x = 0.25;
     g.add(deck, canopy, colL, colR);
 
-    // 5. Pintu Kayu & Jendela Kaca Gelap Berbingkai Putih
     const door = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.65, 0.12), woodMat);
     door.position.set(-1.2, 1.05, 1.12);
     const winFrame = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.05, 0.12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
@@ -182,7 +203,6 @@
     winPane.position.set(0.45, 1.4, 1.13);
     g.add(door, winFrame, winPane);
 
-    // 6. Atap Pelana Utama + Atap Sayap + Cerobong
     if (isTwoStory) {
       const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.9, 3.1), wallMat);
       body2.position.set(-0.5, 3.3, -0.8);
@@ -205,7 +225,6 @@
       g.add(roofMain, roofSide, chimney);
     }
 
-    // 7. Mobil di Carport (Lv.3+)
     if (lv >= 3 && idx % 2 === 0) {
       const carCols = [0xef4444, 0x2563eb, 0xf8fafc, 0x0f172a];
       const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCols[idx % carCols.length], metalness: 0.4, roughness: 0.3 }));
@@ -258,14 +277,12 @@
 
     const grp = new THREE.Group();
     grp.name = "piraku-komplek-district-map";
-    // Samakan elevasi dasar dengan peta utama Gedung Sate (y = 0.0) agar karakter & partikel hujan pas 100%
     const baseFootY = (playerMesh && playerMesh.position) ? playerMesh.position.y : 0;
     grp.position.y = baseFootY - 0.03;
 
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
 
-    // 1. Hamparan Horizon Luas & Cincin Pegunungan Bandung
     const horizonGround = new THREE.Mesh(
       new THREE.PlaneGeometry(760, 760),
       new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.95 })
@@ -289,7 +306,6 @@
       grp.add(mountain);
     }
 
-    // 2. Tanah & Jalan Komplek
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(110, 110),
       new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.88 })
@@ -322,7 +338,6 @@
       grp.add(m1, m2);
     }
 
-    // 3. Bundaran Taman Tengah Komplek
     const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(7.5, 32), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
     roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.022, 0);
     const roundPaving = new THREE.Mesh(new THREE.RingGeometry(7.5, 9.2, 32), curbMat);
@@ -336,7 +351,6 @@
     pillar.position.y = 0.8 + monH / 2;
     grp.add(ped, pillar);
 
-    // 4. Gapura Masuk & Pos Satpam
     const gateCv = document.createElement("canvas");
     gateCv.width = 512; gateCv.height = 112;
     const gctx = gateCv.getContext("2d");
@@ -359,7 +373,6 @@
     posRoof.position.set(-6.2, 2.2, 28);
     grp.add(gateBanner, gateColL, gateColR, posBox, posRoof);
 
-    // 5. 20 Kavling Rumah Komplek
     KAVLING_SLOTS.forEach((slot, idx) => {
       const unit = idx < cur.houses ? createModernHouseMesh(idx, cur.lv) : createEmptyLotMesh();
       unit.position.set(slot.x, 0, slot.z);
@@ -367,7 +380,6 @@
       grp.add(unit);
     });
 
-    // 6. Fasilitas Umum Komplek
     if (cur.lv >= 2) {
       const mushola = new THREE.Group();
       const mBody = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.6, 4.6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
@@ -394,7 +406,6 @@
       grp.add(balai);
     }
 
-    // 7. Pepohonan & Lampu Jalan PJU
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
     [[-9, -9], [9, -9], [-9, 9], [9, 9], [-24, -6], [24, -6], [-24, 6], [24, 6], [-38, -28], [38, -28], [-38, 28], [38, 28]].forEach(([tx, tz], i) => {
@@ -413,7 +424,6 @@
       }
     });
 
-    // 8. 6 Koin Emas Harian Komplek
     const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 16);
     const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.2 });
     [[0, 12], [0, -12], [12, 0], [-12, 0], [17, 17.5], [-17, -17.5]].forEach(([cx, cz]) => {
@@ -427,11 +437,12 @@
     sc.add(grp);
     customDistrictGroup = grp;
 
-    // Pastikan pemain terlihat jelas & berada tepat di permukaan jalan
     if (playerMesh) {
-      playerMesh.visible = true;
+      let p = playerMesh;
+      while (p) { p.visible = true; p = p.parent; }
       if (playerMesh.position) {
-        playerMesh.position.x = 0; playerMesh.position.z = 23;
+        playerMesh.position.x = 0;
+        playerMesh.position.z = 23;
         if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
           playerMesh.userData.a.c.x = 0;
           playerMesh.userData.a.c.z = 23;
@@ -500,9 +511,11 @@
 
     const playerMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (playerMesh) {
-      playerMesh.visible = true;
+      let p = playerMesh;
+      while (p) { p.visible = true; p = p.parent; }
       if (playerMesh.position) {
-        playerMesh.position.set(0, 0.14, -4);
+        playerMesh.position.x = 0;
+        playerMesh.position.z = -4;
         if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
           playerMesh.userData.a.c.x = 0;
           playerMesh.userData.a.c.z = -4;
@@ -512,7 +525,7 @@
   }
 
   window.enterDistrictMap = function(districtId) {
-    const d = DISTRICTS.find(x => x.id === districtId) || DISTRICTS[0];
+    const d = districtId === CENTRAL_HUB.id ? CENTRAL_HUB : (DISTRICTS.find(x => x.id === districtId) || CENTRAL_HUB);
     activeMapId = d.id;
 
     if (typeof window.switchMultiplayerMapRoom === "function") {
@@ -538,9 +551,14 @@
     const titleEl = document.getElementById("district-title");
     const subEl = document.getElementById("district-subtitle");
     if (!banner || !titleEl || !subEl) return;
-    const { cur } = getLevelInfo(getCoinsFor(d));
-    titleEl.textContent = d.isMainMap ? `🏛️ PUSAT KOTA: ${d.name.toUpperCase()}` : `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
-    subEl.textContent = d.isMainMap ? d.landmark : `${cur.title} (${cur.houses}/20 Kavling)`;
+    if (d.isMainMap) {
+      titleEl.textContent = `🏛️ PUSAT KOTA BANDUNG • BANDUNG WETAN`;
+      subEl.textContent = d.landmark;
+    } else {
+      const { cur } = getLevelInfo(getCoinsFor(d));
+      titleEl.textContent = `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
+      subEl.textContent = `${cur.title} (${cur.houses}/20 Kavling)`;
+    }
     banner.style.opacity = "1";
     banner.style.transform = "translateX(-50%) translateY(0px)";
     clearTimeout(banner._t);
@@ -555,7 +573,6 @@
     if (!pill && document.body) {
       pill = document.createElement("div");
       pill.id = "piraku-active-map-pill";
-      // Naikkan ke bottom: 228px agar duduk rapi tepat di ATAS tombol Obrolan (bottom: 186px)
       pill.style.cssText = "position:fixed;bottom:228px;left:16px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.9);backdrop-filter:blur(10px);border:1.5px solid rgba(250,204,21,0.55);color:#fde047;font-size:11px;font-weight:800;z-index:26;display:flex;align-items:center;gap:6px;box-shadow:0 6px 18px rgba(0,0,0,0.4);";
       document.body.appendChild(pill);
     }
@@ -564,13 +581,16 @@
       pill.style.display = "none";
     } else {
       pill.style.display = "flex";
-      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name} ▾</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Gd. Sate</button>`;
+      pill.innerHTML = `<span style="cursor:pointer;" onclick="openDistrictsHubModal()">${d.icon} ${d.name} ▾</span><button onclick="enterDistrictMap('bandung_wetan')" style="border:none;background:#ef4444;color:#fff;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">← Pusat Kota</button>`;
     }
   }
 
   function tickDistrictLoop() {
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    if (mesh) { let p = mesh; while (p) { if (!p.visible) p.visible = true; p = p.parent; } }
+    if (mesh) {
+      let p = mesh;
+      while (p) { if (!p.visible) p.visible = true; p = p.parent; }
+    }
     for (let i = districtCoins.length - 1; i >= 0; i--) {
       const c = districtCoins[i];
       c.rotation.z += 0.08;
@@ -606,37 +626,53 @@
     const modal = document.getElementById("piraku-districts-modal");
     if (!modal) return;
     const zones = ["Semua", "Tengah", "Utara", "Timur", "Selatan", "Barat"];
-    const myD = DISTRICTS.find(d => d.name === myDistrictName) || DISTRICTS[0];
+    const profile = getCitizenProfile();
+    const myD = profile.district;
     const myCoins = getCoinsFor(myD);
     const myLv = getLevelInfo(myCoins);
 
     const ranked = [...DISTRICTS].sort((a, b) => getCoinsFor(b) - getCoinsFor(a));
     const filtered = filterZone === "Semua" ? ranked : ranked.filter(d => d.zone === filterZone);
 
+    const domisiliCardHtml = profile.isRegistered ? `
+      <div style="padding:12px;border-radius:16px;background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.4);margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:10.5px;font-weight:800;color:#fde047;">🪪 DOMISILI KTP (${profile.ig})</span>
+          <span style="background:#0f172a;color:#4ade80;border:1px solid rgba(74,222,128,0.45);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;">✓ Terdaftar</span>
+        </div>
+        <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myLv.cur.houses}/20 Rumah)</span></div>
+        <div style="font-size:11px;color:#cbd5e1;margin:3px 0 8px;">🏘️ ${myLv.cur.title} • Dana: <b style="color:#fde047;">🪙 ${myCoins.toLocaleString("id-ID")}</b></div>
+        <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;">
+          <button data-enter="${myD.id}" style="padding:8px 6px;border-radius:9px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:11px;font-weight:800;cursor:pointer;">🏘️ Masuk Komplek</button>
+          <button data-invest="${myD.id}" data-amt="50" style="padding:8px 4px;border-radius:9px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:800;cursor:pointer;">+🪙 50 Bangun</button>
+          <button data-invest="${myD.id}" data-amt="200" style="padding:8px 4px;border-radius:9px;border:none;background:#f59e0b;color:#0f172a;font-size:11px;font-weight:800;cursor:pointer;">+🪙 200 Maju</button>
+        </div>
+      </div>` : `
+      <div style="padding:12px;border-radius:16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.45);margin-bottom:12px;">
+        <div style="font-size:11px;font-weight:800;color:#fbbf24;margin-bottom:4px;">⚠️ STATUS: TAMU (BELUM BER-KTP BANDUNG)</div>
+        <div style="font-size:11.5px;color:#e2e8f0;line-height:1.4;margin-bottom:8px;">Tamu tetap bebas jalan-jalan ke seluruh komplek kecamatan, namun wajib <b>Daftar KTP Warga</b> terlebih dahulu untuk menyumbang koin pembangunan.</div>
+        <button id="dt-open-signup" style="width:100%;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,#f59e0b,#eab308);color:#0f172a;font-size:12px;font-weight:800;cursor:pointer;">🪪 Daftar KTP Warga Bandung Sekarang</button>
+      </div>`;
+
     modal.innerHTML = `
       <div style="width:100%;max-width:430px;background:linear-gradient(180deg,#0f172a,#131c31);border:1.5px solid rgba(250,204,21,0.45);border-radius:22px;padding:16px;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.82);max-height:84dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div>
-            <div style="font-size:10.5px;color:#facc15;font-weight:800;letter-spacing:.7px;">KOMPLEK WARGA • 30 KECAMATAN BANDUNG</div>
-            <div style="font-size:18px;font-weight:800;">Peta & Komplek Kecamatan 🏘️</div>
+            <div style="font-size:10.5px;color:#facc15;font-weight:800;letter-spacing:.7px;">PUSAT KOTA & 29 KECAMATAN HUNIAN</div>
+            <div style="font-size:18px;font-weight:800;">Peta & Komplek Bandung 🏘️</div>
           </div>
           <button id="dt-close" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
 
-        <div style="padding:12px;border-radius:16px;background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.4);margin-bottom:12px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-size:10.5px;font-weight:800;color:#fde047;">🪪 DOMISILI KTP KAMU</span>
-            <select id="dt-select-my" style="background:#0f172a;color:#fde047;border:1px solid #facc15;border-radius:8px;padding:3px 7px;font-size:11px;font-weight:700;">
-              ${DISTRICTS.map(d => `<option value="${d.name}" ${d.name === myDistrictName ? "selected" : ""}>${d.name}</option>`).join("")}
-            </select>
+        ${domisiliCardHtml}
+
+        <!-- Kartu Khusus Pusat Kota: Bandung Wetan (Tanpa Level) -->
+        <div style="padding:10px 12px;border-radius:14px;background:linear-gradient(135deg,rgba(30,58,138,0.55),rgba(15,23,42,0.9));border:1px solid rgba(56,189,248,0.45);display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#f8fafc;">🏛️ Bandung Wetan <span style="font-size:10px;padding:2px 7px;border-radius:999px;background:rgba(250,204,21,0.2);color:#fde047;">PUSAT KOTA</span></div>
+            <div style="font-size:10.5px;color:#cbd5e1;margin-top:2px;">Gedung Sate, Lapangan Gasibu & Pusat Kota</div>
           </div>
-          <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myLv.cur.houses}/20 Rumah)</span></div>
-          <div style="font-size:11px;color:#cbd5e1;margin:3px 0 8px;">🏘️ ${myLv.cur.title} • Dana: <b style="color:#fde047;">🪙 ${myCoins.toLocaleString("id-ID")}</b></div>
-          <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;">
-            <button data-enter="${myD.id}" style="padding:8px 6px;border-radius:9px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:11px;font-weight:800;cursor:pointer;">🏘️ Masuk Komplek</button>
-            <button data-invest="${myD.id}" data-amt="50" style="padding:8px 4px;border-radius:9px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:800;cursor:pointer;">+🪙 50 Bangun</button>
-            <button data-invest="${myD.id}" data-amt="200" style="padding:8px 4px;border-radius:9px;border:none;background:#f59e0b;color:#0f172a;font-size:11px;font-weight:800;cursor:pointer;">+🪙 200 Maju</button>
-          </div>
+          <button data-enter="bandung_wetan" style="padding:7px 11px;border-radius:9px;border:none;background:${activeMapId === "bandung_wetan" ? "#22c55e" : "#38bdf8"};color:#0f172a;font-size:11px;font-weight:800;cursor:pointer;flex-shrink:0;">${activeMapId === "bandung_wetan" ? "Aktif ✓" : "Pusat Kota →"}</button>
         </div>
 
         <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
@@ -649,6 +685,9 @@
             const c = getCoinsFor(d);
             const lvInfo = getLevelInfo(c);
             const isCurrentMap = activeMapId === d.id;
+            const investBtnHtml = profile.isRegistered
+              ? `<button data-invest="${d.id}" data-amt="50" style="padding:6px 8px;border-radius:8px;border:none;background:#f59e0b;color:#0f172a;font-size:10.5px;font-weight:800;cursor:pointer;">+50</button>`
+              : `<button disabled title="Daftar KTP untuk menyumbang" style="padding:6px 8px;border-radius:8px;border:none;background:#334155;color:#64748b;font-size:10.5px;font-weight:800;cursor:not-allowed;">🔒 +50</button>`;
             return `
               <div style="padding:10px 12px;border-radius:14px;background:#1e293b;border:1px solid ${isCurrentMap ? "#38bdf8" : "rgba(148,163,184,0.2)"};display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div>
@@ -656,7 +695,7 @@
                   <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">${lvInfo.cur.title} • <b style="color:#fde047;">🪙 ${c.toLocaleString("id-ID")}</b></div>
                 </div>
                 <div style="display:flex;gap:5px;flex-shrink:0;">
-                  <button data-invest="${d.id}" data-amt="50" style="padding:6px 8px;border-radius:8px;border:none;background:#f59e0b;color:#0f172a;font-size:10.5px;font-weight:800;cursor:pointer;">+50</button>
+                  ${investBtnHtml}
                   <button data-enter="${d.id}" style="padding:6px 9px;border-radius:8px;border:none;background:${isCurrentMap ? "#22c55e" : "#2563eb"};color:${isCurrentMap ? "#0f172a" : "#fff"};font-size:10.5px;font-weight:800;cursor:pointer;">${isCurrentMap ? "Aktif ✓" : "Masuk →"}</button>
                 </div>
               </div>`;
@@ -665,16 +704,20 @@
       </div>`;
 
     modal.querySelector("#dt-close").onclick = () => { modal.style.display = "none"; };
-    modal.querySelector("#dt-select-my").onchange = e => {
-      myDistrictName = e.target.value;
-      saveLocal();
-      renderDistrictsModal();
-    };
+    const signupBtn = modal.querySelector("#dt-open-signup");
+    if (signupBtn) {
+      signupBtn.onclick = () => {
+        modal.style.display = "none";
+        if (typeof window.openAuthModal === "function") window.openAuthModal("signup");
+        else if (typeof window.openSignupModal === "function") window.openSignupModal();
+      };
+    }
     modal.querySelectorAll("[data-zone]").forEach(b => {
       b.onclick = () => { filterZone = b.dataset.zone; renderDistrictsModal(); };
     });
     modal.querySelectorAll("[data-invest]").forEach(b => {
       b.onclick = () => {
+        if (!getCitizenProfile().isRegistered) return;
         const d = DISTRICTS.find(x => x.id === b.dataset.invest);
         const amt = Number(b.dataset.amt || 50);
         if (!d || !window.PirakuEconomy) return;
@@ -695,16 +738,17 @@
     });
   }
 
+  // Isi dropdown pendaftaran KTP dengan 29 kecamatan hunian saja (tanpa Bandung Wetan)
   function populateSignupKecamatan() {
     const sel = document.getElementById("signup-kecamatan");
-    if (!sel || sel.dataset.populated30 === "1") return;
-    sel.innerHTML = DISTRICTS.map(d => `<option value="${d.name}" ${d.name === "Bandung Wetan" ? "selected" : ""}>${d.name} (${d.zone})</option>`).join("");
-    sel.dataset.populated30 = "1";
+    if (!sel || sel.dataset.populated29 === "1") return;
+    sel.innerHTML = DISTRICTS.map(d => `<option value="${d.name}" ${d.id === "coblong" ? "selected" : ""}>${d.name} (${d.zone})</option>`).join("");
+    sel.dataset.populated29 = "1";
   }
 
   setTimeout(() => {
     populateSignupKecamatan();
-    updateMapIndicatorHUD(DISTRICTS[0]);
+    updateMapIndicatorHUD(CENTRAL_HUB);
     syncDistrictsFromSupabase();
     requestAnimationFrame(tickDistrictLoop);
   }, 1500);
