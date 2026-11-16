@@ -209,18 +209,20 @@
 
   // ================= WEBRTC PROXIMITY VOICE CHAT =================
   function updateMicButtonUi() {
-    const btn = document.getElementById('btn-voice-mic');
+    const btn = document.getElementById("btn-voice-mic");
     if (!btn) return;
+    const micSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
+    const micOffSvg = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>';
     if (isMicEnabled) {
-      btn.style.background = 'linear-gradient(135deg, #16a34a, #22c55e)';
-      btn.style.borderColor = '#86efac';
-      btn.style.color = '#ffffff';
-      btn.innerHTML = '🎙️ Mic Live';
+      btn.style.background = "linear-gradient(135deg, #16a34a, #22c55e)";
+      btn.style.borderColor = "#86efac";
+      btn.style.color = "#ffffff";
+      btn.innerHTML = micSvg + '<span>Mic On</span>';
     } else {
-      btn.style.background = 'rgba(19, 27, 46, 0.9)';
-      btn.style.borderColor = 'rgba(148, 163, 184, 0.3)';
-      btn.style.color = '#f8fafc';
-      btn.innerHTML = '🔇 Mic Off';
+      btn.style.background = "rgba(15,23,42,0.9)";
+      btn.style.borderColor = "rgba(148,163,184,0.45)";
+      btn.style.color = "#e2e8f0";
+      btn.innerHTML = micOffSvg + '<span>Mic Off</span>';
     }
   }
 
