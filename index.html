@@ -28,12 +28,24 @@
   </style>
 
   
+  
   <style id="piraku-hud-layout-fix">
-    /* 1. Notif Event mini tepat di bawah @pirakubdg, hanya tampil saat event aktif */
-    #piraku-event-pill {
-      position: fixed !important;
-      top: 62px !important;
+    /* Susun kolom kiri pakai flexbox rapi tanpa position:fixed yang saling tabrak */
+    .hud-side-left {
+      top: 64px !important;
       left: 16px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 7px !important;
+      z-index: 24 !important;
+    }
+
+    /* 1. Badge Event mini di urutan paling atas kolom kiri (tepat di bawah @pirakubdg) */
+    #piraku-event-pill {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
       right: auto !important;
       bottom: auto !important;
       transform: none !important;
@@ -42,43 +54,50 @@
       font-weight: 800 !important;
       border-radius: 999px !important;
       white-space: nowrap !important;
-      z-index: 22 !important;
+      margin: 0 !important;
+      z-index: 2 !important;
     }
 
-    /* 2. Rapatkan jarak vertikal sisi kiri: Jam -> Minimap -> Koin */
-    .hud-side-left {
-      top: 86px !important;
-      gap: 6px !important;
-      z-index: 24 !important;
-    }
+    /* 2. Pill Jam & Minimap tidak saling nimpa saat normal */
     #minimap-container, .minimap-box {
-      margin-top: 2px !important;
-      z-index: 35 !important; /* Saat minimap di-klik expand, bebas nimpa koin & jam */
+      position: relative !important;
+      margin: 0 !important;
+      z-index: 2 !important;
     }
+    #minimap-container.expanded, .minimap-box.expanded {
+      z-index: 60 !important;
+    }
+
+    /* 3. Pill Koin & Toko duduk manis tepat di bawah Minimap */
     #piraku-wallet-pill {
-      position: fixed !important;
-      top: 236px !important;
-      left: 16px !important;
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
       right: auto !important;
       bottom: auto !important;
       padding: 5px 10px !important;
       font-size: 11px !important;
-      z-index: 21 !important;
+      margin: 0 !important;
+      z-index: 2 !important;
     }
   </style>
   <script>
     setInterval(() => {
-      const wl = document.getElementById("piraku-wallet-pill");
-      if (wl && wl.parentElement !== document.body) document.body.appendChild(wl);
+      const leftCol = document.querySelector(".hud-side-left");
+      if (!leftCol) return;
 
       const ev = document.getElementById("piraku-event-pill");
       if (ev) {
-        if (ev.parentElement !== document.body) document.body.appendChild(ev);
-        // Sembunyikan otomatis kalau cuaca biasa (Cerah Bandung), muncul hanya saat ada event/hujan
+        if (ev.parentElement !== leftCol) leftCol.insertBefore(ev, leftCol.firstChild);
         const txt = (ev.textContent || "").toUpperCase();
         ev.style.display = txt.includes("CERAH BANDUNG") ? "none" : "inline-flex";
       }
-    }, 600);
+
+      const wl = document.getElementById("piraku-wallet-pill");
+      if (wl && wl.parentElement !== leftCol) {
+        leftCol.appendChild(wl);
+      }
+    }, 500);
   </script>
 
 </head>
