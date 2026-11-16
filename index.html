@@ -195,9 +195,8 @@
         const cfg = ITEMS[m];
         if (!cfg) return;
         const active = m === mode;
-        b.innerHTML = '<span style="display:inline-flex;align-items:center;gap:4px;">' + cfg.badge + '</span>' +
-                      '<span style="color:' + (active ? '#ffffff' : '#cbd5e1') + ';">' + cfg.label + '</span>' +
-                      (active ? '<span style="margin-left:auto;color:#4ade80;font-size:12px;">✓</span>' : '');
+        b.innerHTML = '<span style="display:inline-flex;align-items:center;gap:5px;">' + cfg.badge + '</span>' +
+                      '<span style="display:inline-flex;align-items:center;gap:3px;color:' + (active ? '#ffffff' : '#cbd5e1') + ';">' + cfg.label + (active ? '<span style="color:#4ade80;">✓</span>' : '') + '</span>';
         b.style.background = active ? cfg.activeBg : "rgba(30, 41, 59, 0.65)";
         b.style.borderColor = active ? cfg.activeBorder : "rgba(255, 255, 255, 0.07)";
       });
@@ -208,7 +207,7 @@
     if (e) e.stopPropagation();
     const pop = document.getElementById("pubg-audio-popover");
     if (!pop) return;
-    pop.style.display = pop.style.display === "flex" ? "none" : "flex";
+    pop.style.display = pop.style.display === "grid" ? "none" : "grid";
   };
 
   window.setPubgAudioMode = function(mode) {
