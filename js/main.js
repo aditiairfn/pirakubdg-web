@@ -514,15 +514,23 @@ let activeQuestSystem = null;
   };
 
   window._pirakuStepTimer = 0;
-  window.playFootstepSfx = function(dt, isMoving, isRunning) {
-    if (!isMoving || !isGrounded) { window._pirakuStepTimer = 0; return; }
+  window._pirakuLastStepPos = null;
+  window.playFootstepSfx = function() {
+    if (!myPlayerMesh || !isGrounded || (typeof isRidingTram !== "undefined" && isRidingTram)) {
+      window._pirakuLastStepPos = myPlayerMesh ? { x: myPlayerMesh.position.x, z: myPlayerMesh.position.z } : null;
+      return;
+    }
     if (typeof window.isPirakuSfxEnabled === "function" && !window.isPirakuSfxEnabled()) return;
-    window._pirakuStepTimer += dt;
-    const interval = isRunning ? 0.28 : 0.42;
-    if (window._pirakuStepTimer >= interval) {
-      window._pirakuStepTimer = 0;
+    const cur = myPlayerMesh.position;
+    if (!window._pirakuLastStepPos) {
+      window._pirakuLastStepPos = { x: cur.x, z: cur.z };
+      return;
+    }
+    const dist = Math.hypot(cur.x - window._pirakuLastStepPos.x, cur.z - window._pirakuLastStepPos.z);
+    if (dist >= 1.65) {
+      window._pirakuLastStepPos = { x: cur.x, z: cur.z };
       if (typeof window.playSynthTone === "function") {
-        window.playSynthTone(isRunning ? 155 : 125, "triangle", 0.045);
+        window.playSynthTone(135, "triangle", 0.045);
       }
     }
   };

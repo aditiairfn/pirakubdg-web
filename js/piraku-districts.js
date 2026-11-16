@@ -1241,7 +1241,7 @@
         }
       }
 
-      const _curPPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || pPos || (window.myPlayerMesh && window.myPlayerMesh.position);
+      const _curPPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || (window.myPlayerMesh && window.myPlayerMesh.position) || pPos;
       if (_curPPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
         const dVeh = Math.hypot(_curPPos.x - v.mesh.position.x, _curPPos.z - v.mesh.position.z);
         if (dVeh < 11.5) {
@@ -1286,7 +1286,7 @@
         }
       }
 
-      const _curVPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || pPos || (window.myPlayerMesh && window.myPlayerMesh.position);
+      const _curVPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || (window.myPlayerMesh && window.myPlayerMesh.position) || pPos;
       if (p.isVendor && _curVPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
         const dCart = Math.hypot(_curVPos.x - p.mesh.position.x, _curVPos.z - p.mesh.position.z);
         if (dCart < 9.5) {
