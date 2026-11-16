@@ -122,16 +122,6 @@
 
   // Cegat seluruh Web Audio API (loncat, koin, klakson, denting bakso, minigame) saat SFX di-mute
   // Kontrol bersih berbasis flag state tanpa membungkus AudioNode.prototype.connect
-  const OrigBufStart = window.AudioBufferSourceNode && window.AudioBufferSourceNode.prototype.start;
-  if (OrigBufStart) {
-    window.AudioBufferSourceNode.prototype.start = function() {
-      if (window.pirakuSoundMuted) {
-        try { this.disconnect(); } catch (e) {}
-        return;
-      }
-      return OrigBufStart.apply(this, arguments);
-    };
-  }
   window.applyGlobalGameSoundState = function() {
     const mode = window.pirakuAudioMode || "all";
     window.pirakuSoundMuted = (mode === "voice_only" || mode === "mute_all");
@@ -214,6 +204,9 @@
       localStorage.setItem("piraku_audio_mode", mode);
       localStorage.setItem("piraku_sound_muted", (mode === "voice_only" || mode === "mute_all") ? "1" : "0");
     } catch (e) {}
+    if (window.audioCtx && (mode === "all" || mode === "sfx_only")) {
+      try { window.audioCtx.resume(); } catch (e) {}
+    }
     window.applyGlobalGameSoundState();
     if (typeof window.syncVoiceMuteState === "function") {
       window.syncVoiceMuteState(window.pirakuVoiceMuted);
