@@ -11,21 +11,22 @@
   const activeBubbles = [];
   let lastBroadcastTime = 0;
 
-  // State WebRTC Voice Chat
+  // State WebRTC Voice Chat (Global untuk seluruh wargi lintas ISP)
   let localAudioStream = null;
   let isMicEnabled = false;
   const peerConnections = new Map();
   const remoteAudioEls = new Map();
   const pendingIceMap = new Map();
-  const METERED_DOMAIN = 'yelclaw.metered.live';
-  const METERED_API_KEY = ''; // Opsional: isi API Key Metered untuk 50GB/bln TURN privat
 
-  let rtcConfig = {
-    iceCandidatePoolSize: 6,
+  const rtcConfig = {
+    iceCandidatePoolSize: 8,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require',
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun.relay.metered.ca:80' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' },
       {
         urls: [
           'turn:openrelay.metered.ca:80',
@@ -34,23 +35,17 @@
         ],
         username: 'openrelayproject',
         credential: 'openrelayproject'
+      },
+      {
+        urls: [
+          'turn:free.expressturn.com:3478',
+          'turn:free.expressturn.com:3478?transport=tcp'
+        ],
+        username: 'ef100000001',
+        credential: 'expressturn'
       }
     ]
   };
-
-  async function refreshTurnCredentials() {
-    if (!METERED_API_KEY) return;
-    try {
-      const res = await fetch(`https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_API_KEY}`);
-      if (res.ok) {
-        const iceServers = await res.json();
-        if (Array.isArray(iceServers) && iceServers.length > 0) {
-          rtcConfig = { iceCandidatePoolSize: 6, iceServers };
-        }
-      }
-    } catch (_) {}
-  }
-  refreshTurnCredentials();
 
   function unlockPendingRemoteAudios() {
     remoteAudioEls.forEach((aud) => {
@@ -425,6 +420,13 @@
         isMicEnabled = true;
         updateMicButtonUi();
         if (typeof showToast === 'function') showToast('Voice Chat aktif! Ngobrol langsung sama wargi sekitar 🎙️');
+        if (mpChannel) {
+          mpChannel.send({
+            type: 'broadcast',
+            event: 'voice-ready',
+            payload: { from: mySessionId }
+          });
+        }
 
         // Hubungkan & renegosiasi SDP ke semua warga yang sedang online
         remotePlayers.forEach((_, remoteSid) => {
@@ -671,6 +673,19 @@
         if (entry && entry.mesh) {
           spawnFloatingBubble(entry.mesh, payload.ig, payload.message);
         }
+      })
+      .on('broadcast', { event: 'voice-ready' }, ({ payload }) => {
+        if (!payload || !payload.from || payload.from === mySessionId) return;
+        const pc = createPeerConnection(payload.from, false);
+        if (localAudioStream) {
+          const senders = pc.getSenders();
+          localAudioStream.getTracks().forEach(track => {
+            if (!senders.find(s => s.track && s.track.kind === track.kind)) {
+              pc.addTrack(track, localAudioStream);
+            }
+          });
+        }
+        sendOfferToPeer(payload.from, pc);
       })
       .on('broadcast', { event: 'rtc-offer' }, async ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId) return;
