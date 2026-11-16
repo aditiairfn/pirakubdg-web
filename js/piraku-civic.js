@@ -536,4 +536,87 @@
       window.syncDistrictHousesInScene(activeName);
     }
   }, 1500);
+
+  // ================= 5. AUTO-SWITCH FOOTER (PETA UTAMA VS DISTRIK) =================
+  let lastFooterMode = "";
+
+  function updateBottomDockByMode() {
+    const dock = document.querySelector(".bottom-nav-dock");
+    if (!dock) return;
+
+    const pill = document.getElementById("piraku-active-map-pill");
+    let activeName = "Bandung Wetan";
+    if (pill && pill.style.display !== "none") {
+      const spanEl = pill.querySelector("span");
+      const txt = spanEl ? spanEl.textContent : "";
+      const clean = txt.replace(/^[^\w]+/, "").replace(/▾$/, "").trim();
+      if (clean) activeName = clean;
+    }
+
+    const isDistrictMode = activeName.toLowerCase() !== "bandung wetan";
+    const modeKey = isDistrictMode ? "district" : "main";
+    if (modeKey === lastFooterMode) return;
+    lastFooterMode = modeKey;
+
+    if (!isDistrictMode) {
+      // FOOTER PETA UTAMA (BANDUNG WETAN)
+      dock.innerHTML = [
+        '<button class="nav-dock-btn active" id="nav-tab-peta" onclick="setActiveDockTab(\'peta\'); const p=document.getElementById(\'bottom-control-panel\'); if(p){p.dataset.userOpened=\'0\'; p.classList.add(\'hidden\'); p.style.setProperty(\'display\',\'none\',\'important\');} if(typeof window.openDistrictsHubModal===\'function\') window.openDistrictsHubModal();">',
+          '<svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>',
+          '<span class="nav-lbl">Peta</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-info" onclick="setActiveDockTab(\'info\'); openInfoUpdatesModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+          '<span class="nav-lbl">Info</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-warga" onclick="setActiveDockTab(\'warga\'); if(typeof openLeaderboardModal===\'function\') openLeaderboardModal();">',
+          '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+          '<span class="nav-lbl">Warga</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-misi" onclick="setActiveDockTab(\'misi\'); if(typeof window.openMissionsHubModal===\'function\') window.openMissionsHubModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg>',
+          '<span class="nav-lbl">Misi</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-game" onclick="setActiveDockTab(\'game\'); if(typeof openArcadeHubModal===\'function\') openArcadeHubModal();">',
+          '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="4"/><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><circle cx="15" cy="11" r="1"/><circle cx="17" cy="13" r="1"/></svg>',
+          '<span class="nav-lbl">Game</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-akun" onclick="setActiveDockTab(\'akun\'); openAccountSocialModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+          '<span class="nav-lbl">Akun</span>',
+        '</button>'
+      ].join('');
+    } else {
+      // FOOTER KHUSUS DISTRIK / KECAMATAN (ADA PEMILU CAMAT & WARGA KHUSUS DISTRIK)
+      dock.innerHTML = [
+        '<button class="nav-dock-btn active" id="nav-tab-peta" onclick="setActiveDockTab(\'peta\'); const p=document.getElementById(\'bottom-control-panel\'); if(p){p.dataset.userOpened=\'0\'; p.classList.add(\'hidden\'); p.style.setProperty(\'display\',\'none\',\'important\');} if(typeof window.openDistrictsHubModal===\'function\') window.openDistrictsHubModal();">',
+          '<svg viewBox="0 0 24 24"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg>',
+          '<span class="nav-lbl">Peta</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-pemilu" onclick="setActiveDockTab(\'pemilu\'); if(typeof window.openPemiluCamatModal===\'function\') window.openPemiluCamatModal();">',
+          '<svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><rect x="3" y="4" width="18" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>',
+          '<span class="nav-lbl">Pemilu</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-info" onclick="setActiveDockTab(\'info\'); openInfoUpdatesModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+          '<span class="nav-lbl">Info</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-warga" onclick="setActiveDockTab(\'warga\'); if(typeof window.openDistrictCitizensModal===\'function\') window.openDistrictCitizensModal();">',
+          '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+          '<span class="nav-lbl">Warga</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-misi" onclick="setActiveDockTab(\'misi\'); if(typeof window.openMissionsHubModal===\'function\') window.openMissionsHubModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg>',
+          '<span class="nav-lbl">Misi</span>',
+        '</button>',
+        '<button class="nav-dock-btn" id="nav-tab-akun" onclick="setActiveDockTab(\'akun\'); openAccountSocialModal();">',
+          '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+          '<span class="nav-lbl">Akun</span>',
+        '</button>'
+      ].join('');
+    }
+  }
+
+  updateBottomDockByMode();
+  setInterval(updateBottomDockByMode, 800);
 })();
