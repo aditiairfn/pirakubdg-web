@@ -404,32 +404,8 @@ let activeQuestSystem = null;
   const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let isAmbiencePlaying = false, windGain = null, cricketsGain = null;
 
-      const whiteNoise = audioCtx.createBufferSource();
-      whiteNoise.buffer = noiseBuffer;
-      whiteNoise.loop = true;
-
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(420, audioCtx.currentTime);
-
-      windGain = audioCtx.createGain(); windGain.gain.value = 0;
-      windGain.gain.setValueAtTime(0, audioCtx.currentTime);
-
-      whiteNoise.connect(filter);
-      filter.connect(windGain);
-      // windGain disabled
-      // whiteNoise.start() disabled;
-
-      const osc = audioCtx.createOscillator();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(4500, audioCtx.currentTime);
-      cricketsGain = audioCtx.createGain(); cricketsGain.gain.value = 0;
-      cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
-      osc.connect(cricketsGain);
-      // cricketsGain disabled
-      // osc.start() disabled;
-    } catch(e){}
-  }
+  function initAmbienceSound() { return;
+    }
 
   window.syncAmbienceAudioState = function() {
     const sfxOn = (typeof window.isPirakuSfxEnabled === "function") ? window.isPirakuSfxEnabled() : !window.pirakuSoundMuted;
@@ -470,7 +446,6 @@ let activeQuestSystem = null;
   });
 
   window.toggleAmbienceAudio = function() {
-    initAmbienceSound();
     isAmbiencePlaying = !isAmbiencePlaying;
     if (isAmbiencePlaying) {
       windGain.gain.setValueAtTime(0, audioCtx.currentTime);
