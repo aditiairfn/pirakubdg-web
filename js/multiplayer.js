@@ -664,21 +664,74 @@
 })();
 
 
-// --- AUTO-RECONNECT VOICE CHAT FIX ---
+
+// --- ENGINE RECONNECT WEB/VOICE CHAT TOTAL ---
 window.forceReconnectVoiceChat = async function() {
-  console.log("[VoiceChat] Memulai ulang koneksi audio multiplayer...");
+  console.log("[VoiceChat] Memulai reset total engine WebRTC & Mic...");
+  if (typeof showToast === "function") {
+    showToast("🔄 Me-reset ulang sambungan mic & peer...");
+  }
+
+  // 1. Matikan semua track stream lama
   try {
     if (typeof localStream !== "undefined" && localStream) {
       localStream.getTracks().forEach(t => t.stop());
+      localStream = null;
     }
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch(e) {}
+
+  // 2. Tutup semua peer connections aktif jika ada
+  try {
+    if (typeof activePeers === "object" && activePeers !== null) {
+      Object.keys(activePeers).forEach(id => {
+        try {
+          if (activePeers[id].pc) activePeers[id].pc.close();
+        } catch(err) {}
+      });
+      window.activePeers = {};
+    }
+  } catch(e) {}
+
+  // 3. Minta ulang akses mikrofon secara segar
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ 
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, 
+      video: false 
+    });
+    console.log("[VoiceChat] Mikrofon baru berhasil diinisialisasi.");
     if (typeof showToast === "function") {
-      showToast("🎙️ Mikrofon tersambung kembali!");
+      showToast("🎙️ Mic siap! Menyambungkan ulang ke room...");
+    }
+    
+    // 4. Trigger ulang broadcast status multiplayer jika fungsi tersedia
+    if (typeof window.initMultiplayer === "function") {
+      setTimeout(() => { window.initMultiplayer(); }, 500);
     }
   } catch (err) {
-    console.error("[VoiceChat] Gagal mengakses mic:", err);
+    console.error("[VoiceChat] Gagal total akses mic:", err);
     if (typeof showToast === "function") {
-      showToast("⚠️ Izinkan akses mikrofon di browser untuk Voice Chat!");
+      showToast("⚠️ Gagal akses mic! Periksa izin browser.");
     }
   }
 };
+
+
+
+// --- TOMBOL PINTASAN RECONNECT MIC DI HUD ---
+(function() {
+  if (document.getElementById("btn-reconnect-mic")) return;
+  const btn = document.createElement("button");
+  btn.id = "btn-reconnect-mic";
+  btn.innerHTML = "🎙️ Reconnect Mic";
+  btn.style.cssText = "position:fixed;bottom:16px;right:16px;z-index:9999;background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s;";
+  btn.onmouseover = () => { btn.style.background = "#1e293b"; btn.style.transform = "scale(1.05)"; };
+  btn.onmouseout = () => { btn.style.background = "#0f172a"; btn.style.transform = "scale(1)"; };
+  btn.onclick = async () => {
+    btn.innerHTML = "⏳ Menghubungkan...";
+    if (typeof window.forceReconnectVoiceChat === "function") {
+      await window.forceReconnectVoiceChat();
+    }
+    setTimeout(() => { btn.innerHTML = "🎙️ Reconnect Mic"; }, 1500);
+  };
+  document.body.appendChild(btn);
+})();
