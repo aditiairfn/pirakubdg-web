@@ -702,6 +702,7 @@
       <span id="top-online-count">1 Warga Online</span>
     </div>
     <button class="hud-pill-btn" id="btn-global-sound" onclick="toggleGlobalGameSound()" title="Nyalakan / matikan suara game">🔊 Sound On</button>
+    <button class="hud-pill-btn" id="btn-voice-mic" onclick="toggleVoiceChat()" title="Aktifkan obrolan suara jarak dekat" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span>Mic Off</span></button>
   </div>
 
   <!-- Bottom Navigation Dock (6 Tab Rapi dengan Palet Hijau Teh Bandung & Emas) -->
@@ -792,7 +793,7 @@
 
   <!-- quests.js disabled -->
   <script src="./js/main.js?v=20261115v54"></script>
-  <script src="js/multiplayer.js?v=20261116v2"></script>
+  <script src="js/multiplayer.js?v=20261116v3"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v26"></script>
@@ -943,12 +944,7 @@
 
   
 
-<!-- Floating Mic On/Off di kanan bawah (di atas tombol lompat) -->
-  <button id="btn-voice-mic" onclick="toggleVoiceChat()" title="Aktifkan obrolan suara jarak dekat" style="position:fixed;bottom:146px;right:16px;z-index:999;display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);border:1.5px solid rgba(148,163,184,0.45);color:#e2e8f0;font-size:11px;font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,0.45);cursor:pointer;">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
-    <span>Mic Off</span>
-  </button>
-  <script>
+<script>
     window.pirakuSoundMuted = localStorage.getItem("piraku_sound_muted") === "1";
     window.applyGlobalGameSoundState = function() {
       const muted = !!window.pirakuSoundMuted;
