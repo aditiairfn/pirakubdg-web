@@ -404,7 +404,10 @@ let activeQuestSystem = null;
   const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let isAmbiencePlaying = false, windGain = null, cricketsGain = null;
 
-    function initAmbienceSound() { return; }
+    function initAmbienceSound() {
+    // Angin dan jangkrik dimatikan total di sini, efek suara lain dibiarkan jalan normal
+    return;
+  }
 
   window.syncAmbienceAudioState = function() {
     const sfxOn = (typeof window.isPirakuSfxEnabled === "function") ? window.isPirakuSfxEnabled() : !window.pirakuSoundMuted;
