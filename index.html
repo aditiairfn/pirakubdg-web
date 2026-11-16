@@ -26,6 +26,38 @@
     .modal-overlay { z-index: 99990 !important; }
     .modal-card { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
   </style>
+
+  <style id="piraku-hud-layout-fix">
+    #piraku-wallet-pill {
+      position: fixed !important;
+      top: 234px !important;
+      left: 16px !important;
+      right: auto !important;
+      bottom: auto !important;
+      z-index: 26 !important;
+    }
+    #piraku-event-pill {
+      position: fixed !important;
+      top: 66px !important;
+      left: 50% !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: translateX(-50%) !important;
+      padding: 5px 10px !important;
+      font-size: 10.5px !important;
+      white-space: nowrap !important;
+      z-index: 26 !important;
+    }
+  </style>
+  <script>
+    setInterval(() => {
+      const ev = document.getElementById("piraku-event-pill");
+      if (ev && ev.parentElement !== document.body) document.body.appendChild(ev);
+      const wl = document.getElementById("piraku-wallet-pill");
+      if (wl && wl.parentElement !== document.body) document.body.appendChild(wl);
+    }, 800);
+  </script>
+
 </head>
 <body>
 
