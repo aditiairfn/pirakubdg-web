@@ -3350,6 +3350,7 @@ let activeQuestSystem = null;
   let pirakuBuildingColliders = [];
   let pirakuLastColliderScan = 0;
   window.resetPirakuColliders = function() { pirakuBuildingColliders = []; pirakuLastColliderScan = 0; };
+  window.pirakuGetColliders = function() { return pirakuBuildingColliders; };
 
   function rebuildPirakuBuildingColliders() {
     if (!scene || typeof THREE === "undefined") return;
