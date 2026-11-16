@@ -451,7 +451,7 @@
       }
     };
 
-    if (isInitiator) {
+    if (isInitiator && mySessionId < remoteSid) {
       sendOfferToPeer(remoteSid, pc);
     }
 
@@ -484,39 +484,25 @@
         startVoiceActivityMonitor("self", localAudioStream);
         updateMicButtonUi();
         if (typeof showToast === 'function') showToast('Voice Chat aktif! Ngobrol langsung sama wargi sekitar 🎙️');
-        if (mpChannel) {
-          mpChannel.send({
-            type: 'broadcast',
-            event: 'voice-ready',
-            payload: { from: mySessionId }
-          });
-        }
-        if (mpChannel) {
-          mpChannel.send({
-            type: 'broadcast',
-            event: 'voice-ready',
-            payload: { from: mySessionId }
-          });
-        }
-
-        // Hubungkan & renegosiasi SDP ke semua warga yang sedang online
+        // Hubungkan & renegosiasi SDP ke semua warga yang sedang online (full-mesh)
         remotePlayers.forEach((_, remoteSid) => {
-          if (peerConnections.has(remoteSid)) {
-            const pc = peerConnections.get(remoteSid);
-            const senders = pc.getSenders();
-            localAudioStream.getTracks().forEach(track => {
-              const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
-              if (existingSender) {
-                existingSender.replaceTrack(track).catch(() => {});
-              } else {
-                pc.addTrack(track, localAudioStream);
-              }
-            });
-            sendOfferToPeer(remoteSid, pc);
-          } else {
-            createPeerConnection(remoteSid, true);
+          const pc = createPeerConnection(remoteSid, false);
+          const senders = pc.getSenders();
+          localAudioStream.getTracks().forEach(track => {
+            const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
+            if (existingSender) {
+              existingSender.replaceTrack(track).catch(() => {});
+            } else {
+              pc.addTrack(track, localAudioStream);
+            }
+          });
+            if (pc.signalingState === 'stable') {
+              sendOfferToPeer(remoteSid, pc);
+            }
+          });
+          if (mpChannel) {
+            mpChannel.send({ type: 'broadcast', event: 'voice-ready', payload: { from: mySessionId } });
           }
-        });
       } catch (err) {
         console.error("[VoiceChat] Mic error:", err);
         if (typeof showToast === 'function') showToast('Izin mikrofon ditolak browser 🔇');
@@ -752,25 +738,18 @@
         if (localAudioStream) {
           const senders = pc.getSenders();
           localAudioStream.getTracks().forEach(track => {
-            if (!senders.find(s => s.track && s.track.kind === track.kind)) {
+            const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
+            if (existingSender) {
+              existingSender.replaceTrack(track).catch(() => {});
+            } else {
               pc.addTrack(track, localAudioStream);
             }
           });
         }
-        sendOfferToPeer(payload.from, pc);
-      })
-      .on('broadcast', { event: 'voice-ready' }, ({ payload }) => {
-        if (!payload || !payload.from || payload.from === mySessionId) return;
-        const pc = createPeerConnection(payload.from, false);
-        if (localAudioStream) {
-          const senders = pc.getSenders();
-          localAudioStream.getTracks().forEach(track => {
-            if (!senders.find(s => s.track && s.track.kind === track.kind)) {
-              pc.addTrack(track, localAudioStream);
-            }
-          });
+        // Deterministik: hanya pihak dengan sessionId lebih kecil yang mengirim offer agar tidak tabrakan
+        if (mySessionId < payload.from && pc.signalingState === 'stable') {
+          sendOfferToPeer(payload.from, pc);
         }
-        sendOfferToPeer(payload.from, pc);
       })
       .on('broadcast', { event: 'rtc-offer' }, async ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId) return;
