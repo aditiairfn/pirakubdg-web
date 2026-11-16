@@ -188,7 +188,7 @@
   }
 
   window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId) {
-    if (!cg || typeof THREE === "undefined") return;
+    if (!cg || typeof THREE === "undefined" || !cg.userData || !cg.userData.a || !cg.userData.a.head) return;
     const headNode = cg.userData?.a?.head || cg;
 
     // Bersihkan attachment lama di akar karakter maupun di kepala

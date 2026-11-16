@@ -880,7 +880,7 @@
 
   <!-- quests.js disabled -->
   <script src="./js/main.js?v=20261115v54"></script>
-  <script src="js/multiplayer.js?v=20261116v9"></script>
+  <script src="js/multiplayer.js?v=20261116v11"></script>
   <script src="./js/rpg-ui.js?v=20261112rpg"></script>
   <script src="js/gedungsate-horizon.js?v=1"></script>
   <script src="js/map-beautify.js?v=20261115v26"></script>
@@ -1023,7 +1023,7 @@
     })();
   </script>
 
-  <script src="js/piraku-economy.js?v=20261116v9"></script>
+  <script src="js/piraku-economy.js?v=20261116v11"></script>
   <script src="js/piraku-games.js?v=20261116v2"></script>
   <script src="js/piraku-world-live.js?v=20261116v10"></script>
   <script src="js/piraku-nav-modals.js?v=20261115v2"></script>
@@ -1177,7 +1177,8 @@
       // 2b. Render outfit 3D dari Supabase pada warga offline/NPC di scene
       if (window.pirakuScene && typeof window.attachPirakuShopToCitizen === "function" && window.pirakuRemoteOutfits) {
         window.pirakuScene.traverse(obj => {
-          const igRaw = obj?.userData?.a?.c?.ig || obj?.userData?.ig;
+          if (!obj || !obj.userData || !obj.userData.a || !obj.userData.a.head) return;
+          const igRaw = obj.userData.a.c?.ig || obj.userData.ig;
           if (!igRaw) return;
           const k = String(igRaw).toLowerCase().replace(/^@/, "").trim();
           const myK = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "").trim();
