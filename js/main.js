@@ -457,6 +457,18 @@ let activeQuestSystem = null;
     }
   };
 
+  window._pirakuAutoAmbienceStarted = false;
+  ["pointerdown", "keydown"].forEach(ev => {
+    window.addEventListener(ev, () => {
+      if (window._pirakuAutoAmbienceStarted) return;
+      if (typeof window.isPirakuSfxEnabled === "function" && !window.isPirakuSfxEnabled()) return;
+      window._pirakuAutoAmbienceStarted = true;
+      initAmbienceSound();
+      isAmbiencePlaying = true;
+      if (windGain) windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.5);
+    }, { passive: true });
+  });
+
   window.toggleAmbienceAudio = function() {
     initAmbienceSound();
     isAmbiencePlaying = !isAmbiencePlaying;
@@ -1497,9 +1509,9 @@ let activeQuestSystem = null;
       if (!c.h.visible) return;
       if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
       c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
-      if (Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3 : 2.2)) return;
+      if (Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3.2 : 2.4)) return;
       c.h.visible = false; c.back = 45; coinCount++; localStorage.setItem('piraku_coins', coinCount); coinHud.textContent = '🪙 ' + coinCount;
-      if (window.playSynthTone) window.playSynthTone(880 + (coinCount % 5) * 80, 'triangle', .12);
+      if (typeof window.playSynthTone === 'function') window.playSynthTone(880 + (coinCount % 5) * 80, 'triangle', .12);
       if (coinCount % 10 === 0) showToast('🪙 ' + coinCount + ' koin terkumpul! Warga teladan Bandung 👏');
     });
   }
