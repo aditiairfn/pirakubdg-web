@@ -573,4 +573,11 @@
     } catch (e) {}
   }, 1500);
 
+  setTimeout(() => {
+    try {
+      if (typeof window.syncPirakuWalletToSupabase === "function") {
+        window.syncPirakuWalletToSupabase(state);
+      }
+    } catch (e) {}
+  }, 2200);
 })();

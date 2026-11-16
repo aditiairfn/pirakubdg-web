@@ -1023,9 +1023,9 @@
     })();
   </script>
 
-  <script src="js/piraku-economy.js?v=20261116v5"></script>
+  <script src="js/piraku-economy.js?v=20261116v7"></script>
   <script src="js/piraku-games.js?v=20261116v2"></script>
-  <script src="js/piraku-world-live.js?v=20261116v6"></script>
+  <script src="js/piraku-world-live.js?v=20261116v7"></script>
   <script src="js/piraku-nav-modals.js?v=20261115v2"></script>
   <script src="js/piraku-districts.js?v=20261116v8"></script>
 
@@ -1172,6 +1172,27 @@
         } else if (banner) {
           banner.remove();
         }
+      }
+
+      // 2b. Render outfit 3D dari Supabase pada warga offline/NPC di scene
+      if (window.pirakuScene && typeof window.buildPirakuShopGroup === "function" && window.pirakuRemoteOutfits) {
+        window.pirakuScene.traverse(obj => {
+          const igRaw = obj?.userData?.a?.c?.ig || obj?.userData?.ig;
+          if (!igRaw) return;
+          const k = String(igRaw).toLowerCase().replace(/^@/, "").trim();
+          const myK = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "").trim();
+          if (!k || k === myK) return;
+          const targetOutfit = window.pirakuRemoteOutfits[k] || "";
+          if (obj.userData._appliedShopOutfit !== targetOutfit) {
+            obj.userData._appliedShopOutfit = targetOutfit;
+            const old = obj.getObjectByName("piraku-shop-attachments");
+            if (old) obj.remove(old);
+            if (targetOutfit) {
+              const grp = window.buildPirakuShopGroup(targetOutfit, null);
+              if (grp) obj.add(grp);
+            }
+          }
+        });
       }
 
       // 3. Tampilkan Gelar di Modal Akun / KTP Digital

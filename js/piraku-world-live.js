@@ -20,15 +20,17 @@
   }
 
   function getCitizenIdentity() {
-    const savedName = (localStorage.getItem("piraku_citizen_name") || localStorage.getItem("piraku_username") || "").trim();
+    const savedIg = (localStorage.getItem("piraku_my_ig") || localStorage.getItem("piraku_citizen_name") || localStorage.getItem("piraku_username") || "").trim();
+    const cleanIg = savedIg.replace(/^@/, "");
     const guestId = localStorage.getItem("piraku_guest_id") || ("warga_" + Math.random().toString(36).slice(2, 7));
     localStorage.setItem("piraku_guest_id", guestId);
-    const displayName = savedName || ("@" + guestId);
-    return { key: (savedName || guestId).toLowerCase(), displayName };
+    const displayName = cleanIg ? ("@" + cleanIg) : ("@" + guestId);
+    return { key: (cleanIg || guestId).toLowerCase(), displayName };
   }
 
   // ================= 1. SINKRONISASI DOMPET & BILLBOARD KE SUPABASE =================
   window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
+  window.pirakuRemoteOutfits = window.pirakuRemoteOutfits || {};
   window.syncPirakuWalletToSupabase = async function(state) {
     const sb = window.pirakuSupabase;
     if (!sb || !state) return;
