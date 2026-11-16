@@ -1025,7 +1025,7 @@
 
   <script src="js/piraku-economy.js?v=20261116v9"></script>
   <script src="js/piraku-games.js?v=20261116v2"></script>
-  <script src="js/piraku-world-live.js?v=20261116v8"></script>
+  <script src="js/piraku-world-live.js?v=20261116v10"></script>
   <script src="js/piraku-nav-modals.js?v=20261115v2"></script>
   <script src="js/piraku-districts.js?v=20261116v8"></script>
 
@@ -1182,10 +1182,12 @@
           const k = String(igRaw).toLowerCase().replace(/^@/, "").trim();
           const myK = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "").trim();
           if (!k || k === myK) return;
-          const targetOutfit = window.pirakuRemoteOutfits[k] || "";
-          if (obj.userData._appliedShopOutfit !== targetOutfit) {
-            obj.userData._appliedShopOutfit = targetOutfit;
-            window.attachPirakuShopToCitizen(obj, targetOutfit, null);
+          const targetOutfit = (window.pirakuRemoteOutfits || {})[k] || "";
+          const targetVeh = (window.pirakuRemoteVehicles || {})[k] || "";
+          const sig = targetOutfit + "|" + targetVeh;
+          if (obj.userData._appliedShopSig !== sig) {
+            obj.userData._appliedShopSig = sig;
+            window.attachPirakuShopToCitizen(obj, targetOutfit || null, targetVeh || null);
           }
         });
       }

@@ -31,6 +31,7 @@
   // ================= 1. SINKRONISASI DOMPET & BILLBOARD KE SUPABASE =================
   window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
   window.pirakuRemoteOutfits = window.pirakuRemoteOutfits || {};
+  window.pirakuRemoteVehicles = window.pirakuRemoteVehicles || {};
   const TIER_META = {
     tier_2: { tierId: "tier_2", tierName: "Wargi Aktif", tierBadge: "⭐" },
     tier_3: { tierId: "tier_3", tierName: "Sesepuh Bandung", tierBadge: "👑" },
@@ -41,7 +42,7 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
-      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit");
+      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at");
       if (!error && Array.isArray(data)) {
         data.forEach(r => {
           const k1 = String(r.citizen_key || "").toLowerCase().replace(/^@/, "").trim();
@@ -50,6 +51,9 @@
             if (k1) window.pirakuRemoteOutfits[k1] = r.equipped_outfit;
             if (k2) window.pirakuRemoteOutfits[k2] = r.equipped_outfit;
           }
+          const activeVeh = (r.equipped_vehicle && Number(r.rental_expires_at || 0) > Date.now()) ? r.equipped_vehicle : null;
+          if (k1) window.pirakuRemoteVehicles[k1] = activeVeh;
+          if (k2) window.pirakuRemoteVehicles[k2] = activeVeh;
           const meta = TIER_META[r.tier_id];
           if (!meta) return;
           if (k1) window.pirakuRemoteTiers[k1] = meta;
@@ -73,6 +77,8 @@
         coins: Math.round(state.coins || 0),
         tier_id: state.tier || "tier_1",
         equipped_outfit: state.equippedOutfit || null,
+        equipped_vehicle: (state.equippedVehicle && Number(state.rentalExpiresAt || 0) > Date.now()) ? state.equippedVehicle : null,
+        rental_expires_at: Number(state.rentalExpiresAt || 0),
         billboard_text: state.billboardText || null,
         updated_at: new Date().toISOString()
       };
@@ -81,6 +87,8 @@
         // Fallback jika kolom tier_id belum ditambahkan di tabel Supabase
         delete payload.tier_id;
         delete payload.equipped_outfit;
+        delete payload.equipped_vehicle;
+        delete payload.rental_expires_at;
         await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
       }
     } catch (e) {}
