@@ -58,6 +58,37 @@
     { min: 1400, lv: 5, houses: 20, title: "Kawasan Mandiri Ikonik" }
   ];
 
+  
+  let lastKnownCitizenLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
+  function checkAndGrantLevelUpRewards() {
+    const curLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
+    if (curLvl > lastKnownCitizenLvl) {
+      const gainedLevels = curLvl - lastKnownCitizenLvl;
+      lastKnownCitizenLvl = curLvl;
+      const bonusCoins = gainedLevels * 50;
+      if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+        window.PirakuEconomy.addCoins(bonusCoins, "Bonus Naik Level " + curLvl);
+      }
+      const unlocked = [];
+      try {
+        const inv = JSON.parse(localStorage.getItem("piraku_owned_items") || "[]");
+        if (curLvl >= 3 && !inv.includes("crown")) { inv.push("crown"); unlocked.push("Mahkota Emas Warga"); }
+        if (curLvl >= 5 && !inv.includes("glasses")) { inv.push("glasses"); unlocked.push("Kacamata Sultan"); }
+        if (curLvl >= 8 && !inv.includes("scooter")) { inv.push("scooter"); unlocked.push("Skuter Listrik Bandung"); }
+        localStorage.setItem("piraku_owned_items", JSON.stringify(inv));
+      } catch (e) {}
+
+      if (typeof window.playSynthTone === "function") {
+        window.playSynthTone(660, "triangle", 0.25);
+        setTimeout(() => window.playSynthTone(880, "triangle", 0.35), 140);
+      }
+      const unlockMsg = unlocked.length > 0 ? " + Buka Item: " + unlocked.join(", ") : "";
+      if (typeof window.showToast === "function") {
+        window.showToast("🎉 NAIK KE LVL " + curLvl + "! Bonus +" + bonusCoins + " Koin" + unlockMsg);
+      }
+    }
+  }
+
   function getLevelInfo(coins) {
     let cur = LEVELS[0], next = LEVELS[1];
     for (let i = 0; i < LEVELS.length; i++) {
@@ -568,32 +599,61 @@
     const curbMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
     const sidewalkMat = new THREE.MeshStandardMaterial({ map: paveTex, roughness: 0.88 });
 
-    // Jalan Raya Utama NS & EW + Trotoar Paving Kiri-Kanan + Kanstin
+    // Jalan Raya Utama NS & EW + Aspal Bundaran Melingkar (terhubung mulus di semua kecamatan)
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(7.2, 320), roadMat);
     roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.012, 0); roadNS.receiveShadow = true;
     const roadEW = new THREE.Mesh(new THREE.PlaneGeometry(320, 7.2), roadMat);
     roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.012, 0); roadEW.receiveShadow = true;
 
-    const swNS_L = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.09, 320), sidewalkMat);
-    swNS_L.position.set(-4.4, 0.045, 0); swNS_L.receiveShadow = true;
-    const swNS_R = swNS_L.clone(); swNS_R.position.x = 4.4;
+    // Aspal bundaran melingkar di pusat perempatan (radius 6.8m - 13.2m)
+    const roundaboutAsphalt = new THREE.Mesh(new THREE.RingGeometry(6.8, 13.2, 48), roadMat);
+    roundaboutAsphalt.rotation.x = -Math.PI / 2; roundaboutAsphalt.position.set(0, 0.014, 0); roundaboutAsphalt.receiveShadow = true;
 
-    const swEW_N = new THREE.Mesh(new THREE.BoxGeometry(320, 0.09, 1.6), sidewalkMat);
-    swEW_N.position.set(0, 0.045, -4.4); swEW_N.receiveShadow = true;
-    const swEW_S = swEW_N.clone(); swEW_S.position.z = 4.4;
+    // Marka garis putus-putus melingkar di tengah bundaran
+    for (let a = 0; a < 24; a++) {
+      const ang = (a / 24) * Math.PI * 2;
+      const rDash = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 1.35), markMat);
+      rDash.rotation.x = -Math.PI / 2;
+      rDash.rotation.z = -ang;
+      rDash.position.set(Math.cos(ang) * 10.0, 0.022, Math.sin(ang) * 10.0);
+      grp.add(rDash);
+    }
 
-    // Jalan Komplek / Gang Utara & Selatan + Trotoar
+    // Trotoar Paving Kiri-Kanan DIPOTONG berhenti di ±12.2m (sebelum zebra cross, tidak menabrak bundaran!)
+    const segLen = 147.8; // dari ±12.2m sampai ±160m
+    const segCenter = 12.2 + segLen / 2; // 86.1m
+    const swSegments = [
+      [-4.4, segCenter, 1.6, segLen], [4.4, segCenter, 1.6, segLen],
+      [-4.4, -segCenter, 1.6, segLen], [4.4, -segCenter, 1.6, segLen],
+      [segCenter, -4.4, segLen, 1.6], [segCenter, 4.4, segLen, 1.6],
+      [-segCenter, -4.4, segLen, 1.6], [-segCenter, 4.4, segLen, 1.6]
+    ];
+    swSegments.forEach(([sx, sz, sw, sd]) => {
+      const swMesh = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.09, sd), sidewalkMat);
+      swMesh.position.set(sx, 0.045, sz);
+      swMesh.receiveShadow = true;
+      grp.add(swMesh);
+    });
+
+    // Jalan Komplek / Gang Utara & Selatan + Trotoar (berhenti sebelum jalan utama ±4.6m)
     const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
     gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.012, -17.5);
     const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
     gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.012, 17.5);
-    const gangSwN1 = new THREE.Mesh(new THREE.BoxGeometry(72, 0.07, 1.1), sidewalkMat);
-    gangSwN1.position.set(0, 0.035, -20.25);
-    const gangSwN2 = gangSwN1.clone(); gangSwN2.position.z = -14.75;
-    const gangSwS1 = gangSwN1.clone(); gangSwS1.position.z = 14.75;
-    const gangSwS2 = gangSwN1.clone(); gangSwS2.position.z = 20.25;
+    const gangSideLen = 30.8;
+    const gangSideCenter = 5.2 + gangSideLen / 2;
+    [
+      [-gangSideCenter, -20.25], [gangSideCenter, -20.25],
+      [-gangSideCenter, -14.75], [gangSideCenter, -14.75],
+      [-gangSideCenter, 14.75], [gangSideCenter, 14.75],
+      [-gangSideCenter, 20.25], [gangSideCenter, 20.25]
+    ].forEach(([gx, gz]) => {
+      const gsw = new THREE.Mesh(new THREE.BoxGeometry(gangSideLen, 0.07, 1.1), sidewalkMat);
+      gsw.position.set(gx, 0.035, gz);
+      grp.add(gsw);
+    });
 
-    grp.add(roadNS, roadEW, swNS_L, swNS_R, swEW_N, swEW_S, gangN, gangS, gangSwN1, gangSwN2, gangSwS1, gangSwS2);
+    grp.add(roadNS, roadEW, roundaboutAsphalt, gangN, gangS);
 
     // Marka Jalan Putih Tengah & Garis Tepi Kuning Khas Bandung Wetan
     const markMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
@@ -617,11 +677,11 @@
     // Zebra Cross 6-Strip di 4 Sisi Bundaran
     for (let zc = -2.5; zc <= 2.5; zc += 1.0) {
       const cwN = new THREE.Mesh(new THREE.PlaneGeometry(0.55, 2.2), markMat);
-      cwN.rotation.x = -Math.PI / 2; cwN.position.set(zc, 0.024, -10.8);
-      const cwS = cwN.clone(); cwS.position.z = 10.8;
+      cwN.rotation.x = -Math.PI / 2; cwN.position.set(zc, 0.024, -13.5);
+      const cwS = cwN.clone(); cwS.position.z = 13.5;
       const cwW = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.55), markMat);
-      cwW.rotation.x = -Math.PI / 2; cwW.position.set(-10.8, 0.024, zc);
-      const cwE = cwW.clone(); cwE.position.x = 10.8;
+      cwW.rotation.x = -Math.PI / 2; cwW.position.set(-13.5, 0.024, zc);
+      const cwE = cwW.clone(); cwE.position.x = 13.5;
       grp.add(cwN, cwS, cwW, cwE);
     }
 
@@ -691,9 +751,9 @@
       grp.add(bench);
     });
 
-    const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(7.5, 32), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
+    const roundGrass = new THREE.Mesh(new THREE.CircleGeometry(5.4, 36), new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85 }));
     roundGrass.rotation.x = -Math.PI / 2; roundGrass.position.set(0, 0.022, 0);
-    const roundPaving = new THREE.Mesh(new THREE.RingGeometry(7.5, 9.2, 32), curbMat);
+    const roundPaving = new THREE.Mesh(new THREE.RingGeometry(5.4, 6.8, 36), sidewalkMat);
     roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.02, 0);
     grp.add(roundGrass, roundPaving);
 
@@ -789,8 +849,8 @@
 
     // Armada Angkot Bandung & Mobil Warga (Muter Bundaran + Lintas Poros Jalan)
     const angkotConfigs = [
-      { mode: "roundabout", angle: 0, speed: 0.42, radius: 11.4, body: 0x16a34a, stripe: 0xfacc15 },
-      { mode: "roundabout", angle: Math.PI, speed: 0.42, radius: 11.4, body: 0x2563eb, stripe: 0xf8fafc },
+      { mode: "roundabout", angle: 0, speed: 0.42, radius: 10.0, body: 0x16a34a, stripe: 0xfacc15 },
+      { mode: "roundabout", angle: Math.PI, speed: 0.42, radius: 10.0, body: 0x2563eb, stripe: 0xf8fafc },
       { mode: "laneNS", dir: 1, pos: -38, laneOffset: -1.8, speed: 7.5, body: 0xfef3c7, stripe: 0xdc2626 },
       { mode: "laneNS", dir: -1, pos: 34, laneOffset: 1.8, speed: 8.2, carColor: 0xf8fafc },
       { mode: "laneEW", dir: 1, pos: -36, laneOffset: 1.8, speed: 7.8, carColor: 0xef4444 },
@@ -1086,6 +1146,7 @@
         }
       }
     });
+    checkAndGrantLevelUpRewards();
     drawKomplekMinimapFrame();
     requestAnimationFrame(tickDistrictLoop);
   }
