@@ -347,7 +347,7 @@
     gctx.fillStyle = "#e2e8f0"; gctx.font = "17px sans-serif";
     gctx.fillText(`${cur.title} (${cur.houses}/20 Kavling Terbangun)`, 256, 82);
 
-    const gateBanner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv) }));
+    const gateBanner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv), side: THREE.DoubleSide }));
     gateBanner.position.set(0, 4.2, 29);
     const gateColL = new THREE.Mesh(new THREE.BoxGeometry(0.7, 5.2, 0.7), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
     gateColL.position.set(-4.3, 2.6, 29);
