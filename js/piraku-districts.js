@@ -274,6 +274,74 @@
   }
 
   
+  
+  let districtAudioCtx = null;
+  function getDistrictAudioCtx() {
+    if (!districtAudioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) districtAudioCtx = new AC();
+    }
+    if (districtAudioCtx && districtAudioCtx.state === "suspended") {
+      districtAudioCtx.resume().catch(() => {});
+    }
+    return districtAudioCtx;
+  }
+
+  // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
+  function playAngkotHornSfx() {
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [0, 0.16].forEach((offset, idx) => {
+      const duration = idx === 0 ? 0.11 : 0.18;
+      [440, 554.37].forEach(freq => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(freq, now + offset);
+
+        const filter = ctx.createBiquadFilter();
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(1450, now + offset);
+
+        gain.gain.setValueAtTime(0.001, now + offset);
+        gain.gain.linearRampToValueAtTime(0.045, now + offset + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0008, now + offset + duration);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + duration + 0.02);
+      });
+    });
+  }
+
+  // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
+  function playBaksoBowlClinkSfx() {
+    const ctx = getDistrictAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    [0, 0.19, 0.38].forEach(offset => {
+      [2380, 3560].forEach((freq, hIdx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + offset);
+
+        const peak = hIdx === 0 ? 0.065 : 0.03;
+        gain.gain.setValueAtTime(0.0005, now + offset);
+        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.006);
+        gain.gain.exponentialRampToValueAtTime(0.0004, now + offset + 0.16);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.18);
+      });
+    });
+  }
+
   function createBandungAngkotMesh(bodyCol, stripeCol) {
     const g = new THREE.Group();
     g.userData.isCar = true;
@@ -932,6 +1000,10 @@
         const dt = 0.016;
     const nowSec = performance.now() * 0.001;
 
+    const activePlayer = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    const pPos = activePlayer && activePlayer.position ? activePlayer.position : null;
+    const nowMs = performance.now();
+
     // Update lalu lintas Angkot Bandung & Mobil Warga
     districtTraffic.forEach(v => {
       if (!v.mesh) return;
@@ -956,6 +1028,14 @@
         if (v.pos < -52) v.pos = 52;
         v.mesh.position.set(v.pos, 0.02, v.laneOffset);
         v.mesh.rotation.y = v.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
+
+      if (pPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
+        const dVeh = Math.hypot(pPos.x - v.mesh.position.x, pPos.z - v.mesh.position.z);
+        if (dVeh < 6.4) {
+          v.lastHorn = nowMs;
+          playAngkotHornSfx();
+        }
       }
     });
 
@@ -991,6 +1071,14 @@
         } else {
           limbs.armL.rotation.x = -0.55;
           limbs.armR.rotation.x = -0.55;
+        }
+      }
+
+      if (p.isVendor && pPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
+        const dCart = Math.hypot(pPos.x - p.mesh.position.x, pPos.z - p.mesh.position.z);
+        if (dCart < 5.8) {
+          p.lastClink = nowMs;
+          playBaksoBowlClinkSfx();
         }
       }
     });
