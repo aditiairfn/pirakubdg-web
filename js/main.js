@@ -446,13 +446,22 @@ let activeQuestSystem = null;
   }
 
   window.syncAmbienceAudioState = function() {
-    if (window.pirakuSoundMuted) {
-      if (windGain) windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
-      if (cricketsGain) cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+    const sfxOn = (typeof window.isPirakuSfxEnabled === "function") ? window.isPirakuSfxEnabled() : !window.pirakuSoundMuted;
+    if (!sfxOn) {
+      if (windGain) {
+        try { windGain.gain.cancelScheduledValues(audioCtx.currentTime); } catch(e){}
+        windGain.gain.value = 0;
+        windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
+      if (cricketsGain) {
+        try { cricketsGain.gain.cancelScheduledValues(audioCtx.currentTime); } catch(e){}
+        cricketsGain.gain.value = 0;
+        cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.05);
+      }
     } else {
       if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
       if (isAmbiencePlaying && windGain) {
-        windGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.3);
+        windGain.gain.setTargetAtTime(0.06, audioCtx.currentTime, 0.3);
       }
     }
   };
@@ -1518,6 +1527,7 @@ let activeQuestSystem = null;
   coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
   function updateCoins(dt) { return;
     if (!isRidingTram && !myPlayerMesh) return;
+    window.getPirakuPlayerPos = () => (isRidingTram && typeof tram !== 'undefined' ? tram.position : (typeof myPlayerMesh !== 'undefined' && myPlayerMesh ? myPlayerMesh.position : null));
     const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
     coins.forEach(c => {
       if (!c.h.visible) return;
