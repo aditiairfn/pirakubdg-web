@@ -2467,9 +2467,12 @@ let activeQuestSystem = null;
     // Header AutoDetect Button
     window.updateAutoDetectButton = function() {
     const savedIg = localStorage.getItem("piraku_my_ig");
-    const savedLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
     const savedXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10);
-    const xpProgress = savedXp % 100;
+    const lvlData = typeof window.computePirakuLevelFromTotalXp === "function"
+      ? window.computePirakuLevelFromTotalXp(savedXp)
+      : { level: Math.min(99, parseInt(localStorage.getItem("piraku_my_level") || "1", 10)), currentXpInLevel: savedXp % 100, requiredForNext: 100, isMax: false };
+    const savedLvl = lvlData.level;
+    const xpProgress = lvlData.isMax ? 100 : Math.min(100, Math.round((lvlData.currentXpInLevel / lvlData.requiredForNext) * 100));
     const btn = document.getElementById("btn-citizen-status");
     if (!btn) return;
 
