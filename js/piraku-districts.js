@@ -170,11 +170,13 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
+      if (typeof window.markPirakuGotongRoyongDone === "function") window.markPirakuGotongRoyongDone();
       await sb.from("piraku_districts").upsert({
         district_id: d.id,
         district_name: d.name,
         zone_group: d.zone,
         invested_coins: newCoins,
+      // Tandai Misi 4 Gotong Royong selesai
         updated_at: new Date().toISOString()
       }, { onConflict: "district_id" });
     } catch (e) {}

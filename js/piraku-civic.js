@@ -267,6 +267,7 @@
         const nextVotes = ((latestCand.data && typeof latestCand.data.votes === "number") ? latestCand.data.votes : currentVotes) + 1;
         await sb.from("pemilu_camat").update({ votes: nextVotes }).eq("id", candidateId);
         localStorage.setItem(voteLsKey, String(candidateId));
+        localStorage.setItem("piraku_did_vote_" + new Date().toISOString().slice(0, 10) + getCivicUserSuffix(), "1");
         await window.grantPirakuXP(60, "Menyalurkan Hak Suara Pemilu");
         if (typeof window.evaluateWeeklyCamatRotation === "function" && Array.isArray(window.registeredCitizensList)) {
           await window.evaluateWeeklyCamatRotation(window.registeredCitizensList);
@@ -334,6 +335,31 @@
     localStorage.setItem("piraku_mission_tut_seen", "1");
   };
 
+  // Pelacak progres misi nyata (jalan kaki patroli & donasi gotong royong)
+  let _lastPatrolPos = null;
+  setInterval(function () {
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    if (!myIg) return;
+    const mesh = (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) || window.playerGroup;
+    if (!mesh || !mesh.position) return;
+    const x = mesh.position.x, z = mesh.position.z;
+    if (_lastPatrolPos) {
+      const stepDist = Math.hypot(x - _lastPatrolPos.x, z - _lastPatrolPos.z);
+      if (stepDist > 0.25 && stepDist < 45) {
+        const today = new Date().toISOString().slice(0, 10);
+        const key = "piraku_patrol_dist_" + today + getCivicUserSuffix();
+        const cur = parseFloat(localStorage.getItem(key) || "0");
+        localStorage.setItem(key, String(Math.min(9999, cur + stepDist)));
+      }
+    }
+    _lastPatrolPos = { x: x, z: z };
+  }, 600);
+
+  window.markPirakuGotongRoyongDone = function () {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem("piraku_did_gotong_" + today + getCivicUserSuffix(), "1");
+  };
+
   function getCivicUserSuffix() {
     const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     return ig ? ("_" + ig) : "_guest";
@@ -382,41 +408,57 @@
     const houseKeys = hasHouse ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
     const isFirstTimeTut = localStorage.getItem("piraku_mission_tut_seen") !== "1";
 
+    const isLoggedWarga = !!(localStorage.getItem("piraku_my_ig") || "").trim();
+    const patrolDist = Math.floor(parseFloat(localStorage.getItem("piraku_patrol_dist_" + today + suf) || "0"));
+    const patrolTarget = 120;
+    const cleanVoterCheck = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    const didVote = localStorage.getItem("piraku_did_vote_" + today + suf) === "1" ||
+                    !!localStorage.getItem("piraku_voted_camat_" + dist.id + "_" + cleanVoterCheck);
+    const didGotong = localStorage.getItem("piraku_did_gotong_" + today + suf) === "1";
+
     const missions = [
       {
         id: "checkin_" + today,
         cat: "HARIAN",
         title: "1. Absen Harian Warga",
-        desc: "Klik Klaim untuk mencatat kehadiranmu hari ini.",
+        desc: isLoggedWarga ? "Kehadiran terverifikasi! Klik untuk absen hari ini." : "Daftar/masuk akun warga dulu untuk absen harian.",
         xp: 50,
         coins: 50,
+        ready: isLoggedWarga,
+        lockLabel: "Login Dulu",
         done: localStorage.getItem("piraku_claimed_checkin_" + today + suf) === "1"
       },
       {
         id: "patrol_" + today,
         cat: "EKSPLORASI",
         title: "2. Patroli Wilayah " + dist.name,
-        desc: "Jalan-jalan keliling peta kota lalu klaim hadiah patroli.",
+        desc: "Jalan kaki keliling peta kota (" + Math.min(patrolDist, patrolTarget) + " / " + patrolTarget + " m).",
         xp: 40,
         coins: 50,
+        ready: isLoggedWarga && patrolDist >= patrolTarget,
+        lockLabel: Math.min(patrolDist, patrolTarget) + "/" + patrolTarget + "m",
         done: localStorage.getItem("piraku_claimed_patrol_" + today + suf) === "1"
       },
       {
         id: "vote_" + today,
         cat: "DEMOKRASI",
         title: "3. Partisipasi Pemilu Camat",
-        desc: "Buka tab Pemilu di bawah untuk cek calon atau nyoblos Camat.",
+        desc: "Gunakan 1 hak suaramu di tab Pemilu Camat kecamatan.",
         xp: 60,
         coins: 50,
+        ready: isLoggedWarga && didVote,
+        lockLabel: "Belum Nyoblos",
         done: localStorage.getItem("piraku_claimed_vote_" + today + suf) === "1"
       },
       {
         id: "gotong_" + today,
         cat: "GOTONG ROYONG",
         title: "4. Gotong Royong " + dist.name,
-        desc: "Dukung kas pembangunan fasilitas 3D kecamatanmu.",
+        desc: "Sumbang koin ke kas pembangunan fasilitas 3D kecamatan.",
         xp: 50,
         coins: 50,
+        ready: isLoggedWarga && didGotong,
+        lockLabel: "Belum Patungan",
         done: localStorage.getItem("piraku_claimed_gotong_" + today + suf) === "1"
       }
     ];
@@ -481,8 +523,8 @@
                 '<div style="font-size:11px;color:#cbd5e1;margin-top:2px;">' + m.desc + '</div>' +
                 '<div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">Hadiah: +' + m.xp + ' XP · +' + m.coins + ' 🪙 · +1 🔑</div>' +
               '</div>' +
-              '<button ' + (m.done ? 'disabled' : 'onclick="claimPirakuMission(\'' + m.id + '\', ' + m.xp + ', ' + m.coins + ', \'' + m.title + '\')"') + ' style="flex-shrink:0;padding:8px 12px;border:none;border-radius:10px;background:' + (m.done ? 'rgba(255,255,255,0.12)' : '#10b981') + ';color:' + (m.done ? '#94a3b8' : '#fff') + ';font-weight:800;font-size:11px;cursor:' + (m.done ? 'default' : 'pointer') + ';">' +
-                (m.done ? 'Selesai ✓' : 'Klaim') +
+              '<button ' + ((m.done || !m.ready) ? 'disabled' : 'onclick="claimPirakuMission(\'' + m.id + '\', ' + m.xp + ', ' + m.coins + ', \'' + m.title + '\')"') + ' style="flex-shrink:0;padding:8px 12px;border:none;border-radius:10px;background:' + (m.done ? 'rgba(255,255,255,0.12)' : (m.ready ? '#10b981' : 'rgba(255,255,255,0.08)')) + ';color:' + (m.done ? '#94a3b8' : (m.ready ? '#fff' : '#64748b')) + ';border:' + ((!m.done && !m.ready) ? '1px solid rgba(148,163,184,0.25)' : 'none') + ';font-weight:800;font-size:11px;cursor:' + ((m.done || !m.ready) ? 'not-allowed' : 'pointer') + ';">' +
+                (m.done ? 'Selesai ✓' : (m.ready ? 'Klaim' : ('🔒 ' + (m.lockLabel || 'Terkunci')))) +
               '</button>' +
             '</div>';
           }).join(''),
