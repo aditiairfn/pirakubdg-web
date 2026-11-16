@@ -2344,7 +2344,8 @@ let activeQuestSystem = null;
     gsap.to(cam.position, { x: targetX, y: 1.4, z: targetZ - 2.8, duration: 1.2, ease: 'power2.inOut' });
     gsap.to(controls.target, { x: targetX, y: 1.2, z: targetZ + 2.0, duration: 1.2, ease: 'power2.inOut', onComplete: () => {
       setTimeout(() => {
-        renderer.render(scene, cam);
+        if (typeof window.applyPirakuRidingPoses === 'function') window.applyPirakuRidingPoses();
+    renderer.render(scene, cam);
         const c = renderer.domElement;
         const o = document.createElement('canvas');
         o.width = 1080; o.height = 1920;
