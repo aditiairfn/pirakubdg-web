@@ -30,20 +30,44 @@
   
   
   
+  
   <style id="piraku-hud-layout-fix">
-    /* 1. Jam (Siang/Pagi) tetap di pojok kiri atas tanpa terdorong */
+    /* 1. Sejajarkan tinggi top kedua sisi HUD (66px) & samakan padding pill */
     .hud-side-left {
       position: fixed !important;
-      top: 64px !important;
+      top: 66px !important;
       left: 16px !important;
       display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 6px !important;
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 7px !important;
+      margin: 0 !important;
       z-index: 24 !important;
     }
 
-    /* 2. Badge Event mini sejajar rapi di sebelah kanan pill Jam (tidak mendorong minimap) */
+    .hud-side-right {
+      position: fixed !important;
+      top: 66px !important;
+      right: 16px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: flex-end !important;
+      gap: 7px !important;
+      margin: 0 !important;
+      z-index: 24 !important;
+    }
+
+    /* Samakan tinggi & jarak antar tombol/pill di sisi kanan & kiri */
+    .hud-side-left .hud-pill-btn,
+    .hud-side-right .hud-pill-btn,
+    .hud-side-right .online-status-pill {
+      margin: 0 !important;
+      padding: 6px 12px !important;
+      font-size: 11.5px !important;
+      line-height: 1.2 !important;
+    }
+
+    /* 2. Notif Event ditaruh rapi paling bawah di kolom kanan (di bawah Mic Off) */
     #piraku-event-pill {
       position: relative !important;
       top: auto !important;
@@ -51,16 +75,16 @@
       right: auto !important;
       bottom: auto !important;
       transform: none !important;
-      padding: 4px 8px !important;
-      font-size: 9.5px !important;
+      margin: 0 !important;
+      padding: 5px 10px !important;
+      font-size: 10px !important;
       font-weight: 800 !important;
       border-radius: 999px !important;
       white-space: nowrap !important;
-      margin: 0 !important;
       z-index: 24 !important;
     }
 
-    /* 3. Pill Koin & Toko duduk manis tepat di bawah lingkaran minimap (top: 222px) */
+    /* 3. Pill Koin & Toko tetap rapi di kiri bawah minimap */
     #piraku-wallet-pill {
       position: fixed !important;
       top: 222px !important;
@@ -75,10 +99,10 @@
   </style>
   <script>
     setInterval(() => {
-      const leftRow = document.querySelector(".hud-side-left");
+      const rightCol = document.querySelector(".hud-side-right");
       const ev = document.getElementById("piraku-event-pill");
-      if (leftRow && ev) {
-        if (ev.parentElement !== leftRow) leftRow.appendChild(ev);
+      if (rightCol && ev) {
+        if (ev.parentElement !== rightCol) rightCol.appendChild(ev);
         const txt = (ev.textContent || "").toUpperCase();
         ev.style.display = txt.includes("CERAH BANDUNG") ? "none" : "inline-flex";
       }
