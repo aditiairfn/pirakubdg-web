@@ -733,7 +733,7 @@ window.forceReconnectVoiceChat = async function() {
   const btn = document.createElement("button");
   btn.id = "btn-reconnect-mic";
   btn.innerHTML = "🎙️ Reconnect Mic";
-  btn.style.cssText = "position:fixed;bottom:16px;right:16px;z-index:9999;background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s;";
+  btn.style.cssText = "position:fixed;bottom:72px;right:16px;z-index:9999;background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.3);transition:all 0.2s;";
   btn.onmouseover = () => { btn.style.background = "#1e293b"; btn.style.transform = "scale(1.05)"; };
   btn.onmouseout = () => { btn.style.background = "#0f172a"; btn.style.transform = "scale(1)"; };
   btn.onclick = async () => {
@@ -745,3 +745,47 @@ window.forceReconnectVoiceChat = async function() {
   };
   document.body.appendChild(btn);
 })();
+
+
+
+// --- PERSISTENT INVENTORY SYNC (SUPABASE & LOCALSTORAGE) ---
+window.saveMyInventory = async function(inventoryArray) {
+  try {
+    localStorage.setItem('piraku_my_inventory', JSON.stringify(inventoryArray));
+    const myIg = localStorage.getItem('piraku_my_ig');
+    if (myIg && typeof sb !== 'undefined' && sb) {
+      await sb.from('warga_publik')
+        .update({ inventory: inventoryArray })
+        .ilike('ig', myIg);
+    }
+  } catch (err) {
+    console.error("[Inventory] Gagal menyimpan inventaris:", err);
+  }
+};
+
+window.loadMyInventory = async function() {
+  let localInv = [];
+  try {
+    const raw = localStorage.getItem('piraku_my_inventory');
+    if (raw) localInv = JSON.parse(raw);
+  } catch (e) {}
+
+  try {
+    const myIg = localStorage.getItem('piraku_my_ig');
+    if (myIg && typeof sb !== 'undefined' && sb) {
+      const { data, error } = await sb.from('warga_publik')
+        .select('inventory')
+        .ilike('ig', myIg)
+        .maybeSingle();
+      if (data && data.inventory) {
+        if (Array.isArray(data.inventory)) {
+          localInv = data.inventory;
+          localStorage.setItem('piraku_my_inventory', JSON.stringify(localInv));
+        }
+      }
+    }
+  } catch (err) {
+    console.error("[Inventory] Gagal memuat dari Supabase:", err);
+  }
+  return localInv;
+};
