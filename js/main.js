@@ -445,6 +445,18 @@ let activeQuestSystem = null;
     } catch(e){}
   }
 
+  window.syncAmbienceAudioState = function() {
+    if (window.pirakuSoundMuted) {
+      if (windGain) windGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+      if (cricketsGain) cricketsGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.15);
+    } else {
+      if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+      if (isAmbiencePlaying && windGain) {
+        windGain.gain.setTargetAtTime(0.08, audioCtx.currentTime, 0.3);
+      }
+    }
+  };
+
   window.toggleAmbienceAudio = function() {
     initAmbienceSound();
     isAmbiencePlaying = !isAmbiencePlaying;
