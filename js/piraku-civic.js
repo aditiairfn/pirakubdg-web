@@ -1,10 +1,9 @@
-// piraku-civic.js — Sistem Pemilu Camat per Kecamatan, Pusat Misi, Filter Warga Distrik & Leveling Max 99
+// piraku-civic.js — Sistem Pemilu Camat, Jalur Cepat Rumah 3D (3 Kunci), Warga Distrik & Leveling Max 99
 (function () {
   "use strict";
 
   const MAX_LEVEL = 99;
 
-  // Rumus Kurva Santai: Lvl 1 = 100 XP, naik +15 XP tiap level, Max Level 99
   window.getPirakuXpRequiredForLevel = function (lvl) {
     const L = Math.max(1, Math.min(MAX_LEVEL, parseInt(lvl, 10) || 1));
     return 100 + (L - 1) * 15;
@@ -41,7 +40,6 @@
     return "Warga Baru";
   };
 
-  // Helper tambah XP + sinkron ke UI & Supabase
   window.grantPirakuXP = async function (amount, reasonText) {
     const myIg = localStorage.getItem("piraku_my_ig");
     let totalXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10);
@@ -144,7 +142,7 @@
               <input id="inp-visi-camat" maxlength="85" placeholder="Tulis visi singkat (maks 85 karakter)..." style="width:100%;box-sizing:border-box;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:12px;margin-bottom:8px;">
               <button onclick="submitCalonCamat('${dist.id}', '${dist.name}')" style="width:100%;padding:10px;border:none;border-radius:12px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:800;font-size:12.5px;cursor:pointer;">Daftarkan Diri Sebagai Calon Camat 👑</button>
             ` : `
-              <div style="font-size:11.5px;color:#fca5a5;">Syarat mencalonkan diri minimal <b>Level 2</b> (Level kamu saat ini: <b>Lvl ${lvlInfo.level}</b>). Selesaikan misi harian dulu!</div>
+              <div style="font-size:11.5px;color:#fca5a5;">Syarat mencalonkan diri minimal <b>Level 2</b> (Level kamu saat ini: <b>Lvl ${lvlInfo.level}</b>). Selesaikan misi dulu!</div>
             `}
           </div>
         ` : ""}
@@ -254,7 +252,6 @@
         }
         await sb.from("pemilu_camat").update({ votes: currentVotes + 1 }).eq("id", candidateId);
         localStorage.setItem("piraku_voted_camat_" + distId, String(candidateId));
-        localStorage.setItem("piraku_mission_vote_done_" + new Date().toISOString().slice(0, 10), "1");
         await window.grantPirakuXP(60, "Menyalurkan Hak Suara Pemilu");
         window.openPemiluCamatModal();
       } catch (e) {}
@@ -310,7 +307,7 @@
     }).join("");
   };
 
-  // ================= 3. MODAL PUSAT MISI (TAB KE-5) =================
+  // ================= 3. MODAL PUSAT MISI (JALUR CEPAT RUMAH 3D) =================
   window.openMissionsHubModal = function () {
     const modal = ensureCivicModal();
     const dist = getActiveDistrictInfo();
@@ -319,41 +316,45 @@
     const lvlInfo = window.computePirakuLevelFromTotalXp(totalXp);
     const pct = lvlInfo.isMax ? 100 : Math.min(100, Math.round((lvlInfo.currentXpInLevel / lvlInfo.requiredForNext) * 100));
 
+    const myKecHome = localStorage.getItem("piraku_my_kec") || dist.name;
+    const houseKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys") || "0", 10));
+    const hasHouse = localStorage.getItem("piraku_has_house") === "1";
+
     const missions = [
       {
         id: "checkin_" + today,
         cat: "HARIAN",
         title: "Absen Harian Warga",
-        desc: "Klaim kehadiran harian untuk mengejar Streak 7 Hari.",
+        desc: "Klaim kehadiran harian +1 Kunci Rumah.",
         xp: 50,
-        coins: 25,
+        coins: 50,
         done: localStorage.getItem("piraku_claimed_checkin_" + today) === "1"
       },
       {
         id: "patrol_" + today,
         cat: "EKSPLORASI",
         title: `Patroli Wilayah ${dist.name}`,
-        desc: "Keliling & tinjau kondisi lingkungan kecamatan aktif.",
+        desc: "Tinjau lingkungan kecamatan +1 Kunci Rumah.",
         xp: 40,
-        coins: 20,
+        coins: 50,
         done: localStorage.getItem("piraku_claimed_patrol_" + today) === "1"
       },
       {
         id: "vote_" + today,
         cat: "DEMOKRASI",
         title: "Partisipasi Pemilu Camat",
-        desc: "Gunakan hak suara atau tinjau visi calon Camat di tab Pemilu.",
+        desc: "Cek bilik suara atau nyoblos Camat +1 Kunci Rumah.",
         xp: 60,
-        coins: 35,
+        coins: 50,
         done: localStorage.getItem("piraku_claimed_vote_" + today) === "1"
       },
       {
         id: "gotong_" + today,
         cat: "GOTONG ROYONG",
-        title: `Patungan Pembangunan ${dist.name}`,
-        desc: "Bantu kas pembangunan fasilitas 3D kecamatanmu.",
+        title: `Gotong Royong ${dist.name}`,
+        desc: "Bantu kas pembangunan distrik +1 Kunci Rumah.",
         xp: 50,
-        coins: 30,
+        coins: 50,
         done: localStorage.getItem("piraku_claimed_gotong_" + today) === "1"
       }
     ];
@@ -363,15 +364,34 @@
       <div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#0e2f2a;border:1.5px solid rgba(74,222,128,0.35);border-radius:22px;padding:18px;color:#fff;font-family:'Bricolage Grotesque',sans-serif;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div>
-            <div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & PROGRES LEVEL</div>
+            <div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & KAVLING RUMAH</div>
             <h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Misi Warga ${dist.name}</h3>
           </div>
           <button onclick="document.getElementById('piraku-civic-modal').style.display='none'" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-weight:800;cursor:pointer;">✕</button>
         </div>
 
-        <div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:12px;margin-bottom:14px;">
+        <div style="background:linear-gradient(135deg,rgba(255,207,74,0.22),rgba(16,185,129,0.2));border:1.5px solid rgba(255,207,74,0.55);border-radius:14px;padding:12px;margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Kunci Rumah 3D: ${hasHouse ? "SUDAH BERDIRI ✓" : houseKeys + " / 3 🔑"}</span>
+            <span style="font-size:10px;font-weight:800;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;">Kec. ${myKecHome}</span>
+          </div>
+          <div style="font-size:11px;color:#f1f5f9;margin-top:5px;line-height:1.4;">
+            ${hasHouse
+              ? '🎉 <b>Rumah 3D Tropis</b> kamu sudah berdiri di komplek perumahan <b>Kec. ' + myKecHome + '</b>!'
+              : houseKeys >= 3
+                ? '🔥 Kunci sudah lengkap! Klik tombol di bawah untuk langsung mendirikan <b>Rumah 3D</b> milikmu sekarang!'
+                : 'Selesaikan <b>3 misi apa saja</b> hari ini untuk mengumpulkan <b>3 Kunci Rumah 🔑</b> dan bangun rumahmu langsung!'}
+          </div>
+          ${(!hasHouse && houseKeys >= 3) ? `
+            <button onclick="buildMyInstantHouse()" style="width:100%;margin-top:9px;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12.5px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">
+              🏠 BANGUN RUMAH 3D SAYA SEKARANG!
+            </button>
+          ` : ""}
+        </div>
+
+        <div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:11px 12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-            <span style="font-weight:800;font-size:13px;color:#ffcf4a;">${lvlInfo.isMax ? "MAX LEVEL 99 👑" : `LEVEL ${lvlInfo.level}`} · ${window.getPirakuCitizenTitle(lvlInfo.level)}</span>
+            <span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">${lvlInfo.isMax ? "MAX LEVEL 99 👑" : `LEVEL ${lvlInfo.level}`} · ${window.getPirakuCitizenTitle(lvlInfo.level)}</span>
             <span style="font-size:11px;font-weight:700;color:#cfe0d9;">${lvlInfo.isMax ? "MAX" : `${lvlInfo.currentXpInLevel} / ${lvlInfo.requiredForNext} XP`}</span>
           </div>
           <div style="width:100%;height:7px;background:rgba(255,255,255,0.14);border-radius:6px;overflow:hidden;">
@@ -386,7 +406,7 @@
                 <span style="font-size:9px;font-weight:800;background:rgba(255,207,74,0.2);color:#ffcf4a;padding:2px 6px;border-radius:5px;">${m.cat}</span>
                 <div style="font-weight:800;font-size:13px;margin-top:3px;">${m.title}</div>
                 <div style="font-size:11px;color:#cbd5e1;margin-top:2px;">${m.desc}</div>
-                <div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">Hadiah: +${m.xp} XP & +${m.coins} 🪙</div>
+                <div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">+${m.xp} XP · +${m.coins} 🪙 · +1 🔑</div>
               </div>
               <button ${m.done ? "disabled" : `onclick="claimPirakuMission('${m.id}', ${m.xp}, ${m.coins}, '${m.title}')"`} style="flex-shrink:0;padding:8px 12px;border:none;border-radius:10px;background:${m.done ? "rgba(255,255,255,0.12)" : "#10b981"};color:${m.done ? "#94a3b8" : "#fff"};font-weight:800;font-size:11px;cursor:${m.done ? "default" : "pointer"};">
                 ${m.done ? "Selesai ✓" : "Klaim"}
@@ -404,107 +424,51 @@
       return;
     }
     localStorage.setItem("piraku_claimed_" + missionKey, "1");
+
+    const curKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys") || "0", 10) + 1);
+    localStorage.setItem("piraku_house_keys", String(curKeys));
+
     if (window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === "function") {
       window.PirakuGameBridge.addCoins(coinReward);
     } else {
       const c = parseInt(localStorage.getItem("piraku_coins") || "0", 10) + coinReward;
       localStorage.setItem("piraku_coins", String(c));
     }
+
     await window.grantPirakuXP(xpReward, title);
+    if (curKeys === 3 && localStorage.getItem("piraku_has_house") !== "1" && typeof window.showToast === "function") {
+      window.showToast("🔑 3/3 Kunci Terkumpul! Buka tab Misi untuk bangun Rumah 3D kamu!");
+    }
     window.openMissionsHubModal();
   };
-})();
 
-// ================= 4. UPGRADE VISUAL RUMAH 3D TROPIS & SPAWN PER KECAMATAN =================
-(function () {
+  window.buildMyInstantHouse = async function () {
+    const myIg = localStorage.getItem("piraku_my_ig");
+    const myKec = localStorage.getItem("piraku_my_kec") || "Bandung Wetan";
+    if (!myIg) return;
+
+    localStorage.setItem("piraku_has_house", "1");
+    if (typeof window.playSynthTone === "function") window.playSynthTone(1040, "sine", 0.45);
+
+    const sb = window.pirakuSupabase;
+    if (sb) {
+      try {
+        await sb.from("warga_piraku").update({ has_house: true }).ilike("ig", myIg);
+      } catch (e) {}
+    }
+
+    if (typeof window.syncDistrictHousesInScene === "function") {
+      await window.syncDistrictHousesInScene(myKec);
+    }
+    if (typeof window.showToast === "function") {
+      window.showToast("🎉 SELAMAT! Rumah 3D kamu resmi berdiri di Kec. " + myKec + " 🏠✨");
+    }
+    window.openMissionsHubModal();
+  };
+
+  // ================= 4. SPAWN RUMAH PER KECAMATAN =================
   let districtHousesGroup = null;
   let lastRenderedDistrict = "";
-
-  function makeHouseNameSign(igText) {
-    const cv = document.createElement("canvas");
-    cv.width = 256; cv.height = 64;
-    const ctx = cv.getContext("2d");
-    ctx.fillStyle = "#0e2f2a";
-    ctx.beginPath();
-    ctx.roundRect(4, 4, 248, 56, 14);
-    ctx.fill();
-    ctx.strokeStyle = "#ffcf4a";
-    ctx.lineWidth = 4;
-    ctx.stroke();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = '800 24px "Bricolage Grotesque", system-ui, sans-serif';
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(igText, 128, 33);
-    const tex = new THREE.CanvasTexture(cv);
-    return new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
-  }
-
-  window.buildTropicalBandungHouse = function (citizen, index) {
-    const T = window.THREE;
-    if (!T) return null;
-
-    const hg = new T.Group();
-    const paletteWall = [0xfafaf9, 0xfef3c7, 0xf1f5f9, 0xfff7ed];
-    const paletteRoof = [0x9a3412, 0x1e293b, 0x7c2d12, 0x334155];
-    const wallCol = paletteWall[index % paletteWall.length];
-    const roofCol = paletteRoof[index % paletteRoof.length];
-
-    const mWall = new T.MeshStandardMaterial({ color: wallCol, roughness: 0.85, flatShading: true });
-    const mWood = new T.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8, flatShading: true });
-    const mStone = new T.MeshStandardMaterial({ color: 0x64748b, roughness: 0.9, flatShading: true });
-    const mRoof = new T.MeshStandardMaterial({ color: roofCol, roughness: 0.85, flatShading: true });
-    const mGrass = new T.MeshStandardMaterial({ color: 0x4d7c3f, roughness: 0.9 });
-    const mGlass = window.pirakuGlassMat || new T.MeshStandardMaterial({ color: 0x1e293b, emissive: 0xffb347, emissiveIntensity: 0.4 });
-
-    const addBox = (w, h, d, x, y, z, mat) => {
-      const mesh = new T.Mesh(new T.BoxGeometry(w, h, d), mat);
-      mesh.position.set(x, y + h / 2, z);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      hg.add(mesh);
-      return mesh;
-    };
-
-    // Kavling halaman rumput & jalur paving depan
-    addBox(4.8, 0.12, 5.4, 0, 0, 0.3, mGrass);
-    addBox(1.4, 0.15, 2.2, 0, 0, 1.9, mStone);
-
-    // Bodi utama rumah & aksen batu alam samping
-    addBox(3.8, 2.5, 3.2, 0, 0.12, -0.3, mWall);
-    addBox(1.1, 2.55, 3.28, -1.35, 0.12, -0.3, mStone);
-
-    // Atap Limas Bertingkat + Lis Putih
-    addBox(4.1, 0.16, 3.5, 0, 2.62, -0.3, new T.MeshStandardMaterial({ color: 0xffffff }));
-    const roofGeo = new T.ConeGeometry(0.7071, 1, 4);
-    roofGeo.rotateY(Math.PI / 4);
-    const mainRoof = new T.Mesh(roofGeo, mRoof);
-    mainRoof.scale.set(4.3, 1.55, 3.7);
-    mainRoof.position.set(0, 2.78 + 0.775, -0.3);
-    mainRoof.castShadow = true;
-    hg.add(mainRoof);
-
-    // Kanopi teras depan + 2 pilar kayu
-    addBox(2.4, 0.14, 1.2, 0, 2.05, 1.65, mRoof);
-    addBox(0.14, 1.95, 0.14, -1.05, 0.12, 2.1, mWood);
-    addBox(0.14, 1.95, 0.14, 1.05, 0.12, 2.1, mWood);
-
-    // Pintu kayu utama + 2 jendela kaca hangat
-    addBox(0.85, 1.65, 0.12, 0.25, 0.12, 1.32, mWood);
-    addBox(0.75, 0.95, 0.12, -0.85, 0.85, 1.32, mGlass);
-    addBox(0.75, 0.95, 0.12, 1.25, 0.85, 1.32, mGlass);
-
-    // Pagar depan rendah & tanaman hias
-    addBox(1.5, 0.45, 0.12, -1.65, 0.12, 2.85, mWood);
-    addBox(1.5, 0.45, 0.12, 1.65, 0.12, 2.85, mWood);
-
-    // Papan Nama IG Pemilik Rumah di atas kanopi
-    const signMesh = new T.Mesh(new T.PlaneGeometry(2.2, 0.55), makeHouseNameSign(citizen.ig || "@warga"));
-    signMesh.position.set(0, 2.48, 2.28);
-    hg.add(signMesh);
-
-    return hg;
-  };
 
   window.syncDistrictHousesInScene = async function (districtName) {
     const scene = window.pirakuScene;
@@ -531,20 +495,18 @@
       if (!data || data.length === 0) return;
 
       data.forEach((c, idx) => {
-        const house = window.buildTropicalBandungHouse(c, idx);
-        if (!house) return;
-        // Jejer rapi di zona kavling perumahan distrik (sisi timur-utara)
-        const col = idx % 4;
-        const row = Math.floor(idx / 4);
-        const hx = 25 + col * 6.2;
-        const hz = -34 - row * 6.8;
-        house.position.set(hx, 0, hz);
-        districtHousesGroup.add(house);
+        if (typeof window.buildTropicalBandungHouse === "function") {
+          const house = window.buildTropicalBandungHouse(c, idx);
+          if (!house) return;
+          const col = idx % 4;
+          const row = Math.floor(idx / 4);
+          house.position.set(25 + col * 6.2, 0, -34 - row * 6.8);
+          districtHousesGroup.add(house);
+        }
       });
     } catch (e) {}
   };
 
-  // Pantau perpindahan distrik otomatis agar rumah warga selalu sesuai kecamatan aktif
   setInterval(() => {
     const pill = document.getElementById("piraku-active-map-pill");
     let activeName = "Bandung Wetan";
