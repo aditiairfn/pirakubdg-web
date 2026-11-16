@@ -52,10 +52,10 @@
 
   const LEVELS = [
     { min: 0,    lv: 1, houses: 4,  title: "Tanah Kavling & Pos RW" },
-    { min: 500,  lv: 2, houses: 8,  title: "Komplek Asri & Mushola" },
-    { min: 1500, lv: 3, houses: 12, title: "Komplek Ramai & Pujasera" },
-    { min: 3500, lv: 4, houses: 16, title: "Perumahan Elite & Balai RW" },
-    { min: 7000, lv: 5, houses: 20, title: "Kawasan Mandiri Ikonik" }
+    { min: 100,  lv: 2, houses: 8,  title: "Komplek Asri & Mushola" },
+    { min: 300,  lv: 3, houses: 12, title: "Komplek Ramai & Pujasera" },
+    { min: 700,  lv: 4, houses: 16, title: "Perumahan Elite & Balai RW" },
+    { min: 1400, lv: 5, houses: 20, title: "Kawasan Mandiri Ikonik" }
   ];
 
   function getLevelInfo(coins) {
@@ -616,7 +616,7 @@
         if (d < 1.65) {
           customDistrictGroup.remove(c);
           districtCoins.splice(i, 1);
-          if (window.PirakuEconomy) window.PirakuEconomy.addCoins(20, "Eksplorasi Komplek");
+          if (window.PirakuEconomy) window.PirakuEconomy.addCoins(1, "Eksplorasi Komplek");
         }
       }
     }
@@ -661,8 +661,8 @@
         <div style="font-size:11px;color:#cbd5e1;margin:3px 0 8px;">🏘️ ${myLv.cur.title} • Dana: <b style="color:#fde047;">🪙 ${myCoins.toLocaleString("id-ID")}</b></div>
         <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;">
           <button data-enter="${myD.id}" style="padding:8px 6px;border-radius:9px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:11px;font-weight:800;cursor:pointer;">🏘️ Masuk Komplek</button>
-          <button data-invest="${myD.id}" data-amt="50" style="padding:8px 4px;border-radius:9px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:800;cursor:pointer;">+🪙 50 Bangun</button>
-          <button data-invest="${myD.id}" data-amt="200" style="padding:8px 4px;border-radius:9px;border:none;background:#f59e0b;color:#0f172a;font-size:11px;font-weight:800;cursor:pointer;">+🪙 200 Maju</button>
+          <button data-invest="${myD.id}" data-amt="10" style="padding:8px 4px;border-radius:9px;border:none;background:#16a34a;color:#fff;font-size:11px;font-weight:800;cursor:pointer;">+🪙 10 Bangun</button>
+          <button data-invest="${myD.id}" data-amt="35" style="padding:8px 4px;border-radius:9px;border:none;background:#f59e0b;color:#0f172a;font-size:11px;font-weight:800;cursor:pointer;">+🪙 35 Maju</button>
         </div>
       </div>` : `
       <div style="padding:12px;border-radius:16px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.45);margin-bottom:12px;">
@@ -704,7 +704,7 @@
             const isCurrentMap = activeMapId === d.id;
             const isOwnDistrict = profile.isRegistered && profile.district.id === d.id;
             const investBtnHtml = isOwnDistrict
-              ? `<button data-invest="${d.id}" data-amt="50" style="padding:6px 8px;border-radius:8px;border:none;background:#f59e0b;color:#0f172a;font-size:10.5px;font-weight:800;cursor:pointer;">+50</button>`
+              ? `<button data-invest="${d.id}" data-amt="10" style="padding:6px 8px;border-radius:8px;border:none;background:#f59e0b;color:#0f172a;font-size:10.5px;font-weight:800;cursor:pointer;">+10</button>`
               : `<button disabled title="${profile.isRegistered ? "Hanya warga ber-KTP " + d.name + " yang bisa membangun" : "Daftar KTP untuk menyumbang"}" style="padding:6px 8px;border-radius:8px;border:none;background:#334155;color:#64748b;font-size:10px;font-weight:800;cursor:not-allowed;">🔒 ${profile.isRegistered ? "KTP Lain" : "Tamu"}</button>`;
             return `
               <div style="padding:10px 12px;border-radius:14px;background:#1e293b;border:1px solid ${isCurrentMap ? "#38bdf8" : "rgba(148,163,184,0.2)"};display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -738,7 +738,7 @@
         const prof = getCitizenProfile();
         if (!prof.isRegistered || prof.district.id !== b.dataset.invest) return;
         const d = DISTRICTS.find(x => x.id === b.dataset.invest);
-        const amt = Number(b.dataset.amt || 50);
+        const amt = Number(b.dataset.amt || 10);
         if (!d || !window.PirakuEconomy) return;
         if (!window.PirakuEconomy.spendCoins(amt, "Bangun Komplek " + d.name)) return;
         const nextVal = getCoinsFor(d) + amt;

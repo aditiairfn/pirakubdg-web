@@ -4,20 +4,20 @@
 
   const CATALOG = {
     outfit: [
-      { id: "iket_sunda", name: "Iket Sunda / Totopong", price: 150, icon: "🧣", desc: "Iket kepala khas Sunda langsung terpasang di karakter 3D." },
-      { id: "kacamata_hitam", name: "Kacamata Hitam Dago", price: 120, icon: "🕶️", desc: "Kacamata gaya buat nongkrong sore di Gasibu." },
-      { id: "helm_biker", name: "Helm Biker Pasupati", price: 220, icon: "🪖", desc: "Helm visor gelap siap melintas di Flyover Pasupati." },
-      { id: "aura_emas", name: "Aura Langkah Emas", price: 350, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
+      { id: "iket_sunda", name: "Iket Sunda / Totopong", price: 45, icon: "🧣", desc: "Iket kepala khas Sunda langsung terpasang di karakter 3D." },
+      { id: "kacamata_hitam", name: "Kacamata Hitam Dago", price: 35, icon: "🕶️", desc: "Kacamata gaya buat nongkrong sore di Gasibu." },
+      { id: "helm_biker", name: "Helm Biker Pasupati", price: 65, icon: "🪖", desc: "Helm visor gelap siap melintas di Flyover Pasupati." },
+      { id: "aura_emas", name: "Aura Langkah Emas", price: 100, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
     ],
     mobility: [
-      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 60, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
-      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 110, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." }
+      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 12, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
+      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 22, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." }
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
-      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 300, desc: "Lencana bintang di label nama + prioritas polling." },
-      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 750, desc: "Mahkota emas di label nama + gelar Sesepuh." },
-      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 1500, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
+      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 80, desc: "Lencana bintang di label nama + prioritas polling." },
+      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 200, desc: "Mahkota emas di label nama + gelar Sesepuh." },
+      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 450, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
     ]
   };
 
@@ -33,7 +33,7 @@
       }
     } catch (e) {}
     return {
-      coins: 500,
+      coins: 25,
       owned: ["tier_1"],
       equippedOutfit: null,
       equippedVehicle: null,

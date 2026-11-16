@@ -1,15 +1,22 @@
 // ================= PIRAKUBDG LIVE WORLD EVENTS & 3D SULTAN PODIUM (SUPABASE) =================
 (function() {
   const EVENT_SCHEDULE = [
-    { startMin: 0, endMin: 14, id: "cfd", badge: "🏃 CFD GASIBU", color: "#22c55e", desc: "Koin emas bermunculan di trek biru Gasibu! Pungut sekarang!", coinZone: "gasibu" },
-    { startMin: 15, endMin: 29, id: "sunny", badge: "☀️ CERAH BANDUNG", color: "#38bdf8", desc: "Cuaca cerah di Gedung Sate! Waktunya keliling kota.", coinZone: null },
-    { startMin: 30, endMin: 44, id: "rain", badge: "🌧️ HUJAN SORE BDG", color: "#60a5fa", desc: "Rintik hujan turun! Hadiah Mancing Taman Lansia 2x Koin!", coinZone: null },
-    { startMin: 45, endMin: 59, id: "monju_night", badge: "✨ FESTIVAL MONJU", color: "#f59e0b", desc: "Koin emas bermunculan di pelataran Monumen Perjuangan!", coinZone: "monju" }
+    { startMin: 0, endMin: 9, id: "cfd", badge: "🏃 CFD GASIBU", color: "#22c55e", desc: "Koin emas bermunculan di trek biru Gasibu! (+1 Koin)", coinZone: "gasibu" },
+    { startMin: 10, endMin: 59, id: "sunny", badge: "☀️ CERAH BANDUNG", color: "#38bdf8", desc: "Cuaca cerah di Gedung Sate! Waktunya keliling kota.", coinZone: null }
   ];
 
   function getCurrentEvent() {
-    const min = new Date().getMinutes();
-    return EVENT_SCHEDULE.find(e => min >= e.startMin && min <= e.endMin) || EVENT_SCHEDULE[0];
+    const now = new Date();
+    const min = now.getMinutes();
+    const hr = now.getHours();
+    if (min > 9) return EVENT_SCHEDULE[1];
+    if (hr % 3 === 0) {
+      return { startMin: 0, endMin: 9, id: "rain", badge: "🌧️ HUJAN SORE BDG", color: "#60a5fa", desc: "Rintik hujan turun! Hadiah Mancing Taman Lansia 2x Koin!", coinZone: null };
+    }
+    if (hr % 2 === 1) {
+      return { startMin: 0, endMin: 9, id: "monju_night", badge: "✨ FESTIVAL MONJU", color: "#f59e0b", desc: "Koin emas bermunculan di pelataran Monumen Perjuangan! (+1 Koin)", coinZone: "monju" };
+    }
+    return EVENT_SCHEDULE[0];
   }
 
   function getCitizenIdentity() {
@@ -252,7 +259,7 @@
         if (d < 1.65) {
           window.pirakuScene.remove(c);
           eventCoins.splice(i, 1);
-          if (window.PirakuEconomy) window.PirakuEconomy.addCoins(25, "Pungut Koin Event Kota");
+          if (window.PirakuEconomy) window.PirakuEconomy.addCoins(1, "Pungut Koin Event Kota");
         }
       }
     }

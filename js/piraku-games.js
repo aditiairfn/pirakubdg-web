@@ -38,7 +38,8 @@
     const total = Math.round(baseCoins * (ch.mult || 1) * modeMult + (ch.bonus || 0));
     saveHighScore(gameId, total);
     if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-      window.PirakuEconomy.addCoins(total, reason + " (" + ch.name + ")");
+      const balancedReward = Math.max(4, Math.min(25, Math.round(total * 0.25)));
+      window.PirakuEconomy.addCoins(balancedReward, reason + " (" + ch.name + ")");
     }
     return total;
   }
@@ -106,7 +107,7 @@
     stopLoop();
     const modal = document.getElementById("piraku-games-modal");
     if (!modal) return;
-    const coins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : 500;
+    const coins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : 25;
     const ch = getSelectedChar();
     const hs = getHighScores();
 
