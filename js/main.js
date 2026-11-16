@@ -3470,6 +3470,97 @@ let activeQuestSystem = null;
     return BASE_Y;
   }
 
+  
+  // ================= SISTEM COLLISION BANGUNAN & RUMAH WARGA OTOMATIS =================
+  let pirakuBuildingColliders = [];
+  let pirakuLastColliderScan = 0;
+
+  function rebuildPirakuBuildingColliders() {
+    if (!scene || typeof THREE === "undefined") return;
+    scene.updateMatrixWorld(true);
+    const boxes = [];
+    const tmpBox = new THREE.Box3();
+    const tmpSize = new THREE.Vector3();
+    const tmpCenter = new THREE.Vector3();
+
+    // Kumpulkan semua root karakter, mobil, trem, koin agar tidak dianggap tembok
+    const dynamicRoots = new Set();
+    if (typeof citizensGroup !== "undefined" && citizensGroup) dynamicRoots.add(citizensGroup);
+    if (typeof tram !== "undefined" && tram) dynamicRoots.add(tram);
+    if (typeof animC !== "undefined" && Array.isArray(animC)) animC.forEach(c => dynamicRoots.add(c));
+
+    scene.traverse(obj => {
+      if (!obj || !obj.isMesh || !obj.visible) return;
+      // Lewati objek transparan (aura, kaca air, kaca visor, ring indikator)
+      const mat = Array.isArray(obj.material) ? obj.material[0] : obj.material;
+      if (mat && mat.transparent && (mat.opacity === undefined || mat.opacity < 0.85)) return;
+
+      // Lewati jika berada di dalam grup karakter / trem / kendaraan dinamis
+      let p = obj;
+      while (p) {
+        if (dynamicRoots.has(p) || p.userData?.a || p.userData?.isCar || p.userData?.isCoin || p.name === "piraku-shop-body-att" || p.name === "piraku-shop-head-att") return;
+        p = p.parent;
+      }
+
+      tmpBox.setFromObject(obj);
+      if (tmpBox.isEmpty()) return;
+      tmpBox.getSize(tmpSize);
+      tmpBox.getCenter(tmpCenter);
+
+      // Hanya ambil struktur bangunan/tembok/rumah/pilar yang berdiri di zona jalan kaki (y_min < 2.2, tinggi >= 1.1m)
+      // Abaikan lantai/aspal/lapangan (tinggi < 1.1m atau bentang > 48m)
+      if (tmpSize.y < 1.1 || tmpSize.y > 45) return;
+      if (tmpSize.x < 0.65 || tmpSize.z < 0.65) return;
+      if (tmpSize.x > 46 || tmpSize.z > 46) return;
+      if (tmpBox.min.y > 2.2 || tmpBox.max.y < 1.0) return;
+
+      // Abaikan dek atas Flyover Pasupati (y > 2.5 di koridor z -29..-23) agar pemain bisa lewat di bawah & di atas jembatan
+      if (tmpCenter.z > -30.5 && tmpCenter.z < -21.5 && tmpBox.min.y > 1.8) return;
+
+      boxes.push({
+        minX: tmpBox.min.x,
+        maxX: tmpBox.max.x,
+        minZ: tmpBox.min.z,
+        maxZ: tmpBox.max.z
+      });
+    });
+
+    pirakuBuildingColliders = boxes;
+    pirakuLastColliderScan = performance.now();
+  }
+
+  function resolvePirakuBuildingCollision(pos, prevX, prevZ, radius = 0.48) {
+    if (pirakuBuildingColliders.length === 0 || performance.now() - pirakuLastColliderScan > 12000) {
+      rebuildPirakuBuildingColliders();
+    }
+    // Jika sedang naik di atas dek tinggi Flyover Pasupati (y > 2.4), tidak bertabrakan dengan bangunan bawah
+    if (pos.y > 2.4) return;
+
+    for (let pass = 0; pass < 2; pass++) {
+      for (let i = 0; i < pirakuBuildingColliders.length; i++) {
+        const b = pirakuBuildingColliders[i];
+        const minX = b.minX - radius;
+        const maxX = b.maxX + radius;
+        const minZ = b.minZ - radius;
+        const maxZ = b.maxZ + radius;
+
+        if (pos.x > minX && pos.x < maxX && pos.z > minZ && pos.z < maxZ) {
+          // Hitung penetrasi terkecil dari 4 sisi dinding agar karakter meluncur mulus (sliding collision)
+          const penLeft = pos.x - minX;
+          const penRight = maxX - pos.x;
+          const penTop = pos.z - minZ;
+          const penBottom = maxZ - pos.z;
+          const minPen = Math.min(penLeft, penRight, penTop, penBottom);
+
+          if (minPen === penLeft) pos.x = minX;
+          else if (minPen === penRight) pos.x = maxX;
+          else if (minPen === penTop) pos.z = minZ;
+          else pos.z = maxZ;
+        }
+      }
+    }
+  }
+
   function updatePlayerMovement(delta) {
     if (!myPlayerMesh || isRidingTram) return;
 
@@ -3507,6 +3598,8 @@ let activeQuestSystem = null;
       myPlayerMesh.position.x += moveFinalVec.x * speed;
       myPlayerMesh.position.z += moveFinalVec.z * speed;
 
+      const prevX = myPlayerMesh.position.x;
+      const prevZ = myPlayerMesh.position.z;
       const prevY = myPlayerMesh.position.y;
       myPlayerMesh.position.x = Math.max(-132, Math.min(61, myPlayerMesh.position.x));
       myPlayerMesh.position.z = Math.max(-62, Math.min(52, myPlayerMesh.position.z));
@@ -3519,6 +3612,7 @@ let activeQuestSystem = null;
         myPlayerMesh.position.z = Math.max(-29.0, Math.min(-23.0, myPlayerMesh.position.z));
       }
 
+      resolvePirakuBuildingCollision(myPlayerMesh.position, prevX, prevZ, 0.48);
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
