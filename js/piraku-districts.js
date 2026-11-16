@@ -320,14 +320,9 @@
   let districtAudioCtx = null;
   function getDistrictAudioCtx() {
     if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return null;
-    if (!districtAudioCtx) {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (AC) districtAudioCtx = new AC();
-    }
-    if (districtAudioCtx && districtAudioCtx.state === "suspended") {
-      districtAudioCtx.resume().catch(() => {});
-    }
-    return districtAudioCtx;
+    const ctx = window.audioCtx || districtAudioCtx || (districtAudioCtx = new (window.AudioContext || window.webkitAudioContext)());
+    if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+    return ctx;
   }
 
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
