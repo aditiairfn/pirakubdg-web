@@ -1,4 +1,4 @@
-// ================= PIRAKUBDG 30 KECAMATAN MULTI-MAP ENGINE (HD STYLISH & SAFE SYNC) =================
+// ================= PIRAKUBDG 30 KECAMATAN MULTI-MAP ENGINE (HD STYLISH & SAFE) =================
 (function() {
   const DISTRICTS = [
     { id: "bandung_wetan", name: "Bandung Wetan", zone: "Tengah", icon: "🏛️", landmark: "Gedung Sate & Lapangan Gasibu", theme: "central", ground: 0x14532d, accent: 0xfacc15, isMainMap: true },
@@ -104,7 +104,6 @@
     } catch (e) {}
   }
 
-  // ================= 1. ENGINE MULTI-MAP 3D HD TERPISAH PER KECAMATAN =================
   let hiddenMainObjects = [];
   let customDistrictGroup = null;
   let districtCoins = [];
@@ -135,7 +134,6 @@
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
 
-    // Tanah Rumput HD Bertekstur Lembut
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(96, 96),
       new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.9 })
@@ -144,7 +142,6 @@
     ground.receiveShadow = true;
     grp.add(ground);
 
-    // Jalan Aspal Utama Simpang 4
     const roadMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.8 });
     const roadNS = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 96), roadMat);
     roadNS.rotation.x = -Math.PI / 2; roadNS.position.set(0, 0.02, 0);
@@ -152,7 +149,6 @@
     roadEW.rotation.x = -Math.PI / 2; roadEW.position.set(0, 0.02, 0);
     grp.add(roadNS, roadEW);
 
-    // Marka Jalan Kuning Tengah
     const lineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
     const lineNS = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 96), lineMat);
     lineNS.rotation.x = -Math.PI / 2; lineNS.position.set(0, 0.03, 0);
@@ -160,7 +156,6 @@
     lineEW.rotation.x = -Math.PI / 2; lineEW.position.set(0, 0.03, 0);
     grp.add(lineNS, lineEW);
 
-    // Alun-Alun / Plaza Bundar di Tengah Distrik
     const plaza = new THREE.Mesh(
       new THREE.CircleGeometry(13, 36),
       new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.6 })
@@ -173,7 +168,6 @@
     plazaRing.rotation.x = -Math.PI / 2; plazaRing.position.set(0, 0.04, 0);
     grp.add(plaza, plazaRing);
 
-    // Landmark 3D Eksklusif di Tengah Alun-Alun
     const landmarkGroup = new THREE.Group();
     landmarkGroup.position.set(0, 0, 0);
 
@@ -215,7 +209,6 @@
     }
     grp.add(landmarkGroup);
 
-    // Papan Gerbang Selamat Datang 3D
     const signCv = document.createElement("canvas");
     signCv.width = 512; signCv.height = 128;
     const sctx = signCv.getContext("2d");
@@ -235,7 +228,6 @@
     const poleR = poleL.clone(); poleR.position.x = 3.5;
     grp.add(signMesh, poleL, poleR);
 
-    // Gedung-Gedung Komersial & Perumahan (Bertambah sesuai Level 1..5)
     const bCount = 8 + cur.lv * 4;
     const bMatPool = [
       new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 }),
@@ -260,7 +252,6 @@
       grp.add(bMesh);
     }
 
-    // Pohon Rindang & Lampu Taman Estetik Sekeliling Plaza
     for (let t = 0; t < 28; t++) {
       const ang = (t / 28) * Math.PI * 2 + 0.1;
       const tr = 17.5 + (t % 2) * 12;
@@ -274,7 +265,6 @@
       grp.add(trunk, crown);
     }
 
-    // 6 Koin Emas Eksplorasi di Peta Kecamatan
     const coinGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.12, 16);
     const coinMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xd97706, emissiveIntensity: 0.5, metalness: 0.7, roughness: 0.2 });
     for (let c = 0; c < 6; c++) {
@@ -387,7 +377,6 @@
     requestAnimationFrame(tickDistrictCoins);
   }
 
-  // ================= 2. MODAL DIREKTORI & PEMBANGUNAN 30 KECAMATAN =================
   let filterZone = "Semua";
 
   window.openDistrictsHubModal = function() {
@@ -424,7 +413,6 @@
           <button id="dt-close" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
 
-        <!-- Kartu Kecamatan Domisili Aktif -->
         <div style="padding:12px;border-radius:16px;background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.4);margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
             <span style="font-size:10.5px;font-weight:800;color:#fde047;">🪪 DOMISILI KTP KAMU</span>
@@ -441,12 +429,10 @@
           </div>
         </div>
 
-        <!-- Filter Zona 5 Wilayah Bandung -->
         <div style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;">
           ${zones.map(z => `<button data-zone="${z}" style="padding:5px 10px;border-radius:999px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${filterZone === z ? "#38bdf8" : "#1e293b"};color:${filterZone === z ? "#0f172a" : "#cbd5e1"};">${z}</button>`).join("")}
         </div>
 
-        <!-- Daftar 30 Kecamatan dengan Maps HD Masing-Masing -->
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${filtered.map(d => {
             const rankIdx = ranked.findIndex(r => r.id === d.id) + 1;
