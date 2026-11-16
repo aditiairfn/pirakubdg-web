@@ -496,6 +496,11 @@ let activeQuestSystem = null;
     }
   };
 
+  window.getPirakuPlayerPos = function() {
+    if (typeof isRidingTram !== "undefined" && isRidingTram && typeof tram !== "undefined" && tram) return tram.position;
+    if (typeof myPlayerMesh !== "undefined" && myPlayerMesh) return myPlayerMesh.position;
+    return null;
+  };
   window.playSynthTone = function(freq, type, duration) {
     if (typeof window.isPirakuSfxEnabled === "function" ? !window.isPirakuSfxEnabled() : !!window.pirakuSoundMuted) return;
     try {

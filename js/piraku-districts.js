@@ -323,58 +323,20 @@
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
   function playAngkotHornSfx() {
     if (isDistrictSoundMuted()) return;
-    const ctx = getDistrictAudioCtx();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    [0, 0.16].forEach((offset, idx) => {
-      const duration = idx === 0 ? 0.11 : 0.18;
-      [440, 554.37].forEach(freq => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(freq, now + offset);
-
-        const filter = ctx.createBiquadFilter();
-        filter.type = "lowpass";
-        filter.frequency.setValueAtTime(1450, now + offset);
-
-        gain.gain.setValueAtTime(0.001, now + offset);
-        gain.gain.linearRampToValueAtTime(0.11, now + offset + 0.015);
-        gain.gain.exponentialRampToValueAtTime(0.0008, now + offset + duration);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + duration + 0.02);
-      });
-    });
+    if (typeof window.playSynthTone === "function") {
+      window.playSynthTone(440, "sawtooth", 0.11);
+      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(554.37, "sawtooth", 0.18); }, 150);
+    }
   }
 
   // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
   function playBaksoBowlClinkSfx() {
     if (isDistrictSoundMuted()) return;
-    const ctx = getDistrictAudioCtx();
-    if (!ctx) return;
-    const now = ctx.currentTime;
-    [0, 0.19, 0.38].forEach(offset => {
-      [2380, 3560].forEach((freq, hIdx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.setValueAtTime(freq, now + offset);
-
-        const peak = hIdx === 0 ? 0.13 : 0.06;
-        gain.gain.setValueAtTime(0.0005, now + offset);
-        gain.gain.linearRampToValueAtTime(peak, now + offset + 0.006);
-        gain.gain.exponentialRampToValueAtTime(0.0004, now + offset + 0.16);
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + offset);
-        osc.stop(now + offset + 0.18);
-      });
-    });
+    if (typeof window.playSynthTone === "function") {
+      window.playSynthTone(2380, "sine", 0.11);
+      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(2380, "sine", 0.11); }, 180);
+      setTimeout(() => { if (!isDistrictSoundMuted()) window.playSynthTone(2650, "sine", 0.14); }, 360);
+    }
   }
 
   function createBandungAngkotMesh(bodyCol, stripeCol) {
@@ -1241,7 +1203,7 @@
         }
       }
 
-      const _curPPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || (window.myPlayerMesh && window.myPlayerMesh.position) || pPos;
+      const _curPPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
       if (_curPPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
         const dVeh = Math.hypot(_curPPos.x - v.mesh.position.x, _curPPos.z - v.mesh.position.z);
         if (dVeh < 11.5) {
@@ -1286,7 +1248,7 @@
         }
       }
 
-      const _curVPos = (typeof window.getPirakuPlayerPos === 'function' && window.getPirakuPlayerPos()) || (window.myPlayerMesh && window.myPlayerMesh.position) || pPos;
+      const _curVPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
       if (p.isVendor && _curVPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
         const dCart = Math.hypot(_curVPos.x - p.mesh.position.x, _curVPos.z - p.mesh.position.z);
         if (dCart < 9.5) {
