@@ -560,4 +560,17 @@
       syncPlayer3DAttachments();
     }
   }, 1000);
+
+  setTimeout(() => {
+    try {
+      const ig = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "");
+      if (ig === "yelclaw" && !localStorage.getItem("piraku_yelclaw_topup_10k_done")) {
+        localStorage.setItem("piraku_yelclaw_topup_10k_done", "1");
+        if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+          window.PirakuEconomy.addCoins(10000, "Top-Up Admin Founder (@yelclaw)");
+        }
+      }
+    } catch (e) {}
+  }, 1500);
+
 })();
