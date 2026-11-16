@@ -789,3 +789,16 @@ window.loadMyInventory = async function() {
   }
   return localInv;
 };
+
+
+// Auto-reconnect WebRTC dipicu otomatis saat mic diaktifkan
+if (typeof window.toggleMyMic === "function" && !window.__micAutoReconnectPatched) {
+  window.__micAutoReconnectPatched = true;
+  const oldToggle = window.toggleMyMic;
+  window.toggleMyMic = function() {
+    oldToggle();
+    if (window.isMyMicActive && typeof window.reconnectMyPeerConnections === "function") {
+      window.reconnectMyPeerConnections();
+    }
+  };
+}
