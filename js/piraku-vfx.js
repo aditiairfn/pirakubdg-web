@@ -5,7 +5,8 @@
   var scene = null, cam = null, ctrl = null;
   var clouds = [], cloudMats = [], cloudBaseY = [];
   var rain = null, rainAmt = 0, rainOn = Q.get("rain") === "1", rainUntil = 0, nextRainAt = 0;
-  var RAIN_N = 700, rainDrops = null;
+  var isMob = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
+  var RAIN_N = isMob ? 350 : 700, rainDrops = null;
   var puffs = [], puffTimer = 0, lastP = null;
   var dbg = null, dbgT = 0;
   var last = 0, fails = 0, off = false;
