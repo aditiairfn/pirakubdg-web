@@ -257,7 +257,8 @@
     const grp = new THREE.Group();
     grp.name = "piraku-komplek-district-map";
     // Samakan elevasi dasar dengan peta utama Gedung Sate (y = 0.0) agar karakter & partikel hujan pas 100%
-    grp.position.y = 0.0;
+    const baseFootY = (playerMesh && playerMesh.position) ? playerMesh.position.y : 0;
+    grp.position.y = baseFootY - 0.03;
 
     const coins = getCoinsFor(d);
     const { cur } = getLevelInfo(coins);
@@ -428,7 +429,7 @@
     if (playerMesh) {
       playerMesh.visible = true;
       if (playerMesh.position) {
-        playerMesh.position.set(0, 0.22, 23);
+        playerMesh.position.x = 0; playerMesh.position.z = 23;
         if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
           playerMesh.userData.a.c.x = 0;
           playerMesh.userData.a.c.z = 23;
