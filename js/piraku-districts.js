@@ -306,6 +306,17 @@
 
   
   
+  
+  function isDistrictSoundMuted() {
+    if (window.pirakuMuted === true || window.isMuted === true) return true;
+    const btns = document.querySelectorAll("button");
+    for (let i = 0; i < btns.length; i++) {
+      const txt = (btns[i].textContent || "").trim().toLowerCase();
+      if (txt.includes("sound off") || txt.includes("mute")) return true;
+    }
+    return false;
+  }
+
   let districtAudioCtx = null;
   function getDistrictAudioCtx() {
     if (!districtAudioCtx) {
@@ -320,6 +331,7 @@
 
   // Efek suara klakson angkot Bandung ("tin-tin!" dua nada harmonis)
   function playAngkotHornSfx() {
+    if (isDistrictSoundMuted()) return;
     const ctx = getDistrictAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -350,6 +362,7 @@
 
   // Efek suara denting mangkok porselen tukang bakso/cuanki ("ting-ting-ting!")
   function playBaksoBowlClinkSfx() {
+    if (isDistrictSoundMuted()) return;
     const ctx = getDistrictAudioCtx();
     if (!ctx) return;
     const now = ctx.currentTime;
@@ -1105,11 +1118,12 @@
     const pPos = activePlayer && activePlayer.position ? activePlayer.position : null;
     const nowMs = performance.now();
 
-    // Update lalu lintas Angkot Bandung & Mobil Warga (approach -> melingkar bundaran -> keluar jalan tujuan)
+    // Update lalu lintas Angkot Bandung & Mobil Warga (anti-tabrakan + yield bundaran + respawn 95m di luar kamera)
     districtTraffic.forEach((v, idx) => {
       if (!v.mesh) return;
       const R = 10.0;
       const ENTRY_R = 11.4;
+      const SPAWN_DIST = 92;
       const ARM_DEFS = [
         { axis: "z", dir: 1, laneX: 1.8, entryAng: -1.39 },
         { axis: "x", dir: 1, laneZ: -1.8, entryAng: 2.96 },
@@ -1117,25 +1131,32 @@
         { axis: "x", dir: -1, laneZ: 1.8, entryAng: -0.18 }
       ];
       const EXIT_ARMS = [
-        { axis: "z", dir: 1, laneX: 1.8 },   // 0: Selatan (+Z)
-        { axis: "x", dir: 1, laneZ: 1.8 },   // 1: Timur (+X)
-        { axis: "z", dir: -1, laneX: -1.8 }, // 2: Utara (-Z)
-        { axis: "x", dir: -1, laneZ: -1.8 }  // 3: Barat (-X)
+        { axis: "z", dir: 1, laneX: 1.8 },
+        { axis: "x", dir: 1, laneZ: 1.8 },
+        { axis: "z", dir: -1, laneX: -1.8 },
+        { axis: "x", dir: -1, laneZ: -1.8 }
       ];
 
-      // Cek jarak dengan kendaraan lain di depannya agar tidak saling menumpuk
+      // Cek jarak aman 5.2m di depan & yield jika hendak masuk bundaran saat ada kendaraan lain melintas
       let blocked = false;
       const fwdX = Math.sin(v.mesh.rotation.y);
       const fwdZ = Math.cos(v.mesh.rotation.y);
       for (let j = 0; j < districtTraffic.length; j++) {
         if (j === idx || !districtTraffic[j].mesh) continue;
-        const other = districtTraffic[j].mesh.position;
+        const otherVeh = districtTraffic[j];
+        const other = otherVeh.mesh.position;
         const dx = other.x - v.mesh.position.x;
         const dz = other.z - v.mesh.position.z;
         const distOther = Math.hypot(dx, dz);
-        if (distOther > 0.1 && distOther < 4.3) {
+
+        if (distOther > 0.05 && distOther < 5.2) {
           const dot = (dx * fwdX + dz * fwdZ) / distOther;
-          if (dot > 0.72) { blocked = true; break; }
+          if (dot > 0.35) { blocked = true; break; }
+        }
+        // Aturan Yield Bundaran: kendaraan yang hendak masuk bundaran (dist ~ 11.5..15.5m) wajib berhenti jika ada kendaraan di dalam bundaran dekat pintu masuk
+        if (v.state === "approach" && Math.abs(v.dist) <= 15.2 && otherVeh.state === "circle" && distOther < 8.5) {
+          blocked = true;
+          break;
         }
       }
       const effSpeed = blocked ? 0 : v.speed;
@@ -1150,27 +1171,23 @@
           v.mesh.position.set(v.dist, 0.02, arm.laneZ);
           v.mesh.rotation.y = arm.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
         }
-        // Saat menyentuh bibir bundaran (±11.4m), transisi mulus masuk ke lingkaran bundaran
         if ((arm.dir > 0 && v.dist >= -ENTRY_R) || (arm.dir < 0 && v.dist <= ENTRY_R)) {
           v.state = "circle";
           v.circleAng = arm.entryAng;
           v.traveledAng = 0;
-          // turnSteps: 1 = belok kiri (90°), 2 = lurus (180°), 3 = belok kanan (270°)
           v.targetAngSpan = v.turnSteps * (Math.PI / 2) - 0.34;
-          // Pilih ruas keluar sesuai arah putaran CCW dari armIdx
-          // armIdx 0(Utara): 1->Barat(3), 2->Selatan(0), 3->Timur(1)
           const exitMap = [
-            [3, 0, 1], // dari Utara
-            [0, 1, 2], // dari Barat
-            [1, 2, 3], // dari Selatan
-            [2, 3, 0]  // dari Timur
+            [3, 0, 1],
+            [0, 1, 2],
+            [1, 2, 3],
+            [2, 3, 0]
           ];
           const chosenExitIdx = exitMap[v.armIdx][(v.turnSteps - 1) % 3];
           v.exitArm = EXIT_ARMS[chosenExitIdx];
         }
       } else if (v.state === "circle") {
         const angStep = (effSpeed / R) * dt;
-        v.circleAng -= angStep; // CCW mengikuti aturan bundaran kiri
+        v.circleAng -= angStep;
         v.traveledAng += angStep;
         v.mesh.position.set(Math.cos(v.circleAng) * R, 0.02, Math.sin(v.circleAng) * R);
         v.mesh.rotation.y = Math.atan2(Math.sin(v.circleAng), -Math.cos(v.circleAng));
@@ -1189,13 +1206,20 @@
           v.mesh.position.set(v.dist, 0.02, ex.laneZ);
           v.mesh.rotation.y = ex.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
         }
-        // Setelah keluar jauh (±54m), spawn ulang dari ruas jalan acak dengan pilihan belok baru
-        if (Math.abs(v.dist) > 54) {
-          v.armIdx = (v.armIdx + 1 + Math.floor(Math.random() * 3)) % 4;
-          v.turnSteps = 1 + Math.floor(Math.random() * 3); // 1=kiri, 2=lurus, 3=kanan
-          const nextArm = ARM_DEFS[v.armIdx];
-          v.dist = nextArm.dir > 0 ? -54 : 54;
-          v.state = "approach";
+        // Respawn hanya setelah benar-benar keluar jauh di luar kamera (92m) & tidak bertumpuk di titik spawn
+        if (Math.abs(v.dist) > SPAWN_DIST) {
+          const nextArmIdx = (v.armIdx + 1 + Math.floor(Math.random() * 3)) % 4;
+          const nextArm = ARM_DEFS[nextArmIdx];
+          const nextSpawnDist = nextArm.dir > 0 ? -SPAWN_DIST : SPAWN_DIST;
+          const sx = nextArm.axis === "z" ? nextArm.laneX : nextSpawnDist;
+          const sz = nextArm.axis === "z" ? nextSpawnDist : nextArm.laneZ;
+          const tooClose = districtTraffic.some((o, oi) => oi !== idx && o.mesh && Math.hypot(o.mesh.position.x - sx, o.mesh.position.z - sz) < 12);
+          if (!tooClose) {
+            v.armIdx = nextArmIdx;
+            v.turnSteps = 1 + Math.floor(Math.random() * 3);
+            v.dist = nextSpawnDist;
+            v.state = "approach";
+          }
         }
       } else if (v.mode === "laneEW") {
         if (!v.inCircle) {
