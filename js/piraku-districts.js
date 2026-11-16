@@ -1209,7 +1209,7 @@
         }
       }
 
-      const _curPPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
+      const _curPPos = (mesh && mesh.position) ? mesh.position : null;
       if (_curPPos && (!v.lastHorn || nowMs - v.lastHorn > 6500)) {
         const dVeh = Math.hypot(_curPPos.x - v.mesh.position.x, _curPPos.z - v.mesh.position.z);
         if (dVeh < 14.0) {
@@ -1254,7 +1254,7 @@
         }
       }
 
-      const _curVPos = (typeof window.getPirakuPlayerPos === 'function') ? window.getPirakuPlayerPos() : null;
+      const _curVPos = (mesh && mesh.position) ? mesh.position : null;
       if (p.isVendor && _curVPos && (!p.lastClink || nowMs - p.lastClink > 5200)) {
         const dCart = Math.hypot(_curVPos.x - p.mesh.position.x, _curVPos.z - p.mesh.position.z);
         if (dCart < 12.0) {
