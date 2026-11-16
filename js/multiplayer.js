@@ -427,6 +427,13 @@
             payload: { from: mySessionId }
           });
         }
+        if (mpChannel) {
+          mpChannel.send({
+            type: 'broadcast',
+            event: 'voice-ready',
+            payload: { from: mySessionId }
+          });
+        }
 
         // Hubungkan & renegosiasi SDP ke semua warga yang sedang online
         remotePlayers.forEach((_, remoteSid) => {
@@ -673,6 +680,19 @@
         if (entry && entry.mesh) {
           spawnFloatingBubble(entry.mesh, payload.ig, payload.message);
         }
+      })
+      .on('broadcast', { event: 'voice-ready' }, ({ payload }) => {
+        if (!payload || !payload.from || payload.from === mySessionId) return;
+        const pc = createPeerConnection(payload.from, false);
+        if (localAudioStream) {
+          const senders = pc.getSenders();
+          localAudioStream.getTracks().forEach(track => {
+            if (!senders.find(s => s.track && s.track.kind === track.kind)) {
+              pc.addTrack(track, localAudioStream);
+            }
+          });
+        }
+        sendOfferToPeer(payload.from, pc);
       })
       .on('broadcast', { event: 'voice-ready' }, ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId) return;
