@@ -1355,165 +1355,16 @@ let activeQuestSystem = null;
     VM.forEach(m => { m.instanceMatrix.needsUpdate = true; });
   }
 //   (function initGLBCityAssets(){const L=THREE.GLTFLoader||window.GLTFLoader;if(!L)return;const ld=new L(),grp=new THREE.Group();scene.add(grp);const fit=(raw,w,h,d)=>{const r=raw.clone(true);r.traverse(o=>{if(o.isMesh){o.castShadow=o.receiveShadow=true;const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{if(m){m.roughness=0.88;m.metalness=0.05}})}});const b=new THREE.Box3().setFromObject(r),sz=b.getSize(new THREE.Vector3()),ct=b.getCenter(new THREE.Vector3());const sx=sz.x>1e-3?w/sz.x:1,sy=sz.y>1e-3?h/sz.y:1,szz=sz.z>1e-3?d/sz.z:1;const g=new THREE.Group();r.scale.set(sx,sy,szz);r.position.set(-ct.x*sx,-b.min.y*sy,-ct.z*szz);g.add(r);return g};ld.load("models/Tree.glb",g=>{if(trunkM)trunkM.visible=false;if(crownM)crownM.visible=false;trees.forEach((t,i)=>{const sc=(t.s||1)*4.4,m=fit(g.scene,sc,sc*1.15,sc);m.position.set(t.x,0,t.z);m.rotation.y=(i*1.37)%(PI*2);grp.add(m)})});ld.load("models/Bench.glb",g=>{if(bnM)bnM.visible=false;furn.forEach(f=>{if(f[0]!=="b")return;const m=fit(g.scene,1.9,0.85,0.75);m.position.set(f[1],0.1,f[2]);m.rotation.y=f[2]<-10?0:PI;grp.add(m)})});ld.load("models/Bus Stop.glb",g=>{if(typeof STATIONS==="undefined")return;STATIONS.forEach(st=>{const m=fit(g.scene,2.8,2.2,1.5),oz=st.sz>15?2.4:-2.4;m.position.set(st.sx,0.18,st.sz+oz);m.rotation.y=oz>0?PI:0;grp.add(m)})});const vFiles=["models/Van.glb","models/sedan.glb","models/taxi.glb","models/suv-luxury.glb","models/hatchback-sports.glb","models/Bus.glb"];Promise.all(vFiles.map(u=>new Promise(res=>ld.load(u,g=>res(g.scene),undefined,()=>res(null))))).then(arr=>{if(!arr[1])return;VM.forEach(m=>{if(m)m.visible=false});veh.forEach((v,idx)=>{const isAngkot=idx%3===0,src=isAngkot?(arr[0]||arr[1]):(arr[1+(idx%5)]||arr[1]),dim=isAngkot?[1.55,1.65,3.3]:(src===arr[5]?[1.75,1.9,4.2]:[1.45,1.25,2.75]),m=fit(src,dim[0],dim[1],dim[2]);m.children[0].rotation.y=PI/2;if(isAngkot)m.traverse(o=>{if(o.isMesh&&o.material&&o.material.color)o.material.color.lerp(new THREE.Color(0x2e9e5b),0.65)});v.glbMesh=m;grp.add(m)})})})();
-  // Trem Listrik
-
-      // ================= 3D MODEL LOADER DENGAN FAIL-SAFE =================
-  function loadCustomTramModel() {
-    // Validasi ketat: pastikan constructor GLTFLoader benar-benar fungsi yang valid
-    const LoaderClass = (typeof THREE !== "undefined" && typeof THREE.GLTFLoader === "function") 
-      ? THREE.GLTFLoader 
-      : (typeof window !== "undefined" && typeof window.GLTFLoader === "function") 
-        ? window.GLTFLoader 
-        : null;
-
-    if (!LoaderClass) {
-      console.warn("GLTFLoader belum tersedia, memakai trem procedural bawaan.");
-      return;
-    }
-
-    try {
-      const gltfLoader = new LoaderClass();
-      const modelUrl = "models/tram.glb";
-
-      gltfLoader.load(
-        modelUrl,
-        (gltf) => {
-          try {
-            const loadedMesh = gltf.scene;
-            loadedMesh.scale.set(0.015, 0.015, 0.015);
-            loadedMesh.position.set(0, 0.3, 0);
-            loadedMesh.rotation.y = Math.PI / 2;
-
-            loadedMesh.traverse((child) => {
-              if (child.isMesh) {
-                child.castShadow = true;
-                child.receiveShadow = true;
-              }
-            });
-
-            tram.children.forEach(c => {
-              if (c !== loadedMesh) c.visible = false;
-            });
-            tram.add(loadedMesh);
-            tram.userData.glbRoot = loadedMesh;
-            console.log("3D Model trem berhasil dimuat!");
-          } catch (e) {
-            console.warn("Gagal set up mesh trem:", e);
-          }
-        },
-        undefined,
-        (err) => {
-          console.warn("Gagal load file GLB trem, tetap pakai procedural:", err);
-        }
-      );
-    } catch (err) {
-      console.warn("Instansiasi GLTFLoader dilewati:", err);
-    }
-  }
-
-  // Tunda pemanggilan setelah semua script selesai di-parse agar tidak memblokir render kota
-  setTimeout(() => {
-    try { loadCustomTramModel(); } catch (e) {}
-  }, 100);
-
-  const rebornGroup = new THREE.Group(); rebornGroup.visible = false; scene.add(rebornGroup);
+  // Trem listrik, rel, halte, dan Koin Piraku di sekitar Gedung Sate sudah dihapus.
+  // Placeholder di bawah cuma supaya fungsi lama yang masih nyebut nama-nama ini tidak error.
+  const rebornGroup = new THREE.Group(); rebornGroup.visible = false; // sengaja tidak dimasukkan ke scene
   const tram = new THREE.Group();
-  [-3.15, 0, 3.15].forEach(x => {
-    box(3, 1.5, 1.7, x, .35, 0, 0x1f6bff, tram); box(2.9, .52, 1.76, x, 1.0, 0, 0xbfe6ff, tram, false); box(3, .14, 1.5, x, 1.85, 0, 0xf8fafc, tram);
-  });
-  box(9.5, .32, 1.75, 0, .55, 0, 0x0b3fb8, tram, false);
-  [-4.8, 4.8].forEach(x => [-.55, .55].forEach(z => mk(new THREE.BoxGeometry(.1, .2, .3), new THREE.MeshBasicMaterial({ color: 0xfff7c2 }), x, .85, z, tram, false, false)));
-  rebornGroup.add(tram);
-    // Rute lingkar: Diponegoro > Cilaki > Cimandiri (belakang Gedung Sate) > Riau > Dago
-  const TRAMC = new THREE.CatmullRomCurve3([[-40, 3], [-21, 2.7], [0, 2.7], [18, 3.4], [25, 9], [31, 16], [37, 23], [34, 29], [18, 30.5], [0, 32], [-17, 29.5], [-25, 21], [-26, 17], [-32, 16], [-40, 15.5], [-42, 12], [-42, 6]].map(p => V3(p[0], 0, p[1])), true, 'centripetal');
-  const TRAM_LEN = TRAMC.getLength();
-  {
-    const N = 260, L = [], R = [];
-    for (let i = 0; i < N; i++) { const p = TRAMC.getPointAt(i / N), q = TRAMC.getTangentAt(i / N); L.push(V3(p.x - q.z * .8, .2, p.z + q.x * .8)); R.push(V3(p.x + q.z * .8, .2, p.z - q.x * .8)); }
-    const railM = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: .6, roughness: .4 });
-    [L, R].forEach(a => rebornGroup.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(a, true), N, .07, 5, true), railM)));
-    const nS = Math.round(TRAM_LEN / 1.6), sl = IM(boxG, MAT(0x6b7280), nS, false, false); rebornGroup.add(sl);
-    for (let i = 0; i < nS; i++) { const p = TRAMC.getPointAt(i / nS), q = TRAMC.getTangentAt(i / nS); dum.position.set(p.x, .12, p.z); dum.lookAt(p.x + q.x, .12, p.z + q.z); dum.scale.set(2.2, .08, .3); dum.updateMatrix(); sl.setMatrixAt(i, dum.matrix); }
-    sl.instanceMatrix.needsUpdate = true; dum.quaternion.identity();
-  }
-  const STATIONS = [['Halte Gasibu', 0, 2.7], ['Halte Cilaki', 31, 16], ['Halte Cimandiri', 0, 32], ['Halte Riau', -36, 16]].map(s => {
-    let bt = 0, bd = 1e9;
-    for (let i = 0; i < 400; i++) { const p = TRAMC.getPointAt(i / 400), d = Math.hypot(p.x - s[1], p.z - s[2]); if (d < bd) { bd = d; bt = i / 400; } }
-    const p = TRAMC.getPointAt(bt), q = TRAMC.getTangentAt(bt);
-    let nx = -q.z, nz = q.x, flipped = false;
-    if (Math.hypot(p.x + nx * 3.4, p.z + nz * 3.4 - 13.5) < Math.hypot(p.x - nx * 3.4, p.z - nz * 3.4 - 13.5)) { nx = -nx; nz = -nz; flipped = true; }
-    const sh = new THREE.Group(); sh.position.set(p.x + nx * 3.4, 0, p.z + nz * 3.4); sh.rotation.y = Math.atan2(-q.z, q.x);
-    box(6, .18, 2.2, 0, 0, 0, 0xcbd5e1, sh); box(6.4, .14, 2.6, 0, 2.7, 0, 0x1f6bff, sh);
-    [-2.8, 2.8].forEach(x => box(.14, 2.6, .14, x, .18, 0, 0xf8fafc, sh));
-    const c = document.createElement('canvas'); c.width = 512; c.height = 96; const g = c.getContext('2d');
-    g.fillStyle = '#1f6bff'; g.fillRect(0, 0, 512, 96); g.fillStyle = '#fff'; g.font = '800 44px "Bricolage Grotesque", system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('🚊 ' + s[0], 256, 50);
-    const sg = new THREE.Mesh(new THREE.PlaneGeometry(5.2, .98), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), side: THREE.DoubleSide }));
-    sg.position.set(0, 3.5, 0); sg.rotation.y = flipped ? 0 : PI; sh.add(sg); rebornGroup.add(sh);
-    return { name: s[0], t: bt, sx: sh.position.x, sz: sh.position.z };
-  });
-  // Gerak trem: melambat halus (ease-out) saat mendekati halte, berhenti 3 detik,
-  // lalu mempercepat halus (ease-in) saat berangkat. Kecepatan dasar tetap 7 unit/detik.
-  const TRAM_CRUISE = 7, TRAM_APPROACH = 6.5, TRAM_DWELL = 3;
-  let tramT = STATIONS[0].t, tramDwell = TRAM_DWELL, tramSt = STATIONS[0];
-  function tramEaseInOut(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
-  function updateTram(dt) {
-    if (tramDwell > 0) {
-      // Berhenti total di halte selama 3 detik.
-      tramDwell -= dt;
-    } else {
-      const prev = tramT;
-
-      // --- Profil kecepatan berbasis jarak, dihitung dalam satuan waktu (t ∈ [0,1]) ---
-      // Cari halte berikutnya di sepanjang kurva tertutup.
-      let bestD = 1e9;
-      STATIONS.forEach(st => { const d = (st.t - tramT + 1) % 1; if (d > 1e-4 && d < bestD) bestD = d; });
-      const aJ = Math.min(TRAM_APPROACH / TRAM_LEN, bestD * 0.45); // jarak lambat-berhenti (satuan t)
-      const aS = Math.min(5 / TRAM_LEN, bestD * 0.4);              // jarak percepatan berangkat
-
-      let speedT = TRAM_CRUISE / TRAM_LEN; // t per detik saat melaju normal
-      // Deret ease-out: makin dekat halte, makin lambat (turun mulus sampai ~0 di halte).
-      if (bestD <= aJ) {
-        const k = Math.abs(bestD - aJ) < 1e-6 ? 1 : tramEaseInOut(1 - bestD / aJ);
-        speedT = TRAM_CRUISE / TRAM_LEN * Math.max(0.06, k);
-      }
-      // Deret ease-in: tepat setelah berangkat, kecepatan naik mulus dari lambat ke jelajah.
-      let depDist = 1e9;
-      STATIONS.forEach(st => { const d = (tramT - st.t + 1) % 1; if (d < depDist && d < aS * 2) depDist = d; });
-      if (depDist < aS) {
-        const k = depDist / aS; // 0 saat tepat di halte → 1 saat keluar zona
-        speedT = Math.min(speedT, TRAM_CRUISE / TRAM_LEN * Math.max(0.06, tramEaseInOut(0.5 + k * 0.5)));
-      }
-
-      const step = speedT * dt; tramT = (tramT + step) % 1;
-      STATIONS.forEach(st => { const d = (st.t - prev + 1) % 1; if (d > 0 && d <= step) { tramT = st.t; tramDwell = TRAM_DWELL; tramSt = st; if (window.onTramArrive) window.onTramArrive(st); } });
-    }
-    const p = TRAMC.getPointAt(tramT), q = TRAMC.getTangentAt(tramT);
-    tram.position.set(p.x, .26, p.z); tram.rotation.y = Math.atan2(-q.z, q.x);
-  }
-
-  // Koin Piraku
-  const coins = [], coinG = new THREE.CylinderGeometry(.55, .55, .12, 14);
-  const coinM = new THREE.MeshStandardMaterial({ color: 0xffc93c, emissive: 0xb45309, emissiveIntensity: .5, metalness: .6, roughness: .35 });
-  const addCoin = (x, y, z) => { const m = new THREE.Mesh(coinG, coinM); m.rotation.x = PI / 2; const h = new THREE.Group(); h.add(m); h.position.set(x, y, z); h.visible=false; coins.push({ h, y, back: 0, ph: rnd() * 6 }); };
-  for (let i = 0; i < 16; i++) { const p = TRAMC.getPointAt((i + .5) / 16); addCoin(p.x, 1.7, p.z); }
-  for (let i = 0; i < 10; i++) addCoin((rnd() - .5) * 34, 1.1, -2 - rnd() * 8);
+  const STATIONS = [];
+  let tramT = 0, tramDwell = 0, tramSt = { name: '', sx: 0, sz: 0 };
   let coinCount = parseInt(localStorage.getItem('piraku_coins') || '0', 10) || 0;
-  const coinHud = document.createElement('div');
-  coinHud.style.cssText = 'position:fixed;top:132px;left:12px;z-index:26;background:rgba(14,47,42,.85);backdrop-filter:blur(10px);color:#ffcf4a;font:800 12px "Bricolage Grotesque",sans-serif;padding:6px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.16)';
-  coinHud.textContent = '🪙 ' + coinCount; coinHud.style.display="none";
-  function updateCoins(dt) { return;
-    if (!isRidingTram && !myPlayerMesh) return;
-    const ref = isRidingTram ? tram.position : myPlayerMesh.position, t = window.clockTime || 0;
-    coins.forEach(c => {
-      if (c.back > 0) { c.back -= dt; if (c.back <= 0) c.h.visible = true; return; }
-      if (!c.h.visible) return;
-      c.h.rotation.y += .04; c.h.position.y = c.y + Math.sin(t * 2 + c.ph) * .15;
-      if (Math.hypot(ref.x - c.h.position.x, ref.z - c.h.position.z) > (isRidingTram ? 3.2 : 2.4)) return;
-      c.h.visible = false; c.back = 45; coinCount++; localStorage.setItem('piraku_coins', coinCount); coinHud.textContent = '🪙 ' + coinCount;
-      if (typeof window.playSynthTone === 'function') window.playSynthTone(880 + (coinCount % 5) * 80, 'triangle', .12);
-      if (coinCount % 10 === 0) showToast('🪙 ' + coinCount + ' koin terkumpul! Warga teladan Bandung 👏');
-    });
-  }
+  const coinHud = null;
+  // Dulu blok koin memakai 46 angka acak (seed). Dibuang 46x supaya tata letak pohon/bangku/dll di bawahnya tidak bergeser.
+  for (let k = 0; k < 46; k++) rnd();
 
   // Lampu Jalan & Bangku Taman (terfilter dari aspal & persimpangan)
   const furn = [];
@@ -3726,12 +3577,8 @@ let activeQuestSystem = null;
 
     updatePlayerMovement(0.016);
     if (myPlayerMesh) updateDistrictTriggers(myPlayerMesh.position);
-    updateTram(0.016);
-    updateTramInteraction(0.016);
-    updateTramQuestInteraction(0.016);
     // Sinkronisasi posisi avatar pemain lain (js/multiplayer.js) — broadcast + interpolasi.
     if (typeof window.updateMultiplayerFrame === 'function') window.updateMultiplayerFrame(0.016);
-    updateCoins(0.016);
 
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
