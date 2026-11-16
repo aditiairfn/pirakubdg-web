@@ -404,20 +404,6 @@ let activeQuestSystem = null;
   const audioCtx = window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
   let isAmbiencePlaying = false, windGain = null, cricketsGain = null;
 
-  function initAmbienceSound() { return;
-    if (windGain) return;
-    try {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const bufferSize = audioCtx.sampleRate * 2;
-      const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const output = noiseBuffer.getChannelData(0);
-      let lastOut = 0.0;
-      for (let i = 0; i < bufferSize; i++) {
-        const white = Math.random() * 2 - 1;
-        output[i] = (lastOut + (0.02 * white)) / 1.02;
-        lastOut = output[i];
-        output[i] *= 3.5;
-      }
       const whiteNoise = audioCtx.createBufferSource();
       whiteNoise.buffer = noiseBuffer;
       whiteNoise.loop = true;
