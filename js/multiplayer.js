@@ -16,12 +16,25 @@
   let isMicEnabled = false;
   const peerConnections = new Map();
   const remoteAudioEls = new Map();
+  const pendingIceMap = new Map();
   const rtcConfig = {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.cloudflare.com:3478' }
     ]
   };
+
+  function unlockPendingRemoteAudios() {
+    remoteAudioEls.forEach((aud) => {
+      if (aud) {
+        aud.muted = !!window.pirakuVoiceMuted;
+        if (aud.paused) aud.play().catch(() => {});
+      }
+    });
+  }
+  window.addEventListener("pointerdown", unlockPendingRemoteAudios, { passive: true });
 
   function getActiveCamera() {
     if (window.pirakuCamera) return window.pirakuCamera;
@@ -267,11 +280,27 @@
       try { pc.close(); } catch (_) {}
       peerConnections.delete(remoteSid);
     }
+    pendingIceMap.delete(remoteSid);
     const aud = remoteAudioEls.get(remoteSid);
     if (aud) {
       aud.srcObject = null;
       aud.remove();
       remoteAudioEls.delete(remoteSid);
+    }
+  }
+
+  async function sendOfferToPeer(remoteSid, pc) {
+    if (!pc || !mpChannel) return;
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      mpChannel.send({
+        type: 'broadcast',
+        event: 'rtc-offer',
+        payload: { from: mySessionId, to: remoteSid, sdp: pc.localDescription }
+      });
+    } catch (err) {
+      console.warn("[WebRTC] Gagal kirim offer ke", remoteSid, err);
     }
   }
 
@@ -282,6 +311,8 @@
 
     if (localAudioStream) {
       localAudioStream.getTracks().forEach(track => pc.addTrack(track, localAudioStream));
+    } else if (isInitiator) {
+      try { pc.addTransceiver("audio", { direction: "sendrecv" }); } catch (_) {}
     }
 
     pc.onicecandidate = (e) => {
@@ -300,33 +331,29 @@
         aud = document.createElement('audio');
         aud.autoplay = true;
         aud.playsInline = true;
+        aud.setAttribute("playsinline", "");
         document.body.appendChild(aud);
         remoteAudioEls.set(remoteSid, aud);
       }
-      aud.srcObject = e.streams[0];
+      const stream = (e.streams && e.streams[0]) ? e.streams[0] : new MediaStream([e.track]);
+      aud.srcObject = stream;
       aud.muted = !!window.pirakuVoiceMuted;
-      aud.play().catch(() => {});
+      aud.volume = 1.0;
+      aud.play().catch(() => {
+        if (typeof showToast === 'function') {
+          showToast('🔊 Ketuk layar sekali untuk mendengar suara wargi!');
+        }
+      });
     };
 
     pc.onconnectionstatechange = () => {
-      if (['failed', 'closed', 'disconnected'].includes(pc.connectionState)) {
+      if (['failed', 'closed'].includes(pc.connectionState)) {
         closePeerVoice(remoteSid);
       }
     };
 
     if (isInitiator) {
-      pc.createOffer()
-        .then(offer => pc.setLocalDescription(offer))
-        .then(() => {
-          if (mpChannel) {
-            mpChannel.send({
-              type: 'broadcast',
-              event: 'rtc-offer',
-              payload: { from: mySessionId, to: remoteSid, sdp: pc.localDescription }
-            });
-          }
-        })
-        .catch(() => {});
+      sendOfferToPeer(remoteSid, pc);
     }
 
     return pc;
@@ -343,7 +370,12 @@
       }
       return;
     }
+    unlockPendingRemoteAudios();
     if (!isMicEnabled) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        if (typeof showToast === 'function') showToast('Browser/HTTPS tidak mendukung mikrofon 🔇');
+        return;
+      }
       try {
         localAudioStream = await navigator.mediaDevices.getUserMedia({
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -353,16 +385,26 @@
         updateMicButtonUi();
         if (typeof showToast === 'function') showToast('Voice Chat aktif! Ngobrol langsung sama wargi sekitar 🎙️');
 
-        // Hubungkan ke semua warga yang sedang online di peta
+        // Hubungkan & renegosiasi SDP ke semua warga yang sedang online
         remotePlayers.forEach((_, remoteSid) => {
           if (peerConnections.has(remoteSid)) {
             const pc = peerConnections.get(remoteSid);
-            localAudioStream.getTracks().forEach(t => pc.addTrack(t, localAudioStream));
+            const senders = pc.getSenders();
+            localAudioStream.getTracks().forEach(track => {
+              const existingSender = senders.find(s => s.track && s.track.kind === track.kind);
+              if (existingSender) {
+                existingSender.replaceTrack(track).catch(() => {});
+              } else {
+                pc.addTrack(track, localAudioStream);
+              }
+            });
+            sendOfferToPeer(remoteSid, pc);
           } else {
             createPeerConnection(remoteSid, true);
           }
         });
       } catch (err) {
+        console.error("[VoiceChat] Mic error:", err);
         if (typeof showToast === 'function') showToast('Izin mikrofon ditolak browser 🔇');
       }
     } else {
@@ -588,11 +630,24 @@
       })
       .on('broadcast', { event: 'rtc-offer' }, async ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId) return;
-        // Tangani offer jika ditujukan ke kita atau broadcast umum
         if (payload.to && payload.to !== mySessionId) return;
         const pc = createPeerConnection(payload.from, false);
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+          // Flush ICE candidates yang datang lebih dulu sebelum remoteDescription siap
+          const queued = pendingIceMap.get(payload.from) || [];
+          pendingIceMap.delete(payload.from);
+          for (const cand of queued) {
+            try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (_) {}
+          }
+          if (localAudioStream) {
+            const senders = pc.getSenders();
+            localAudioStream.getTracks().forEach(track => {
+              if (!senders.find(s => s.track && s.track.kind === track.kind)) {
+                pc.addTrack(track, localAudioStream);
+              }
+            });
+          }
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           if (mpChannel) {
@@ -609,15 +664,26 @@
         if (payload.to && payload.to !== mySessionId) return;
         const pc = peerConnections.get(payload.from);
         if (pc) {
-          try { await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp)); } catch (e) {}
+          try {
+            await pc.setRemoteDescription(new RTCSessionDescription(payload.sdp));
+            const queued = pendingIceMap.get(payload.from) || [];
+            pendingIceMap.delete(payload.from);
+            for (const cand of queued) {
+              try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (_) {}
+            }
+          } catch (e) {}
         }
       })
       .on('broadcast', { event: 'rtc-ice' }, async ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId || !payload.candidate) return;
         if (payload.to && payload.to !== mySessionId) return;
         const pc = peerConnections.get(payload.from);
-        if (pc) {
+        if (pc && pc.remoteDescription && pc.remoteDescription.type) {
           try { await pc.addIceCandidate(new RTCIceCandidate(payload.candidate)); } catch (e) {}
+        } else {
+          const list = pendingIceMap.get(payload.from) || [];
+          list.push(payload.candidate);
+          pendingIceMap.set(payload.from, list);
         }
       })
       .subscribe(async (status) => {
