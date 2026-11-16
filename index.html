@@ -881,11 +881,11 @@
       <span class="online-dot"></span>
       <span id="top-online-count">1 Warga Online</span>
     </div>
-    <div id="pubg-audio-wrap" style="position:relative;display:inline-flex;align-items:center;">
+    <div id="pubg-audio-wrap" style="position:relative;display:inline-flex;align-items:center;pointer-events:auto;z-index:120;">
       <button class="hud-pill-btn" id="btn-global-sound" onclick="togglePubgAudioMenu(event)" aria-label="Pengaturan Audio" style="padding:7px 10px;min-width:36px;justify-content:center;gap:4px;">
         <span id="pubg-audio-main-icon" style="display:inline-flex;align-items:center;gap:3px;"></span>
       </button>
-      <div id="pubg-audio-popover" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:rgba(15,23,42,0.94);backdrop-filter:blur(12px);border:1.5px solid rgba(250,204,21,0.45);border-radius:999px;padding:4px;gap:4px;box-shadow:0 10px 25px rgba(0,0,0,0.45);z-index:99;">
+      <div id="pubg-audio-popover" style="display:none;pointer-events:auto;position:absolute;top:calc(100% + 6px);right:0;background:rgba(15,23,42,0.94);backdrop-filter:blur(12px);border:1.5px solid rgba(250,204,21,0.45);border-radius:999px;padding:4px;gap:4px;box-shadow:0 10px 25px rgba(0,0,0,0.45);z-index:99;">
         <button type="button" data-amode="all" onclick="setPubgAudioMode('all')" style="width:36px;height:32px;border-radius:999px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:0.15s;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         </button>
