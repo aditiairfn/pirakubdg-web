@@ -432,7 +432,7 @@ let activeQuestSystem = null;
       whiteNoise.connect(filter);
       filter.connect(windGain);
       // windGain disabled
-      whiteNoise.start();
+      // whiteNoise.start() disabled;
 
       const osc = audioCtx.createOscillator();
       osc.type = 'triangle';
@@ -441,7 +441,7 @@ let activeQuestSystem = null;
       cricketsGain.gain.setValueAtTime(0, audioCtx.currentTime);
       osc.connect(cricketsGain);
       // cricketsGain disabled
-      osc.start();
+      // osc.start() disabled;
     } catch(e){}
   }
 
@@ -508,7 +508,7 @@ let activeQuestSystem = null;
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
-      osc.start();
+      // osc.start() disabled;
       osc.stop(audioCtx.currentTime + duration);
     } catch(e){}
   };
