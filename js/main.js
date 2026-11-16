@@ -519,7 +519,7 @@ let activeQuestSystem = null;
   window.addEventListener('click', () => { closeHudMenu(); });
 
   // Renderer & Scene
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth > 820, powerPreference: "high-performance" }); window.pirakuRenderer = renderer;
   const isPirakuMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
   renderer.setSize(W, H);
