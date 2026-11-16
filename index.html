@@ -186,6 +186,7 @@
       localStorage.setItem("piraku_sound_muted", mode !== "all" ? "1" : "0");
     } catch (e) {}
     window.applyGlobalGameSoundState();
+    if (typeof window.syncVoiceMuteState === "function") window.syncVoiceMuteState(window.pirakuVoiceMuted);
     const pop = document.getElementById("pubg-audio-popover");
     if (pop) pop.style.display = "none";
   };
@@ -196,9 +197,8 @@
     window.setPubgAudioMode(next);
   };
 
-  document.addEventListener("DOMContentLoaded", function() {
-    window.applyGlobalGameSoundState();
-  });
+  document.addEventListener("DOMContentLoaded", function() { window.applyGlobalGameSoundState(); });
+  window.addEventListener("load", function() { window.applyGlobalGameSoundState(); });
   document.addEventListener("click", function(e) {
     const wrap = document.getElementById("pubg-audio-wrap");
     const pop = document.getElementById("pubg-audio-popover");
@@ -1139,25 +1139,7 @@
 
   
 
-<script>
-    window.pirakuSoundMuted = localStorage.getItem("piraku_sound_muted") === "1";
-    window.applyGlobalGameSoundState = function() {
-      const muted = !!window.pirakuSoundMuted;
-      document.querySelectorAll("audio, video").forEach(el => { el.muted = muted; });
-      const btn = document.getElementById("btn-global-sound");
-      if (btn) {
-        btn.textContent = muted ? "🔇 Sound Off" : "🔊 Sound On";
-        btn.style.opacity = muted ? "0.78" : "1";
-      }
-    };
-    window.toggleGlobalGameSound = function() {
-      window.pirakuSoundMuted = !window.pirakuSoundMuted;
-      try { localStorage.setItem("piraku_sound_muted", window.pirakuSoundMuted ? "1" : "0"); } catch (e) {}
-      window.applyGlobalGameSoundState();
-      if (typeof showToast === "function") showToast(window.pirakuSoundMuted ? "🔇 Suara game dimatikan" : "🔊 Suara game dinyalakan");
-    };
-    setTimeout(window.applyGlobalGameSoundState, 600);
-  </script>
+<script>if (window.applyGlobalGameSoundState) window.applyGlobalGameSoundState();</script>
 
   
   
