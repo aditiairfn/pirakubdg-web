@@ -1015,6 +1015,7 @@
   window.enterDistrictMap = function(districtId) {
     const d = districtId === CENTRAL_HUB.id ? CENTRAL_HUB : (DISTRICTS.find(x => x.id === districtId) || CENTRAL_HUB);
     activeMapId = d.id;
+    window.pirakuInDistrict = !d.isMainMap; // dibaca main.js buat batas gerak
 
     if (typeof window.switchMultiplayerMapRoom === "function") {
       window.switchMultiplayerMapRoom(d.id);
@@ -1026,6 +1027,7 @@
       buildDedicatedDistrictScene(d);
     }
 
+    if (typeof window.resetPirakuColliders === "function") window.resetPirakuColliders(); // collider peta lama jangan kebawa
     updateMapIndicatorHUD(d);
     updateKomplekMinimap(d);
     showDistrictBanner(d);

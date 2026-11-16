@@ -897,7 +897,7 @@ let activeQuestSystem = null;
     box(.82, 1.5, .1, x, .9, zf * (zb + .04), GLASSM, G, false); disc(.41, x, 2.4, zf * (zb + .04), GLASSM);
   };
   box(38, .35, 8.2, 0, 0, 0, 0x4a4e55, G, false, true);
-  box(36, 3.2, 7.4, 0, .35, 0, CREAM, G);
+  const GS_BODY = box(36, 3.2, 7.4, 0, .35, 0, CREAM, G); // dipakai collider khusus (lebar 36 > filter 28)
   FR(37.6, 8.8, .8, .9, 0, 3.55, 0, ROOFMAT, G);
   box(31.5, 2.5, 5.6, 0, 4.3, 0, CREAM, G);
   FR(33.5, 7.2, .78, 2.3, 0, 6.8, 0, ROOFMAT, G);
@@ -3410,6 +3410,16 @@ let activeQuestSystem = null;
       });
     });
 
+    // Collider khusus: badan/sayap Gedung Sate (terlalu lebar untuk filter otomatis di atas)
+    if (typeof GS_BODY !== "undefined" && GS_BODY) {
+      let vis = true, q = GS_BODY;
+      while (q) { if (q.visible === false) { vis = false; break; } q = q.parent; }
+      if (vis) {
+        tmpBox.setFromObject(GS_BODY);
+        if (!tmpBox.isEmpty()) boxes.push({ minX: tmpBox.min.x, maxX: tmpBox.max.x, minZ: tmpBox.min.z, maxZ: tmpBox.max.z });
+      }
+    }
+
     pirakuBuildingColliders = boxes;
     pirakuLastColliderScan = performance.now();
   }
@@ -3486,8 +3496,14 @@ let activeQuestSystem = null;
       const prevX = myPlayerMesh.position.x;
       const prevZ = myPlayerMesh.position.z;
       const prevY = myPlayerMesh.position.y;
-      myPlayerMesh.position.x = Math.max(-132, Math.min(61, myPlayerMesh.position.x));
-      myPlayerMesh.position.z = Math.max(-62, Math.min(52, myPlayerMesh.position.z));
+      if (window.pirakuInDistrict) {
+        // Di dalam komplek/distrik: tahan di atas lahan 110x110 (setengahnya 55, sisakan 3 margin)
+        myPlayerMesh.position.x = Math.max(-52, Math.min(52, myPlayerMesh.position.x));
+        myPlayerMesh.position.z = Math.max(-52, Math.min(52, myPlayerMesh.position.z));
+      } else {
+        myPlayerMesh.position.x = Math.max(-132, Math.min(61, myPlayerMesh.position.x));
+        myPlayerMesh.position.z = Math.max(-62, Math.min(52, myPlayerMesh.position.z));
+      }
       // Jika melewati batas barat kota (x < -61) via Flyover Pasupati, kunci tetap di atas koridor jembatan (-29.0 .. -23.0)
       if (myPlayerMesh.position.x < -61) {
         myPlayerMesh.position.z = Math.max(-29.0, Math.min(-23.0, myPlayerMesh.position.z));
