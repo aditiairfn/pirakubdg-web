@@ -68,29 +68,34 @@
     bundlePolicy: 'max-bundle',
     rtcpMuxPolicy: 'require',
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
       { urls: 'stun:stun.cloudflare.com:3478' },
-      {
-        urls: [
-          'turn:openrelay.metered.ca:80',
-          'turn:openrelay.metered.ca:443',
-          'turn:openrelay.metered.ca:443?transport=tcp'
-        ],
-        username: 'openrelayproject',
-        credential: 'openrelayproject'
-      },
-      {
-        urls: [
-          'turn:free.expressturn.com:3478',
-          'turn:free.expressturn.com:3478?transport=tcp'
-        ],
-        username: 'ef100000001',
-        credential: 'expressturn'
-      }
+      { urls: 'stun:stun.l.google.com:19302' }
     ]
   };
+
+  let turnRefreshTimer = null;
+  async function refreshCloudflareTurn() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+      setTimeout(refreshCloudflareTurn, 1000);
+      return;
+    }
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('get-turn-credentials');
+      if (!error && data?.iceServers) {
+        const servers = Array.isArray(data.iceServers) ? data.iceServers : [data.iceServers];
+        rtcConfig.iceServers = servers;
+        console.log('[WebRTC] Cloudflare TURNS active (' + servers.length + ' servers)');
+        if (!turnRefreshTimer) {
+          turnRefreshTimer = setInterval(refreshCloudflareTurn, 12 * 60 * 60 * 1000);
+        }
+      } else {
+        console.warn('[WebRTC] TURN fallback ke STUN:', error?.message || 'Empty response');
+      }
+    } catch (err) {
+      console.warn('[WebRTC] Gagal fetch Cloudflare TURN:', err.message);
+    }
+  }
+  refreshCloudflareTurn();
 
   function unlockPendingRemoteAudios() {
     remoteAudioEls.forEach((aud) => {
