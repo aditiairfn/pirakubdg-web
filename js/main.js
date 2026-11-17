@@ -1242,8 +1242,7 @@ let activeQuestSystem = null;
     if (typeof supabaseClient !== "undefined" && supabaseClient) {
       try {
         const { data } = await supabaseClient
-          .from("pemilu_camat")
-          .select("district_id, kecamatan, candidate_ig, votes")
+          .from("pemilu_camat").select("*")
           .order("votes", { ascending: false });
         if (Array.isArray(data)) {
           data.forEach(row => {
