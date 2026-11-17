@@ -25,35 +25,28 @@
     }
     modal.style.display = "flex";
 
-    const updates = [
-      { ver: "v2.4 • Terbaru", badge: "BARU", title: "Ekonomi Koin Piraku & Toko Kota 3D", desc: "Kumpulkan Koin Piraku dari mini-game dan tukarkan dengan Iket Sunda, Kacamata Dago, Helm Biker, Aura Emas, Megafon, atau sewa Layar LED Gasibu 3D." },
-      { ver: "v2.3", badge: "FITUR", title: "Sewa Sepeda Boseh & Skuter Listrik (10 Menit)", desc: "Sewa Sepeda (1.35x speed) atau Skuter Listrik (1.65x speed) selama 10 menit lengkap dengan countdown timer di HUD." },
-      { ver: "v2.2", badge: "ARCADE", title: "4 Mini-Game HD 1-Jempol (Padel Club, Angkot, Mancing, Sate)", desc: "Mainkan Padel Club Gasibu, Angkot Ngebut Surapati, Mancing Taman Lansia, & Bakar Sate Gedung Sate dengan pilihan 4 karakter ber-perk." },
-      { ver: "v2.1", badge: "LIVE", title: "Event Kota Dinamis & Podium 3D Top 3 Sultan", desc: "Cuaca & event berganti otomatis tiap jam (CFD Gasibu, Hujan Sore, Festival Monju) + Podium 3D Top 3 Sultan di utara Gasibu." },
-      { ver: "v2.0", badge: "KOTA", title: "Flyover Pasupati, Jalur Jalan & Minimap Radar", desc: "Akses naik ke jembatan layang Pasupati, batas wilayah Bandung Wetan, serta radar minimap interaktif." }
-    ];
-
     modal.innerHTML = `
-      <div style="width:100%;max-width:410px;background:#0f172a;border:1.5px solid rgba(56,189,248,0.45);border-radius:22px;padding:16px;color:#f8fafc;box-shadow:0 24px 55px rgba(0,0,0,0.75);max-height:82dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+      <div style="width:100%;max-width:410px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(56,189,248,0.45);border-radius:22px;padding:18px;color:#f8fafc;box-shadow:0 24px 55px rgba(0,0,0,0.75);max-height:82dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div>
-            <div style="font-size:10.5px;color:#38bdf8;font-weight:800;letter-spacing:.7px;">CATATAN RILIS KOTA</div>
-            <div style="font-size:18px;font-weight:800;">Info & Update Piraku 📢</div>
+            <div style="font-size:10.5px;color:#38bdf8;font-weight:800;letter-spacing:.7px;">WILUJENG SUMPING • VERSI TERBARU</div>
+            <div style="font-size:18px;font-weight:800;">Selamat Datang di PirakuBDG 🏙️</div>
           </div>
           <button id="btn-close-info" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
-        <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:12px;">
-          ${updates.map(u => `
-            <div style="padding:11px 12px;border-radius:14px;background:#1e293b;border:1px solid rgba(148,163,184,0.2);">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                <span style="font-size:11px;font-weight:800;color:#fde047;">${u.ver}</span>
-                <span style="font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:rgba(56,189,248,0.18);color:#38bdf8;">${u.badge}</span>
-              </div>
-              <div style="font-size:13.5px;font-weight:800;color:#f8fafc;margin-bottom:3px;">${u.title}</div>
-              <div style="font-size:11.5px;color:#cbd5e1;line-height:1.4;">${u.desc}</div>
-            </div>
-          `).join("")}
+
+        <div style="padding:14px;border-radius:16px;background:rgba(15,23,42,0.82);border:1px solid rgba(148,163,184,0.22);margin-bottom:12px;font-size:12px;color:#cbd5e1;line-height:1.55;">
+          <div style="font-size:13.5px;font-weight:800;color:#fde047;margin-bottom:6px;">✨ Dunia Simulasi Kota Bandung 3D Interaktif</div>
+          <p style="margin:0 0 10px;">Jelajahi Bandung bersama warga lain secara realtime — mulai dari <b>Gedung Sate, Gasibu &amp; Monumen Perjuangan</b> hingga <b>30 Komplek Kecamatan</b> yang terus berkembang!</p>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div>🪪 <b>KTP &amp; Rumah Warga</b> — Daftar E-KTP, langsung spawn di kecamatanmu, kumpulkan 3 kunci misi &amp; bangun rumah hingga Villa Sultan Lv.4.</div>
+            <div>🗳️ <b>Pemilu Camat &amp; Polling</b> — Pilih atau nyalon jadi Camat tiap minggu &amp; tentukan arah pembangunan kota.</div>
+            <div>🪙 <b>Toko Kota &amp; Kendaraan 3D</b> — Kumpulkan Koin Piraku untuk beli Vespa Klasik, Skateboard, outfit, Megafon, atau sewa Billboard LED Gasibu.</div>
+            <div>🎮 <b>Kurir Ojol 3D &amp; Arcade</b> — Mainkan misi antar ojol, Balap Gasibu 3D, Adu Penalti GBLA, dan mini-game berhadiah XP &amp; Koin.</div>
+            <div>💬 <b>Multiplayer &amp; Voice Chat</b> — Ngobrol langsung pakai Mic atau Balai Obrolan, lengkap dengan emote Lambai &amp; Setuju.</div>
+          </div>
         </div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
           <button id="btn-info-districts" style="padding:10px;border-radius:12px;border:none;background:#f59e0b;color:#0f172a;font-size:12px;font-weight:800;cursor:pointer;">🏙️ 30 Kecamatan</button>
           <button id="btn-info-polling" style="padding:10px;border-radius:12px;border:1px solid rgba(250,204,21,0.45);background:rgba(250,204,21,0.12);color:#fde047;font-size:12px;font-weight:800;cursor:pointer;">📊 Polling Kota</button>
@@ -79,10 +72,6 @@
     }
     modal.style.display = "flex";
 
-    const citizenName = (localStorage.getItem("piraku_citizen_name") || localStorage.getItem("piraku_username") || "Warga Tamu Bandung").trim();
-    const coins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : 500;
-    const tier = window.PirakuEconomy ? window.PirakuEconomy.getTierObj() : { badge: "🌱", name: "Warga Baru" };
-
     modal.innerHTML = `
       <div style="width:100%;max-width:400px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(250,204,21,0.5);border-radius:22px;padding:18px;color:#f8fafc;box-shadow:0 24px 55px rgba(0,0,0,0.8);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -93,17 +82,7 @@
           <button id="btn-close-acc" style="width:32px;height:32px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
 
-        <!-- Profil Warga Aktif -->
-        <div style="padding:12px;border-radius:14px;background:rgba(15,23,42,0.75);border:1px solid #334155;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-size:11px;color:#94a3b8;">KTP Warga Aktif</div>
-            <div style="font-size:14px;font-weight:800;color:#fff;">${citizenName}</div>
-            <div style="font-size:11px;color:#fde047;margin-top:2px;">${tier.badge} ${tier.name} • 🪙 ${coins.toLocaleString("id-ID")}</div>
-          </div>
-          <button id="btn-acc-auth" style="padding:8px 12px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:11.5px;font-weight:800;cursor:pointer;">Kelola KTP</button>
-        </div>
-
-        <div style="font-size:11.5px;color:#cbd5e1;margin-bottom:10px;line-height:1.4;">Ikuti perkembangan episode 3D tata kota Bandung, behind the scenes, dan pengumuman event warga di kanal resmi <b>@pirakubdg</b>:</div>
+        <div style="font-size:11.5px;color:#cbd5e1;margin-bottom:12px;line-height:1.45;">Ikuti perkembangan episode 3D tata kota Bandung, behind the scenes, dan pengumuman event warga di kanal resmi <b>@pirakubdg</b>:</div>
 
         <div style="display:flex;flex-direction:column;gap:9px;">
           <a href="https://www.instagram.com/pirakubdg" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;font-weight:800;box-shadow:0 8px 20px rgba(253,29,29,0.28);">
@@ -131,10 +110,6 @@
       </div>`;
 
     modal.querySelector("#btn-close-acc").onclick = () => { modal.style.display = "none"; };
-    modal.querySelector("#btn-acc-auth").onclick = () => {
-      modal.style.display = "none";
-      if (typeof window.handleCitizenButtonClick === "function") window.handleCitizenButtonClick();
-    };
   };
 
   setInterval(injectFloatingChatButton, 800);

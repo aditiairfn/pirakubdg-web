@@ -97,22 +97,7 @@
     monju.add(lintel);
     grp.add(monju);
 
-    // 5. HALTE TREM MODERN
-    const halte = new THREE.Group();
-    halte.position.set(-18.5, 0.0, 5.2);
-    const hFloor = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.16, 1.6), matStone);
-    hFloor.position.y = 0.08;
-    const hRoof = new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.14, 1.9), matGlass);
-    hRoof.position.y = 2.45;
-    [-1.9, 1.9].forEach(hx => {
-      const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.4, 0.12), matIron);
-      post.position.set(hx, 1.2, -0.65);
-      halte.add(post);
-    });
-    halte.add(hFloor, hRoof);
-    grp.add(halte);
-
-    // 6. PARTIKEL KUNANG-KUNANG / CAHAYA SENJA TAMAN
+    // 5. PARTIKEL KUNANG-KUNANG / CAHAYA SENJA TAMAN
     const count = 42;
     const posArr = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -537,13 +522,13 @@
     const box = document.createElement("div");
     box.id = "piraku-minimap-radar";
     box.title = "Ketuk untuk perbesar/perkecil Peta Mini";
-    box.style.cssText = "position:fixed;top:102px;left:12px;width:104px;height:104px;border-radius:50%;background:radial-gradient(circle at 50% 45%, #162235 0%, #0b1220 100%);backdrop-filter:blur(10px);border:2px solid rgba(56,189,248,0.65);box-shadow:0 8px 22px rgba(0,0,0,0.45), inset 0 0 14px rgba(15,23,42,0.85);z-index:25;pointer-events:auto;cursor:pointer;overflow:hidden;transition:width .2s ease,height .2s ease;";
-    box.innerHTML = "<canvas id=\"piraku-radar-cv\" width=\"208\" height=\"208\" style=\"width:100%;height:100%;display:block;\"></canvas>";
+    box.style.cssText = "position:fixed;top:102px;left:12px;width:108px;height:108px;border-radius:50%;background:radial-gradient(circle at 50% 45%, #16253b 0%, #09111e 100%);backdrop-filter:blur(12px);border:2.5px solid rgba(56,189,248,0.78);box-shadow:0 10px 26px rgba(0,0,0,0.55), 0 0 14px rgba(56,189,248,0.22), inset 0 0 18px rgba(15,23,42,0.9);z-index:25;pointer-events:auto;cursor:pointer;overflow:hidden;transition:width .22s ease,height .22s ease;";
+    box.innerHTML = "<canvas id=\"piraku-radar-cv\" width=\"216\" height=\"216\" style=\"width:100%;height:100%;display:block;\"></canvas>";
     box.addEventListener("click", () => {
       const big = box.dataset.big === "1";
       box.dataset.big = big ? "0" : "1";
-      box.style.width = big ? "104px" : "148px";
-      box.style.height = big ? "104px" : "148px";
+      box.style.width = big ? "108px" : "156px";
+      box.style.height = big ? "108px" : "156px";
     });
     document.body.appendChild(box);
   }
@@ -644,16 +629,35 @@
     }
 
     const cv = document.getElementById("piraku-radar-cv");
-    if (!cv) return;
+    if (!cv || window.pirakuInDistrict) return;
     const ctx = cv.getContext("2d");
-    const W = 208, H = 208, cx = 104, cy = 110, scale = 1.38;
+    const W = 216, H = 216, cx = 108, cy = 112, scale = 1.42;
     const toX = wx => cx + wx * scale;
     const toY = wz => cy + wz * scale;
 
     ctx.clearRect(0, 0, W, H);
 
+    // Grid radar halus & lingkaran jarak
+    ctx.strokeStyle = "rgba(56, 189, 248, 0.12)";
+    ctx.lineWidth = 1;
+    [34, 68, 98].forEach(r => {
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    });
+    ctx.beginPath();
+    ctx.moveTo(cx, 12); ctx.lineTo(cx, H - 12);
+    ctx.moveTo(12, cy); ctx.lineTo(W - 12, cy);
+    ctx.stroke();
+
+    // Taman Lansia (Timur Gedung Sate)
+    ctx.fillStyle = "rgba(16, 185, 129, 0.25)";
+    ctx.beginPath();
+    ctx.roundRect(toX(25), toY(-20), 22 * scale, 18 * scale, 6);
+    ctx.fill();
+    ctx.fillStyle = "rgba(56, 189, 248, 0.45)";
+    ctx.beginPath(); ctx.arc(toX(36), toY(-10), 4.5, 0, Math.PI * 2); ctx.fill();
+
     // Zona taman hijau Gasibu & Monju
-    ctx.fillStyle = "rgba(34, 197, 94, 0.22)";
+    ctx.fillStyle = "rgba(34, 197, 94, 0.24)";
     ctx.beginPath();
     ctx.ellipse(toX(0), toY(-11.5), 18 * scale, 11.5 * scale, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -725,10 +729,27 @@
     ctx.fillStyle = "rgba(216, 180, 254, 0.85)";
     ctx.fillText("MONJU", toX(0), toY(-53));
 
-    // Penunjuk arah mata angin Utara (U)
+    // Penunjuk arah mata angin (U, T, S, B)
     ctx.fillStyle = "#38bdf8";
     ctx.font = "bold 11px -apple-system, BlinkMacSystemFont, sans-serif";
     ctx.fillText("U", cx, 15);
+    ctx.fillStyle = "rgba(148, 163, 184, 0.72)";
+    ctx.font = "bold 9px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("S", cx, H - 8);
+    ctx.fillText("B", 12, cy + 3);
+    ctx.fillText("T", W - 12, cy + 3);
+
+    // Titik warga lain / NPC di sekitar kota
+    if (Array.isArray(window.registeredCitizensList)) {
+      ctx.fillStyle = "rgba(74, 222, 128, 0.7)";
+      window.registeredCitizensList.slice(0, 35).forEach(c => {
+        if (typeof c.x !== "number" || typeof c.z !== "number") return;
+        const rx = toX(c.x), ry = toY(c.z);
+        if (Math.hypot(rx - cx, ry - cy) < 96) {
+          ctx.beginPath(); ctx.arc(rx, ry, 2.0, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+    }
 
     // Penanda Pemain + Arah Hadap (View Cone)
     if (selfMesh && selfMesh.position) {

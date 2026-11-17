@@ -202,7 +202,7 @@
     if (document.getElementById('mp-bubble-layer')) return;
     const bubbleLayer = document.createElement('div');
     bubbleLayer.id = 'mp-bubble-layer';
-    bubbleLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:990;overflow:hidden;';
+    bubbleLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:18;overflow:hidden;';
     document.body.appendChild(bubbleLayer);
   }
 
@@ -305,6 +305,7 @@
       mesh.position.set(payload.x || 0, 0.1, payload.z || 0);
       if (mesh.userData && mesh.userData.a) {
         mesh.userData.a.walk = false; // Dikendalikan langsung oleh posisi realtime!
+        mesh.userData.a.isRemotePlayer = true;
       }
       entry = {
         mesh,
@@ -576,16 +577,18 @@
 
       // Animasi ayunan tangan & kaki saat warga remote berjalan
       const ud = entry.mesh.userData && entry.mesh.userData.a;
-      if (distSq > 0.0015) {
-        entry.walkPhase += dt * 14;
-        const swing = Math.sin(entry.walkPhase) * 0.55;
+      if (distSq > 0.00025) {
+        entry.walkPhase += dt * 15;
+        const swing = Math.sin(entry.walkPhase) * 0.65;
         if (ud && ud.legL && ud.legR) {
+          if (ud.body) ud.body.position.y = Math.abs(swing) * 0.07;
           ud.legL.rotation.x = swing;
           ud.legR.rotation.x = -swing;
-          if (ud.armL) ud.armL.rotation.x = -swing * 0.7;
-          if (ud.armR) ud.armR.rotation.x = swing * 0.7;
+          if (ud.armL) ud.armL.rotation.x = -swing * 0.75;
+          if (ud.armR) ud.armR.rotation.x = swing * 0.75;
         }
       } else if (ud && ud.legL && ud.legR) {
+        if (ud.body) ud.body.position.y *= 0.8;
         ud.legL.rotation.x *= 0.8;
         ud.legR.rotation.x *= 0.8;
         if (ud.armL) ud.armL.rotation.x *= 0.8;

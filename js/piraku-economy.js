@@ -8,20 +8,25 @@
 
   const CATALOG = {
     outfit: [
-      { id: "iket_sunda", name: "Iket Sunda / Totopong", price: 45, icon: "🧣", desc: "Iket kepala khas Sunda langsung terpasang di karakter 3D." },
-      { id: "kacamata_hitam", name: "Kacamata Hitam Dago", price: 35, icon: "🕶️", desc: "Kacamata gaya buat nongkrong sore di Gasibu." },
-      { id: "helm_biker", name: "Helm Biker Pasupati", price: 65, icon: "🪖", desc: "Helm visor gelap siap melintas di Flyover Pasupati." },
-      { id: "aura_emas", name: "Aura Langkah Emas", price: 250, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
+      { id: "kacamata_hitam", name: "Kacamata Hitam Dago", price: 120, icon: "🕶️", desc: "Kacamata aviator bulat bingkai emas untuk gaya di Gasibu." },
+      { id: "topi_bobotoh", name: "Topi Persib Biru", price: 140, icon: "🧢", desc: "Topi baseball biru-putih khas warga Bandung." },
+      { id: "iket_sunda", name: "Iket Sunda / Totopong", price: 180, icon: "🧣", desc: "Iket kepala khas Sunda dengan motif emas terpasang di kepala." },
+      { id: "tas_ransel", name: "Ransel Traveller Dago", price: 210, icon: "🎒", desc: "Tas ransel petualang 3D keren terpasang di punggung." },
+      { id: "helm_biker", name: "Helm Biker Pasupati", price: 260, icon: "🪖", desc: "Helm full-face visor biru siap melintas di Pasupati." },
+      { id: "sayap_neon", name: "Sayap Neon Braga", price: 480, icon: "🪽", desc: "Sepasang sayap cahaya biru-emas bercahaya di punggung!" },
+      { id: "aura_emas", name: "Aura Langkah Emas", price: 750, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
     ],
     mobility: [
-      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 12, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
-      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 22, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." }
+      { id: "skateboard_gasibu", name: "Skateboard Neon (Sewa 10 Menit)", price: 15, durationMin: 10, speed: 1.25, icon: "🛹", desc: "Sewa 10 menit • Meluncur santai 1.25x keliling Gasibu." },
+      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 25, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
+      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 45, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." },
+      { id: "vespa_bandung", name: "Vespa Klasik Braga (Sewa 10 Menit)", price: 70, durationMin: 10, speed: 1.92, icon: "🛵", desc: "Sewa 10 menit • Paling kencang 1.92x buat kejar Ojol & Balap Gasibu!" }
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
-      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 150, desc: "Lencana bintang di label nama + prioritas polling." },
-      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 650, desc: "Mahkota emas di label nama + gelar Sesepuh." },
-      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 2500, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
+      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 350, desc: "Lencana bintang di label nama + prioritas polling." },
+      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 1200, desc: "Mahkota emas di label nama + gelar Sesepuh." },
+      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 4500, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
     ]
   };
 
@@ -168,34 +173,14 @@
     clearTimeout(bar._t);
     bar._t = setTimeout(() => { bar.style.display = "none"; }, 18000);
   }
+  window.triggerPirakuMegaphone = triggerMegaphoneBanner;
 
-  let billboardMesh = null;
   function updateGasibuBillboard3D(text) {
-    const sc = window.pirakuScene;
-    if (!sc || typeof THREE === "undefined") return;
-    if (!billboardMesh) {
-      const cv = document.createElement("canvas");
-      cv.width = 512; cv.height = 128;
-      const tex = new THREE.CanvasTexture(cv);
-      const mat = new THREE.MeshBasicMaterial({ map: tex });
-      billboardMesh = new THREE.Mesh(new THREE.PlaneGeometry(8.6, 2.2), mat);
-      billboardMesh.position.set(0, 4.35, -22.15);
-      billboardMesh.userData = { cv, tex };
-      sc.add(billboardMesh);
+    if (!text) return;
+    if (typeof window.setGasibuBillboardBroadcast === "function") {
+      const myIg = localStorage.getItem("piraku_my_ig") || "Warga Bandung";
+      window.setGasibuBillboardBroadcast(myIg, text, false);
     }
-    const { cv, tex } = billboardMesh.userData;
-    const ctx = cv.getContext("2d");
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, 0, 512, 128);
-    ctx.strokeStyle = "#f59e0b";
-    ctx.lineWidth = 6;
-    ctx.strokeRect(4, 4, 504, 120);
-    ctx.fillStyle = "#fde047";
-    ctx.font = "bold 28px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText((text || "PIRAKU BANDUNG").slice(0, 34).toUpperCase(), 256, 66);
-    tex.needsUpdate = true;
   }
 
   const activeAnimatedShopGroups = new Set();
@@ -232,7 +217,15 @@
           const a = cg?.userData?.a;
           if (!a || !a.body || !a.armL || !a.armR || !a.legL || !a.legR) return;
           const veh = cg.userData._activeShopVehicle;
-          if (veh === "skuter_listrik") {
+          if (veh === "skateboard_gasibu") {
+        cg.userData._wasRidingShopVeh = true;
+        a.body.position.y = 0.09;
+        a.body.rotation.x = 0.05;
+        a.armL.rotation.z = 0.28;
+        a.armR.rotation.z = -0.28;
+        a.legL.position.set(-0.08, 0.45, 0.14);
+        a.legR.position.set(0.08, 0.45, -0.14);
+      } else if (veh === "skuter_listrik") {
             cg.userData._wasRidingShopVeh = true;
             a.body.position.y = 0.14;
             a.body.rotation.x = 0.08;
@@ -254,6 +247,16 @@
             a.armR.rotation.z = -0.12;
             a.legL.rotation.x = -0.58 + pedal;
             a.legR.rotation.x = -0.58 - pedal;
+          } else if (veh === "vespa_bandung") {
+            cg.userData._wasRidingShopVeh = true;
+            a.body.position.y = 0.22;
+            a.body.rotation.x = 0.06;
+            a.armL.rotation.x = -0.84;
+            a.armR.rotation.x = -0.84;
+            a.armL.rotation.z = 0.14;
+            a.armR.rotation.z = -0.14;
+            a.legL.rotation.x = -0.78;
+            a.legR.rotation.x = -0.78;
           } else if (cg.userData._wasRidingShopVeh) {
             cg.userData._wasRidingShopVeh = false;
             a.body.position.y = 0;
@@ -280,11 +283,33 @@
     if (oldHeadAtt) headNode.remove(oldHeadAtt);
 
     // A. AKSESORIS KEPALA (menempel langsung ke tulang head agar ikut gerak & proporsional)
-    if (outfitId === "iket_sunda" || outfitId === "kacamata_hitam" || outfitId === "helm_biker") {
+    if (outfitId === "iket_sunda" || outfitId === "kacamata_hitam" || outfitId === "helm_biker" || outfitId === "topi_bobotoh") {
       const headGrp = new THREE.Group();
       headGrp.name = "piraku-shop-head-att";
 
-      if (outfitId === "iket_sunda") {
+      if (outfitId === "topi_bobotoh") {
+        const capMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.45 });
+        const trimMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+        const crown = new THREE.Mesh(
+          new THREE.SphereGeometry(0.268, 22, 16, 0, Math.PI * 2, 0, Math.PI * 0.52),
+          capMat
+        );
+        crown.position.set(0, 0.04, -0.01);
+        const brim = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.24, 0.25, 0.022, 20, 1, false, -0.85, 1.7),
+          trimMat
+        );
+        brim.position.set(0, 0.055, 0.08);
+        const emblem = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.042, 0.042, 0.018, 14),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.7, roughness: 0.2 })
+        );
+        emblem.rotation.x = Math.PI / 2;
+        emblem.position.set(0, 0.14, 0.238);
+        const topBtn = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 8), trimMat);
+        topBtn.position.set(0, 0.305, -0.01);
+        headGrp.add(crown, brim, emblem, topBtn);
+      } else if (outfitId === "iket_sunda") {
         // Lilitan utama kain iket Sunda di atas dahi
         const band = new THREE.Mesh(
           new THREE.TorusGeometry(0.252, 0.046, 12, 28),
@@ -333,24 +358,27 @@
 
         headGrp.add(band, motif, frontPeak, knot, tailL, tailR);
       } else if (outfitId === "kacamata_hitam") {
-        // Kacamata Hitam Dago presisi di koordinat mata wajah
+        // Kacamata Hitam Dago bulat/aviator halus
         const frameMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.85, roughness: 0.18 });
         const lensMat = new THREE.MeshStandardMaterial({ color: 0x050811, metalness: 0.92, roughness: 0.06 });
 
-        for (const sx of [-0.095, 0.095]) {
-          const rim = new THREE.Mesh(new THREE.BoxGeometry(0.135, 0.088, 0.022), frameMat);
-          rim.position.set(sx, -0.01, 0.242);
-          const lens = new THREE.Mesh(new THREE.BoxGeometry(0.116, 0.068, 0.026), lensMat);
-          lens.position.set(sx, -0.01, 0.245);
+        for (const sx of [-0.088, 0.088]) {
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.062, 0.01, 10, 20), frameMat);
+          rim.position.set(sx, -0.008, 0.244);
+          const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.058, 0.014, 18), lensMat);
+          lens.rotation.x = Math.PI / 2;
+          lens.position.set(sx, -0.008, 0.242);
           headGrp.add(rim, lens);
         }
-        const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.018, 0.022), frameMat);
-        bridge.position.set(0, 0.008, 0.244);
+        const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.065, 8), frameMat);
+        bridge.rotation.z = Math.PI / 2;
+        bridge.position.set(0, 0.006, 0.246);
 
-        const armL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.016, 0.24), frameMat);
-        armL.position.set(-0.162, 0.002, 0.125);
-        const armR = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.016, 0.24), frameMat);
-        armR.position.set(0.162, 0.002, 0.125);
+        const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.007, 0.007, 0.24, 8), frameMat);
+        armL.rotation.x = Math.PI / 2;
+        armL.position.set(-0.152, 0.002, 0.125);
+        const armR = armL.clone();
+        armR.position.x = 0.152;
 
         headGrp.add(bridge, armL, armR);
       } else if (outfitId === "helm_biker") {
@@ -388,8 +416,47 @@
       headNode.add(headGrp);
     }
 
+    // A2. AKSESORIS PUNGGUNG (menempel ke tulang body agar ikut goyang & duduk)
+    const bodyNode = cg.userData?.a?.body;
+    if (bodyNode) {
+      const oldBackAtt = bodyNode.getObjectByName("piraku-shop-back-att");
+      if (oldBackAtt) bodyNode.remove(oldBackAtt);
+      if (outfitId === "tas_ransel" || outfitId === "sayap_neon") {
+        const backGrp = new THREE.Group();
+        backGrp.name = "piraku-shop-back-att";
+        if (outfitId === "tas_ransel") {
+          const bagMat = new THREE.MeshStandardMaterial({ color: 0x0f766e, roughness: 0.6 });
+          const trimMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.45 });
+          const mainPack = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.34, 0.15), bagMat);
+          mainPack.position.set(0, 0.56, -0.23);
+          const topFlap = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.15, 14, 1, false, 0, Math.PI), bagMat);
+          topFlap.rotation.z = Math.PI / 2;
+          topFlap.rotation.y = Math.PI / 2;
+          topFlap.position.set(0, 0.72, -0.23);
+          const pocket = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.14, 0.05), trimMat);
+          pocket.position.set(0, 0.49, -0.31);
+          backGrp.add(mainPack, topFlap, pocket);
+        } else if (outfitId === "sayap_neon") {
+          const wingMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.72, side: THREE.DoubleSide });
+          const edgeMat = new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.9, side: THREE.DoubleSide });
+          for (const sd of [-1, 1]) {
+            const wing = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.68, 4), wingMat);
+            wing.position.set(sd * 0.28, 0.68, -0.24);
+            wing.rotation.z = sd * -0.95;
+            wing.rotation.y = sd * 0.35;
+            const feather = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.46, 4), edgeMat);
+            feather.position.set(sd * 0.22, 0.52, -0.22);
+            feather.rotation.z = sd * -1.25;
+            feather.rotation.y = sd * 0.35;
+            backGrp.add(wing, feather);
+          }
+        }
+        bodyNode.add(backGrp);
+      }
+    }
+
     // B. AURA EMAS & KENDARAAN SEWA (menempel ke akar karakter cg)
-    if (outfitId === "aura_emas" || vehicleId === "sepeda_kota" || vehicleId === "skuter_listrik") {
+    if (outfitId === "aura_emas" || vehicleId === "skateboard_gasibu" || vehicleId === "sepeda_kota" || vehicleId === "skuter_listrik" || vehicleId === "vespa_bandung") {
       const bodyGrp = new THREE.Group();
       bodyGrp.name = "piraku-shop-body-att";
 
@@ -424,7 +491,36 @@
         ensureShopAnimLoop();
       }
 
-      if (vehicleId === "sepeda_kota") {
+      if (vehicleId === "skateboard_gasibu") {
+        const deckMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.4 });
+        const neonMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.35 });
+        const board = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.032, 0.56), deckMat);
+        board.position.set(0, 0.08, 0);
+        for (const cz of [-0.28, 0.28]) {
+          const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.032, 16), deckMat);
+          cap.position.set(0, 0.08, cz);
+          const rimCap = new THREE.Mesh(new THREE.TorusGeometry(0.122, 0.012, 6, 16), neonMat);
+          rimCap.rotation.x = Math.PI / 2;
+          rimCap.position.set(0, 0.08, cz);
+          bodyGrp.add(cap, rimCap);
+        }
+        for (const sx of [-0.12, 0.12]) {
+          const strip = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.56, 8), neonMat);
+          strip.rotation.x = Math.PI / 2;
+          strip.position.set(sx, 0.08, 0);
+          bodyGrp.add(strip);
+        }
+        for (const wz of [-0.24, 0.24]) {
+          for (const wx of [-0.105, 0.105]) {
+            const w = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.035, 14), wheelMat);
+            w.rotation.z = Math.PI / 2;
+            w.position.set(wx, 0.042, wz);
+            bodyGrp.add(w);
+          }
+        }
+        bodyGrp.add(board);
+      } else if (vehicleId === "sepeda_kota") {
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, metalness: 0.45, roughness: 0.28 });
         const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
         const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.85, roughness: 0.15 });
@@ -517,6 +613,77 @@
         headlight.position.set(0, 0.85, 0.33);
 
         bodyGrp.add(deck, underGlow, stem, bar, headlight);
+      } else if (vehicleId === "vespa_bandung") {
+        const vespaMat = new THREE.MeshStandardMaterial({ color: 0x34d399, metalness: 0.45, roughness: 0.25 }); // Mint Klasik
+        const creamMat = new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.5 });
+        const seatMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.7 });
+        const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+        const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.85, roughness: 0.15 });
+
+        for (const wz of [-0.46, 0.44]) {
+          const tire = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.055, 12, 22), tireMat);
+          tire.rotation.y = Math.PI / 2;
+          tire.position.set(0, 0.17, wz);
+          const rim = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.02, 8, 18), creamMat);
+          rim.rotation.y = Math.PI / 2;
+          rim.position.set(0, 0.17, wz);
+          bodyGrp.add(tire, rim);
+        }
+
+        // Bodi belakang membulat khas Vespa (kubah kiri-kanan + tutup belakang melengkung)
+        const rearCore = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.48, 16), vespaMat);
+        rearCore.rotation.x = Math.PI / 2;
+        rearCore.position.set(0, 0.35, -0.26);
+
+        for (const sx of [-0.13, 0.13]) {
+          const cowl = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 12), vespaMat);
+          cowl.scale.set(0.65, 0.85, 1.45);
+          cowl.position.set(sx, 0.33, -0.27);
+          bodyGrp.add(cowl);
+        }
+
+        const floorDeck = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.46, 14), vespaMat);
+        floorDeck.rotation.x = Math.PI / 2;
+        floorDeck.scale.set(1.0, 1.0, 0.22);
+        floorDeck.position.set(0, 0.22, 0.06);
+
+        // Jok kulit coklat klasik melengkung
+        const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.125, 0.135, 0.42, 14), seatMat);
+        seat.rotation.x = Math.PI / 2;
+        seat.scale.set(1.05, 1.0, 0.45);
+        seat.position.set(0, 0.54, -0.22);
+
+        // Sayap depan melengkung + spakbor depan bulat + spion retro
+        const frontShield = new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.195, 0.50, 18, 1, false, -Math.PI * 0.45, Math.PI * 0.9), vespaMat);
+        frontShield.rotation.x = -0.18;
+        frontShield.position.set(0, 0.47, 0.23);
+
+        const fender = new THREE.Mesh(new THREE.SphereGeometry(0.18, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.52), vespaMat);
+        fender.position.set(0, 0.23, 0.44);
+
+        const steerCol = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.048, 0.22, 12), vespaMat);
+        steerCol.position.set(0, 0.78, 0.29);
+
+        const handleBar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.56, 10), chromeMat);
+        handleBar.rotation.z = Math.PI / 2;
+        handleBar.position.set(0, 0.86, 0.27);
+
+        for (const mx of [-0.22, 0.22]) {
+          const stemM = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.14, 6), chromeMat);
+          stemM.position.set(mx, 0.93, 0.27);
+          const mirror = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.014, 12), chromeMat);
+          mirror.rotation.x = Math.PI / 2;
+          mirror.position.set(mx, 1.0, 0.27);
+          bodyGrp.add(stemM, mirror);
+        }
+
+        const headlight = new THREE.Mesh(new THREE.SphereGeometry(0.075, 16, 16), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+        headlight.position.set(0, 0.87, 0.34);
+
+        const tailLight = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 10), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        tailLight.position.set(0, 0.42, -0.53);
+
+        bodyGrp.add(rearCore, floorDeck, seat, frontShield, fender, steerCol, handleBar, headlight, tailLight);
       }
 
       cg.add(bodyGrp);
@@ -579,8 +746,9 @@
     const tabs = [
       { id: "outfit", label: "👕 Gaya 3D" },
       { id: "mobility", label: "🛴 Sewa" },
-      { id: "city", label: "📢 Billboard" },
-      { id: "tier", label: "🪪 Gelar KTP" }
+      { id: "city", label: "📢 Kota" },
+      { id: "tier", label: "🪪 Gelar" },
+      { id: "history", label: "📜 Riwayat" }
     ];
 
     let bodyHTML = "";
@@ -622,22 +790,40 @@
         }).join("");
     } else if (activeTab === "city") {
       bodyHTML = `
-        <div style="padding:12px;border-radius:12px;background:#1e293b;border:1px solid rgba(148,163,184,0.2);margin-bottom:10px;">
-          <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:4px;">📢 Megafon Kota (🪙 80)</div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Kirim pengumuman banner emas di layar peta warga.</div>
+        <div style="padding:12px;border-radius:12px;background:#1e293b;border:1px solid rgba(250,204,21,0.35);margin-bottom:10px;">
+          <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:4px;">📢 Megafon Kota Live (🪙 80)</div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Siarkan pengumuman banner emas ke layar seluruh warga yang sedang online!</div>
           <div style="display:flex;gap:6px;">
             <input id="inp-megaphone" type="text" maxlength="55" placeholder="Contoh: Kumpul ngopi di depan Gedung Sate yuk!" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:12px;">
             <button id="btn-send-megaphone" style="padding:8px 12px;border-radius:9px;border:none;background:#f59e0b;color:#0f172a;font-weight:800;font-size:12px;cursor:pointer;">Kirim</button>
           </div>
         </div>
-        <div style="padding:12px;border-radius:12px;background:#1e293b;border:1px solid rgba(148,163,184,0.2);">
-          <div style="font-size:13px;font-weight:700;color:#f8fafc;margin-bottom:4px;">📺 Sewa Layar LED Gasibu 3D (🪙 200)</div>
-          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Teks kamu langsung tayang di papan LED raksasa utara Gasibu!</div>
+        <div style="padding:12px;border-radius:12px;background:#1e293b;border:1px solid rgba(56,189,248,0.4);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <span style="font-size:13px;font-weight:700;color:#f8fafc;">📺 Sewa Layar LED Gasibu 3D (🪙 200)</span>
+            <button id="btn-view-billboard" style="border:none;background:rgba(56,189,248,0.2);color:#38bdf8;border-radius:8px;padding:3px 8px;font-size:10.5px;font-weight:800;cursor:pointer;">📍 Lihat Layar</button>
+          </div>
+          <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Teks kamu langsung tayang eksklusif <b>3 menit</b> di papan LED raksasa Gasibu & dilihat semua warga!</div>
           <div style="display:flex;gap:6px;">
-            <input id="inp-billboard" type="text" maxlength="34" value="${state.billboardText}" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fde047;font-size:12px;font-weight:700;">
+            <input id="inp-billboard" type="text" maxlength="50" value="${state.billboardText}" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#fde047;font-size:12px;font-weight:700;">
             <button id="btn-send-billboard" style="padding:8px 12px;border-radius:9px;border:none;background:#38bdf8;color:#0f172a;font-weight:800;font-size:12px;cursor:pointer;">Tayangkan</button>
           </div>
         </div>`;
+    } else if (activeTab === "history") {
+      const hist = Array.isArray(state.history) ? state.history : [];
+      bodyHTML = hist.length === 0
+        ? `<div style="text-align:center;padding:24px;color:#94a3b8;font-size:12px;">Belum ada riwayat transaksi koin.</div>`
+        : hist.slice(0, 15).map(h => {
+            const isPlus = Number(h.delta) >= 0;
+            const tStr = h.ts ? new Date(h.ts).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "";
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:10px;background:#1e293b;border:1px solid rgba(148,163,184,0.16);margin-bottom:6px;">
+              <div>
+                <div style="font-size:12px;font-weight:700;color:#f8fafc;">${h.label || "Aktivitas"}</div>
+                <div style="font-size:10px;color:#94a3b8;">${tStr}</div>
+              </div>
+              <span style="font-size:12.5px;font-weight:900;color:${isPlus ? "#4ade80" : "#f87171"};">${isPlus ? "+" : ""}${h.delta} 🪙</span>
+            </div>`;
+          }).join("");
     } else if (activeTab === "tier") {
       bodyHTML = CATALOG.tier.map(t => {
         const owned = state.owned.includes(t.id);
@@ -667,8 +853,8 @@
           <button id="btn-close-eco" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
         <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Status Warga: <b style="color:#fde047;">${tier.badge} ${tier.name}</b> • Kecepatan: <b style="color:#38bdf8;">${window.PirakuEconomy.getSpeedMultiplier()}x</b></div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:12px;">
-          ${tabs.map(tb => `<button data-eco-tab="${tb.id}" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:700;cursor:pointer;background:${activeTab === tb.id ? "#f59e0b" : "#1e293b"};color:${activeTab === tb.id ? "#0f172a" : "#cbd5e1"};">${tb.label}</button>`).join("")}
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px;">
+          ${tabs.map(tb => `<button data-eco-tab="${tb.id}" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:700;cursor:pointer;background:${activeTab === tb.id ? "#f59e0b" : "#1e293b"};color:${activeTab === tb.id ? "#0f172a" : "#cbd5e1"};">${tb.label}</button>`).join("")}
         </div>
         <div>${bodyHTML}</div>
       </div>`;
@@ -731,7 +917,19 @@
         if (!txt) return showCoinToast("Tulis pesan megafon dulu ya!", true);
         if (!window.PirakuEconomy.spendCoins(80, "Megafon Kota")) return;
         modal.style.display = "none";
-        triggerMegaphoneBanner(txt);
+        const myIg = localStorage.getItem("piraku_my_ig") || "Warga Bandung";
+        triggerMegaphoneBanner(myIg + ": " + txt);
+        if (window.pirakuSupabase) {
+          window.pirakuSupabase.from("chat_warga").insert([{ sender_ig: myIg, message: "[MEGAFON] " + txt }]).then(() => {});
+        }
+      };
+    }
+
+    const btnViewBill = modal.querySelector("#btn-view-billboard");
+    if (btnViewBill) {
+      btnViewBill.onclick = () => {
+        modal.style.display = "none";
+        if (typeof window.focusOnGasibuBillboard === "function") window.focusOnGasibuBillboard();
       };
     }
 
@@ -743,7 +941,14 @@
         if (!window.PirakuEconomy.spendCoins(200, "Sewa Billboard Gasibu")) return;
         state.billboardText = txt;
         saveState();
-        showCoinToast("Teks sudah tayang di Layar LED Gasibu 3D!");
+        const myIg = localStorage.getItem("piraku_my_ig") || "Warga Bandung";
+        if (typeof window.setGasibuBillboardBroadcast === "function") {
+          window.setGasibuBillboardBroadcast(myIg, txt, true);
+        }
+        if (window.pirakuSupabase) {
+          window.pirakuSupabase.from("chat_warga").insert([{ sender_ig: myIg, message: "[BILLBOARD] " + txt }]).then(() => {});
+        }
+        showCoinToast("📺 Teks tayang 3 menit di Layar LED Gasibu 3D!");
         renderEconomyModal();
       };
     }
@@ -798,7 +1003,15 @@
       const a = cg?.userData?.a;
       if (!a || !a.body || !a.armL || !a.armR || !a.legL || !a.legR) return;
       const veh = cg.userData._activeShopVehicle;
-      if (veh === "skuter_listrik") {
+      if (veh === "skateboard_gasibu") {
+        cg.userData._wasRidingShopVeh = true;
+        a.body.position.y = 0.09;
+        a.body.rotation.x = 0.05;
+        a.armL.rotation.z = 0.28;
+        a.armR.rotation.z = -0.28;
+        a.legL.position.set(-0.08, 0.45, 0.14);
+        a.legR.position.set(0.08, 0.45, -0.14);
+      } else if (veh === "skuter_listrik") {
         cg.userData._wasRidingShopVeh = true;
         a.body.position.y = 0.14;
         a.body.rotation.x = 0.08;
@@ -824,6 +1037,18 @@
         a.legR.position.y = 0.46;
         a.legL.rotation.x = -0.58 + pedal;
         a.legR.rotation.x = -0.58 - pedal;
+      } else if (veh === "vespa_bandung") {
+        cg.userData._wasRidingShopVeh = true;
+        a.body.position.y = 0.22;
+        a.body.rotation.x = 0.06;
+        a.armL.rotation.x = -0.84;
+        a.armR.rotation.x = -0.84;
+        a.armL.rotation.z = 0.14;
+        a.armR.rotation.z = -0.14;
+        a.legL.position.set(-0.12, 0.48, 0.06);
+        a.legR.position.set(0.12, 0.48, 0.06);
+        a.legL.rotation.x = -0.78;
+        a.legR.rotation.x = -0.78;
       } else if (cg.userData._wasRidingShopVeh) {
         cg.userData._wasRidingShopVeh = false;
         a.body.position.y = 0;

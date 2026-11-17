@@ -347,10 +347,10 @@
   .btn-ktp-close { background: rgba(255,255,255,0.15); color: #fff; }
 
   #toast-notif {
-    position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-100px);
-    background: var(--tea); color: #fff; border-left: 4px solid var(--lampu); padding: 8px 18px;
-    border-radius: 12px; font-size: 11.5px; font-weight: 700; z-index: 100;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: fixed; top: calc(58px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%) translateY(-140px);
+    background: var(--tea); color: #fff; border-left: 4px solid var(--lampu); padding: 8px 16px;
+    border-radius: 12px; font-size: 11.5px; font-weight: 700; z-index: 99999; max-width: 90vw; text-align: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.35); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
   #toast-notif.show { transform: translateX(-50%) translateY(0); }
 /* Aksesibilitas */

@@ -11,11 +11,14 @@ serve(async (req) => {
   }
 
   try {
-    const TURN_TOKEN_ID = Deno.env.get("CLOUDFLARE_TURN_TOKEN_ID");
-    const TURN_API_TOKEN = Deno.env.get("CLOUDFLARE_TURN_API_TOKEN");
+    const TURN_TOKEN_ID = Deno.env.get("CLOUDFLARE_TURN_TOKEN_ID") || Deno.env.get("TURN_TOKEN_ID");
+    const TURN_API_TOKEN = Deno.env.get("CLOUDFLARE_TURN_API_TOKEN") || Deno.env.get("TURN_API_TOKEN");
 
     if (!TURN_TOKEN_ID || !TURN_API_TOKEN) {
-      throw new Error("Secrets Cloudflare TURN belum diset di Supabase");
+      return new Response(
+        JSON.stringify({ error: "Missing secrets: CLOUDFLARE_TURN_TOKEN_ID / CLOUDFLARE_TURN_API_TOKEN" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
     }
 
     const response = await fetch(
@@ -31,6 +34,13 @@ serve(async (req) => {
     );
 
     const data = await response.json();
+
+    if (!response.ok) {
+      return new Response(
+        JSON.stringify({ error: "Cloudflare API rejected request", status: response.status, details: data }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: response.status }
+      );
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

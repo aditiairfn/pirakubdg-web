@@ -188,8 +188,35 @@
   let districtCoins = [];
   let districtTraffic = [];
   let districtPedestrians = [];
-    districtTraffic = [];
-    districtPedestrians = [];
+  let myKavlingBeaconGroup = null;
+  let myDistrictKavlingInfo = null;
+  let districtLampState = null;
+  let districtHouseGlassMat = null;
+
+  const HOUSE_TIER_INFO = [
+    { tier: 1, name: "Rumah Asri Tipe 36", cost: 0, minLvl: 1 },
+    { tier: 2, name: "Rumah Tingkat 2 Lantai", cost: 350, minLvl: 3 },
+    { tier: 3, name: "Rumah Mewah + Mobil Garasi", cost: 800, minLvl: 6 },
+    { tier: 4, name: "Villa Sultan Pagar Emas", cost: 2000, minLvl: 10 }
+  ];
+
+  function getPersonalHouseTierFor(igRaw) {
+    const clean = String(igRaw || "").trim().toLowerCase().replace(/^@/, "");
+    if (!clean) return 1;
+    let tier = parseInt(localStorage.getItem("piraku_house_tier_" + clean) || "1", 10) || 1;
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    if (clean === myIg && window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const owned = window.PirakuEconomy.getState().owned || [];
+      if (owned.includes("house_tier_4")) tier = Math.max(tier, 4);
+      else if (owned.includes("house_tier_3")) tier = Math.max(tier, 3);
+      else if (owned.includes("house_tier_2")) tier = Math.max(tier, 2);
+      localStorage.setItem("piraku_house_tier_" + clean, String(tier));
+    }
+    return Math.max(1, Math.min(4, tier));
+  }
+  window.getMyPersonalHouseTier = function() {
+    return getPersonalHouseTierFor(localStorage.getItem("piraku_my_ig") || "");
+  };
 
   const KAVLING_SLOTS = [
     { x: -13, z: 13, rotY: 0 }, { x: -20, z: 13, rotY: 0 }, { x: -27, z: 13, rotY: 0 }, { x: -13, z: 22, rotY: Math.PI }, { x: -20, z: 22, rotY: Math.PI },
@@ -209,16 +236,31 @@
     return new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color, roughness: 0.55 }));
   }
 
-  function createModernHouseMesh(idx, lv) {
+  function createModernHouseMesh(idx, lv, personalTier = 0) {
     const g = new THREE.Group();
-    const isTwoStory = (lv >= 2 && idx % 2 === 1) || lv >= 4;
+    const isSultan = personalTier >= 4;
+    const isTwoStory = personalTier >= 2 || (personalTier === 0 && ((lv >= 2 && idx % 2 === 1) || lv >= 4));
+    const hasCar = personalTier >= 3 || (personalTier === 0 && lv >= 3 && idx % 2 === 0);
     const wallPalette = [0xfefce8, 0xf8fafc, 0xf1f5f9, 0xffedd5, 0xe0f2fe];
     const roofPalette = [0x9a3412, 0x334155, 0xb45309, 0x7f1d1d];
-    const wallMat = new THREE.MeshStandardMaterial({ color: wallPalette[idx % wallPalette.length], roughness: 0.65 });
-    const trimMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+    const wallMat = new THREE.MeshStandardMaterial({ color: isSultan ? 0xfffbeb : wallPalette[idx % wallPalette.length], roughness: 0.65 });
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: isSultan ? 0xfacc15 : 0x1e293b,
+      roughness: isSultan ? 0.25 : 0.5,
+      metalness: isSultan ? 0.65 : 0.1
+    });
     const woodMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.7 });
-    const glassMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.15, metalness: 0.8 });
-    const roofColor = roofPalette[idx % roofPalette.length];
+    if (!districtHouseGlassMat) {
+      districtHouseGlassMat = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        emissive: 0xfef08a,
+        emissiveIntensity: 0.0,
+        roughness: 0.15,
+        metalness: 0.75
+      });
+    }
+    const glassMat = districtHouseGlassMat;
+    const roofColor = isSultan ? 0xb45309 : roofPalette[idx % roofPalette.length];
 
     const yard = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.05, 6.4), new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 }));
     yard.position.y = 0.025;
@@ -226,7 +268,7 @@
     lawn.position.set(-1.3, 0.035, 1.8);
     g.add(yard, lawn);
 
-    const fence = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 0.16), wallMat);
+    const fence = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.5, 0.16), isSultan ? trimMat : wallMat);
     fence.position.set(-1.45, 0.28, 3.05);
     const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), trimMat);
     p1.position.set(-0.15, 0.42, 3.05);
@@ -280,13 +322,25 @@
       g.add(roofMain, roofSide, chimney);
     }
 
-    if (lv >= 3 && idx % 2 === 0) {
+    if (hasCar) {
       const carCols = [0xef4444, 0x2563eb, 0xf8fafc, 0x0f172a];
-      const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCols[idx % carCols.length], metalness: 0.4, roughness: 0.3 }));
+      const carCol = isSultan ? 0xdc2626 : carCols[idx % carCols.length];
+      const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCol, metalness: 0.55, roughness: 0.22 }));
       carBody.position.set(1.95, 0.32, 1.5);
       const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.1), glassMat);
       carCabin.position.set(1.95, 0.68, 1.4);
       g.add(carBody, carCabin);
+    }
+
+    if (isSultan) {
+      // Air mancur mini Sultan di taman depan
+      const fBase = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.72, 0.22, 14), trimMat);
+      fBase.position.set(-1.35, 0.14, 1.85);
+      const fWater = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.25, 14), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+      fWater.position.set(-1.35, 0.15, 1.85);
+      const fTop = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), trimMat);
+      fTop.position.set(-1.35, 0.55, 1.85);
+      g.add(fBase, fWater, fTop);
     }
 
     return g;
@@ -520,7 +574,8 @@
       let p = playerMesh;
       while (p) { keepVisible.add(p); p = p.parent; }
       sc.children.forEach(obj => {
-        if (keepVisible.has(obj) || obj.isLight || obj.isCamera || obj.isPoints || obj === customDistrictGroup) return;
+        const isSkyDome = obj === window.__pirakuSkyDome || (obj.geometry && obj.geometry.type === "SphereGeometry" && obj.material && obj.material.side === THREE.BackSide);
+        if (keepVisible.has(obj) || obj.isLight || obj.isCamera || obj.isPoints || isSkyDome || obj === customDistrictGroup) return;
         if (obj.visible) {
           obj.visible = false;
           hiddenMainObjects.push(obj);
@@ -545,31 +600,45 @@
     const { cur } = getLevelInfo(coins);
 
     const horizonGround = new THREE.Mesh(
-      new THREE.PlaneGeometry(760, 760),
-      new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.95 })
+      new THREE.CircleGeometry(900, 48),
+      new THREE.MeshStandardMaterial({ color: 0x5c7c4e, roughness: 0.94, metalness: 0.0 })
     );
     horizonGround.rotation.x = -Math.PI / 2;
-    horizonGround.position.y = -0.02;
+    horizonGround.position.y = -0.04;
+    horizonGround.receiveShadow = true;
     grp.add(horizonGround);
 
-    const hillMats = [
-      new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.92 }),
-      new THREE.MeshStandardMaterial({ color: 0x065f46, roughness: 0.92 }),
-      new THREE.MeshStandardMaterial({ color: 0x1e3a5f, roughness: 0.9 })
-    ];
-    for (let m = 0; m < 28; m++) {
-      const ang = (m / 28) * Math.PI * 2;
-      const dist = 165 + (m % 3) * 26;
-      const mRad = 32 + (m % 4) * 14;
-      const mHeight = 22 + (m % 5) * 9;
-      const mountain = new THREE.Mesh(new THREE.ConeGeometry(mRad, mHeight, 7), hillMats[m % hillMats.length]);
-      mountain.position.set(Math.cos(ang) * dist, mHeight / 2 - 1, Math.sin(ang) * dist);
-      grp.add(mountain);
+    // Horizon Pegunungan Cekungan Bandung 360° Halus (Senada dengan Pusat Kota Gedung Sate)
+    function createDistrictMountainRing(radius, segments, baseHeight, variation, colorHex) {
+      const geo = new THREE.CylinderGeometry(radius, radius + 85, 1, segments, 1, true);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        if (pos.getY(i) > 0) {
+          const x = pos.getX(i), z = pos.getZ(i);
+          const angle = Math.atan2(z, x);
+          const h = baseHeight
+            + Math.sin(angle * 5.0) * variation * 0.45
+            + Math.cos(angle * 11.0 + 0.8) * variation * 0.3
+            + Math.sin(angle * 23.0) * variation * 0.15;
+          pos.setY(i, Math.max(8, h));
+        } else {
+          pos.setY(i, -2);
+        }
+      }
+      geo.computeVertexNormals();
+      return new THREE.Mesh(
+        geo,
+        new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.94, metalness: 0.0, flatShading: true, side: THREE.DoubleSide })
+      );
     }
+    grp.add(
+      createDistrictMountainRing(480, 96, 32, 18, 0x6b8cae),
+      createDistrictMountainRing(330, 72, 16, 10, 0x4f745c)
+    );
 
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(110, 110),
-      new THREE.MeshStandardMaterial({ color: d.ground, roughness: 0.88 })
+      new THREE.PlaneGeometry(116, 116),
+      new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.88 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
@@ -688,7 +757,11 @@
 
     // Deretan Lampu Jalan PJU Klasik Bandung + Pohon Rindang di Trotoar
     const pjuPoleMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.65, roughness: 0.35 });
-    const pjuBulbMat = new THREE.MeshStandardMaterial({ color: 0xfef9c3, emissive: 0xfde047, emissiveIntensity: 1.5 });
+    const pjuBulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+    const pjuHaloMat = new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.28, depthWrite: false });
+    const pjuPoolMat = new THREE.MeshBasicMaterial({ color: 0xfef08a, transparent: true, opacity: 0.0, depthWrite: false });
+    const districtPointLights = [];
+    districtLampState = { bulbMat: pjuBulbMat, haloMat: pjuHaloMat, poolMat: pjuPoolMat, pointLights: districtPointLights };
     const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033, roughness: 0.9 });
     const leafMats = [
       new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }),
@@ -706,9 +779,14 @@
       arm.position.set(armDirX * 0.5, 4.15, armDirZ * 0.5);
       const hood = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.16, 8), pjuPoleMat);
       hood.position.set(armDirX * 0.95, 4.08, armDirZ * 0.95);
-      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), pjuBulbMat);
-      bulb.position.set(armDirX * 0.95, 3.96, armDirZ * 0.95);
-      lamp.add(base, pole, arm, hood, bulb);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), pjuBulbMat);
+      bulb.position.set(armDirX * 0.95, 3.94, armDirZ * 0.95);
+      const halo = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), pjuHaloMat);
+      halo.position.set(armDirX * 0.95, 3.92, armDirZ * 0.95);
+      const pool = new THREE.Mesh(new THREE.CircleGeometry(2.6, 16), pjuPoolMat);
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(armDirX * 1.1, -0.04, armDirZ * 1.1);
+      lamp.add(base, pole, arm, hood, bulb, halo, pool);
       lamp.position.set(lx, 0.08, lz);
       grp.add(lamp);
     }
@@ -729,25 +807,31 @@
     }
 
     for (let pos = -48; pos <= 48; pos += 14) {
-      if (Math.abs(pos) < 12) continue;
+      if (Math.abs(pos) < 15) continue;
       // Lampu PJU sepanjang jalan utama Utara-Selatan & Timur-Barat
       addStreetLamp(-4.5, pos, 1, 0);
       addStreetLamp(4.5, pos, -1, 0);
       addStreetLamp(pos, -4.5, 0, 1);
       addStreetLamp(pos, 4.5, 0, -1);
-      // Pohon peneduh di sela-sela lampu
-      addBandungTree(-5.6, pos + 7, 0.95);
-      addBandungTree(5.6, pos + 7, 1.0);
-      addBandungTree(pos + 7, -5.6, 0.95);
-      addBandungTree(pos + 7, 5.6, 1.0);
+      // Pohon peneduh di sela-sela lampu (bebas dari area bundaran & gang)
+      if (Math.abs(pos + 7) > 14 && Math.abs(pos + 7 - 17.5) > 3.5 && Math.abs(pos + 7 + 17.5) > 3.5) {
+        addBandungTree(-5.6, pos + 7, 0.95);
+        addBandungTree(5.6, pos + 7, 1.0);
+        addBandungTree(pos + 7, -5.6, 0.95);
+        addBandungTree(pos + 7, 5.6, 1.0);
+      }
     }
 
-    // 4 Lampu Taman + Bangku Taman di Sekeliling Bundaran Kecamatan
+    // 4 Lampu Taman + Bangku Taman di Atas Trotoar Paving Bundaran (R = 5.8m, aman dari aspal jalan)
     const benchMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.7 });
-    [[-6.2, -6.2], [6.2, -6.2], [-6.2, 6.2], [6.2, 6.2]].forEach(([bx, bz]) => {
-      addStreetLamp(bx, bz, bx < 0 ? 0.6 : -0.6, bz < 0 ? 0.6 : -0.6);
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.42, 0.55), benchMat);
-      bench.position.set(bx * 0.85, 0.25, bz * 0.85);
+    [[-4.1, -4.1], [4.1, -4.1], [-4.1, 4.1], [4.1, 4.1]].forEach(([bx, bz]) => {
+      addStreetLamp(bx, bz, bx < 0 ? 0.5 : -0.5, bz < 0 ? 0.5 : -0.5);
+      const pt = new THREE.PointLight(0xfde047, 0, 18, 1.8);
+      pt.position.set(bx, 4.0, bz);
+      grp.add(pt);
+      districtPointLights.push(pt);
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.42, 0.52), benchMat);
+      bench.position.set(bx * 0.92, 0.25, bz * 0.92);
       bench.lookAt(0, 0.25, 0);
       grp.add(bench);
     });
@@ -810,9 +894,23 @@
     const idLow = String(d.id || "").trim().toLowerCase();
     const allCitizens = Array.isArray(window.registeredCitizensList) ? window.registeredCitizensList : [];
     const districtMembers = allCitizens.filter(c => {
-      const ck = String(c.kecamatan || "").trim().toLowerCase();
-      return ck === kecLow || ck === idLow;
+      const ck = String(c.kecamatan || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+      return ck === kecLow || ck === idLow.replace(/[_-]+/g, " ");
     });
+
+    const myProf = getCitizenProfile();
+    const myCleanIg = myProf.isRegistered ? String(myProf.ig || "").trim().toLowerCase().replace(/^@/, "") : "";
+    const isMyHomeDistrict = myProf.isRegistered && myProf.district && myProf.district.id === d.id;
+    if (isMyHomeDistrict && myCleanIg) {
+      const alreadyIn = districtMembers.some(m => String(m.ig || "").trim().toLowerCase().replace(/^@/, "") === myCleanIg);
+      if (!alreadyIn) {
+        districtMembers.unshift({
+          ig: myProf.ig.startsWith("@") ? myProf.ig : "@" + myProf.ig,
+          kecamatan: d.name,
+          has_house: localStorage.getItem("piraku_has_house_" + myCleanIg) === "1"
+        });
+      }
+    }
 
     const camatIg = (window.weeklyCamatByKec && (window.weeklyCamatByKec[kecLow] || window.weeklyCamatByKec[idLow])) || null;
     const camatMember = camatIg
@@ -820,35 +918,103 @@
       : null;
     const regularMembers = districtMembers.filter(m => !camatMember || m.ig !== camatMember.ig);
 
-    // 20 Kavling Tapak: Slot #0 = Rumah Dinas Camat, Slot #1..#19 = 19 Warga Pertama
+    // Aturan Baku: 20 Kavling Tapak (Slot #0 = Rumah Dinas Camat, Slot #1..#19 = 19 Warga Pertama)
+    // Warga ke-21 dst. otomatis masuk ke 1 bangunan Tower Apartemen Kecamatan.
     const landedAssignees = [camatMember || null];
     for (let s = 0; s < 19; s++) {
       landedAssignees.push(regularMembers[s] || null);
     }
 
+    myKavlingBeaconGroup = null;
+    myDistrictKavlingInfo = null;
+
     KAVLING_SLOTS.forEach((slot, idx) => {
       const resident = landedAssignees[idx];
       const isCamatSlot = (idx === 0);
+      const resCleanIg = resident ? String(resident.ig || "").trim().toLowerCase().replace(/^@/, "") : "";
+      const isMySlot = Boolean(myCleanIg && resCleanIg && resCleanIg === myCleanIg);
+      const resHasHouse = Boolean(
+        resident && (resident.has_house || isCamatSlot || localStorage.getItem("piraku_has_house_" + resCleanIg) === "1")
+      );
+      const pTier = resident ? getPersonalHouseTierFor(resident.ig) : 0;
       let unit;
       let plaqueLabel = "";
 
       if (resident) {
-        if (resident.has_house || isCamatSlot) {
-          unit = createModernHouseMesh(idx, isCamatSlot ? Math.max(3, cur.lv) : cur.lv);
-          plaqueLabel = isCamatSlot ? ("👑 CAMAT " + resident.ig) : resident.ig;
+        if (resHasHouse) {
+          unit = createModernHouseMesh(idx, isCamatSlot ? Math.max(3, cur.lv) : cur.lv, isMySlot ? pTier : (pTier > 1 ? pTier : 0));
+          const tierTag = pTier >= 4 ? "👑 SULTAN " : (pTier > 1 ? `★Lv.${pTier} ` : "");
+          plaqueLabel = isCamatSlot ? ("👑 CAMAT " + resident.ig) : (tierTag + resident.ig);
         } else {
           // Belum menyelesaikan misi rumah -> Kavling Tanah Kosong milik warga
           unit = createEmptyLotMesh();
-          plaqueLabel = resident.ig + " (Lahan)";
+          plaqueLabel = (isMySlot ? "📍 KAVLINGMU " : "") + resident.ig;
         }
       } else {
         unit = createEmptyLotMesh();
         plaqueLabel = isCamatSlot ? "Kavling Dinas Camat" : ("Kavling #" + (idx + 1));
       }
 
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 0.56), makeDistrictPlaque(plaqueLabel, isCamatSlot && Boolean(resident)));
-      sign.position.set(0, isCamatSlot && resident ? 4.8 : 1.15, 2.75);
+      const sign = new THREE.Mesh(
+        new THREE.PlaneGeometry(2.4, 0.58),
+        makeDistrictPlaque(plaqueLabel, (isCamatSlot && Boolean(resident)) || isMySlot)
+      );
+      sign.position.set(0, (isCamatSlot && resident) || (resHasHouse && pTier >= 2) ? 4.8 : 1.2, 2.75);
       unit.add(sign);
+
+      if (isMySlot) {
+        // Tambahkan Beacon Penanda 3D di depan kavling milik pemain sendiri
+        const beaconGrp = new THREE.Group();
+        const frontDirZ = slot.rotY === 0 ? 1 : -1;
+        const worldFrontX = slot.x;
+        const worldFrontZ = slot.z + frontDirZ * 3.6;
+
+        const ringGeo = new THREE.RingGeometry(0.85, 1.18, 28);
+        const ringMat = new THREE.MeshBasicMaterial({
+          color: resHasHouse ? 0xfacc15 : 0x38bdf8,
+          side: THREE.DoubleSide
+        });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.rotation.x = -Math.PI / 2;
+        ringMesh.position.y = 0.06;
+
+        const beamGeo = new THREE.CylinderGeometry(0.18, 0.55, 4.2, 14, 1, true);
+        const beamMat = new THREE.MeshBasicMaterial({
+          color: resHasHouse ? 0xfacc15 : 0x38bdf8,
+          transparent: true,
+          opacity: 0.22,
+          side: THREE.DoubleSide
+        });
+        const beamMesh = new THREE.Mesh(beamGeo, beamMat);
+        beamMesh.position.y = 2.1;
+
+        const gemGeo = new THREE.OctahedronGeometry(0.38, 0);
+        const gemMat = new THREE.MeshStandardMaterial({
+          color: resHasHouse ? 0xfacc15 : 0x38bdf8,
+          emissive: resHasHouse ? 0xd97706 : 0x0284c7,
+          emissiveIntensity: 0.7,
+          metalness: 0.6,
+          roughness: 0.2
+        });
+        const gemMesh = new THREE.Mesh(gemGeo, gemMat);
+        gemMesh.position.y = 2.4;
+
+        beaconGrp.add(ringMesh, beamMesh, gemMesh);
+        beaconGrp.position.set(worldFrontX, 0, worldFrontZ);
+        beaconGrp.userData = { gemMesh, ringMesh };
+        grp.add(beaconGrp);
+        myKavlingBeaconGroup = beaconGrp;
+
+        myDistrictKavlingInfo = {
+          slotIdx: idx,
+          x: worldFrontX,
+          z: worldFrontZ,
+          districtId: d.id,
+          districtName: d.name,
+          hasHouse: resHasHouse,
+          houseTier: pTier
+        };
+      }
 
       unit.position.set(slot.x, 0, slot.z);
       unit.rotation.y = slot.rotY;
@@ -869,7 +1035,7 @@
       roof.position.y = 11.9;
       aptGroup.add(podium, tower, roof);
 
-      const glassMatApt = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.15 });
+      const glassMatApt = districtHouseGlassMat || new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0xfef08a, emissiveIntensity: 0.0, metalness: 0.75, roughness: 0.15 });
       for (let fl = 0; fl < 4; fl++) {
         const fy = 1.8 + fl * 2.5;
         [-1.8, 0, 1.8].forEach(wx => {
@@ -946,7 +1112,7 @@
       const mDome = new THREE.Mesh(new THREE.SphereGeometry(1.7, 16, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.2 }));
       mDome.position.y = 2.9;
       mushola.add(mBody, mDome);
-      mushola.position.set(-29, 0, -22);
+      mushola.position.set(-34, 0, -24);
       grp.add(mushola);
     }
     if (cur.lv >= 3) {
@@ -956,31 +1122,28 @@
       const cAwning = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.25, 4.8), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
       cAwning.position.set(0, 2.5, 0.5);
       cafe.add(cBase, cAwning);
-      cafe.position.set(29, 0, -22);
+      cafe.position.set(34, 0, -24);
       grp.add(cafe);
     }
     if (cur.lv >= 4) {
-      const balai = new THREE.Mesh(new THREE.BoxGeometry(6.2, 4.2, 4.4), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
-      balai.position.set(29, 2.1, 22);
+      const balai = new THREE.Group();
+      const bBody = new THREE.Mesh(new THREE.BoxGeometry(6.2, 3.6, 4.4), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
+      bBody.position.y = 1.8;
+      const bRoof = createGableRoof(6.6, 1.6, 4.8, 0xfacc15);
+      bRoof.position.y = 3.6;
+      balai.add(bBody, bRoof);
+      balai.position.set(34, 0, 24);
       grp.add(balai);
     }
 
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
-    [[-9, -9], [9, -9], [-9, 9], [9, 9], [-24, -6], [24, -6], [-24, 6], [24, 6], [-38, -28], [38, -28], [-38, 28], [38, 28]].forEach(([tx, tz], i) => {
+    [[-10.6, -10.6], [10.6, -10.6], [-10.6, 10.6], [10.6, 10.6], [-24, -6], [24, -6], [-24, 6], [24, 6], [-38, -28], [38, -28], [-38, 28], [38, 28]].forEach(([tx, tz]) => {
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.4, 6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
       trunk.position.set(tx, 0.7, tz);
       const crown = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2, 0), new THREE.MeshStandardMaterial({ color: 0x16a34a }));
       crown.position.set(tx, 1.95, tz);
       grp.add(trunk, crown);
-
-      if (i < 8) {
-        const pju = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 3.4, 6), poleMat);
-        pju.position.set(tx * 0.55, 1.7, tz * 0.55);
-        const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), bulbMat);
-        lamp.position.set(tx * 0.55, 3.45, tz * 0.55);
-        grp.add(pju, lamp);
-      }
     });
 
     const coinGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.12, 16);
@@ -1015,15 +1178,40 @@
     ];
 
     const angkotConfigs = [
-      { armIdx: 0, startDist: -46, turnSteps: 2, speed: 7.4, body: 0x16a34a, stripe: 0xfacc15 }, // Angkot Hijau-Kuning (Utara -> lurus Selatan)
-      { armIdx: 2, startDist: 44, turnSteps: 1, speed: 7.2, body: 0x2563eb, stripe: 0xf8fafc },  // Angkot Biru (Selatan -> belok kiri Timur)
-      { armIdx: 1, startDist: -42, turnSteps: 3, speed: 7.0, body: 0xfef3c7, stripe: 0xdc2626 }, // Angkot Krem-Merah (Barat -> belok kanan Utara)
-      { armIdx: 3, startDist: 48, turnSteps: 2, speed: 8.2, carColor: 0xf8fafc },                // Mobil Putih (Timur -> lurus Barat)
-      { armIdx: 0, startDist: -24, turnSteps: 1, speed: 7.8, carColor: 0xef4444 },               // Mobil Merah (Utara -> belok kiri Barat)
-      { armIdx: 2, startDist: 22, turnSteps: 3, speed: 8.0, carColor: 0x0f172a }                 // Mobil Hitam (Selatan -> belok kanan Timur)
+      // Jalur Utara (armIdx: 0, bergerak dari -Z menuju bundaran)
+      { armIdx: 0, startDist: -16, turnSteps: 2, speed: 7.8, body: 0x16a34a, stripe: 0xfacc15 }, // Angkot Kalapa-Dago (Hijau-Kuning)
+      { armIdx: 0, startDist: -27, turnSteps: 1, speed: 8.4, carColor: 0xef4444 },               // Mobil Merah
+      { armIdx: 0, startDist: -39, turnSteps: 3, speed: 7.5, body: 0x0284c7, stripe: 0xfef08a }, // Angkot Cisitu-Tegallega (Biru Muda-Kuning)
+      { armIdx: 0, startDist: -51, turnSteps: 2, speed: 8.8, carColor: 0x38bdf8 },               // Mobil Biru Langit
+
+      // Jalur Barat (armIdx: 1, bergerak dari -X menuju bundaran)
+      { armIdx: 1, startDist: -18, turnSteps: 3, speed: 7.4, body: 0xfef3c7, stripe: 0xdc2626 }, // Angkot St.Hall-Lembang (Krem-Merah)
+      { armIdx: 1, startDist: -30, turnSteps: 2, speed: 8.5, carColor: 0xfacc15 },               // Mobil Kuning
+      { armIdx: 1, startDist: -42, turnSteps: 1, speed: 7.9, body: 0x15803d, stripe: 0xf97316 }, // Angkot Cicaheum-Ciroyom (Hijau-Oranye)
+      { armIdx: 1, startDist: -54, turnSteps: 2, speed: 8.9, carColor: 0xa855f7 },               // Mobil Ungu
+
+      // Jalur Selatan (armIdx: 2, bergerak dari +Z menuju bundaran)
+      { armIdx: 2, startDist: 17, turnSteps: 1, speed: 7.6, body: 0x2563eb, stripe: 0xf8fafc },  // Angkot Sederhana-Cimindi (Biru-Putih)
+      { armIdx: 2, startDist: 28, turnSteps: 3, speed: 8.3, carColor: 0x0f172a },                // Mobil Hitam
+      { armIdx: 2, startDist: 40, turnSteps: 2, speed: 7.7, body: 0xeab308, stripe: 0x1d4ed8 },  // Angkot Margahayu-Ledeng (Kuning-Biru)
+      { armIdx: 2, startDist: 52, turnSteps: 1, speed: 8.7, carColor: 0x10b981 },                // Mobil Emerald
+
+      // Jalur Timur (armIdx: 3, bergerak dari +X menuju bundaran)
+      { armIdx: 3, startDist: 19, turnSteps: 2, speed: 8.2, carColor: 0xf8fafc },                // Mobil Putih
+      { armIdx: 3, startDist: 31, turnSteps: 1, speed: 7.5, body: 0x9a3412, stripe: 0xfef3c7 },  // Angkot Ciwastra-Ujungberung (Coklat-Krem)
+      { armIdx: 3, startDist: 43, turnSteps: 3, speed: 8.6, carColor: 0xf97316 },                // Mobil Oranye
+      { armIdx: 3, startDist: 55, turnSteps: 2, speed: 7.8, body: 0xbe123c, stripe: 0xf8fafc }   // Angkot Cibaduyut (Merah Maroon-Putih)
     ];
     angkotConfigs.forEach(cfg => {
       const veh = cfg.body ? createBandungAngkotMesh(cfg.body, cfg.stripe) : createPrivateCarMesh(cfg.carColor);
+      const initArm = ARM_DEFS[cfg.armIdx];
+      if (initArm.axis === "z") {
+        veh.position.set(initArm.laneX, 0.02, cfg.startDist);
+        veh.rotation.y = initArm.dir > 0 ? 0 : Math.PI;
+      } else {
+        veh.position.set(cfg.startDist, 0.02, initArm.laneZ);
+        veh.rotation.y = initArm.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
+      }
       grp.add(veh);
       districtTraffic.push({
         mesh: veh,
@@ -1073,10 +1261,10 @@
       while (p) { p.visible = true; p = p.parent; }
       if (playerMesh.position) {
         playerMesh.position.x = 0;
-        playerMesh.position.z = 23;
+        playerMesh.position.z = 3.6;
         if (playerMesh.userData && playerMesh.userData.a && playerMesh.userData.a.c) {
           playerMesh.userData.a.c.x = 0;
-          playerMesh.userData.a.c.z = 23;
+          playerMesh.userData.a.c.z = 3.6;
         }
       }
     }
@@ -1092,8 +1280,8 @@
     }
     if (!komplekMinimapOverlay) {
       komplekMinimapOverlay = document.createElement("canvas");
-      komplekMinimapOverlay.width = 120;
-      komplekMinimapOverlay.height = 120;
+      komplekMinimapOverlay.width = 216;
+      komplekMinimapOverlay.height = 216;
       komplekMinimapOverlay.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border-radius:50%;z-index:12;pointer-events:none;";
       if (getComputedStyle(miniContainer).position === "static") miniContainer.style.position = "relative";
       miniContainer.appendChild(komplekMinimapOverlay);
@@ -1105,26 +1293,96 @@
   function drawKomplekMinimapFrame() {
     if (komplekMinimapOverlay && komplekMinimapOverlay.style.display === "block") {
       const ctx = komplekMinimapOverlay.getContext("2d");
-      const w = 120, h = 120, cx = 60, cy = 60;
+      const w = 216, h = 216, cx = 108, cy = 108;
+      const toM = v => cx + (v / 48) * 90;
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#0f172a"; ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "#166534";
-      ctx.fillRect(14, 18, 38, 34); ctx.fillRect(68, 18, 38, 34);
-      ctx.fillRect(14, 68, 38, 34); ctx.fillRect(68, 68, 38, 34);
+
+      // Latar radar gelap
+      const bg = ctx.createRadialGradient(cx, cy, 10, cx, cy, 108);
+      bg.addColorStop(0, "#16253b"); bg.addColorStop(1, "#09111e");
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+
+      // 4 Kuadran Komplek Hijau
+      ctx.fillStyle = "rgba(22, 101, 52, 0.72)";
+      ctx.beginPath();
+      ctx.roundRect(22, 26, 72, 68, 10);
+      ctx.roundRect(122, 26, 72, 68, 10);
+      ctx.roundRect(22, 122, 72, 68, 10);
+      ctx.roundRect(122, 122, 72, 68, 10);
+      ctx.fill();
+
+      // 20 Kavling Rumah mini
+      ctx.fillStyle = "rgba(226, 232, 240, 0.45)";
+      KAVLING_SLOTS.forEach(s => {
+        ctx.fillRect(toM(s.x) - 4, toM(s.z) - 4, 8, 8);
+      });
+
+      // Jalan Poros 4 Arah + Marka Putus-Putus
       ctx.fillStyle = "#334155";
-      ctx.fillRect(54, 8, 12, 104); ctx.fillRect(8, 54, 104, 12);
+      ctx.fillRect(98, 10, 20, 196);
+      ctx.fillRect(10, 98, 196, 20);
+      ctx.strokeStyle = "rgba(250, 204, 21, 0.5)";
+      ctx.lineWidth = 1.2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.moveTo(cx, 14); ctx.lineTo(cx, h - 14);
+      ctx.moveTo(14, cy); ctx.lineTo(w - 14, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Bundaran Tengah
+      ctx.beginPath(); ctx.arc(cx, cy, 20, 0, Math.PI * 2);
+      ctx.fillStyle = "#334155"; ctx.fill();
       ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2);
       ctx.fillStyle = "#22c55e"; ctx.fill();
       ctx.strokeStyle = "#facc15"; ctx.lineWidth = 2; ctx.stroke();
-      ctx.fillStyle = "#fde047"; ctx.font = "bold 9px sans-serif"; ctx.textAlign = "center";
-      ctx.fillText((komplekMinimapOverlay.dataset.districtName || "KOMPLEK").toUpperCase().slice(0, 14), cx, 14);
+
+      // Beacon Kavling Milik Sendiri (berdenyut)
+      if (myDistrictKavlingInfo) {
+        const kx = toM(myDistrictKavlingInfo.x);
+        const kz = toM(myDistrictKavlingInfo.z);
+        ctx.fillStyle = myDistrictKavlingInfo.hasHouse ? "#facc15" : "#38bdf8";
+        ctx.beginPath(); ctx.arc(kx, kz, 4.5, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.2; ctx.stroke();
+      }
+
+      // Titik Live Angkot & Mobil Warga di Komplek
+      districtTraffic.forEach(v => {
+        if (!v.mesh) return;
+        const vx = toM(v.mesh.position.x);
+        const vz = toM(v.mesh.position.z);
+        if (Math.hypot(vx - cx, vz - cy) < 98) {
+          ctx.fillStyle = "#fb923c";
+          ctx.fillRect(vx - 2.5, vz - 2.5, 5, 5);
+        }
+      });
+
+      // Label Nama Kecamatan
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.beginPath(); ctx.roundRect(cx - 52, 8, 104, 16, 8); ctx.fill();
+      ctx.fillStyle = "#fde047"; ctx.font = "bold 9.5px sans-serif"; ctx.textAlign = "center";
+      ctx.fillText((komplekMinimapOverlay.dataset.districtName || "KOMPLEK").toUpperCase().slice(0, 14), cx, 19.5);
+
+      // Penanda Pemain + Arah Hadap
       const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
       if (mesh && mesh.position) {
-        const px = Math.max(12, Math.min(108, cx + (mesh.position.x / 45) * 46));
-        const pz = Math.max(16, Math.min(108, cy + (mesh.position.z / 45) * 46));
-        ctx.beginPath(); ctx.arc(px, pz, 4, 0, Math.PI * 2);
+        const px = Math.max(18, Math.min(w - 18, toM(mesh.position.x)));
+        const pz = Math.max(24, Math.min(h - 18, toM(mesh.position.z)));
+        const rot = mesh.rotation ? -mesh.rotation.y + Math.PI / 2 : 0;
+
+        ctx.save();
+        ctx.translate(px, pz);
+        ctx.rotate(rot);
+        const grad = ctx.createRadialGradient(0, 0, 2, 0, 0, 20);
+        grad.addColorStop(0, "rgba(56, 189, 248, 0.55)");
+        grad.addColorStop(1, "rgba(56, 189, 248, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 20, -0.45, 0.45); ctx.closePath(); ctx.fill();
+        ctx.restore();
+
+        ctx.beginPath(); ctx.arc(px, pz, 5.2, 0, Math.PI * 2);
         ctx.fillStyle = "#38bdf8"; ctx.fill();
-        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.6; ctx.stroke();
       }
     }
   }
@@ -1162,6 +1420,7 @@
   window.enterDistrictMap = function(districtId) {
     const d = districtId === CENTRAL_HUB.id ? CENTRAL_HUB : (DISTRICTS.find(x => x.id === districtId) || CENTRAL_HUB);
     activeMapId = d.id;
+    window.pirakuActiveMapId = d.id;
     window.pirakuInDistrict = !d.isMainMap; // dibaca main.js buat batas gerak
 
     if (typeof window.switchMultiplayerMapRoom === "function") {
@@ -1182,6 +1441,20 @@
     const modal = document.getElementById("piraku-districts-modal");
     if (modal) modal.style.display = "none";
   };
+
+  window.autoSpawnRegisteredDistrict = function(force) {
+    const prof = getCitizenProfile();
+    if (!prof.isRegistered || !prof.district) return;
+    if (prof.district.id && prof.district.id !== "bandung_wetan" && (force || activeMapId === "bandung_wetan")) {
+      window.enterDistrictMap(prof.district.id);
+    }
+  };
+  setTimeout(() => {
+    if (!window._pirakuDidInitialDistrictSpawn && localStorage.getItem("piraku_my_ig")) {
+      window._pirakuDidInitialDistrictSpawn = true;
+      window.autoSpawnRegisteredDistrict(false);
+    }
+  }, 300);
 
   function showDistrictBanner(d) {
     const banner = document.getElementById("district-banner");
@@ -1222,6 +1495,149 @@
     }
   }
 
+  
+  const pirakuKnockback = { active: false, vx: 0, vy: 0, vz: 0, spinX: 0, spinZ: 0, cooldownUntil: 0 };
+  function triggerCarKnockback(player, carMesh, nowMs) {
+    if (!player || !player.position || !carMesh || !carMesh.position) return;
+    if (nowMs < pirakuKnockback.cooldownUntil) return;
+    const dx = player.position.x - carMesh.position.x;
+    const dz = player.position.z - carMesh.position.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist > 1.45 || player.position.y > 1.6) return;
+
+    const nx = dist > 0.01 ? dx / dist : Math.sin(carMesh.rotation.y || 0);
+    const nz = dist > 0.01 ? dz / dist : Math.cos(carMesh.rotation.y || 0);
+    player.position.x = carMesh.position.x + nx * 1.55;
+    player.position.z = carMesh.position.z + nz * 1.55;
+
+    const fwdX = Math.sin(carMesh.rotation.y || 0);
+    const fwdZ = Math.cos(carMesh.rotation.y || 0);
+    const launchX = fwdX * 0.75 + nx * 0.65;
+    const launchZ = fwdZ * 0.75 + nz * 0.65;
+    const lLen = Math.hypot(launchX, launchZ) || 1;
+
+    pirakuKnockback.active = true;
+    pirakuKnockback.vx = (launchX / lLen) * 9.5;
+    pirakuKnockback.vz = (launchZ / lLen) * 9.5;
+    pirakuKnockback.vy = 8.4;
+    pirakuKnockback.spinX = (Math.random() > 0.5 ? 1 : -1) * 11;
+    pirakuKnockback.spinZ = (Math.random() > 0.5 ? 1 : -1) * 9;
+    pirakuKnockback.cooldownUntil = nowMs + 1100;
+
+    try { if (typeof playAngkotHorn === "function") playAngkotHorn(); } catch (e) {}
+    try { playAngkotHornSfx(); } catch (e) {}
+    try { if (typeof window.recordPirakuAngkotHit === "function") window.recordPirakuAngkotHit(); } catch (e) {}
+  }
+
+  window.walkToMyDistrictKavling = function() {
+    const prof = getCitizenProfile();
+    if (!prof.isRegistered) {
+      if (typeof window.openAuthModal === "function") window.openAuthModal("signup");
+      return;
+    }
+    if (activeMapId !== prof.district.id) {
+      window.enterDistrictMap(prof.district.id);
+    }
+    setTimeout(() => {
+      const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+      if (mesh && mesh.position && myDistrictKavlingInfo) {
+        mesh.position.set(myDistrictKavlingInfo.x, 0, myDistrictKavlingInfo.z);
+        if (mesh.userData && mesh.userData.a && mesh.userData.a.c) {
+          mesh.userData.a.c.x = myDistrictKavlingInfo.x;
+          mesh.userData.a.c.z = myDistrictKavlingInfo.z;
+        }
+        if (typeof window.showToast === "function") {
+          window.showToast("📍 Tiba di depan Kavling milikmu di Kec. " + prof.district.name + "!");
+        }
+      }
+    }, 180);
+  };
+
+  window.upgradeMyPersonalHouse = async function() {
+    const prof = getCitizenProfile();
+    if (!prof.isRegistered) return;
+    const clean = String(prof.ig || "").trim().toLowerCase().replace(/^@/, "");
+    const curTier = getPersonalHouseTierFor(clean);
+    if (curTier >= 4) {
+      if (typeof window.showToast === "function") window.showToast("👑 Rumahmu sudah mencapai level tertinggi (Villa Sultan Lv.4)!");
+      return;
+    }
+    const nextInfo = HOUSE_TIER_INFO.find(h => h.tier === curTier + 1);
+    if (!nextInfo) return;
+    const myLvl = parseInt(localStorage.getItem("piraku_my_level") || "1", 10);
+    if (myLvl < (nextInfo.minLvl || 1)) {
+      if (typeof window.showToast === "function") {
+        window.showToast("🔒 Butuh minimal Level " + nextInfo.minLvl + " untuk upgrade ke " + nextInfo.name + " (Levelmu: Lv." + myLvl + ")!");
+      }
+      return;
+    }
+    if (!window.PirakuEconomy || typeof window.PirakuEconomy.spendCoins !== "function") return;
+    if (!window.PirakuEconomy.spendCoins(nextInfo.cost, "Upgrade " + nextInfo.name)) return;
+
+    localStorage.setItem("piraku_house_tier_" + clean, String(nextInfo.tier));
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const ecoState = window.PirakuEconomy.getState();
+      if (Array.isArray(ecoState.owned)) {
+        const tag = "house_tier_" + nextInfo.tier;
+        if (!ecoState.owned.includes(tag)) ecoState.owned.push(tag);
+        if (typeof window.syncPirakuWalletToSupabase === "function") {
+          window.syncPirakuWalletToSupabase(ecoState);
+        }
+      }
+    }
+    if (typeof window.playSynthTone === "function") {
+      window.playSynthTone(784, "triangle", 0.22);
+      setTimeout(() => window.playSynthTone(1046, "triangle", 0.35), 140);
+    }
+    if (typeof window.grantPirakuXP === "function") {
+      await window.grantPirakuXP(60, "Upgrade Rumah ke Lv." + nextInfo.tier + " (" + nextInfo.name + ")");
+    }
+    if (typeof window.showToast === "function") {
+      window.showToast("🏡 UPGRADE BERHASIL! Rumahmu kini Lv." + nextInfo.tier + ": " + nextInfo.name + " ✨");
+    }
+    if (! CENTRAL_HUB || activeMapId !== CENTRAL_HUB.id) {
+      const curD = DISTRICTS.find(x => x.id === activeMapId);
+      if (curD) buildDedicatedDistrictScene(curD);
+    }
+  };
+
+  window.buyVendorCuankiBoost = async function() {
+    if (!window.PirakuEconomy || typeof window.PirakuEconomy.spendCoins !== "function") return;
+    if (!window.PirakuEconomy.spendCoins(10, "Jajan Cuanki Mang Bandung")) return;
+    playBaksoBowlClinkSfx();
+    window.pirakuSpeedBoostUntil = Date.now() + 35000;
+    const today = new Date().toISOString().slice(0, 10);
+    const clean = String(localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    const suf = clean ? ("_" + clean) : "_guest";
+    localStorage.setItem("piraku_did_cuanki_" + today + suf, "1");
+
+    if (typeof window.showToast === "function") {
+      window.showToast("🍜 Sruput Cuanki Panas (-10 🪙)! Lari +55% Lebih Ngebut selama 35 Detik! ⚡");
+    }
+  };
+
+  function updateCarKnockbackPhysics(player, dt) {
+    if (!pirakuKnockback.active || !player || !player.position) return;
+    player.position.x = Math.max(-52, Math.min(52, player.position.x + pirakuKnockback.vx * dt));
+    player.position.z = Math.max(-52, Math.min(52, player.position.z + pirakuKnockback.vz * dt));
+    player.position.y += pirakuKnockback.vy * dt;
+    pirakuKnockback.vy -= 24.0 * dt;
+    player.rotation.x += pirakuKnockback.spinX * dt;
+    player.rotation.z += pirakuKnockback.spinZ * dt;
+
+    if (player.userData && player.userData.a && player.userData.a.c) {
+      player.userData.a.c.x = player.position.x;
+      player.userData.a.c.z = player.position.z;
+    }
+
+    if (player.position.y <= 0) {
+      player.position.y = 0;
+      player.rotation.x = 0;
+      player.rotation.z = 0;
+      pirakuKnockback.active = false;
+    }
+  }
+
   function tickDistrictLoop() {
     const mesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (mesh) {
@@ -1246,13 +1662,15 @@
     const activePlayer = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     const pPos = activePlayer && activePlayer.position ? activePlayer.position : null;
     const nowMs = performance.now();
+    if (customDistrictGroup && activePlayer) updateCarKnockbackPhysics(activePlayer, dt);
 
-    // Update lalu lintas Angkot Bandung & Mobil Warga (anti-tabrakan + yield bundaran + respawn 95m di luar kamera)
+    // Update lalu lintas Angkot Bandung & Mobil Warga (anti-deadlock bundaran + prioritas lajur + respawn cepat)
     districtTraffic.forEach((v, idx) => {
       if (!v.mesh) return;
+      if (customDistrictGroup && activePlayer) triggerCarKnockback(activePlayer, v.mesh, nowMs);
       const R = 10.0;
       const ENTRY_R = 11.4;
-      const SPAWN_DIST = 92;
+      const SPAWN_DIST = 58;
       const ARM_DEFS = [
         { axis: "z", dir: 1, laneX: 1.8, entryAng: -1.39 },
         { axis: "x", dir: 1, laneZ: -1.8, entryAng: 2.96 },
@@ -1266,10 +1684,9 @@
         { axis: "x", dir: -1, laneZ: -1.8 }
       ];
 
-      // Cek jarak aman 5.2m di depan & yield jika hendak masuk bundaran saat ada kendaraan lain melintas
-      let blocked = false;
-      const fwdX = Math.sin(v.mesh.rotation.y);
-      const fwdZ = Math.cos(v.mesh.rotation.y);
+      // Anti-tabrakan berbasis lajur & state (bebas deadlock di bundaran maupun antar lajur berlawanan)
+      let speedFactor = 1.0;
+      const curArm = ARM_DEFS[v.armIdx];
       for (let j = 0; j < districtTraffic.length; j++) {
         if (j === idx || !districtTraffic[j].mesh) continue;
         const otherVeh = districtTraffic[j];
@@ -1278,17 +1695,54 @@
         const dz = other.z - v.mesh.position.z;
         const distOther = Math.hypot(dx, dz);
 
-        if (distOther > 0.05 && distOther < 5.2) {
-          const dot = (dx * fwdX + dz * fwdZ) / distOther;
-          if (dot > 0.35) { blocked = true; break; }
-        }
-        // Aturan Yield Bundaran: kendaraan yang hendak masuk bundaran (dist ~ 11.5..15.5m) wajib berhenti jika ada kendaraan di dalam bundaran dekat pintu masuk
-        if (v.state === "approach" && Math.abs(v.dist) <= 15.2 && otherVeh.state === "circle" && distOther < 8.5) {
-          blocked = true;
-          break;
+        if (v.state === "approach") {
+          // 1) Antre rapi di lajur masuk yang sama jika ada mobil di depan (lebih dekat ke bundaran)
+          if (otherVeh.state === "approach" && otherVeh.armIdx === v.armIdx) {
+            const aheadGap = (otherVeh.dist - v.dist) * curArm.dir;
+            if (aheadGap > 0.05 && aheadGap < 5.6 && Math.abs(otherVeh.dist) < Math.abs(v.dist)) {
+              speedFactor = 0;
+              break;
+            }
+          }
+          // 2) Yield di bibir bundaran (11.4m..14.8m) hanya terhadap mobil di dalam bundaran yang sedang mendekati pintu masuk ini
+          const absDist = Math.abs(v.dist);
+          if (absDist > ENTRY_R && absDist <= ENTRY_R + 3.4 && otherVeh.state === "circle" && distOther < 6.4) {
+            const otherFwdX = Math.sin(otherVeh.mesh.rotation.y);
+            const otherFwdZ = Math.cos(otherVeh.mesh.rotation.y);
+            const towardEntry = (-dx * otherFwdX + -dz * otherFwdZ);
+            if (towardEntry > -0.6) {
+              speedFactor = 0;
+              break;
+            }
+          }
+        } else if (v.state === "circle") {
+          // Kendaraan di dalam bundaran punya hak utama (tidak pernah berhenti untuk approach/exit).
+          // Hanya jaga jarak dengan kendaraan lain di dalam bundaran yang sudah lebih dulu berputar (strict order -> bebas deadlock).
+          if (otherVeh.state === "circle") {
+            const angAhead = ((v.circleAng - otherVeh.circleAng) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+            const hasPriority = otherVeh.traveledAng > v.traveledAng || (otherVeh.traveledAng === v.traveledAng && j < idx);
+            if (hasPriority && angAhead > 0.02 && angAhead < 0.42) {
+              speedFactor = angAhead < 0.28 ? 0 : Math.min(speedFactor, 0.35);
+              if (speedFactor === 0) break;
+            }
+          }
+        } else if (v.state === "exit" && v.exitArm) {
+          // Kendaraan keluar bundaran hanya jaga jarak dengan kendaraan di lajur keluar yang sama di depannya
+          if (
+            otherVeh.state === "exit" &&
+            otherVeh.exitArm &&
+            otherVeh.exitArm.axis === v.exitArm.axis &&
+            otherVeh.exitArm.dir === v.exitArm.dir
+          ) {
+            const aheadGap = (otherVeh.dist - v.dist) * v.exitArm.dir;
+            if (aheadGap > 0.05 && aheadGap < 5.4 && Math.abs(otherVeh.dist) > Math.abs(v.dist)) {
+              speedFactor = 0;
+              break;
+            }
+          }
         }
       }
-      const effSpeed = blocked ? 0 : v.speed;
+      const effSpeed = v.speed * speedFactor;
 
       if (v.state === "approach") {
         const arm = ARM_DEFS[v.armIdx];
@@ -1335,19 +1789,25 @@
           v.mesh.position.set(v.dist, 0.02, ex.laneZ);
           v.mesh.rotation.y = ex.dir > 0 ? Math.PI / 2 : -Math.PI / 2;
         }
-        // Respawn hanya setelah benar-benar keluar jauh di luar kamera (92m) & tidak bertumpuk di titik spawn
+        // Respawn begitu keluar batas komplek (58m) ke ruas jalan yang senggang
         if (Math.abs(v.dist) > SPAWN_DIST) {
-          const nextArmIdx = (v.armIdx + 1 + Math.floor(Math.random() * 3)) % 4;
-          const nextArm = ARM_DEFS[nextArmIdx];
-          const nextSpawnDist = nextArm.dir > 0 ? -SPAWN_DIST : SPAWN_DIST;
-          const sx = nextArm.axis === "z" ? nextArm.laneX : nextSpawnDist;
-          const sz = nextArm.axis === "z" ? nextSpawnDist : nextArm.laneZ;
-          const tooClose = districtTraffic.some((o, oi) => oi !== idx && o.mesh && Math.hypot(o.mesh.position.x - sx, o.mesh.position.z - sz) < 12);
-          if (!tooClose) {
-            v.armIdx = nextArmIdx;
-            v.turnSteps = 1 + Math.floor(Math.random() * 3);
-            v.dist = nextSpawnDist;
-            v.state = "approach";
+          const baseTry = (v.armIdx + 1 + Math.floor(Math.random() * 3)) % 4;
+          for (let attempt = 0; attempt < 4; attempt++) {
+            const candIdx = (baseTry + attempt) % 4;
+            const candArm = ARM_DEFS[candIdx];
+            const candDist = candArm.dir > 0 ? -SPAWN_DIST : SPAWN_DIST;
+            const sx = candArm.axis === "z" ? candArm.laneX : candDist;
+            const sz = candArm.axis === "z" ? candDist : candArm.laneZ;
+            const tooClose = districtTraffic.some(
+              (o, oi) => oi !== idx && o.mesh && Math.hypot(o.mesh.position.x - sx, o.mesh.position.z - sz) < 9.5
+            );
+            if (!tooClose) {
+              v.armIdx = candIdx;
+              v.turnSteps = 1 + Math.floor(Math.random() * 3);
+              v.dist = candDist;
+              v.state = "approach";
+              break;
+            }
           }
         }
       } else if (v.mode === "laneEW") {
@@ -1433,9 +1893,124 @@
         }
       }
     });
+    // Animasi Beacon Penanda Kavling Milik Sendiri
+    if (myKavlingBeaconGroup && myKavlingBeaconGroup.userData) {
+      const { gemMesh, ringMesh } = myKavlingBeaconGroup.userData;
+      if (gemMesh) {
+        gemMesh.rotation.y += 0.045;
+        gemMesh.position.y = 2.35 + Math.sin(nowSec * 3.2) * 0.25;
+      }
+      if (ringMesh) {
+        const s = 1 + Math.sin(nowSec * 3.5) * 0.1;
+        ringMesh.scale.set(s, s, 1);
+      }
+    }
+
+    // Nyalakan Lampu PJU & Bundaran Komplek secara otomatis saat Senja / Malam
+    if (customDistrictGroup && districtLampState) {
+      const timeBtn = document.getElementById("side-time-btn");
+      const btnTxt = timeBtn ? (timeBtn.textContent || "") : "";
+      const isNight = /Malam/i.test(btnTxt);
+      const isDusk = /Senja|Sore/i.test(btnTxt);
+      const nightLevel = isNight ? 1.0 : isDusk ? 0.65 : 0.0;
+      if (districtLampState.bulbMat) {
+        districtLampState.bulbMat.color.setHex(nightLevel > 0.1 ? 0xfef08a : 0xe2e8f0);
+      }
+      if (districtLampState.haloMat) {
+        districtLampState.haloMat.opacity = nightLevel > 0.1 ? 0.35 * nightLevel : 0.0;
+      }
+      if (districtLampState.poolMat) {
+        districtLampState.poolMat.opacity = nightLevel > 0.1 ? 0.24 * nightLevel : 0.0;
+      }
+      if (Array.isArray(districtLampState.pointLights)) {
+        districtLampState.pointLights.forEach(pt => { pt.intensity = nightLevel * 1.45; });
+      }
+      if (districtHouseGlassMat) {
+        districtHouseGlassMat.emissiveIntensity = nightLevel * 1.4;
+      }
+    }
+
+    updateDistrictWorldActionPrompt(pPos, nowMs);
     checkAndGrantLevelUpRewards();
     drawKomplekMinimapFrame();
     requestAnimationFrame(tickDistrictLoop);
+  }
+
+  let lastActionHtmlSig = "";
+  function updateDistrictWorldActionPrompt(pPos, nowMs) {
+    let bar = document.getElementById("piraku-3d-action-bar");
+    if (!bar && document.body) {
+      bar = document.createElement("div");
+      bar.id = "piraku-3d-action-bar";
+      bar.style.cssText = "position:fixed;bottom:148px;left:50%;transform:translateX(-50%);z-index:45;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:7px 11px;border-radius:16px;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.65);color:#f8fafc;font-size:11.5px;font-weight:800;box-shadow:0 12px 28px rgba(0,0,0,0.55);max-width:min(360px, calc(100vw - 24px));box-sizing:border-box;text-align:center;";
+      document.body.appendChild(bar);
+    }
+    if (!bar) return;
+
+    if (!customDistrictGroup || !pPos || activeMapId === CENTRAL_HUB.id) {
+      if (bar.style.display !== "none") bar.style.display = "none";
+      return;
+    }
+
+    let html = "";
+
+    // 1. Cek jarak ke Kavling Milik Sendiri (khusus 20 kavling tapak: 1 Camat + 19 Warga Pertama)
+    if (myDistrictKavlingInfo) {
+      const dKav = Math.hypot(pPos.x - myDistrictKavlingInfo.x, pPos.z - myDistrictKavlingInfo.z);
+      if (dKav < 5.2) {
+        const clean = String(localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+        const suf = clean ? ("_" + clean) : "_guest";
+        const hasH = localStorage.getItem("piraku_has_house" + suf) === "1" || myDistrictKavlingInfo.hasHouse;
+        const keys = hasH ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
+        if (!hasH) {
+          if (keys >= 3) {
+            html = `<span>📍 Kavlingmu Siap Dibangun!</span>` +
+                   `<button onclick="buildMyInstantHouse()" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;">🏠 Dirikan Rumah 3D (3/3 🔑)</button>`;
+          } else {
+            html = `<span>📍 Tanah Kavlingmu (${keys}/3 🔑)</span>` +
+                   `<button onclick="openMissionsHubModal()" style="border:none;background:#38bdf8;color:#0f172a;padding:6px 10px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer;">🎯 Cari ${3 - keys} Kunci Lagi</button>`;
+          }
+        } else {
+          const curT = getPersonalHouseTierFor(clean);
+          if (curT < 4) {
+            const nextT = HOUSE_TIER_INFO.find(h => h.tier === curT + 1);
+            html = `<span>🏠 Rumahmu Lv.${curT}</span>` +
+                   `<button onclick="upgradeMyPersonalHouse()" style="border:none;background:linear-gradient(135deg,#22c55e,#10b981);color:#052e16;padding:6px 10px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;">✨ Upgrade Lv.${nextT.tier} (🪙 ${nextT.cost} • Min Lv.${nextT.minLvl})</button>`;
+          } else {
+            html = `<span style="color:#fde047;">👑 Villa Sultan Lv.4 Milikmu • Level Maksimal!</span>`;
+          }
+        }
+      }
+    }
+
+    // 2. Cek jarak ke Gerobak Tukang Cuanki/Bandrek Keliling
+    if (!html) {
+      for (let i = 0; i < districtPedestrians.length; i++) {
+        const p = districtPedestrians[i];
+        if (!p.isVendor || !p.mesh) continue;
+        const dVen = Math.hypot(pPos.x - p.mesh.position.x, pPos.z - p.mesh.position.z);
+        if (dVen < 4.2) {
+          const boostRem = (window.pirakuSpeedBoostUntil && Date.now() < window.pirakuSpeedBoostUntil)
+            ? Math.ceil((window.pirakuSpeedBoostUntil - Date.now()) / 1000)
+            : 0;
+          html = `<span>🍜 Mang Cuanki</span>` +
+                 `<button onclick="buyVendorCuankiBoost()" style="border:none;background:linear-gradient(135deg,#f97316,#eab308);color:#0f172a;padding:6px 10px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">${boostRem > 0 ? `⚡ Ngebut (${boostRem}d)` : "🍲 Beli (🪙 10 • 35d)"}</button>`;
+          break;
+        }
+      }
+    }
+
+    if (!html) {
+      if (bar.style.display !== "none") bar.style.display = "none";
+      lastActionHtmlSig = "";
+      return;
+    }
+
+    bar.style.display = "flex";
+    if (html !== lastActionHtmlSig) {
+      lastActionHtmlSig = html;
+      bar.innerHTML = html;
+    }
   }
 
   let filterZone = "Semua";

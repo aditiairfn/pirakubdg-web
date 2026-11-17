@@ -8,7 +8,7 @@
   <meta property="og:title" content="Simulasi Tata Kota Bandung">
   <meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap">
-  <link rel="stylesheet" href="./css/style.css?v=20261116v88">
+  <link rel="stylesheet" href="./css/style.css?v=20261117v89">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -17,8 +17,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
-  <link rel="stylesheet" href="css/clean-hud.css?v=20261116v88">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261116v88">
+  <link rel="stylesheet" href="css/clean-hud.css?v=20261117v89">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261117v89">
   <style id="piraku-zindex-fix">
     body > div[style*="pointer-events: none"][style*="position: absolute"],
     body > div[style*="pointer-events:none"][style*="position:absolute"] { z-index: 5 !important; isolation: isolate !important; }
@@ -371,17 +371,17 @@
 
   <div class="top-hud">
     <div class="brand-row">
-      <div class="brand-tag">@pirakubdg <span id="warga-counter">MEMUAT...</span></div>
+      <div class="brand-tag"><img src="assets/Playful%20Pirakubdg%20Sticker%20Logo.png" alt="@pirakubdg" class="brand-logo"> <span id="warga-counter">MEMUAT...</span></div>
       <div class="top-actions">
         <button class="btn-join" id="btn-citizen-status" onclick="handleCitizenButtonClick()"><span>+</span> Masuk / Daftar</button>
         <button class="btn-menu-toggle" id="btn-main-menu" onclick="toggleHudMenu(event)" title="Menu Kota">⋯</button>
         <div class="hud-dropdown-menu" id="hud-dropdown">
-          <button class="menu-item-btn" onclick="openWardrobeModal(); closeHudMenu();"><span>👕</span> Ganti Karakter & Outfit</button>
-          <button class="menu-item-btn" onclick="openGamesHubModal(); closeHudMenu();"><span>🎮</span> Mini-Game & Arcade</button>
-          <button class="menu-item-btn" onclick="openPollingModal(); closeHudMenu();"><span>📊</span> Polling Kebijakan</button>
-          <button class="menu-item-btn" onclick="openDistrictsHubModal(); closeHudMenu();"><span>🏙️</span> 30 Kecamatan Bandung</button>
+          <button class="menu-item-btn" onclick="openSearchWargaModal(); closeHudMenu();"><span>🔍</span> Cari Warga</button>
           <button class="menu-item-btn" onclick="openLeaderboardModal(); closeHudMenu();"><span>🏆</span> Peringkat Warga</button>
-          <button class="menu-item-btn" id="btn-menu-audio" onclick="toggleAmbienceAudio(); updateAudioMenuLabel();"><span id="menu-audio-icon">🔇</span> Suara Ambience</button>
+          <button class="menu-item-btn" id="btn-menu-battery" onclick="toggleBatterySaverMode(); closeHudMenu();" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span>⚡</span> Mode Hemat Baterai</span><span id="battery-saver-badge" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(148,163,184,0.22);color:#cbd5e1;">OFF</span></button>
+          <button class="menu-item-btn" onclick="toggleCleanHudMode(); closeHudMenu();"><span>🙈</span> Mode Layar Bersih</button>
+          <button class="menu-item-btn" onclick="openGuideModal(); closeHudMenu();"><span>❓</span> Panduan &amp; Kontrol</button>
+          <button class="menu-item-btn" onclick="openFeedbackModal(); closeHudMenu();"><span>📣</span> Kirim Masukan / Lapor Bug</button>
         </div>
       </div>
     </div>
@@ -405,7 +405,7 @@
     </div>
   </div>
 
-  <div id="citizen-bubble" style="z-index:22;">
+  <div id="citizen-bubble" style="z-index:990;">
     <div class="bubble-card" style="width:196px;max-width:196px;padding:8px 10px;border-radius:14px;box-shadow:0 8px 20px rgba(15,23,42,.22);">
       <div class="bubble-header" style="margin-bottom:2px;gap:4px;">
         <span class="bubble-ig" id="b-ig" style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@user</span>
@@ -437,7 +437,7 @@
         <button class="btn-hide-panel" onclick="window.toggleScenarioDock()">⌄ Sembunyikan</button>
       </div>
     </div>
-    <div class="card-title" id="status-title">Bandung Reborn: Trem Listrik & Plaza Hijau</div>
+    <div class="card-title" id="status-title">Bandung Reborn: Plaza Hijau &amp; Kota Ramah Warga</div>
     <div class="mode-toggle">
       <button class="btn-mode r" id="btn-mode-now" onclick="applyMode('now')">Macet & Polusi</button>
       <button class="btn-mode g active" id="btn-mode-reborn" onclick="applyMode('reborn')">Reborn Hijau</button>
@@ -455,16 +455,26 @@
 
   <!-- Modal Balai Obrolan -->
   <div class="modal-overlay" id="chat-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Balai Obrolan Warga 💬</h3>
-        <button class="btn-close" onclick="closeChatModal()">✕</button>
+    <div class="modal-card" style="background:linear-gradient(180deg,#0f172a,#131c31);color:#f8fafc;border:1.5px solid rgba(56,189,248,0.4);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(148,163,184,0.18);padding-bottom:8px;">
+        <div>
+          <h3 style="margin:0;color:#f8fafc;">Balai Obrolan Warga 💬</h3>
+          <div style="font-size:10.5px;color:#4ade80;font-weight:700;">● Live Broadcast Kota Bandung</div>
+        </div>
+        <button class="btn-close" onclick="closeChatModal()" style="background:#1e293b;color:#cbd5e1;">✕</button>
       </div>
-      <div class="chat-stream" id="chat-messages" style="display:flex;flex-direction:column;gap:8px;height:240px;overflow-y:auto;padding:8px 0;">
-        <div style="background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan! Pesan di sini dibroadcast langsung ke semua warga kota.</div>
+      <div class="chat-stream" id="chat-messages" style="display:flex;flex-direction:column;gap:8px;height:240px;overflow-y:auto;padding:10px 4px;">
+        <div style="background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.35);padding:8px 11px;border-radius:12px;font-size:11.5px;color:#fde047;"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan Warga! Pesan tampil realtime di sini & di atas avatar 3D.</div>
       </div>
-      <div style="display:flex;gap:6px;margin-top:10px;">
-        <input type="text" class="form-input" id="inp-chat-msg" placeholder="Tulis pesan warga..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+      <div style="display:flex;gap:5px;overflow-x:auto;padding:4px 0 6px;">
+        <button onclick="sendQuickChat('👋 Halo wargi Bandung!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">👋 Halo!</button>
+        <button onclick="sendQuickChat('☕ Ngopi di Gasibu yuk!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">☕ Ngopi</button>
+        <button onclick="sendQuickChat('🛵 Gas narik Ojol!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">🛵 Gas Ojol</button>
+        <button onclick="sendQuickChat('🏠 Mampir ke komplekku!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">🏠 Komplek</button>
+        <button onclick="sendQuickChat('😂 Wkwk mantap!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">😂 Mantap</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <input type="text" class="form-input" id="inp-chat-msg" placeholder="Tulis pesan warga..." style="background:#0f172a;color:#f8fafc;border-color:#334155;" onkeydown="if(event.key==='Enter') sendChatMessage()">
         <button class="btn-join" id="btn-send-chat" onclick="sendChatMessage()">Kirim</button>
       </div>
     </div>
@@ -480,7 +490,7 @@
       <div style="font-size:12px;color:var(--sub);margin-bottom:12px;">Satu akun satu suara. Tentukan prioritas renovasi Bandung Reborn:</div>
       <div class="poll-card-box">
         <button class="poll-option-btn" id="btn-poll-opt_trem" onclick="votePolicy('opt_trem')">
-          <span>🚊 Ganti Angkot Jadi Trem Listrik Penuh</span>
+          <span>🚌 Bus Listrik Kota (BRT Bandung)</span>
           <b id="poll-count-opt_trem">0</b>
         </button>
         <div class="poll-bar"><div class="poll-bar-fill" id="poll-fill-opt_trem"></div></div>
@@ -751,8 +761,8 @@
 
   
   <!-- Modal Ganti Karakter / Wardrobe (Gaya Kartu Krem-Hijau Bandung + Live Preview) -->
-  <div class="modal-overlay" id="wardrobe-modal">
-    <div class="modal-card" style="background:#f6f1e3; border:2px solid #1e293b; border-radius:20px; padding:0; overflow:hidden; max-width:390px; width:92%;">
+  <div class="modal-overlay" id="wardrobe-modal" style="z-index:2147483000 !important;">
+    <div class="modal-card" style="background:#f6f1e3; border:2px solid #1e293b; border-radius:20px; padding:0; overflow:hidden; max-width:390px; width:92%; max-height:88dvh; overflow-y:auto;">
       <div class="modal-header" style="background:#131b2e; color:#ffffff; padding:14px 18px; margin:0; border-bottom:2px solid #1e293b;">
         <h3 style="margin:0; font-size:15px; font-weight:800; color:#ffffff;">Karakter Warga</h3>
         <button class="btn-close" onclick="closeWardrobeModal()" style="background:rgba(255,255,255,0.16); color:#fff; border:none; width:30px; height:30px; border-radius:8px; font-weight:800;">✕</button>
@@ -765,29 +775,33 @@
             <svg id="wardrobe-preview-svg" viewBox="0 0 110 165" width="96" height="148">
               <ellipse cx="55" cy="152" rx="28" ry="7" fill="rgba(43,70,60,0.18)"/>
               <!-- Hijab / Rambut Belakang -->
-              <path id="pv-hijab-back" d="M27,44 Q25,84 55,86 Q85,84 83,44 Z" fill="#f1f5f9" style="display:none;"/>
+              <path id="pv-hijab-back" d="M26,42 C24,18 40,12 55,12 C70,12 86,18 84,42 C85,66 76,82 55,84 C34,82 25,66 26,42 Z" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.2" style="display:none;"/>
               <g id="pv-hair-back"></g>
               <!-- Kaki, Celana & Sepatu -->
-              <rect id="pv-leg-l" x="40" y="106" width="11" height="36" rx="4" fill="#1e293b"/>
-              <rect id="pv-leg-r" x="59" y="106" width="11" height="36" rx="4" fill="#1e293b"/>
-              <rect x="38" y="138" width="14" height="6" rx="3" fill="#0f172a"/>
-              <rect x="58" y="138" width="14" height="6" rx="3" fill="#0f172a"/>
+              <rect id="pv-leg-l" x="40" y="106" width="11" height="36" rx="5" fill="#1e293b"/>
+              <rect id="pv-leg-r" x="59" y="106" width="11" height="36" rx="5" fill="#1e293b"/>
+              <rect x="38" y="137" width="14" height="7" rx="3.5" fill="#0f172a"/>
+              <rect x="58" y="137" width="14" height="7" rx="3.5" fill="#0f172a"/>
               <!-- Lengan -->
               <rect id="pv-arm-l" x="23" y="66" width="9" height="34" rx="4.5" fill="#2d6a4f"/>
               <rect id="pv-arm-r" x="78" y="66" width="9" height="34" rx="4.5" fill="#2d6a4f"/>
               <!-- Torso Baju + Kerah Putih -->
-              <rect id="pv-shirt" x="31" y="62" width="48" height="48" rx="13" fill="#2d6a4f"/>
-              <path d="M46,62 L55,71 L64,62 Z" fill="#f8fafc"/>
+              <rect id="pv-shirt" x="31" y="62" width="48" height="48" rx="14" fill="#2d6a4f"/>
+              <path d="M45,62 L55,72 L65,62 Z" fill="#f8fafc"/>
               <!-- Kepala & Kulit -->
-              <circle id="pv-skin" cx="55" cy="41" r="22" fill="#c68a5c"/>
-              <!-- Mata, Pipi & Senyum -->
-              <circle cx="47" cy="40" r="2.4" fill="#0f172a"/>
-              <circle cx="63" cy="40" r="2.4" fill="#0f172a"/>
-              <ellipse cx="43" cy="45" rx="3.2" ry="1.8" fill="rgba(239,68,68,0.28)"/>
-              <ellipse cx="67" cy="45" rx="3.2" ry="1.8" fill="rgba(239,68,68,0.28)"/>
-              <path d="M51,47 Q55,51 59,47" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+              <circle id="pv-skin" cx="55" cy="41" r="21" fill="#c68a5c"/>
+              <!-- Mata Ekspresif, Alis, Pipi & Senyum -->
+              <path d="M43,35 Q47,33 50,35" stroke="#1c1917" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <path d="M60,35 Q63,33 67,35" stroke="#1c1917" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+              <circle cx="47" cy="40" r="2.6" fill="#0f172a"/>
+              <circle cx="63" cy="40" r="2.6" fill="#0f172a"/>
+              <circle cx="47.8" cy="39.2" r="0.9" fill="#ffffff"/>
+              <circle cx="63.8" cy="39.2" r="0.9" fill="#ffffff"/>
+              <ellipse cx="42.5" cy="45" rx="3.4" ry="1.8" fill="rgba(239,68,68,0.28)"/>
+              <ellipse cx="67.5" cy="45" rx="3.4" ry="1.8" fill="rgba(239,68,68,0.28)"/>
+              <path d="M51,48 Q55,52 59,48" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
               <!-- Rambut Depan & Aksesoris -->
-              <g id="pv-hair-front"><path d="M33,38 A22,22 0 0,1 77,38 Q65,30 55,32 Q45,30 33,38 Z" fill="#111827"/></g>
+              <g id="pv-hair-front"></g>
               <g id="pv-acc-layer"></g>
             </svg>
             <span id="pv-role-badge" style="margin-top:4px; font-size:9.5px; font-weight:800; color:#263f35; background:#dcd2ba; padding:2px 8px; border-radius:999px;">☕ Barista</span>
@@ -1134,11 +1148,11 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script src="./js/main.js?v=20261116v88"></script>
-  <script src="js/multiplayer.js?v=20261116v88"></script>
-  <script src="./js/rpg-ui.js?v=20261116v88"></script>
-  <script src="js/gedungsate-horizon.js?v=20261116v88"></script>
-  <script src="js/map-beautify.js?v=20261116v88"></script>
+  <script src="./js/main.js?v=20261117v89"></script>
+  <script src="js/multiplayer.js?v=20261117v89"></script>
+  <script src="./js/rpg-ui.js?v=20261117v89"></script>
+  <script src="js/gedungsate-horizon.js?v=20261117v89"></script>
+  <script src="js/map-beautify.js?v=20261117v89"></script>
   <script>
     function closeScenarioPanel() {
       const bp = document.getElementById("bottom-control-panel");
@@ -1278,12 +1292,12 @@
     })();
   </script>
 
-  <script src="js/piraku-economy.js?v=20261116v88"></script>
-  <script src="js/piraku-games.js?v=20261116v88"></script>
-  <script src="js/piraku-world-live.js?v=20261116v88"></script>
-  <script src="js/piraku-nav-modals.js?v=20261116v88"></script>
-    <script src="js/piraku-vfx.js?v=20261116v88"></script>
-  <script src="js/piraku-districts.js?v=20261116v88"></script>
+  <script src="js/piraku-economy.js?v=20261117v89"></script>
+  <script src="js/piraku-games.js?v=20261117v89"></script>
+  <script src="js/piraku-world-live.js?v=20261117v89"></script>
+  <script src="js/piraku-nav-modals.js?v=20261117v89"></script>
+    <script src="js/piraku-vfx.js?v=20261117v89"></script>
+  <script src="js/piraku-districts.js?v=20261117v89"></script>
 
   
 
@@ -1449,8 +1463,8 @@
     }, 450);
   </script>
 
-  <script src="js/piraku-civic.js?v=20261116v88"></script>
-  <script src="js/piraku-perf.js?v=20261116v88"></script>
+  <script src="js/piraku-civic.js?v=20261117v89"></script>
+  <script src="js/piraku-perf.js?v=20261117v89"></script>
 
 
 <script id="piraku-panel-visibility-sync">

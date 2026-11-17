@@ -6,7 +6,7 @@
 
   window.getPirakuXpRequiredForLevel = function (lvl) {
     const L = Math.max(1, Math.min(MAX_LEVEL, parseInt(lvl, 10) || 1));
-    return 100 + (L - 1) * 15;
+    return 60 + (L - 1) * 20;
   };
 
   window.computePirakuLevelFromTotalXp = function (totalXp) {
@@ -41,15 +41,29 @@
   };
 
   window.grantPirakuXP = async function (amount, reasonText) {
-    const myIg = localStorage.getItem("piraku_my_ig");
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    const added = Math.max(0, parseInt(amount, 10) || 0);
+    if (!added) return window.computePirakuLevelFromTotalXp(parseInt(localStorage.getItem("piraku_my_xp") || "0", 10));
+
     let totalXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10);
     const oldInfo = window.computePirakuLevelFromTotalXp(totalXp);
 
-    totalXp += Math.max(0, parseInt(amount, 10) || 0);
+    totalXp += added;
     const newInfo = window.computePirakuLevelFromTotalXp(totalXp);
 
     localStorage.setItem("piraku_my_xp", String(totalXp));
     localStorage.setItem("piraku_my_level", String(newInfo.level));
+
+    if (Array.isArray(window.registeredCitizensList) && myIg) {
+      const me = window.registeredCitizensList.find(c => String(c.ig || "").trim().toLowerCase() === myIg.toLowerCase());
+      if (me) {
+        me.xp = totalXp;
+        me.level = newInfo.level;
+      }
+    }
+
+    const ktpLvlEl = document.getElementById("ktp-level-text");
+    if (ktpLvlEl) ktpLvlEl.innerText = "Lv. " + newInfo.level;
 
     if (typeof window.updateAutoDetectButton === "function") {
       window.updateAutoDetectButton();
@@ -61,7 +75,7 @@
         window.showToast("🎉 NAIK LEVEL " + newInfo.level + "! Gelar: " + window.getPirakuCitizenTitle(newInfo.level));
       }
     } else if (reasonText && typeof window.showToast === "function") {
-      window.showToast("+" + amount + " XP (" + reasonText + ") ✨");
+      window.showToast("+" + added + " XP (" + reasonText + ") ✨");
     }
 
     const sb = window.pirakuSupabase;
@@ -360,16 +374,118 @@
     localStorage.setItem("piraku_did_gotong_" + today + getCivicUserSuffix(), "1");
   };
 
+  window.recordPirakuAngkotHit = function () {
+    const today = new Date().toISOString().slice(0, 10);
+    const suf = getCivicUserSuffix();
+    const key = "piraku_angkot_hits_" + today + suf;
+    const cur = parseInt(localStorage.getItem(key) || "0", 10) + 1;
+    localStorage.setItem(key, String(cur));
+    if (cur <= 3 && typeof window.showToast === "function") {
+      if (cur === 3) {
+        window.showToast("💥 Misi Adu Mekanik Angkot (3/3) Selesai! Klaim hadiah di menu Misi 🎯");
+      } else {
+        window.showToast("💥 Mental Ditabrak Angkot! (" + cur + "/3 Misi Adu Mekanik)");
+      }
+    }
+  };
+
   function getCivicUserSuffix() {
     const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     return ig ? ("_" + ig) : "_guest";
+  }
+
+  function getDailyMissionsList(dist) {
+    const today = new Date().toISOString().slice(0, 10);
+    const suf = getCivicUserSuffix();
+    const isLoggedWarga = !!(localStorage.getItem("piraku_my_ig") || "").trim();
+    const patrolDist = Math.floor(parseFloat(localStorage.getItem("piraku_patrol_dist_" + today + suf) || "0"));
+    const patrolTarget = 150;
+    const cleanVoterCheck = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    const didVote = localStorage.getItem("piraku_did_vote_" + today + suf) === "1" ||
+                    !!localStorage.getItem("piraku_voted_camat_" + dist.id + "_" + cleanVoterCheck);
+    const didGotong = localStorage.getItem("piraku_did_gotong_" + today + suf) === "1";
+    const didCuanki = localStorage.getItem("piraku_did_cuanki_" + today + suf) === "1";
+    const angkotHits = Math.min(3, parseInt(localStorage.getItem("piraku_angkot_hits_" + today + suf) || "0", 10));
+
+    return [
+      {
+        id: "checkin_" + today,
+        cat: "HARIAN",
+        title: "1. Absen Harian Warga",
+        desc: isLoggedWarga ? "Kehadiran terverifikasi! Klik Klaim untuk absen hari ini." : "Daftar/masuk akun warga dulu untuk absen harian.",
+        xp: 30,
+        coins: 10,
+        ready: isLoggedWarga,
+        lockLabel: "Login Dulu",
+        done: localStorage.getItem("piraku_claimed_checkin_" + today + suf) === "1"
+      },
+      {
+        id: "patrol_" + today,
+        cat: "EKSPLORASI",
+        title: "2. Patroli Jalan Kaki " + dist.name,
+        desc: "Jalan kaki keliling peta kota (" + Math.min(patrolDist, patrolTarget) + " / " + patrolTarget + " m).",
+        xp: 35,
+        coins: 12,
+        ready: isLoggedWarga && patrolDist >= patrolTarget,
+        lockLabel: Math.min(patrolDist, patrolTarget) + "/" + patrolTarget + "m",
+        actionHint: "Jalan Kaki Keliling (" + Math.min(patrolDist, patrolTarget) + "/150m)",
+        done: localStorage.getItem("piraku_claimed_patrol_" + today + suf) === "1"
+      },
+      {
+        id: "cuanki_" + today,
+        cat: "KULINER 3D",
+        title: "3. Jajan Cuanki di Gerobak Keliling",
+        desc: "Dekati Gerobak Bakso/Cuanki di jalan komplek lalu beli seporsi (10 🪙).",
+        xp: 40,
+        coins: 15,
+        ready: isLoggedWarga && didCuanki,
+        lockLabel: "Cari Gerobak",
+        actionHint: "Cari Gerobak Cuanki di Komplek",
+        done: localStorage.getItem("piraku_claimed_cuanki_" + today + suf) === "1"
+      },
+      {
+        id: "angkot_" + today,
+        cat: "ADU MEKANIK 3D",
+        title: "4. Mental Ditabrak Angkot 3x",
+        desc: "Uji nyali di bundaran komplek! Tertabrak angkot/mobil (" + angkotHits + " / 3 kali).",
+        xp: 45,
+        coins: 15,
+        ready: isLoggedWarga && angkotHits >= 3,
+        lockLabel: angkotHits + "/3 Tabrak",
+        actionHint: "Tabrak Angkot di Bundaran (" + angkotHits + "/3)",
+        done: localStorage.getItem("piraku_claimed_angkot_" + today + suf) === "1"
+      },
+      {
+        id: "vote_" + today,
+        cat: "DEMOKRASI",
+        title: "5. Partisipasi Pemilu Camat",
+        desc: "Gunakan 1 hak suaramu di tab Pemilu Camat kecamatan.",
+        xp: 45,
+        coins: 15,
+        ready: isLoggedWarga && didVote,
+        lockLabel: "Belum Nyoblos",
+        actionHint: "Coblos Calon Camat",
+        done: localStorage.getItem("piraku_claimed_vote_" + today + suf) === "1"
+      },
+      {
+        id: "gotong_" + today,
+        cat: "GOTONG ROYONG",
+        title: "6. Gotong Royong " + dist.name,
+        desc: "Sumbang koin ke kas pembangunan fasilitas 3D kecamatan.",
+        xp: 40,
+        coins: 12,
+        ready: isLoggedWarga && didGotong,
+        lockLabel: "Belum Patungan",
+        actionHint: "Patungan Koin Komplek",
+        done: localStorage.getItem("piraku_claimed_gotong_" + today + suf) === "1"
+      }
+    ];
   }
 
   async function syncHouseStatusFromCloud() {
     const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
     if (!myIg) return false;
     const suf = getCivicUserSuffix();
-    // Cek cache memory registeredCitizensList lebih dulu
     if (Array.isArray(window.registeredCitizensList)) {
       const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
       if (me && me.has_house) {
@@ -395,7 +511,6 @@
   window.openMissionsHubModal = async function () {
     const modal = ensureCivicModal();
     const dist = getActiveDistrictInfo();
-    const today = new Date().toISOString().slice(0, 10);
     const suf = getCivicUserSuffix();
     await syncHouseStatusFromCloud();
 
@@ -404,71 +519,20 @@
     const pct = lvlInfo.isMax ? 100 : Math.min(100, Math.round((lvlInfo.currentXpInLevel / lvlInfo.requiredForNext) * 100));
 
     const myKecHome = localStorage.getItem("piraku_my_kec") || dist.name;
+    const myHomeId = myKecHome.toLowerCase().replace(/[^a-z0-9]+/g, "_");
     const hasHouse = localStorage.getItem("piraku_has_house" + suf) === "1";
     const houseKeys = hasHouse ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
+    const houseTier = typeof window.getMyPersonalHouseTier === "function" ? window.getMyPersonalHouseTier() : 1;
     const isFirstTimeTut = localStorage.getItem("piraku_mission_tut_seen") !== "1";
 
-    const isLoggedWarga = !!(localStorage.getItem("piraku_my_ig") || "").trim();
-    const patrolDist = Math.floor(parseFloat(localStorage.getItem("piraku_patrol_dist_" + today + suf) || "0"));
-    const patrolTarget = 120;
-    const cleanVoterCheck = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
-    const didVote = localStorage.getItem("piraku_did_vote_" + today + suf) === "1" ||
-                    !!localStorage.getItem("piraku_voted_camat_" + dist.id + "_" + cleanVoterCheck);
-    const didGotong = localStorage.getItem("piraku_did_gotong_" + today + suf) === "1";
-
-    const missions = [
-      {
-        id: "checkin_" + today,
-        cat: "HARIAN",
-        title: "1. Absen Harian Warga",
-        desc: isLoggedWarga ? "Kehadiran terverifikasi! Klik untuk absen hari ini." : "Daftar/masuk akun warga dulu untuk absen harian.",
-        xp: 50,
-        coins: 50,
-        ready: isLoggedWarga,
-        lockLabel: "Login Dulu",
-        done: localStorage.getItem("piraku_claimed_checkin_" + today + suf) === "1"
-      },
-      {
-        id: "patrol_" + today,
-        cat: "EKSPLORASI",
-        title: "2. Patroli Wilayah " + dist.name,
-        desc: "Jalan kaki keliling peta kota (" + Math.min(patrolDist, patrolTarget) + " / " + patrolTarget + " m).",
-        xp: 40,
-        coins: 50,
-        ready: isLoggedWarga && patrolDist >= patrolTarget,
-        lockLabel: Math.min(patrolDist, patrolTarget) + "/" + patrolTarget + "m",
-        done: localStorage.getItem("piraku_claimed_patrol_" + today + suf) === "1"
-      },
-      {
-        id: "vote_" + today,
-        cat: "DEMOKRASI",
-        title: "3. Partisipasi Pemilu Camat",
-        desc: "Gunakan 1 hak suaramu di tab Pemilu Camat kecamatan.",
-        xp: 60,
-        coins: 50,
-        ready: isLoggedWarga && didVote,
-        lockLabel: "Belum Nyoblos",
-        done: localStorage.getItem("piraku_claimed_vote_" + today + suf) === "1"
-      },
-      {
-        id: "gotong_" + today,
-        cat: "GOTONG ROYONG",
-        title: "4. Gotong Royong " + dist.name,
-        desc: "Sumbang koin ke kas pembangunan fasilitas 3D kecamatan.",
-        xp: 50,
-        coins: 50,
-        ready: isLoggedWarga && didGotong,
-        lockLabel: "Belum Patungan",
-        done: localStorage.getItem("piraku_claimed_gotong_" + today + suf) === "1"
-      }
-    ];
+    const missions = getDailyMissionsList(dist);
 
     modal.style.display = "flex";
     modal.innerHTML = [
       '<div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#0e2f2a;border:1.5px solid rgba(74,222,128,0.35);border-radius:22px;padding:18px;color:#fff;font-family:\'Bricolage Grotesque\',sans-serif;">',
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">',
           '<div>',
-            '<div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & PANDUAN WARGA</div>',
+            '<div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">🎯 PUSAT MISI & PROGRES HUNIAN 3D</div>',
             '<h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Misi & Goals di ' + dist.name + '</h3>',
           '</div>',
           '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-weight:800;cursor:pointer;">✕</button>',
@@ -476,32 +540,35 @@
 
         '<div style="background:rgba(15,23,42,0.65);border:1px solid rgba(56,189,248,0.45);border-radius:14px;padding:10px 12px;margin-bottom:12px;">',
           '<div onclick="toggleMissionTutorialBox()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;">',
-            '<span style="font-size:12px;font-weight:800;color:#38bdf8;">📖 Tutorial: Cara Main & Goals Utama</span>',
+            '<span style="font-size:12px;font-weight:800;color:#38bdf8;">📖 Panduan Hunian (20 Kavling & Apartemen)</span>',
             '<span id="mission-tutorial-arrow" style="font-size:10.5px;font-weight:700;color:#bae6fd;">' + (isFirstTimeTut ? '▲ Tutup' : '▼ Lihat Panduan') + '</span>',
           '</div>',
           '<div id="mission-tutorial-content" style="display:' + (isFirstTimeTut ? 'block' : 'none') + ';margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:#e2e8f0;line-height:1.5;">',
-            '<div style="margin-bottom:6px;"><b style="color:#ffcf4a;">🏠 Goal 1 — Punya Rumah 3D Sendiri:</b> Selesaikan <b>3 misi apa saja</b> di bawah untuk mengumpulkan <b>3 Kunci 🔑</b>, lalu bangun Rumah Tropis lengkap dengan papan nama IG kamu di <b>Kec. ' + myKecHome + '</b>.</div>',
-            '<div style="margin-bottom:6px;"><b style="color:#4ade80;">⭐ Goal 2 — Naik Level (Max Lvl 99):</b> Tiap misi memberi <b>XP</b>. Capai minimal <b>Level 2</b> untuk membuka hak mendaftar jadi <b>Calon Camat</b>!</div>',
-            '<div style="margin-bottom:6px;"><b style="color:#f472b6;">🗳️ Goal 3 — Pemilu Camat:</b> Buka tab <b>Pemilu</b> untuk mencoblos atau berkampanye menjadi pemimpin kecamatan domisilimu.</div>',
-            '<div><b style="color:#fbbf24;">🪙 Goal 4 — Koin Pembangunan:</b> Koin hasil misi dipakai untuk patungan upgrade fasilitas kota di kecamatanmu.</div>',
+            '<div style="margin-bottom:6px;"><b style="color:#ffcf4a;">🏘️ Kuota 20 Kavling Tapak & Apartemen:</b> Setiap kecamatan memiliki <b>20 Kavling Tapak</b> (1 Rumah Dinas Camat + 19 Warga Pertama). Warga ke-21 dst. otomatis menghuni <b>Tower Apartemen Kecamatan</b>!</div>',
+            '<div style="margin-bottom:6px;"><b style="color:#38bdf8;">🏠 Syarat Bangun Rumah 3D:</b> Kumpulkan <b>3 Kunci 🔑</b> (dari misi harian) + <b>100 🪙 Koin Biaya Bangun</b> untuk mendirikan rumah di kavlingmu.</div>',
+            '<div style="margin-bottom:6px;"><b style="color:#4ade80;">✨ Upgrade Rumah (Lv.1 → Lv.4 Villa Sultan):</b> Berdiri di depan rumahmu untuk upgrade bertahap (Lv.2: 350 🪙, Lv.3: 800 🪙, Lv.4 Villa Sultan: 2.000 🪙).</div>',
+            '<div><b style="color:#f472b6;">👑 Pemilu Camat:</b> Capai minimal <b>Level 2</b> untuk mencalonkan diri menjadi Camat dan menempati Kavling Nomor #1!</div>',
           '</div>',
         '</div>',
 
         '<div style="background:linear-gradient(135deg,rgba(255,207,74,0.22),rgba(16,185,129,0.2));border:1.5px solid rgba(255,207,74,0.55);border-radius:14px;padding:12px;margin-bottom:12px;">',
           '<div style="display:flex;justify-content:space-between;align-items:center;">',
-            '<span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Progres Rumah 3D: ' + (hasHouse ? 'SUDAH BERDIRI ✓' : houseKeys + ' / 3 Kunci 🔑') + '</span>',
+            '<span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Status Hunian: ' + (hasHouse ? ('RUMAH LV.' + houseTier + '/4 ✓') : (houseKeys + ' / 3 Kunci 🔑')) + '</span>',
             '<span style="font-size:10px;font-weight:800;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;">Kec. ' + myKecHome + '</span>',
           '</div>',
           '<div style="font-size:11px;color:#f1f5f9;margin-top:5px;line-height:1.4;">',
             (hasHouse
-              ? '🎉 <b>Rumah 3D Tropis</b> kamu sudah berdiri di komplek perumahan <b>Kec. ' + myKecHome + '</b>!'
+              ? '🎉 <b>Rumah 3D</b> kamu sudah berdiri di <b>Kec. ' + myKecHome + '</b> (Tipe Lv.' + houseTier + '/4). Datangi depan rumahmu untuk upgrade!'
               : houseKeys >= 3
-                ? '🔥 Kunci sudah lengkap (3/3)! Klik tombol emas di bawah untuk langsung mendirikan <b>Rumah 3D</b> milikmu!'
-                : 'Butuh <b>' + (3 - houseKeys) + ' Kunci 🔑 lagi</b> (selesaikan ' + (3 - houseKeys) + ' misi di bawah) untuk membangun rumahmu!'),
+                ? '🔥 Kunci lengkap (3/3)! Siapkan <b>100 🪙 Koin</b> lalu klik tombol di bawah untuk mendirikan <b>Rumah 3D</b> milikmu!'
+                : 'Butuh <b>' + (3 - houseKeys) + ' Kunci 🔑 lagi</b> + <b>100 🪙 Koin</b> untuk membangun rumah di kavlingmu!'),
           '</div>',
-          ((!hasHouse && houseKeys >= 3)
-            ? '<button onclick="buildMyInstantHouse()" style="width:100%;margin-top:9px;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12.5px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">🏠 BANGUN RUMAH 3D SAYA SEKARANG!</button>'
-            : ''),
+          '<div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;">',
+            ((!hasHouse && houseKeys >= 3)
+              ? '<button onclick="buildMyInstantHouse()" style="flex:1;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">🏠 BANGUN RUMAH 3D (100 🪙)</button>'
+              : ''),
+            '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'; if(typeof window.walkToMyDistrictKavling===\'function\') window.walkToMyDistrictKavling(); else if(typeof window.enterDistrictMap===\'function\') window.enterDistrictMap(\'' + myHomeId + '\');" style="flex:1;padding:9px 10px;border:none;border-radius:11px;background:#38bdf8;color:#0f172a;font-weight:800;font-size:11.5px;cursor:pointer;">📍 Masuk Komplek ' + myKecHome + ' →</button>',
+          '</div>',
         '</div>',
 
         '<div style="background:rgba(0,0,0,0.3);border-radius:14px;padding:11px 12px;margin-bottom:12px;">',
@@ -524,7 +591,7 @@
                 '<div style="font-size:10.5px;font-weight:800;color:#4ade80;margin-top:4px;">Hadiah: +' + m.xp + ' XP · +' + m.coins + ' 🪙 · +1 🔑</div>' +
               '</div>' +
               '<button ' + ((m.done || !m.ready) ? 'disabled' : 'onclick="claimPirakuMission(\'' + m.id + '\', ' + m.xp + ', ' + m.coins + ', \'' + m.title + '\')"') + ' style="flex-shrink:0;padding:8px 12px;border:none;border-radius:10px;background:' + (m.done ? 'rgba(255,255,255,0.12)' : (m.ready ? '#10b981' : 'rgba(255,255,255,0.08)')) + ';color:' + (m.done ? '#94a3b8' : (m.ready ? '#fff' : '#64748b')) + ';border:' + ((!m.done && !m.ready) ? '1px solid rgba(148,163,184,0.25)' : 'none') + ';font-weight:800;font-size:11px;cursor:' + ((m.done || !m.ready) ? 'not-allowed' : 'pointer') + ';">' +
-                (m.done ? 'Selesai ✓' : (m.ready ? 'Klaim' : ('🔒 ' + (m.lockLabel || 'Terkunci')))) +
+                (m.done ? 'Selesai ✓' : (m.ready ? 'Klaim ✨' : ('🔒 ' + (m.lockLabel || 'Terkunci')))) +
               '</button>' +
             '</div>';
           }).join(''),
@@ -539,12 +606,17 @@
       return;
     }
     const suf = getCivicUserSuffix();
+    if (localStorage.getItem("piraku_claimed_" + missionKey + suf) === "1") return;
     localStorage.setItem("piraku_claimed_" + missionKey + suf, "1");
+    // Sembunyikan HUD onboarding atas begitu pemain sudah paham & menyelesaikan 1 misi pertamanya
+    localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
 
     const curKeys = Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) + 1);
     localStorage.setItem("piraku_house_keys" + suf, String(curKeys));
 
-    if (window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === "function") {
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+      window.PirakuEconomy.addCoins(coinReward, title);
+    } else if (window.PirakuGameBridge && typeof window.PirakuGameBridge.addCoins === "function") {
       window.PirakuGameBridge.addCoins(coinReward);
     } else {
       const c = parseInt(localStorage.getItem("piraku_coins") || "0", 10) + coinReward;
@@ -553,10 +625,99 @@
 
     await window.grantPirakuXP(xpReward, title);
     if (curKeys === 3 && localStorage.getItem("piraku_has_house" + suf) !== "1" && typeof window.showToast === "function") {
-      window.showToast("🔑 3/3 Kunci Terkumpul! Klik tombol Bangun Rumah 3D di atas!");
+      window.showToast("🔑 3/3 Kunci Terkumpul! Kumpulkan 100 🪙 untuk Bangun Rumah 3D di menu Misi!");
     }
-    window.openMissionsHubModal();
+    updateGuidedQuestHud();
+    const civicModal = document.getElementById("piraku-civic-modal");
+    if (civicModal && civicModal.style.display === "flex") {
+      window.openMissionsHubModal();
+    }
   };
+
+  // ================= ONBOARDING HABIS DAFTAR KTP & HUD PENUNTUN AWAL (HILANG SETELAH 1 MISI) =================
+  window.onPirakuKtpCompleted = function () {
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    const myKec = (localStorage.getItem("piraku_my_kec") || "Coblong").trim();
+    if (!myIg) return;
+
+    const modal = ensureCivicModal();
+    modal.style.display = "flex";
+    modal.innerHTML = [
+      '<div style="width:100%;max-width:410px;background:linear-gradient(165deg,#0f172a,#0e2f2a);border:2px solid #facc15;border-radius:24px;padding:20px;color:#fff;font-family:\'Bricolage Grotesque\',sans-serif;box-shadow:0 24px 60px rgba(0,0,0,0.8);">',
+        '<div style="font-size:11px;font-weight:800;color:#facc15;letter-spacing:0.8px;text-transform:uppercase;">🎉 WILUJENG SUMPING WARGI BARU!</div>',
+        '<h3 style="margin:4px 0 8px;font-size:19px;font-weight:800;">KTP ' + myIg + ' Terdaftar di Kec. ' + myKec + '!</h3>',
+        '<div style="font-size:12px;color:#e2e8f0;line-height:1.5;margin-bottom:12px;">',
+          'Setiap kecamatan punya <b>20 Kavling Tapak</b> (1 Camat + 19 Warga Pertama) dan <b>Tower Apartemen</b> untuk warga ke-21 dst.',
+        '</div>',
+        '<div style="background:rgba(0,0,0,0.32);border:1px solid rgba(56,189,248,0.4);border-radius:14px;padding:11px 12px;font-size:11.5px;color:#bae6fd;margin-bottom:14px;line-height:1.5;">',
+          '<div><b>🎯 Tujuan Bermain:</b></div>',
+          '<div>1️⃣ Kunjungi komplek <b>Kec. ' + myKec + '</b> untuk melihat lahan/hunianmu</div>',
+          '<div>2️⃣ Selesaikan <b>Misi Harian & Mini-Game</b> untuk mengumpulkan <b>3 Kunci 🔑 + 100 🪙 Koin</b></div>',
+          '<div>3️⃣ Bangun <b>Rumah 3D</b>, upgrade ke <b>Villa Sultan</b>, & ikuti <b>Pemilu Camat</b>!</div>',
+        '</div>',
+        '<div style="display:flex;gap:8px;">',
+          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'; if(typeof window.walkToMyDistrictKavling===\'function\') window.walkToMyDistrictKavling();" style="flex:1.4;padding:11px;border:none;border-radius:12px;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;font-weight:900;font-size:12.5px;cursor:pointer;">🏘️ Masuk Komplek ' + myKec + ' →</button>',
+          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'" style="flex:0.6;padding:11px;border:none;border-radius:12px;background:rgba(255,255,255,0.12);color:#cbd5e1;font-weight:800;font-size:12px;cursor:pointer;">Nanti</button>',
+        '</div>',
+      '</div>'
+    ].join('');
+  };
+
+  window.dismissPirakuOnboardingHud = function () {
+    const suf = getCivicUserSuffix();
+    localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
+    const hud = document.getElementById("piraku-guided-quest-hud");
+    if (hud) hud.style.display = "none";
+  };
+
+  let lastQuestHudSig = "";
+  function updateGuidedQuestHud() {
+    let hud = document.getElementById("piraku-guided-quest-hud");
+    if (!hud && document.body) {
+      hud = document.createElement("div");
+      hud.id = "piraku-guided-quest-hud";
+      hud.style.cssText = "position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:25;display:none;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,0.88);backdrop-filter:blur(10px);border:1.5px solid rgba(74,222,128,0.55);color:#f8fafc;font-size:11px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,0.45);max-width:94vw;white-space:nowrap;";
+      document.body.appendChild(hud);
+    }
+    if (!hud) return;
+
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    const isReg = Boolean(myIg && !myIg.toLowerCase().startsWith("tamu_"));
+    const suf = getCivicUserSuffix();
+    const hasHouse = localStorage.getItem("piraku_has_house" + suf) === "1";
+    const houseKeys = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10);
+    const onboardingDone = localStorage.getItem("piraku_onboarding_hud_done" + suf) === "1" || hasHouse || houseKeys >= 1;
+
+    // Hilangkan HUD sepenuhnya setelah 1 misi pertama selesai / sudah punya rumah
+    if (isReg && onboardingDone) {
+      if (hud.style.display !== "none") hud.style.display = "none";
+      return;
+    }
+
+    let html = "";
+    if (!isReg) {
+      if (localStorage.getItem("piraku_onboarding_hud_done_guest") === "1") {
+        if (hud.style.display !== "none") hud.style.display = "none";
+        return;
+      }
+      html = `<span style="color:#fde047;">🎯 Langkah Awal: Daftar KTP Warga Bandung</span>` +
+             `<button onclick="if(typeof openJoinModal==='function') openJoinModal(); else if(typeof openAccountSocialModal==='function') openAccountSocialModal();" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:4px 9px;border-radius:99px;font-weight:900;font-size:10.5px;cursor:pointer;">🪪 Daftar KTP</button>` +
+             `<button onclick="dismissPirakuOnboardingHud()" style="border:none;background:transparent;color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer;padding:0 3px;">✕</button>`;
+    } else {
+      const myKec = localStorage.getItem("piraku_my_kec") || "Coblong";
+      html = `<span>🏘️ Wargi Baru: Selesaikan 1 Misi Pertama di <b>Kec. ${myKec}</b></span>` +
+             `<button onclick="openMissionsHubModal()" style="border:none;background:#10b981;color:#fff;padding:4px 9px;border-radius:99px;font-weight:800;font-size:10px;cursor:pointer;">🎯 Buka Misi</button>` +
+             `<button onclick="dismissPirakuOnboardingHud()" style="border:none;background:transparent;color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer;padding:0 3px;">✕</button>`;
+    }
+
+    hud.style.display = "flex";
+    if (html !== lastQuestHudSig) {
+      lastQuestHudSig = html;
+      hud.innerHTML = html;
+    }
+  }
+  setInterval(updateGuidedQuestHud, 1000);
+  setTimeout(updateGuidedQuestHud, 600);
 
   window.buildMyInstantHouse = async function () {
     const myIg = localStorage.getItem("piraku_my_ig");
@@ -564,8 +725,18 @@
     if (!myIg) return;
 
     const suf = getCivicUserSuffix();
+    const houseKeys = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10);
+    if (houseKeys < 3) {
+      if (typeof window.showToast === "function") window.showToast("🔒 Butuh 3 Kunci 🔑 dari Misi untuk membangun rumah!");
+      return;
+    }
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.spendCoins === "function") {
+      if (!window.PirakuEconomy.spendCoins(100, "Biaya Bangun Rumah 3D Kec. " + myKec)) return;
+    }
+
     localStorage.setItem("piraku_has_house" + suf, "1");
     localStorage.setItem("piraku_house_keys" + suf, "3");
+    localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
     if (typeof window.playSynthTone === "function") window.playSynthTone(1040, "sine", 0.45);
 
     const sb = window.pirakuSupabase;

@@ -26,15 +26,15 @@ const ALL_QUEST_POOL = [
     stayDuration: 1.5, timer: 0, isCompleted: false, mesh: null
   },
   {
-    id: "halte_cilaki", title: "Naik Trem ke Halte Cilaki", target: { x: 31, z: 16 }, radius: 7.0, xpReward: 70, color: 0x06b6d4,
+    id: "halte_cilaki", title: "Jalan Santai ke Jl. Cilaki", target: { x: 31, z: 16 }, radius: 7.0, xpReward: 70, color: 0x06b6d4,
     stayDuration: 0, timer: 0, isCompleted: false, mesh: null
   },
   {
-    id: "halte_cimandiri", title: "Naik Trem ke Halte Cimandiri", target: { x: 0, z: 32 }, radius: 7.0, xpReward: 80, color: 0xa855f7,
+    id: "halte_cimandiri", title: "Mampir ke Taman Cimandiri", target: { x: 0, z: 32 }, radius: 7.0, xpReward: 80, color: 0xa855f7,
     stayDuration: 0, timer: 0, isCompleted: false, mesh: null
   },
   {
-    id: "halte_riau", title: "Naik Trem ke Halte Riau", target: { x: -36, z: 16 }, radius: 7.0, xpReward: 70, color: 0xf97316,
+    id: "halte_riau", title: "Jelajah Koridor Jl. Riau", target: { x: -36, z: 16 }, radius: 7.0, xpReward: 70, color: 0xf97316,
     stayDuration: 0, timer: 0, isCompleted: false, mesh: null
   },
   {
@@ -354,22 +354,26 @@ class QuestSystem {
 
   async applyReward(quest) {
     if (!this.warga) return;
-    const prevXP = parseInt(this.warga.xp, 10) || 0;
-    const currentXP = prevXP + quest.xpReward;
-    const currentLvl = Math.floor(currentXP / 100) + 1;
+    let currentXP = (parseInt(localStorage.getItem("piraku_my_xp") || "0", 10) || parseInt(this.warga.xp, 10) || 0) + quest.xpReward;
+    let currentLvl = Math.floor(currentXP / 100) + 1;
+
+    if (typeof window.grantPirakuXP === "function") {
+      const info = await window.grantPirakuXP(quest.xpReward, quest.title);
+      currentXP = parseInt(localStorage.getItem("piraku_my_xp") || String(currentXP), 10);
+      currentLvl = info ? info.level : parseInt(localStorage.getItem("piraku_my_level") || String(currentLvl), 10);
+    } else {
+      localStorage.setItem("piraku_my_level", currentLvl);
+      localStorage.setItem("piraku_my_xp", currentXP);
+      if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+    }
 
     this.warga.xp = currentXP;
     this.warga.level = currentLvl;
-    localStorage.setItem("piraku_my_level", currentLvl);
-    localStorage.setItem("piraku_my_xp", currentXP);
-
-    if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
 
     const client = this.supabase || supabaseClient;
     if (client && this.warga.id) {
       try {
         await client.from("warga_daily_quests").insert([{ warga_id: this.warga.id, quest_id: quest.id, completed_date: this.todayStr }]);
-        await client.from("warga_piraku").update({ xp: currentXP, level: currentLvl }).eq("id", this.warga.id);
       } catch (err) {}
     }
   }
@@ -1129,29 +1133,57 @@ let activeQuestSystem = null;
   const bCtx = billboardCanvas.getContext('2d');
   const billboardTex = new THREE.CanvasTexture(billboardCanvas);
 
-  function drawBillboardScreen(title, sub) {
+  function drawBillboardScreen(title, sub, isPaidAd) {
     bCtx.fillStyle = '#0f172a';
     bCtx.fillRect(0, 0, 512, 256);
-    bCtx.fillStyle = '#2450e6';
-    bCtx.fillRect(0, 0, 512, 45);
+    bCtx.fillStyle = isPaidAd ? '#d97706' : '#2450e6';
+    bCtx.fillRect(0, 0, 512, 46);
     bCtx.fillStyle = '#ffffff';
-    bCtx.font = '800 24px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText('WARGA BANDUNG LIVE NEWS', 20, 32);
+    bCtx.font = '800 22px "Bricolage Grotesque", sans-serif';
+    bCtx.fillText(isPaidAd ? '📺 IKLAN LAYAR LED GASIBU 3D' : 'WARGA BANDUNG LIVE NEWS', 20, 31);
 
     bCtx.fillStyle = '#ffcf4a';
-    bCtx.font = '800 32px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(title, 20, 110);
+    bCtx.font = '800 28px "Bricolage Grotesque", sans-serif';
+    bCtx.fillText(String(title || '').slice(0, 26), 20, 98);
 
-    bCtx.fillStyle = '#e2e8f0';
-    bCtx.font = '600 22px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(sub, 20, 160);
+    const cleanSub = String(sub || '');
+    const line1 = cleanSub.slice(0, 30);
+    const line2 = cleanSub.slice(30, 60);
+    bCtx.fillStyle = '#f8fafc';
+    bCtx.font = '700 22px "Bricolage Grotesque", sans-serif';
+    bCtx.fillText(line1, 20, 146);
+    if (line2) bCtx.fillText(line2, 20, 178);
 
     bCtx.fillStyle = '#4ade80';
-    bCtx.font = '700 18px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText('● REALTIME SIMULASI @pirakubdg', 20, 225);
+    bCtx.font = '700 17px "Bricolage Grotesque", sans-serif';
+    bCtx.fillText(isPaidAd ? '● TAYANG EKSKLUSIF DI GASIBU' : '● REALTIME SIMULASI @pirakubdg', 20, 228);
     billboardTex.needsUpdate = true;
   }
-  drawBillboardScreen('BANDUNG REBORN 2026', 'Trem Listrik & Trotoar Rindang Dimulai!');
+  drawBillboardScreen('BANDUNG REBORN 2026', 'Plaza Hijau & Ruang Warga Bandung!');
+
+  window.setGasibuBillboardBroadcast = function(sender, text, isPaidAd) {
+    if (isPaidAd) {
+      window.pirakuBillboardLockedUntil = Date.now() + 180000;
+      drawBillboardScreen('PESAN DARI ' + String(sender || 'WARGA').toUpperCase(), text, true);
+    } else if (!window.pirakuBillboardLockedUntil || Date.now() > window.pirakuBillboardLockedUntil) {
+      drawBillboardScreen(String(sender || 'WARGA').toUpperCase(), text, false);
+    }
+  };
+
+  window.focusOnGasibuBillboard = function() {
+    if (window.pirakuInDistrict && typeof window.enterDistrictMap === 'function') {
+      window.enterDistrictMap('bandung_wetan');
+    }
+    const p = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : null;
+    if (p && p.position) {
+      p.position.set(-12, 0, -11);
+      if (p.userData && p.userData.a && p.userData.a.c) {
+        p.userData.a.c.x = -12;
+        p.userData.a.c.z = -11;
+      }
+      if (typeof showToast === 'function') showToast('📺 Mengarah ke Layar LED Gasibu 3D!');
+    }
+  };
 
   const billboardGroup = new THREE.Group();
   billboardGroup.position.set(-16, 0, -18);
@@ -1246,7 +1278,7 @@ let activeQuestSystem = null;
           .order("votes", { ascending: false });
         if (Array.isArray(data)) {
           data.forEach(row => {
-            const rawK = String(row.kecamatan || row.district_id || "").trim().toLowerCase();
+            const rawK = String(row.kecamatan || row.district_id || "").replace(/[_-]+/g," ").trim().toLowerCase();
             if (!rawK) return;
             if (!topCandidateByKec[rawK] && (Number(row.votes) || 0) > 0) {
               topCandidateByKec[rawK] = {
@@ -1303,6 +1335,7 @@ let activeQuestSystem = null;
   const bl = [{ x: -999, z: -999, w: 0.001, d: 0.001, f: 1, k: 1, c: 0x000000, r: 0x000000 }];
   const SK = [
     [-36, 36, -26, 18],      // Poros Gasibu - Gedung Sate
+    [-18, 18, -66, -27],     // Pelataran Monumen Perjuangan (Monju)
     [-39, -27, -26, -5],     // Koridor barat Gasibu
     [27, 48, -20, -2],       // Taman Lansia & Kuliner Cisangkuy
     [39, 66, 12, 38],        // GOR Saparua & Ruko Komunitas
@@ -1665,76 +1698,101 @@ let activeQuestSystem = null;
     const body = new THREE.Group();
     cg.add(body);
 
-    // Kaki & Sepatu Sneakers Sol Putih
+    // Kaki & Sepatu Sneakers Sol Putih (ujung membulat)
     const mkLeg = (sd) => {
       const legGroup = new THREE.Group();
       legGroup.position.set(sd * 0.1, 0.36, 0);
       cg.add(legGroup);
 
-      cyl(0.072, 0.062, 0.32, 10, 0, -0.32, 0, pantsColor, legGroup);
-      box(0.13, 0.06, 0.21, 0, -0.36, 0.03, 0x111827, legGroup);
-      box(0.135, 0.025, 0.22, 0, -0.36, 0.03, 0xf8fafc, legGroup, false); // Sol putih
+      cyl(0.072, 0.060, 0.32, 12, 0, -0.32, 0, pantsColor, legGroup);
+      cyl(0.064, 0.068, 0.055, 12, 0, -0.355, 0.01, 0x111827, legGroup);
+      mk(SP(0.066, 10, 8), 0x111827, 0, -0.335, 0.08, legGroup);
+      cyl(0.068, 0.072, 0.024, 12, 0, -0.365, 0.01, 0xf8fafc, legGroup, false);
+      mk(SP(0.068, 10, 8), 0xf8fafc, 0, -0.355, 0.08, legGroup, false);
       return legGroup;
     };
     const legL = mkLeg(-1);
     const legR = mkLeg(1);
 
     // Torso Baju + Kerah Putih Rapi
-    cyl(0.18, 0.22, 0.48, 14, 0, 0.34, 0, shirtColor, body);
-    cyl(0.11, 0.12, 0.06, 12, 0, 0.81, 0, 0xf8fafc, body, false); // Kerah baju
+    cyl(0.18, 0.22, 0.48, 16, 0, 0.34, 0, shirtColor, body);
+    cyl(0.11, 0.12, 0.06, 14, 0, 0.81, 0, 0xf8fafc, body, false); // Kerah baju
 
     // Kepala Proporsional
     const head = new THREE.Group();
     head.position.y = 1.05;
     body.add(head);
-    mk(SP(0.25, 16, 12), skin, 0, 0, 0, head);
+    mk(SP(0.25, 20, 16), skin, 0, 0, 0, head);
 
-    // Mata ekspresif
+    // Mata ekspresif + kilau putih + senyum tipis
     [-0.085, 0.085].forEach(ex => {
-      mk(SP(0.032, 8, 6), 0x0f172a, ex, -0.01, 0.225, head);
+      mk(SP(0.033, 10, 8), 0x0f172a, ex, -0.008, 0.226, head);
+      mk(SP(0.011, 6, 6), 0xffffff, ex + 0.01, 0.004, 0.248, head, false);
+      const brow = cyl(0.008, 0.008, 0.045, 6, ex, 0.048, 0.232, 0x1c1917, head, false);
+      brow.rotation.z = Math.PI / 2;
     });
+    const smile = mk(new THREE.TorusGeometry(0.042, 0.008, 6, 12, Math.PI * 0.75), 0x9a3412, 0, -0.068, 0.228, head, false);
+    smile.rotation.z = Math.PI * 1.125;
 
-    // Gaya Rambut / Hijab
+    // Gaya Rambut / Hijab (Sculpted Halus, Tanpa Kotak)
     if (st.hairStyle === 'hijab') {
       const hijabColor = (shirtColor === 0xf8fafc || shirtColor === 0xe7dec8) ? 0x334155 : 0xf1f5f9;
-      const dome = mk(new THREE.SphereGeometry(0.268, 16, 12, 0, PI * 2, 0, PI * 0.62), hijabColor, 0, 0.02, -0.048, head);
-      dome.rotation.x = -0.44;
-      cyl(0.21, 0.26, 0.22, 14, 0, -0.25, -0.055, hijabColor, head);
+      const dome = mk(new THREE.SphereGeometry(0.268, 20, 14, 0, PI * 2, 0, PI * 0.64), hijabColor, 0, 0.02, -0.045, head);
+      dome.rotation.x = -0.42;
+      cyl(0.21, 0.27, 0.22, 16, 0, -0.25, -0.052, hijabColor, head);
     } else if (st.hairStyle === 'ponytail') {
-      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
-      mk(SP(0.11, 10, 8), 0x1c1917, 0, 0.06, -0.27, head);
+      mk(new THREE.SphereGeometry(0.264, 20, 14, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
+      mk(new THREE.TorusGeometry(0.055, 0.016, 8, 14), 0xfacc15, 0, 0.07, -0.245, head, false);
+      const tail = cyl(0.065, 0.025, 0.24, 12, 0, -0.05, -0.29, 0x1c1917, head);
+      tail.rotation.x = 0.25;
     } else if (st.hairStyle === 'bob') {
-      mk(new THREE.SphereGeometry(0.268, 16, 10, 0, PI * 2, 0, PI * 0.58), 0x1c1917, 0, 0.025, -0.02, head);
-      box(0.11, 0.24, 0.22, -0.21, -0.08, -0.03, 0x1c1917, head, false);
-      box(0.11, 0.24, 0.22, 0.21, -0.08, -0.03, 0x1c1917, head, false);
-      box(0.42, 0.24, 0.14, 0, -0.08, -0.19, 0x1c1917, head, false);
+      mk(new THREE.SphereGeometry(0.268, 20, 14, 0, PI * 2, 0, PI * 0.58), 0x1c1917, 0, 0.025, -0.02, head);
+      const sideL = cyl(0.058, 0.048, 0.22, 12, -0.205, -0.06, -0.02, 0x1c1917, head, false);
+      sideL.rotation.z = -0.08;
+      const sideR = cyl(0.058, 0.048, 0.22, 12, 0.205, -0.06, -0.02, 0x1c1917, head, false);
+      sideR.rotation.z = 0.08;
+      mk(new THREE.CylinderGeometry(0.26, 0.24, 0.21, 16, 1, false, Math.PI * 0.65, Math.PI * 0.7), 0x1c1917, 0, -0.05, -0.02, head, false);
     } else if (st.hairStyle === 'bun') {
-      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
-      mk(SP(0.115, 10, 8), 0x111827, 0, 0.28, -0.06, head);
+      mk(new THREE.SphereGeometry(0.262, 20, 14, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
+      mk(SP(0.115, 14, 10), 0x111827, 0, 0.28, -0.05, head);
+      mk(new THREE.TorusGeometry(0.085, 0.016, 8, 16), 0x38bdf8, 0, 0.23, -0.045, head, false).rotation.x = Math.PI / 2;
     } else if (st.hairStyle === 'curly') {
-      mk(new THREE.SphereGeometry(0.285, 16, 10, 0, PI * 2, 0, PI * 0.6), 0x1c1917, 0, 0.03, -0.02, head);
-      [[-0.22,0.12,-0.02],[0.22,0.12,-0.02],[0,0.23,-0.05],[-0.15,0.21,0.06],[0.15,0.21,0.06]].forEach(p => mk(SP(0.105, 8, 6), 0x1c1917, p[0], p[1], p[2], head));
+      mk(new THREE.SphereGeometry(0.282, 20, 14, 0, PI * 2, 0, PI * 0.6), 0x1c1917, 0, 0.03, -0.02, head);
+      [[-0.21,0.11,-0.02],[0.21,0.11,-0.02],[0,0.23,-0.04],[-0.14,0.20,0.08],[0.14,0.20,0.08],[-0.15,0.16,-0.15],[0.15,0.16,-0.15]].forEach(p => mk(SP(0.102, 10, 8), 0x1c1917, p[0], p[1], p[2], head));
     } else if (st.hairStyle === 'mohawk') {
-      mk(new THREE.SphereGeometry(0.256, 14, 8, 0, PI * 2, 0, PI * 0.45), 0x27272a, 0, 0.02, -0.015, head);
-      box(0.08, 0.17, 0.34, 0, 0.27, -0.02, 0x111827, head, false);
+      mk(new THREE.SphereGeometry(0.256, 18, 12, 0, PI * 2, 0, PI * 0.45), 0x27272a, 0, 0.02, -0.015, head);
+      for (let mi = -2; mi <= 2; mi++) {
+        const spike = mk(new THREE.ConeGeometry(0.052, 0.16, 10), 0x111827, 0, 0.26 - Math.abs(mi) * 0.015, mi * 0.075 - 0.01, head, false);
+        spike.rotation.x = mi * 0.16;
+      }
     } else {
-      mk(new THREE.SphereGeometry(0.262, 16, 10, 0, PI * 2, 0, PI * 0.55), 0x111827, 0, 0.025, -0.015, head);
+      mk(new THREE.SphereGeometry(0.264, 20, 14, 0, PI * 2, 0, PI * 0.56), 0x111827, 0, 0.025, -0.015, head);
+      mk(SP(0.085, 10, 8), 0x111827, 0.06, 0.21, 0.14, head, false); // Jambul depan halus
     }
 
-    // Aksesoris & Topi
+    // Aksesoris & Topi (Rounded)
     if (st.acc === 'glasses') {
-      [-0.085, 0.085].forEach(gx => box(0.095, 0.065, 0.03, gx, -0.01, 0.235, 0x0f172a, head, false));
-      box(0.05, 0.02, 0.03, 0, -0.005, 0.238, 0x0f172a, head, false);
+      [-0.085, 0.085].forEach(gx => {
+        const lens = cyl(0.046, 0.046, 0.02, 14, gx, -0.008, 0.236, 0x0f172a, head, false);
+        lens.rotation.x = Math.PI / 2;
+        const rim = mk(new THREE.TorusGeometry(0.048, 0.008, 8, 16), 0x334155, gx, -0.008, 0.242, head, false);
+        rim.rotation.y = 0;
+      });
+      cyl(0.008, 0.008, 0.06, 8, 0, -0.004, 0.242, 0x334155, head, false).rotation.z = Math.PI / 2;
     } else if (st.acc === 'peci') {
-      cyl(0.21, 0.23, 0.15, 16, 0, 0.16, 0, 0x0f172a, head);
+      cyl(0.21, 0.23, 0.15, 20, 0, 0.16, 0, 0x0f172a, head);
     } else if (st.acc === 'caping') {
-      cyl(0.04, 0.38, 0.18, 16, 0, 0.18, 0, 0xd97706, head);
+      cyl(0.04, 0.38, 0.18, 20, 0, 0.18, 0, 0xd97706, head);
     } else if (st.acc === 'cat') {
       const cat = new THREE.Group();
       cat.position.set(0.36, 0, 0.18);
       cg.add(cat);
-      box(0.22, 0.16, 0.32, 0, 0.08, 0, 0xf97316, cat);
-      mk(new THREE.SphereGeometry(0.11, 8, 6), 0xf97316, 0, 0.2, 0.13, cat);
+      const cBody = cyl(0.085, 0.095, 0.22, 12, 0, 0.09, 0, 0xf97316, cat);
+      cBody.rotation.x = Math.PI / 2;
+      mk(SP(0.105, 12, 10), 0xf97316, 0, 0.18, 0.12, cat);
+      [-0.055, 0.055].forEach(ex => mk(new THREE.ConeGeometry(0.032, 0.065, 8), 0xf97316, ex, 0.28, 0.11, cat, false));
+      const cTail = cyl(0.018, 0.022, 0.18, 8, 0, 0.16, -0.14, 0xf97316, cat, false);
+      cTail.rotation.x = -0.5;
     }
 
     // Lengan + Telapak Tangan Sewarna Kulit
@@ -1983,8 +2041,16 @@ let activeQuestSystem = null;
     if (savedIg && Array.isArray(registeredCitizensList)) {
       const me = registeredCitizensList.find(c => String(c.ig || "").trim().toLowerCase() === savedIg);
       if (me) {
-        if (typeof me.xp === "number") localStorage.setItem("piraku_my_xp", String(me.xp));
-        if (typeof me.level === "number") localStorage.setItem("piraku_my_level", String(me.level));
+        const localXp = parseInt(localStorage.getItem("piraku_my_xp") || "0", 10) || 0;
+        const dbXp = typeof me.xp === "number" ? me.xp : 0;
+        const bestXp = Math.max(localXp, dbXp);
+        const lvlObj = typeof window.computePirakuLevelFromTotalXp === "function"
+          ? window.computePirakuLevelFromTotalXp(bestXp)
+          : { level: Math.max(parseInt(localStorage.getItem("piraku_my_level") || "1", 10) || 1, me.level || 1) };
+        localStorage.setItem("piraku_my_xp", String(bestXp));
+        localStorage.setItem("piraku_my_level", String(lvlObj.level));
+        me.xp = bestXp;
+        me.level = lvlObj.level;
         if (me.kecamatan) localStorage.setItem("piraku_my_kec", me.kecamatan);
         if (me.color !== undefined) localStorage.setItem("piraku_my_color", String(me.color));
         if (me.acc) localStorage.setItem("piraku_my_acc", String(me.acc));
@@ -1994,6 +2060,7 @@ let activeQuestSystem = null;
           localStorage.setItem("piraku_house_keys" + suf, "3");
         }
         if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+        if (typeof window.autoSpawnRegisteredDistrict === "function") window.autoSpawnRegisteredDistrict(true);
       } else if (registeredCitizensList.length > 0 || supabaseClient) {
         // Sesi lama di browser ini sudah tidak ada di database (misal pasca-reset) -> bersihkan otomatis
         ["piraku_my_ig", "piraku_my_level", "piraku_my_xp", "piraku_my_kec", "piraku_ktp_kecamatan", "piraku_my_color", "piraku_my_acc", "piraku_my_inventory"].forEach(k => localStorage.removeItem(k));
@@ -2273,17 +2340,50 @@ let activeQuestSystem = null;
     }
   };
 
-  function appendChatToUI(sender, text) {
+  function appendChatToUI(sender, text, createdAt, isHistory) {
+    const rawText = String(text || '');
+    if (rawText.startsWith('[BILLBOARD] ')) {
+      const adText = rawText.replace('[BILLBOARD] ', '').trim();
+      if (typeof window.setGasibuBillboardBroadcast === 'function') {
+        window.setGasibuBillboardBroadcast(sender, adText, true);
+      }
+      return;
+    }
+    if (rawText.startsWith('[MEGAFON] ')) {
+      if (!isHistory && typeof window.triggerPirakuMegaphone === 'function') {
+        const megaText = rawText.replace('[MEGAFON] ', '').trim();
+        window.triggerPirakuMegaphone(sender + ': ' + megaText);
+      }
+      return;
+    }
+
     const stream = document.getElementById('chat-messages');
     if (!stream) return;
-    const div = document.createElement('div');
-    div.style.cssText = 'background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.06);';
-    div.innerHTML = `<b>${esc(sender)}:</b> ${esc(text)}`;
-    stream.appendChild(div);
+    const myIg = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase();
+    const isMe = Boolean(myIg && String(sender || '').trim().toLowerCase() === myIg);
+    const cit = Array.isArray(registeredCitizensList)
+      ? registeredCitizensList.find(c => String(c.ig || '').trim().toLowerCase() === String(sender || '').trim().toLowerCase())
+      : null;
+    const kecBadge = cit && cit.kecamatan ? ` <span style="font-size:9px;padding:1px 6px;border-radius:99px;background:${isMe ? 'rgba(15,23,42,0.22)' : 'rgba(56,189,248,0.18)'};color:${isMe ? '#0f172a' : '#38bdf8'};font-weight:800;">${esc(cit.kecamatan)}</span>` : '';
+    const timeStr = createdAt
+      ? new Date(createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+      : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = `display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'};max-width:100%;`;
+    const bubble = document.createElement('div');
+    bubble.style.cssText = isMe
+      ? 'max-width:82%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#041322;padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:12px;box-shadow:0 3px 10px rgba(14,165,233,0.25);word-break:break-word;'
+      : 'max-width:82%;background:#1e293b;border:1px solid rgba(148,163,184,0.24);color:#f8fafc;padding:8px 12px;border-radius:14px 14px 14px 4px;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,0.2);word-break:break-word;';
+    bubble.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;"><span style="font-weight:800;font-size:11px;">${esc(sender)}${kecBadge}</span><span style="font-size:9.5px;opacity:0.7;">${timeStr}</span></div><div>${esc(rawText)}</div>`;
+    wrap.appendChild(bubble);
+    stream.appendChild(wrap);
     stream.scrollTop = stream.scrollHeight;
 
-    showOverheadBubbleOnAvatar(sender, text);
-    drawBillboardScreen(sender.toUpperCase(), text.substring(0, 30));
+    showOverheadBubbleOnAvatar(sender, rawText);
+    if (typeof window.setGasibuBillboardBroadcast === 'function') {
+      window.setGasibuBillboardBroadcast(sender, rawText.substring(0, 30), false);
+    }
   }
 
   async function loadRecentChats() {
@@ -2293,15 +2393,22 @@ let activeQuestSystem = null;
         .from('chat_warga')
         .select('*')
         .order('id', { ascending: false })
-        .limit(20);
+        .limit(25);
 
       if (data && data.length > 0) {
         const stream = document.getElementById('chat-messages');
-        stream.innerHTML = '<div style="background:#fff;padding:8px 12px;border-radius:12px;font-size:12px;color:var(--ink);"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan! Pesan di sini dibroadcast langsung ke semua warga kota.</div>';
-        data.reverse().forEach(row => appendChatToUI(row.sender_ig, row.message));
+        stream.innerHTML = '<div style="background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.35);padding:8px 11px;border-radius:12px;font-size:11.5px;color:#fde047;"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan Warga! Pesan tampil realtime di sini & di atas avatar 3D.</div>';
+        data.reverse().forEach(row => appendChatToUI(row.sender_ig, row.message, row.created_at, true));
       }
     } catch (e) {}
   }
+
+  window.sendQuickChat = function(txt) {
+    const inp = document.getElementById('inp-chat-msg');
+    if (!inp) return;
+    inp.value = txt;
+    window.sendChatMessage();
+  };
 
   window.sendChatMessage = async function() {
     const inp = document.getElementById('inp-chat-msg');
@@ -2325,8 +2432,8 @@ let activeQuestSystem = null;
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_warga' }, payload => {
         const myIg = localStorage.getItem('piraku_my_ig') || '';
         if (payload.new && payload.new.sender_ig !== myIg) {
-          appendChatToUI(payload.new.sender_ig, payload.new.message);
-          if (!isChatModalOpen) {
+          appendChatToUI(payload.new.sender_ig, payload.new.message, payload.new.created_at);
+          if (!isChatModalOpen && !String(payload.new.message || '').startsWith('[')) {
             unreadChatCount++;
             const badge = document.getElementById('chat-unread-count');
             if (badge) {
@@ -2334,7 +2441,9 @@ let activeQuestSystem = null;
               badge.style.display = 'flex';
             }
           }
-          showToast('💬 ' + payload.new.sender_ig + ': ' + payload.new.message.substring(0, 24));
+          if (!String(payload.new.message || '').startsWith('[')) {
+            showToast('💬 ' + payload.new.sender_ig + ': ' + payload.new.message.substring(0, 24));
+          }
         }
       })
       .subscribe();
@@ -2553,6 +2662,7 @@ let activeQuestSystem = null;
           foundMesh.rotation.y = 0;
         }
         setupActivePlayer(foundMesh, user);
+        if (typeof window.autoSpawnRegisteredDistrict === "function") window.autoSpawnRegisteredDistrict(true);
 
         window.updateAutoDetectButton();
         btn.disabled = false; btn.innerText = 'Masuk & Mainkan Karakter 🎮';
@@ -2668,6 +2778,9 @@ let activeQuestSystem = null;
   window.closeKTP = () => { 
     const m = document.getElementById('ktp-modal');
     if (m) m.style.display = 'none'; 
+    if (typeof window.onPirakuKtpCompleted === 'function') {
+      setTimeout(() => window.onPirakuKtpCompleted(), 180);
+    }
   };
 
     // Header AutoDetect Button
@@ -2706,13 +2819,81 @@ let activeQuestSystem = null;
     }
   };
 
+  window.openMyKTPModal = function(citizen) {
+    const savedIg = localStorage.getItem('piraku_my_ig') || '';
+    const found = citizen || registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
+    if (!found) { openJoinModal(); return; }
+    const lvl = found.level || parseInt(localStorage.getItem('piraku_my_level') || '1', 10) || 1;
+    const regNum = found.id ? String(found.id).padStart(3, '0') : String(Math.max(1, totalWarga)).padStart(3, '0');
+    const setTxt = (id, v) => { const el = document.getElementById(id); if (el) el.innerText = v; };
+    setTxt('ktp-reg-num', 'NO: BDG-' + regNum);
+    setTxt('ktp-name', found.name || found.ig || 'Warga Bandung');
+    setTxt('ktp-kec', found.kecamatan || localStorage.getItem('piraku_my_kec') || 'Bandung Wetan');
+    setTxt('ktp-ig', found.ig || savedIg);
+    setTxt('ktp-avatar-emoji', found.emoji || '☕');
+    setTxt('ktp-avatar-role', (found.role || 'WARGA').toUpperCase());
+    setTxt('ktp-level-text', 'Lv. ' + lvl);
+    setTxt('ktp-quote', '“' + (found.wish || 'Semangat membangun Bandung!') + '”');
+    const m = document.getElementById('ktp-modal');
+    if (m) m.style.display = 'flex';
+  };
+
+  window.openMyAccountMenuModal = function(found) {
+    let modal = document.getElementById('piraku-my-account-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-my-account-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.72);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.body.appendChild(modal);
+    }
+    const lvl = found.level || parseInt(localStorage.getItem('piraku_my_level') || '1', 10) || 1;
+    const kec = found.kecamatan || localStorage.getItem('piraku_my_kec') || 'Bandung';
+    const coins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : 0;
+    modal.innerHTML = `
+      <div style="width:100%;max-width:340px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;color:#7dd3fc;font-weight:800;letter-spacing:.7px;">AKUN WARGA AKTIF</div>
+            <div style="font-size:16px;font-weight:800;color:#fff;margin-top:2px;">${found.ig} <span style="font-size:11px;background:#2563eb;padding:2px 7px;border-radius:999px;vertical-align:middle;">LVL ${lvl}</span></div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Kec. ${kec} • 🪙 ${coins.toLocaleString('id-ID')}</div>
+          </div>
+          <button id="btn-close-myacc" style="width:30px;height:30px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <button id="btn-myacc-wardrobe" style="width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(30,41,59,0.9);color:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <span>👕 Ganti Pakaian &amp; Karakter</span><span style="color:#94a3b8;">›</span>
+          </button>
+          <button id="btn-myacc-ktp" style="width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(56,189,248,0.3);background:rgba(37,99,235,0.22);color:#e0f2fe;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <span>🪪 Kelola KTP</span><span style="color:#7dd3fc;">›</span>
+          </button>
+          <button id="btn-myacc-logout" style="width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(239,68,68,0.35);background:rgba(127,29,29,0.35);color:#fecaca;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+            <span>🚪 Logout / Keluar Akun</span><span style="color:#fca5a5;">›</span>
+          </button>
+        </div>
+      </div>`;
+    modal.style.display = 'flex';
+    modal.querySelector('#btn-close-myacc').onclick = () => { modal.style.display = 'none'; };
+    modal.querySelector('#btn-myacc-wardrobe').onclick = () => {
+      modal.style.display = 'none';
+      if (typeof window.openWardrobeModal === 'function') window.openWardrobeModal();
+    };
+    modal.querySelector('#btn-myacc-ktp').onclick = () => {
+      modal.style.display = 'none';
+      window.openMyKTPModal(found);
+    };
+    modal.querySelector('#btn-myacc-logout').onclick = () => {
+      modal.style.display = 'none';
+      window.resetMyDeviceCitizen();
+    };
+  };
+
   window.handleCitizenButtonClick = function() {
     const savedIg = localStorage.getItem('piraku_my_ig');
     if (savedIg) {
       const found = registeredCitizensList.find(c => (c?.ig || '').toLowerCase() === savedIg.toLowerCase());
-      if (found) { 
-        showCitizenSpeech(found, true); 
-        showToast('Kamera menyorot kamu! ✨'); 
+      if (found) {
+        window.openMyAccountMenuModal(found);
       } else openJoinModal();
     } else openJoinModal();
   };
@@ -2810,10 +2991,13 @@ let activeQuestSystem = null;
     let s = (parseInt(localStorage.getItem(streakKey) || '0') % 7) + 1;
     localStorage.setItem(streakKey, s);
 
+    let curLvl = parseInt(localStorage.getItem('piraku_my_level') || '1', 10);
     if (typeof window.grantPirakuXP === "function") {
-      await window.grantPirakuXP(100, "Absen Harian Warga (H-" + s + ")");
+      const info = await window.grantPirakuXP(60, "Absen Harian Warga (H-" + s + ")");
+      if (info && info.level) curLvl = info.level;
+      else curLvl = parseInt(localStorage.getItem('piraku_my_level') || '1', 10);
     } else {
-      let curLvl = Math.min(99, parseInt(localStorage.getItem('piraku_my_level') || '1') + 1);
+      curLvl = Math.min(99, curLvl + 1);
       localStorage.setItem('piraku_my_level', curLvl);
     }
     window.updateAutoDetectButton();
@@ -2869,7 +3053,7 @@ let activeQuestSystem = null;
       badge.style.color = isR ? '#6fe3a3' : '#ff8a7a';
     }
     if (title) {
-      title.textContent = isR ? 'Bandung Reborn: Trem Listrik & Plaza Hijau' : 'Kondisi Sekarang: Macet & Polusi Knalpot';
+      title.textContent = isR ? 'Bandung Reborn: Plaza Hijau & Kota Ramah Warga' : 'Kondisi Sekarang: Macet & Polusi Knalpot';
     }
     rebornGroup.visible = false; rebornGroup.scale.set(0.001, 0.001, 0.001);
     gsap.to(LM, { opacity: isR ? 0 : 0.75, duration: 0.5 });
@@ -2929,6 +3113,208 @@ let activeQuestSystem = null;
     if (f) showCitizenSpeech(f);
   };
 
+  // === MENU TITIK 3: CARI WARGA, HEMAT BATERAI, LAYAR BERSIH, PANDUAN, MASUKAN ===
+  window.openSearchWargaModal = function() {
+    let modal = document.getElementById('piraku-search-warga-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-search-warga-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.75);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="width:100%;max-width:380px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);max-height:82vh;display:flex;flex-direction:column;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:16px;font-weight:800;">🔍 Cari Warga Bandung</div>
+          <button id="btn-close-search-warga" style="width:30px;height:30px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
+        </div>
+        <input id="input-search-warga-modal" type="text" placeholder="Ketik @username, nama, atau kecamatan..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:13px;outline:none;margin-bottom:10px;">
+        <div id="search-warga-results" style="overflow-y:auto;display:flex;flex-direction:column;gap:7px;max-height:52vh;"></div>
+      </div>`;
+    modal.style.display = 'flex';
+    const inp = modal.querySelector('#input-search-warga-modal');
+    const resEl = modal.querySelector('#search-warga-results');
+    const renderList = (query) => {
+      const q = (query || '').trim().toLowerCase();
+      const list = registeredCitizensList.filter(c => {
+        if (!c) return false;
+        if (!q) return true;
+        return (c.ig && String(c.ig).toLowerCase().includes(q)) ||
+          (c.name && String(c.name).toLowerCase().includes(q)) ||
+          (c.kecamatan && String(c.kecamatan).toLowerCase().includes(q));
+      }).slice(0, 30);
+      if (list.length === 0) {
+        resEl.innerHTML = '<div style="text-align:center;padding:18px;color:#94a3b8;font-size:12.5px;">Warga tidak ditemukan.</div>';
+        return;
+      }
+      resEl.innerHTML = list.map((c, idx) => `
+        <button data-idx="${idx}" class="sw-item" style="width:100%;text-align:left;padding:9px 11px;border-radius:12px;border:1px solid #334155;background:rgba(15,23,42,0.75);color:#f8fafc;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:800;color:#7dd3fc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${c.emoji || '🧑'} ${c.ig || c.name}</div>
+            <div style="font-size:11px;color:#94a3b8;">${c.name || '-'} • Kec. ${c.kecamatan || 'Bandung'}</div>
+          </div>
+          <span style="font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:rgba(56,189,248,0.16);color:#bae6fd;flex-shrink:0;">LVL ${c.level || 1}</span>
+        </button>`).join('');
+      resEl.querySelectorAll('.sw-item').forEach(btn => {
+        btn.onclick = () => {
+          const target = list[Number(btn.dataset.idx)];
+          modal.style.display = 'none';
+          if (target) {
+            showCitizenSpeech(target, true);
+            showToast('Menyorot ' + (target.ig || target.name) + ' ✨');
+          }
+        };
+      });
+    };
+    renderList('');
+    inp.addEventListener('input', () => renderList(inp.value));
+    modal.querySelector('#btn-close-search-warga').onclick = () => { modal.style.display = 'none'; };
+    setTimeout(() => inp.focus(), 60);
+  };
+
+  function applyBatterySaverState(isOn) {
+    if (typeof renderer !== 'undefined' && renderer) {
+      renderer.setPixelRatio(isOn ? 1 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
+      renderer.shadowMap.enabled = !isOn;
+      renderer.shadowMap.needsUpdate = true;
+    }
+    const badge = document.getElementById('battery-saver-badge');
+    if (badge) {
+      badge.innerText = isOn ? 'ON' : 'OFF';
+      badge.style.background = isOn ? 'rgba(34,197,94,0.24)' : 'rgba(148,163,184,0.22)';
+      badge.style.color = isOn ? '#4ade80' : '#cbd5e1';
+    }
+  }
+  window.toggleBatterySaverMode = function() {
+    const next = localStorage.getItem('piraku_low_power') !== '1';
+    localStorage.setItem('piraku_low_power', next ? '1' : '0');
+    applyBatterySaverState(next);
+    showToast(next ? '⚡ Mode Hemat Baterai aktif (grafis ringan)' : '✨ Mode Grafis Normal aktif');
+  };
+  setTimeout(() => { applyBatterySaverState(localStorage.getItem('piraku_low_power') === '1'); }, 300);
+
+  window.toggleCleanHudMode = function() {
+    const active = document.body.classList.toggle('piraku-clean-hud');
+    let exitBtn = document.getElementById('piraku-exit-clean-btn');
+    if (active) {
+      if (!exitBtn) {
+        exitBtn = document.createElement('button');
+        exitBtn.id = 'piraku-exit-clean-btn';
+        exitBtn.innerHTML = '👁️ Tampilkan HUD';
+        exitBtn.onclick = () => window.toggleCleanHudMode();
+        document.body.appendChild(exitBtn);
+      }
+      exitBtn.style.display = 'inline-flex';
+      showToast('🙈 Mode Layar Bersih aktif');
+    } else if (exitBtn) {
+      exitBtn.style.display = 'none';
+    }
+  };
+
+  window.openGuideModal = function() {
+    let modal = document.getElementById('piraku-guide-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-guide-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.75);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="width:100%;max-width:410px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:18px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);max-height:84dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;color:#38bdf8;font-weight:800;letter-spacing:.7px;">BUKU SAKU WARGA BANDUNG</div>
+            <div style="font-size:16px;font-weight:800;">❓ Panduan &amp; Kontrol Kota</div>
+          </div>
+          <button id="btn-close-guide" style="width:30px;height:30px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px;font-size:11.8px;line-height:1.48;color:#cbd5e1;">
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#7dd3fc;">🕹️ Kontrol Gerak &amp; Kamera</b><br>
+            • <b>Jalan</b>: Geser <b>Joystick</b> kiri bawah (HP) atau tekan <b>W A S D</b> (PC).<br>
+            • <b>Lompat</b>: Tekan tombol <b>🦘</b> di kanan bawah atau <b>Space</b>.<br>
+            • <b>Kamera &amp; Radar</b>: Geser layar untuk putar sudut, cubit/scroll untuk zoom, dan ketuk <b>Minimap Radar</b> untuk memperbesar peta mini.
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#c084fc;">🪪 Akun Warga, KTP &amp; Tampilan</b><br>
+            • Ketuk tombol <b>@username LVL</b> di kanan atas untuk <b>👕 Ganti Pakaian &amp; Karakter</b>, <b>🪪 Kelola E-KTP</b> (Unduh / Selfie Poster / Salin Link), atau <b>🚪 Logout</b>.<br>
+            • Warga ber-KTP otomatis spawn di komplek kecamatannya masing-masing (atau Pusat Kota untuk Bandung Wetan).
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#4ade80;">🏙️ 30 Kecamatan, Kavling Rumah &amp; Pemilu</b><br>
+            • Buka tab <b>PETA</b> di bawah untuk pindah antara <b>Pusat Kota</b> &amp; <b>30 Komplek Kecamatan</b>.<br>
+            • Kumpulkan <b>3 Kunci (🔑)</b> dari tab <b>MISI</b> untuk mendirikan rumah 3D di kavlingmu dan upgrade hingga <b>Villa Sultan Lv.4</b>.<br>
+            • Ikut <b>PEMILU</b> mingguan untuk memilih atau mencalonkan diri jadi <b>Camat</b>, dan hampiri <b>🍜 Mang Cuanki Keliling</b> untuk beli booster lari cepat!
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#fde047;">🪙 Toko Kota, Kendaraan &amp; Game 3D</b><br>
+            • Ketuk pill <b>🪙 Toko</b> di bawah minimap untuk membeli/menyewa <b>Vespa Klasik</b>, <b>Skateboard</b>, <b>Sepeda Boseh</b>, <b>Skuter Listrik</b>, outfit spesial, <b>Megafon</b>, atau sewa <b>Billboard LED Gasibu 3D</b>.<br>
+            • Buka tab <b>GAME</b> untuk main <b>Misi Kurir Ojol 3D</b>, <b>Balap Time Trial Gasibu 3D</b>, dan 5 mini-game Arcade berhadiah Koin &amp; XP.
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#fda4af;">💬 Interaksi Sosial &amp; Menu Cepat (⋯)</b><br>
+            • Ketuk kepala warga untuk <b>👋 Lambai</b> atau <b>❤️ Setuju</b>, pakai <b>Obrolan</b> untuk chat realtime, dan tombol <b>Mic</b> untuk Voice Chat.<br>
+            • Menu <b>⋯</b> di kanan atas berisi: <b>🔍 Cari Warga</b>, <b>🏆 Peringkat</b>, <b>⚡ Mode Hemat Baterai</b>, <b>🙈 Mode Layar Bersih</b>, &amp; <b>📣 Lapor Bug/Saran</b>.
+          </div>
+        </div>
+      </div>`;
+    modal.style.display = 'flex';
+    modal.querySelector('#btn-close-guide').onclick = () => { modal.style.display = 'none'; };
+  };
+
+  window.openFeedbackModal = function() {
+    let modal = document.getElementById('piraku-feedback-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-feedback-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.75);backdrop-filter:blur(7px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="width:100%;max-width:380px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(250,204,21,0.45);border-radius:20px;padding:18px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:16px;font-weight:800;">📣 Masukan &amp; Lapor Bug</div>
+          <button id="btn-close-fb" style="width:30px;height:30px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
+        </div>
+        <select id="fb-type" style="width:100%;padding:9px 11px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12.5px;margin-bottom:8px;">
+          <option value="bug">🐞 Lapor Bug / Error</option>
+          <option value="saran">💡 Saran Fitur Baru</option>
+        </select>
+        <textarea id="fb-text" rows="4" placeholder="Tulis bug yang kamu temui atau saran fitur..." style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:12px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12.5px;resize:vertical;outline:none;margin-bottom:10px;"></textarea>
+        <button id="btn-send-fb" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:13px;font-weight:800;cursor:pointer;margin-bottom:8px;">Kirim Masukan ✉️</button>
+        <a href="https://www.instagram.com/pirakubdg" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;font-size:11.5px;color:#7dd3fc;text-decoration:none;font-weight:700;">Atau DM langsung ke @pirakubdg ↗</a>
+      </div>`;
+    modal.style.display = 'flex';
+    modal.querySelector('#btn-close-fb').onclick = () => { modal.style.display = 'none'; };
+    modal.querySelector('#btn-send-fb').onclick = async () => {
+      const btn = modal.querySelector('#btn-send-fb');
+      const msg = (modal.querySelector('#fb-text').value || '').trim();
+      if (!msg) { showToast('Tulis pesan dulu ya!'); return; }
+      const tipe = modal.querySelector('#fb-type').value;
+      const pengirim_ig = localStorage.getItem('piraku_my_ig') || 'tamu';
+      const kecamatan = localStorage.getItem('piraku_my_kec') || 'Bandung Wetan';
+      btn.disabled = true;
+      btn.innerText = 'Mengirim...';
+      let savedDb = false;
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+          const { error } = await supabaseClient.from('laporan_warga').insert([{ tipe, pesan: msg, pengirim_ig, kecamatan }]);
+          if (!error) savedDb = true;
+        } catch (e) {}
+      }
+      try {
+        const logs = JSON.parse(localStorage.getItem('piraku_feedback_logs') || '[]');
+        logs.push({ tipe, msg, pengirim_ig, kecamatan, savedDb, at: new Date().toISOString() });
+        localStorage.setItem('piraku_feedback_logs', JSON.stringify(logs.slice(-20)));
+      } catch (e) {}
+      modal.style.display = 'none';
+      showToast(savedDb ? 'Laporan terkirim ke Supabase! Terima kasih 🙌' : 'Tersimpan lokal (cek tabel laporan_warga) 🙌');
+    };
+  };
+
   // ================= SISTEM WARDROBE / GANTI KARAKTER =================
   let editRole = "Barista", editEmoji = "☕", editAcc = "none", editColor = 0x1e3a8a;
 
@@ -2955,19 +3341,30 @@ let activeQuestSystem = null;
 
     const modal = document.getElementById("wardrobe-modal");
     if (modal) {
+      if (modal.parentElement !== document.body) document.body.appendChild(modal);
+      modal.style.setProperty("z-index", "2147483000", "important");
       modal.style.display = "flex";
+      const joy = document.getElementById("joystick-zone");
+      if (joy) joy.style.visibility = "hidden";
+      document.querySelectorAll('button[title="Buka Balai Obrolan Warga"], .btn-chat-fab').forEach(b => { b.style.visibility = "hidden"; });
       setTimeout(() => {
         const card = modal.querySelector(".modal-card");
         if (card) card.style.transform = "translateY(0)";
       }, 10);
     }
+    if (typeof window.syncWardrobePreviewSVG === "function") window.syncWardrobePreviewSVG();
   };
 
   window.closeWardrobeModal = function() {
     const modal = document.getElementById("wardrobe-modal");
     if (modal) {
       modal.querySelector(".modal-card").style.transform = "translateY(100%)";
-      setTimeout(() => modal.style.display = "none", 280);
+      setTimeout(() => {
+        modal.style.display = "none";
+        const joy = document.getElementById("joystick-zone");
+        if (joy) joy.style.visibility = "visible";
+        document.querySelectorAll('button[title="Buka Balai Obrolan Warga"], .btn-chat-fab').forEach(b => { b.style.visibility = "visible"; });
+      }, 280);
     }
   };
 
@@ -2989,7 +3386,7 @@ let activeQuestSystem = null;
 
   
   window.syncWardrobePreviewSVG = function() {
-    const activeColorBtn = document.querySelector("#wd-color-row .wd-swatch.active");
+    const activeColorBtn = document.querySelector("#wd-shirt-row .wd-swatch.active, #wd-color-row .wd-swatch.active");
     const activePantsBtn = document.querySelector("#wd-pants-row .wd-swatch.active");
     const activeSkinBtn = document.querySelector("#wd-skin-row .wd-swatch.active");
     const activeHairBtn = document.querySelector("#wd-hair-row .wd-pill.active");
@@ -3025,34 +3422,42 @@ let activeQuestSystem = null;
 
     if (pvHijab) pvHijab.style.display = hairVal === "hijab" ? "block" : "none";
     if (pvHairBack) {
-      if (hairVal === "bob") pvHairBack.innerHTML = "<rect x=\"30\" y=\"34\" width=\"50\" height=\"30\" rx=\"12\" fill=\"#1c1917\"/>";
-      else if (hairVal === "ponytail") pvHairBack.innerHTML = "<circle cx=\"79\" cy=\"34\" r=\"8\" fill=\"#1c1917\"/>";
-      else pvHairBack.innerHTML = "";
+      if (hairVal === "bob") {
+        pvHairBack.innerHTML = "<path d='M30,36 C28,58 32,70 42,72 L68,72 C78,70 82,58 80,36 Z' fill='#1c1917'/>";
+      } else if (hairVal === "ponytail") {
+        pvHairBack.innerHTML = "<path d='M74,28 C88,28 92,46 84,60 C79,56 76,46 74,38 Z' fill='#1c1917'/><circle cx='76' cy='31' r='4' fill='#facc15'/>";
+      } else {
+        pvHairBack.innerHTML = "";
+      }
     }
     if (pvHairFront) {
       if (hairVal === "hijab") {
-        pvHairFront.innerHTML = "<path d=\"M31,42 A24,24 0 0,1 79,42 L77,31 A23,23 0 0,0 33,31 Z\" fill=\"#f1f5f9\"/>";
+        // Hijab menutup dahi & bingkai dagu dengan rapi tanpa celah
+        pvHairFront.innerHTML = "<path d='M31,39 C31,20 42,14 55,14 C68,14 79,20 79,39 C77,29 66,24 55,24 C44,24 33,29 31,39 Z' fill='#f1f5f9'/><path d='M34,53 Q55,66 76,53 Q72,70 55,72 Q38,70 34,53 Z' fill='#e2e8f0'/>";
       } else if (hairVal === "bun") {
-        pvHairFront.innerHTML = "<circle cx=\"55\" cy=\"16\" r=\"9\" fill=\"#111827\"/><path d=\"M33,38 A22,22 0 0,1 77,38 Q55,30 33,38 Z\" fill=\"#111827\"/>";
+        pvHairFront.innerHTML = "<circle cx='55' cy='15' r='9' fill='#111827'/><path d='M48,21 Q55,18 62,21' stroke='#38bdf8' stroke-width='2.5' fill='none' stroke-linecap='round'/><path d='M34,37 C34,20 44,17 55,17 C66,17 76,20 76,37 Q65,28 55,31 Q45,28 34,37 Z' fill='#111827'/>";
       } else if (hairVal === "curly") {
-        pvHairFront.innerHTML = "<circle cx=\"36\" cy=\"27\" r=\"8\" fill=\"#1c1917\"/><circle cx=\"46\" cy=\"21\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"56\" cy=\"20\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"66\" cy=\"22\" r=\"9\" fill=\"#1c1917\"/><circle cx=\"74\" cy=\"28\" r=\"8\" fill=\"#1c1917\"/>";
+        pvHairFront.innerHTML = "<circle cx='35' cy='30' r='7.5' fill='#1c1917'/><circle cx='42' cy='21' r='8.5' fill='#1c1917'/><circle cx='55' cy='18' r='9.5' fill='#1c1917'/><circle cx='68' cy='21' r='8.5' fill='#1c1917'/><circle cx='75' cy='30' r='7.5' fill='#1c1917'/>";
       } else if (hairVal === "mohawk") {
-        pvHairFront.innerHTML = "<rect x=\"50\" y=\"11\" width=\"10\" height=\"16\" rx=\"4\" fill=\"#111827\"/><path d=\"M34,36 A22,22 0 0,1 76,36 Q55,31 34,36 Z\" fill=\"#27272a\"/>";
+        pvHairFront.innerHTML = "<path d='M35,36 C36,22 44,19 55,19 C66,19 74,22 75,36 Q65,30 55,31 Q45,30 35,36 Z' fill='#27272a'/><path d='M48,24 L52,8 L55,17 L59,7 L62,24 Z' fill='#111827'/>";
       } else if (hairVal === "bob") {
-        pvHairFront.innerHTML = "<path d=\"M31,42 A24,24 0 0,1 79,42 L78,56 L72,56 L72,38 Q55,31 38,38 L38,56 L32,56 Z\" fill=\"#1c1917\"/>";
+        pvHairFront.innerHTML = "<path d='M32,40 C32,19 42,16 55,16 C68,16 78,19 78,40 C79,52 77,61 73,63 C72,50 72,38 68,32 Q55,27 42,32 C38,38 38,50 37,63 C33,61 31,52 32,40 Z' fill='#1c1917'/>";
+      } else if (hairVal === "ponytail") {
+        pvHairFront.innerHTML = "<path d='M34,37 C34,19 44,16 55,16 C66,16 76,19 76,37 Q64,27 55,31 Q44,27 34,37 Z' fill='#1c1917'/>";
       } else {
-        pvHairFront.innerHTML = "<path d=\"M33,38 A22,22 0 0,1 77,38 Q65,30 55,32 Q45,30 33,38 Z\" fill=\"#111827\"/>";
+        // Pendek rapi dengan jambul halus
+        pvHairFront.innerHTML = "<path d='M34,37 C34,19 43,16 55,16 C67,16 76,19 76,37 Q66,27 56,31 Q46,27 34,37 Z' fill='#111827'/><path d='M52,18 Q59,12 65,20 Q59,21 52,18 Z' fill='#1f2937'/>";
       }
     }
     if (pvAcc) {
       if (accVal === "glasses") {
-        pvAcc.innerHTML = "<rect x=\"40\" y=\"36\" width=\"12\" height=\"7\" rx=\"2\" fill=\"#0f172a\"/><rect x=\"58\" y=\"36\" width=\"12\" height=\"7\" rx=\"2\" fill=\"#0f172a\"/><line x1=\"52\" y1=\"39\" x2=\"58\" y2=\"39\" stroke=\"#0f172a\" stroke-width=\"2\"/>";
+        pvAcc.innerHTML = "<circle cx='46.5' cy='40' r='5.5' fill='rgba(15,23,42,0.75)' stroke='#334155' stroke-width='1.5'/><circle cx='63.5' cy='40' r='5.5' fill='rgba(15,23,42,0.75)' stroke='#334155' stroke-width='1.5'/><line x1='52' y1='40' x2='58' y2='40' stroke='#334155' stroke-width='1.6'/>";
       } else if (accVal === "peci") {
-        pvAcc.innerHTML = "<rect x=\"37\" y=\"15\" width=\"36\" height=\"12\" rx=\"3\" fill=\"#0f172a\"/>";
+        pvAcc.innerHTML = "<path d='M37,25 C37,16 44,14 55,14 C66,14 73,16 73,25 Z' fill='#0f172a'/>";
       } else if (accVal === "caping") {
-        pvAcc.innerHTML = "<polygon points=\"55,8 22,24 88,24\" fill=\"#d97706\"/>";
+        pvAcc.innerHTML = "<polygon points='55,6 20,24 90,24' fill='#d97706' stroke='#92400e' stroke-width='1.2'/>";
       } else if (accVal === "cat") {
-        pvAcc.innerHTML = "<text x=\"82\" y=\"146\" font-size=\"18\">🐈</text>";
+        pvAcc.innerHTML = "<text x='82' y='146' font-size='18'>🐈</text>";
       } else {
         pvAcc.innerHTML = "";
       }
@@ -3182,27 +3587,9 @@ let activeQuestSystem = null;
   };
 
   function updateTramInteraction(delta) {
-    if (!myPlayerMesh) return;
-    const tramBtn = document.getElementById("btn-tram-action"), txt = document.getElementById("tram-action-text");
-    if (curMode !== 'reborn') { if (isRidingTram) window.toggleRideTram(true); if (tramBtn) tramBtn.style.display = "none"; return; }
-    if (isRidingTram) {
-      const a = myPlayerMesh.userData.a;
-      myPlayerMesh.position.set(tram.position.x, 0.65, tram.position.z);
-      myPlayerMesh.rotation.y = tram.rotation.y + Math.PI / 2;
-      if (a && a.c) { a.c.x = tram.position.x; a.c.z = tram.position.z; }
-      cam.position.x += (tram.position.x - 8.5 - cam.position.x) * 0.05;
-      cam.position.y += (5.0 - cam.position.y) * 0.05;
-      cam.position.z += (tram.position.z - 10.5 - cam.position.z) * 0.05;
-      controls.target.x += (tram.position.x - controls.target.x) * 0.1;
-      controls.target.y += (1.8 - controls.target.y) * 0.1;
-      controls.target.z += (tram.position.z - controls.target.z) * 0.1;
-      if (txt) { const t = tramDwell > 0 ? 'Turun di ' + tramSt.name : 'Menuju ' + nextTramStation().name; if (txt.innerText !== t) txt.innerText = t; }
-      if (tramBtn) { tramBtn.style.display = "flex"; tramBtn.style.opacity = tramDwell > 0 ? "1" : "0.65"; }
-      return;
-    }
-    if (txt && txt.innerText !== 'Naik Trem') txt.innerText = 'Naik Trem';
-    const d = Math.hypot(myPlayerMesh.position.x - tram.position.x, myPlayerMesh.position.z - tram.position.z);
-    if (tramBtn) { tramBtn.style.opacity = "1"; tramBtn.style.display = (tramDwell > 0 && d <= 9) ? "flex" : "none"; }
+    const tramBtn = document.getElementById("btn-tram-action");
+    if (tramBtn) tramBtn.style.display = "none";
+    isRidingTram = false;
   }
 
   // ================= INTERAKSI QUEST TREM 3D (tram.glb) =================
@@ -3336,6 +3723,7 @@ let activeQuestSystem = null;
   }
 
   function updateTramQuestInteraction(delta) {
+    return;
     // Hanya saat trem tampil (mode reborn) dan pemain bisa bergerak.
     if (curMode !== 'reborn' || !myPlayerMesh) return;
     const rpg = (typeof window !== 'undefined' && window.PirakuRPG) || null;
@@ -3607,6 +3995,11 @@ let activeQuestSystem = null;
 
   
   function getPasupatiDeckY(x, z, curY) {
+    // Pelataran & tangga Monumen Perjuangan (Monju) di pusat kota (x=0, z=-35)
+    if (!window.pirakuInDistrict) {
+      if (Math.abs(x) <= 5.5 && Math.abs(z + 35) <= 3.25) return 0.9;
+      if (Math.abs(x) <= 7.5 && Math.abs(z + 35) <= 4.75) return 0.4;
+    }
     if (x < -134 || x > -22 || Math.abs(z + 26) > 3.15) return BASE_Y;
     const u = Math.max(0, Math.min(1, (x - (-132)) / (-24 - (-132))));
     const deckY = CFly.getPointAt(u).y + 0.14;
@@ -3689,6 +4082,14 @@ let activeQuestSystem = null;
         tmpBox.setFromObject(GS_BODY);
         if (!tmpBox.isEmpty()) boxes.push({ minX: tmpBox.min.x, maxX: tmpBox.max.x, minZ: tmpBox.min.z, maxZ: tmpBox.max.z });
       }
+    }
+
+    // Collider khusus: dua pilar Monumen Perjuangan (x=±1.6, z=-35)
+    if (!window.pirakuInDistrict) {
+      boxes.push(
+        { minX: -2.35, maxX: -0.85, minZ: -35.75, maxZ: -34.25 },
+        { minX: 0.85, maxX: 2.35, minZ: -35.75, maxZ: -34.25 }
+      );
     }
 
     pirakuBuildingColliders = boxes;
@@ -3797,7 +4198,8 @@ let activeQuestSystem = null;
       while (diffRot < -Math.PI) diffRot += Math.PI * 2;
       myPlayerMesh.rotation.y += diffRot * Math.min(0.35, Math.min(delta, 0.05) * 10);
 
-      const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92);
+      const cuankiBoost = (window.pirakuSpeedBoostUntil && Date.now() < window.pirakuSpeedBoostUntil) ? 1.55 : 1.0;
+      const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92) * cuankiBoost;
       myPlayerMesh.position.x += moveFinalVec.x * effectiveSpeed;
       myPlayerMesh.position.z += moveFinalVec.z * effectiveSpeed;
 
@@ -3924,7 +4326,7 @@ let activeQuestSystem = null;
     }
 
     animC.forEach(g => {
-      if (g === myPlayerMesh) return;
+      if (g === myPlayerMesh || (g.userData && g.userData.a && g.userData.a.isRemotePlayer)) return;
 
       const a = g.userData.a;
       let isWalking = 0;
