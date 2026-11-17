@@ -3,3 +3,5 @@
 models/*.glb
 !models/tram*.glb
 .vercel
+.DS_Store
+.vscode/
