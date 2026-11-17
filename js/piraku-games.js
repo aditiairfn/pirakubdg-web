@@ -93,11 +93,73 @@
     }
   }
 
-  // Sistem hadiah jujur & sinkron 1:1 dengan dompet PirakuEconomy + XP Level
+  // Sistem Kuota Koin Harian Anti-Farming (per akun, reset tiap jam 00:00 lokal)
+  const DAILY_COIN_LIMITS = { padel: 3, angkot: 3, fishing: 3, sate: 3, penalty: 3, ojol: 5, race: 3 };
+
+  function getLocalGameDateKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function getGameUserSuffix() {
+    const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    return ig ? ("_" + ig) : "_guest";
+  }
+  function getGamePlaysToday(gameId) {
+    const today = getLocalGameDateKey();
+    const lsKey = `piraku_gplay_${gameId}_${today}${getGameUserSuffix()}`;
+    let cnt = parseInt(localStorage.getItem(lsKey) || "0", 10) || 0;
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const owned = window.PirakuEconomy.getState().owned || [];
+      const prefix = `gplay_${gameId}_${today}_`;
+      owned.forEach(tag => {
+        if (String(tag).startsWith(prefix)) {
+          const n = parseInt(String(tag).slice(prefix.length), 10) || 0;
+          if (n > cnt) cnt = n;
+        }
+      });
+      if (cnt > 0) localStorage.setItem(lsKey, String(cnt));
+    }
+    return cnt;
+  }
+  function getRemainingCoinQuota(gameId) {
+    const lim = DAILY_COIN_LIMITS[gameId] || 3;
+    return Math.max(0, lim - getGamePlaysToday(gameId));
+  }
+  function consumeGameCoinQuota(gameId) {
+    const today = getLocalGameDateKey();
+    const lsKey = `piraku_gplay_${gameId}_${today}${getGameUserSuffix()}`;
+    const next = getGamePlaysToday(gameId) + 1;
+    localStorage.setItem(lsKey, String(next));
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const st = window.PirakuEconomy.getState();
+      if (Array.isArray(st.owned)) {
+        const prefix = `gplay_${gameId}_${today}_`;
+        st.owned = st.owned.filter(t => !String(t).startsWith(prefix) && (!String(t).startsWith("gplay_") || String(t).includes(`_${today}_`)));
+        st.owned.push(prefix + next);
+        if (typeof window.PirakuEconomy.saveNow === "function") window.PirakuEconomy.saveNow();
+      }
+    }
+    return next;
+  }
+
+  // Sistem hadiah jujur & sinkron 1:1 dengan dompet PirakuEconomy + XP Level + Kuota Harian
   function rewardPlayer(baseCoins, reason, gameId) {
+    const remQuota = getRemainingCoinQuota(gameId);
     const modeMult = selectedMode === "pro" ? 1.3 : 1.0;
     const total = Math.max(8, Math.round(baseCoins * modeMult));
     saveHighScore(gameId, total);
+
+    if (remQuota <= 0) {
+      if (typeof window.grantPirakuXP === "function") {
+        window.grantPirakuXP(3, "Latihan " + (reason || gameId));
+      }
+      if (typeof window.showToast === "function") {
+        window.showToast("⚡ Kuota koin harian game ini habis — dapat +3 XP Latihan!");
+      }
+      return 0;
+    }
+
+    consumeGameCoinQuota(gameId);
     if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
       window.PirakuEconomy.addCoins(total, reason);
     }
@@ -196,7 +258,7 @@
               <div style="width:42px;height:42px;border-radius:12px;background:rgba(74,222,128,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;">🛵</div>
               <div>
                 <div style="font-size:14px;font-weight:800;color:#f8fafc;">Kurir & Ojol Bandung 3D</div>
-                <div style="font-size:11px;color:#cbd5e1;">📍 Pusat Kota → Komplek • <span style="color:#fde047;font-weight:700;">🪙 18–25 Koin + 40 XP</span></div>
+                <div style="font-size:11px;color:#cbd5e1;">📍 Pusat Kota → Komplek • <span style="color:#fde047;font-weight:700;">🪙 18–25 Koin • Sisa ${getRemainingCoinQuota("ojol")}/${DAILY_COIN_LIMITS.ojol}</span></div>
               </div>
             </div>
             ${ojolBestStreak > 0 ? `<span style="font-size:10px;padding:3px 7px;border-radius:999px;background:rgba(250,204,21,0.2);color:#fde047;font-weight:800;">🔥 ${ojolBestStreak}</span>` : ""}
@@ -213,7 +275,7 @@
               <div style="width:42px;height:42px;border-radius:12px;background:rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;">🏁</div>
               <div>
                 <div style="font-size:14px;font-weight:800;color:#f8fafc;">Balap Time Trial Gasibu 3D</div>
-                <div style="font-size:11px;color:#cbd5e1;">📍 5 Checkpoint Gasibu • <span style="color:#fde047;font-weight:700;">🪙 16 Koin + 35 XP</span></div>
+                <div style="font-size:11px;color:#cbd5e1;">📍 5 Checkpoint Gasibu • <span style="color:#fde047;font-weight:700;">🪙 16 Koin • Sisa ${getRemainingCoinQuota("race")}/${DAILY_COIN_LIMITS.race}</span></div>
               </div>
             </div>
             ${raceBestSec ? `<span style="font-size:10px;padding:3px 7px;border-radius:999px;background:rgba(56,189,248,0.2);color:#7dd3fc;font-weight:800;">⏱️ ${raceBestSec}d</span>` : ""}
@@ -226,14 +288,17 @@
 
         <div style="font-size:10.5px;font-weight:800;color:#fde047;letter-spacing:.6px;margin:4px 0 6px;">🕹️ ARCADE KOTA BANDUNG</div>
         <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px;">
-          ${GAMES.map(g => `
+          ${GAMES.map(g => {
+            const qRem = getRemainingCoinQuota(g.id);
+            const qMax = DAILY_COIN_LIMITS[g.id] || 3;
+            return `
             <div style="padding:12px;border-radius:16px;background:rgba(30,41,59,0.88);border:1px solid rgba(148,163,184,0.24);">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
                 <div style="display:flex;align-items:center;gap:10px;">
                   <div style="width:42px;height:42px;border-radius:12px;background:rgba(56,189,248,0.16);display:flex;align-items:center;justify-content:center;font-size:24px;">${g.icon}</div>
                   <div>
                     <div style="font-size:14px;font-weight:800;color:#f8fafc;">${g.title}</div>
-                    <div style="font-size:11px;color:#94a3b8;">📍 ${g.place} • <span style="color:#fde047;font-weight:700;">🪙 ${g.reward}</span></div>
+                    <div style="font-size:11px;color:#94a3b8;">📍 ${g.place} • <span style="color:${qRem > 0 ? '#fde047' : '#94a3b8'};font-weight:700;">${qRem > 0 ? `🪙 ${g.reward} (${qRem}/${qMax})` : '⚡ Mode Latihan (0/3 Koin)'}</span></div>
                   </div>
                 </div>
                 ${hs[g.id] ? `<span style="font-size:10px;padding:3px 7px;border-radius:999px;background:rgba(34,197,94,0.2);color:#4ade80;font-weight:800;">Rekor: +${hs[g.id]}</span>` : ""}
@@ -243,8 +308,8 @@
                 <button data-lobby="${g.id}" style="flex:1;padding:9px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:12px;font-weight:800;cursor:pointer;">▶ Masuk Arena</button>
                 <button data-loc="${g.id}" style="padding:9px 10px;border-radius:10px;border:1px solid rgba(250,204,21,0.45);background:rgba(250,204,21,0.1);color:#fde047;font-size:11px;font-weight:700;cursor:pointer;">Lihat di peta →</button>
               </div>
-            </div>
-          `).join("")}
+            </div>`;
+          }).join("")}
         </div>
 
         <button id="g-shop" style="width:100%;padding:11px;border-radius:12px;border:none;background:linear-gradient(135deg,#f59e0b,#eab308);color:#0f172a;font-size:12.5px;font-weight:800;cursor:pointer;">🛍️ Buka Toko Kota (Saldo: 🪙 ${coins.toLocaleString("id-ID")})</button>
@@ -1457,10 +1522,19 @@
     guideLine.computeLineDistances();
     sc.add(guideLine);
     ojolState.guideLine = guideLine;
+
+    window.pirakuActiveMinimapTarget = {
+      mapId: isDropoff && ojolState.targetDistrict ? ojolState.targetDistrict.id : "bandung_wetan",
+      x: targetSpot.x,
+      z: targetSpot.z,
+      color: isDropoff ? "#facc15" : "#4ade80",
+      label: isDropoff ? "ANTAR" : "JEMPUT"
+    };
   }
 
   window.stopOjol3DGame = function(silent) {
     ojolState.active = false;
+    window.pirakuActiveMinimapTarget = null;
     if (ojolState.rafId) { cancelAnimationFrame(ojolState.rafId); ojolState.rafId = null; }
     clearOjol3DMeshes();
     const hud = document.getElementById("piraku-ojol-hud");
@@ -1483,8 +1557,10 @@
       return;
     }
 
-    const pickup = OJOL_PICKUP_SPOTS[Math.floor(Math.random() * OJOL_PICKUP_SPOTS.length)];
-    const targetDistrict = OJOL_DISTRICTS[Math.floor(Math.random() * OJOL_DISTRICTS.length)];
+    const pickupPool = OJOL_PICKUP_SPOTS.filter(s => !ojolState.pickup || s.name !== ojolState.pickup.name);
+    const distPool = OJOL_DISTRICTS.filter(d => !ojolState.targetDistrict || d.id !== ojolState.targetDistrict.id);
+    const pickup = pickupPool[Math.floor(Math.random() * pickupPool.length)] || OJOL_PICKUP_SPOTS[0];
+    const targetDistrict = distPool[Math.floor(Math.random() * distPool.length)] || OJOL_DISTRICTS[0];
     const dropoff = OJOL_DISTRICT_SPOTS[Math.floor(Math.random() * OJOL_DISTRICT_SPOTS.length)];
     const cargo = OJOL_CARGO[Math.floor(Math.random() * OJOL_CARGO.length)];
 
@@ -1576,24 +1652,29 @@
           if (ojolState.stage === "pickup") {
             ojolState.stage = "travel";
             clearOjol3DMeshes();
+            window.pirakuActiveMinimapTarget = null;
             tone(780, 0.16);
             if (typeof window.showToast === "function") {
               window.showToast(`📦 ${ojolState.cargo.label} Terambil! Klik tombol Masuk Kec. ${ojolState.targetDistrict.name} di HUD atas!`);
             }
           } else if (ojolState.stage === "dropoff") {
-            // Misi selesai 1x! Beri hadiah dan akhiri dengan rapi
-            const pay = ojolState.cargo.pay;
-            if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+            // Misi selesai 1x! Beri hadiah (dibatasi kuota harian agar tidak farming)
+            const hasQuota = getRemainingCoinQuota("ojol") > 0;
+            const pay = hasQuota ? ojolState.cargo.pay : 0;
+            if (hasQuota) consumeGameCoinQuota("ojol");
+            if (hasQuota && window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
               window.PirakuEconomy.addCoins(pay, "Antar " + ojolState.cargo.label + " ke " + ojolState.targetDistrict.name);
             }
             if (typeof window.grantPirakuXP === "function") {
-              window.grantPirakuXP(40, "Selesai Orderan Lintas Kecamatan");
+              window.grantPirakuXP(hasQuota ? 40 : 6, "Selesai Orderan Lintas Kecamatan");
             }
             const doneCount = parseInt(localStorage.getItem("piraku_ojol_completed") || "0", 10) + 1;
             localStorage.setItem("piraku_ojol_completed", String(doneCount));
             tone(960, 0.25);
             if (typeof window.showToast === "function") {
-              window.showToast(`🎉 ORDER SELESAI! ${ojolState.cargo.label} tiba di Kec. ${ojolState.targetDistrict.name} (+${pay} 🪙 & +40 XP)!`);
+              window.showToast(hasQuota
+                ? `🎉 ORDER SELESAI! ${ojolState.cargo.label} tiba di Kec. ${ojolState.targetDistrict.name} (+${pay} 🪙 & +40 XP)!`
+                : `🎉 ORDER SELESAI! (Kuota koin Ojol hari ini habis • +6 XP Latihan)`);
             }
             window.stopOjol3DGame(true);
             return;
@@ -1727,10 +1808,19 @@
     guideLine.computeLineDistances();
     sc.add(guideLine);
     raceState.guideLine = guideLine;
+
+    window.pirakuActiveMinimapTarget = {
+      mapId: "bandung_wetan",
+      x: cp.x,
+      z: cp.z,
+      color: isFinish ? "#facc15" : "#38bdf8",
+      label: isFinish ? "FINISH" : ("CP " + (idx + 1))
+    };
   }
 
   window.stopGasibuRace3D = function(silent) {
     raceState.active = false;
+    window.pirakuActiveMinimapTarget = null;
     if (raceState.rafId) { cancelAnimationFrame(raceState.rafId); raceState.rafId = null; }
     clearRace3DMeshes();
     const hud = document.getElementById("piraku-ojol-hud");
@@ -1822,15 +1912,19 @@
             const isNewBest = parseFloat(elapsedSec) < prevBest;
             if (isNewBest) localStorage.setItem("piraku_gasibu_race_best", elapsedSec);
 
-            if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+            const hasQuota = getRemainingCoinQuota("race") > 0;
+            if (hasQuota) consumeGameCoinQuota("race");
+            if (hasQuota && window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
               window.PirakuEconomy.addCoins(16, "Finis Balap Gasibu (" + elapsedSec + "d)");
             }
             if (typeof window.grantPirakuXP === "function") {
-              window.grantPirakuXP(35, "Finis Balap Time Trial Gasibu");
+              window.grantPirakuXP(hasQuota ? 35 : 5, "Finis Balap Time Trial Gasibu");
             }
             tone(980, 0.28);
             if (typeof window.showToast === "function") {
-              window.showToast(`🏆 FINISH ${elapsedSec}d!${isNewBest ? " (REKOR BARU!)" : ""} +16 🪙 & +35 XP!`);
+              window.showToast(hasQuota
+                ? `🏆 FINISH ${elapsedSec}d!${isNewBest ? " (REKOR BARU!)" : ""} +16 🪙 & +35 XP!`
+                : `🏆 FINISH ${elapsedSec}d!${isNewBest ? " (REKOR BARU!)" : ""} (Kuota koin habis • +5 XP)`);
             }
             window.stopGasibuRace3D(true);
             return;

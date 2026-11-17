@@ -751,6 +751,37 @@
       });
     }
 
+    // Petunjuk Misi / Game 3D Aktif (Ojol / Balap Gasibu) di Minimap
+    const mmTgt = window.pirakuActiveMinimapTarget;
+    if (mmTgt && mmTgt.mapId === "bandung_wetan") {
+      const tx = Math.max(18, Math.min(W - 18, toX(mmTgt.x)));
+      const ty = Math.max(18, Math.min(H - 18, toY(mmTgt.z)));
+      if (selfMesh && selfMesh.position) {
+        const sx0 = Math.max(18, Math.min(W - 18, toX(selfMesh.position.x)));
+        const sy0 = Math.max(18, Math.min(H - 18, toY(selfMesh.position.z)));
+        ctx.save();
+        ctx.strokeStyle = mmTgt.color || "#fde047";
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(sx0, sy0); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.restore();
+      }
+      const tp = 6 + Math.sin((t || 0) * 6) * 2.2;
+      ctx.strokeStyle = mmTgt.color || "#fde047";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.arc(tx, ty, tp, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = mmTgt.color || "#fde047";
+      ctx.beginPath(); ctx.arc(tx, ty, 4, 0, Math.PI * 2); ctx.fill();
+      if (mmTgt.label) {
+        ctx.fillStyle = "#0f172a";
+        ctx.fillRect(tx - 18, ty - 16, 36, 10);
+        ctx.fillStyle = mmTgt.color || "#fde047";
+        ctx.font = "bold 7.5px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(mmTgt.label, tx, ty - 8.5);
+      }
+    }
+
     // Penanda Pemain + Arah Hadap (View Cone)
     if (selfMesh && selfMesh.position) {
       const sx = Math.max(18, Math.min(W - 18, toX(selfMesh.position.x)));

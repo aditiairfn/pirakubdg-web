@@ -1357,6 +1357,30 @@
         }
       });
 
+      // Petunjuk Target Ojol 3D di Minimap Komplek
+      const mmTgt = window.pirakuActiveMinimapTarget;
+      if (mmTgt && mmTgt.mapId === activeMapId) {
+        const tx = Math.max(18, Math.min(w - 18, toM(mmTgt.x)));
+        const tz = Math.max(24, Math.min(h - 18, toM(mmTgt.z)));
+        const mesh0 = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+        if (mesh0 && mesh0.position) {
+          const sx0 = Math.max(18, Math.min(w - 18, toM(mesh0.position.x)));
+          const sz0 = Math.max(24, Math.min(h - 18, toM(mesh0.position.z)));
+          ctx.save();
+          ctx.strokeStyle = mmTgt.color || "#facc15";
+          ctx.lineWidth = 1.6;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath(); ctx.moveTo(sx0, sz0); ctx.lineTo(tx, tz); ctx.stroke();
+          ctx.restore();
+        }
+        const tp = 6 + Math.sin(performance.now() * 0.006) * 2.2;
+        ctx.strokeStyle = mmTgt.color || "#facc15";
+        ctx.lineWidth = 1.8;
+        ctx.beginPath(); ctx.arc(tx, tz, tp, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = mmTgt.color || "#facc15";
+        ctx.beginPath(); ctx.arc(tx, tz, 4, 0, Math.PI * 2); ctx.fill();
+      }
+
       // Label Nama Kecamatan
       ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
       ctx.beginPath(); ctx.roundRect(cx - 52, 8, 104, 16, 8); ctx.fill();
@@ -1608,7 +1632,10 @@
     if (!window.PirakuEconomy.spendCoins(10, "Jajan Cuanki Mang Bandung")) return;
     playBaksoBowlClinkSfx();
     window.pirakuSpeedBoostUntil = Date.now() + 35000;
-    const today = new Date().toISOString().slice(0, 10);
+    const dNow = new Date();
+    const today = typeof window.getPirakuLocalDateKey === "function"
+      ? window.getPirakuLocalDateKey()
+      : `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, "0")}-${String(dNow.getDate()).padStart(2, "0")}`;
     const clean = String(localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     const suf = clean ? ("_" + clean) : "_guest";
     localStorage.setItem("piraku_did_cuanki_" + today + suf, "1");

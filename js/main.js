@@ -146,7 +146,10 @@ class QuestSystem {
     this.scene = sceneInstance;
     this.supabase = supabaseInst;
     this.warga = userData;
-    this.todayStr = new Date().toISOString().split("T")[0];
+    const dNow = new Date();
+    this.todayStr = `${dNow.getFullYear()}-${String(dNow.getMonth() + 1).padStart(2, "0")}-${String(dNow.getDate()).padStart(2, "0")}`;
+    const cleanQIg = String(userData?.ig || localStorage.getItem("piraku_my_ig") || "guest").trim().toLowerCase().replace(/^@/, "");
+    this.storageKey = "piraku_quests_" + this.todayStr + "_" + (cleanQIg || "guest");
     this.quests = getDailyRotatedQuests(this.todayStr);
     this.init();
   }
@@ -160,7 +163,7 @@ class QuestSystem {
 
   loadLocalCompleted() {
     try {
-      const saved = localStorage.getItem("piraku_quests_" + this.todayStr);
+      const saved = localStorage.getItem(this.storageKey);
       if (saved) {
         const completedIds = JSON.parse(saved);
         this.quests.forEach(quest => {
@@ -183,9 +186,9 @@ class QuestSystem {
 
       if (data && !error && data.length > 0) {
         const completedIds = data.map(q => q.quest_id);
-        const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + this.todayStr) || "[]");
+        const localSaved = JSON.parse(localStorage.getItem(this.storageKey) || "[]");
         const merged = Array.from(new Set([...localSaved, ...completedIds]));
-        localStorage.setItem("piraku_quests_" + this.todayStr, JSON.stringify(merged));
+        localStorage.setItem(this.storageKey, JSON.stringify(merged));
 
         this.quests.forEach(quest => {
           if (merged.includes(quest.id)) {
@@ -340,10 +343,10 @@ class QuestSystem {
     }
 
     try {
-      const localSaved = JSON.parse(localStorage.getItem("piraku_quests_" + this.todayStr) || "[]");
+      const localSaved = JSON.parse(localStorage.getItem(this.storageKey) || "[]");
       if (!localSaved.includes(quest.id)) {
         localSaved.push(quest.id);
-        localStorage.setItem("piraku_quests_" + this.todayStr, JSON.stringify(localSaved));
+        localStorage.setItem(this.storageKey, JSON.stringify(localSaved));
       }
     } catch(e) {}
 
@@ -1270,6 +1273,7 @@ let activeQuestSystem = null;
   window.evaluateWeeklyCamatRotation = async function(citizensList) {
     if (!Array.isArray(citizensList) || citizensList.length === 0) return;
     const topCandidateByKec = {};
+    window.weeklyCamatByKec = {};
 
     if (typeof supabaseClient !== "undefined" && supabaseClient) {
       try {
@@ -1278,7 +1282,7 @@ let activeQuestSystem = null;
           .order("votes", { ascending: false });
         if (Array.isArray(data)) {
           data.forEach(row => {
-            const rawK = String(row.kecamatan || row.district_id || "").replace(/[_-]+/g," ").trim().toLowerCase();
+            const rawK = String(row.district_name || row.kecamatan || row.district_id || "").replace(/[_-]+/g," ").trim().toLowerCase();
             if (!rawK) return;
             if (!topCandidateByKec[rawK] && (Number(row.votes) || 0) > 0) {
               topCandidateByKec[rawK] = {
@@ -1294,6 +1298,7 @@ let activeQuestSystem = null;
     const byKec = {};
     citizensList.forEach(c => {
       if (!c || !c.ig) return;
+      c.is_camat = false;
       const k = String(c.kecamatan || "Bandung Wetan").trim().toLowerCase();
       if (!byKec[k]) byKec[k] = [];
       byKec[k].push(c);
@@ -1301,17 +1306,9 @@ let activeQuestSystem = null;
 
     for (const [kLow, members] of Object.entries(byKec)) {
       const topVoteInfo = topCandidateByKec[kLow];
-      const ranked = [...members].sort((a, b) => {
-        const aTop = topVoteInfo && String(a.ig || "").toLowerCase() === topVoteInfo.ig ? 1 : 0;
-        const bTop = topVoteInfo && String(b.ig || "").toLowerCase() === topVoteInfo.ig ? 1 : 0;
-        if (bTop !== aTop) return bTop - aTop;
-        const xpDiff = (Number(b.xp) || 0) - (Number(a.xp) || 0);
-        if (xpDiff !== 0) return xpDiff;
-        return (Number(a.id) || 0) - (Number(b.id) || 0);
-      });
-      const winner = ranked[0];
-      const hasVotes = Boolean(topVoteInfo && topVoteInfo.votes > 0);
-      if (winner && (hasVotes || (Number(winner.xp) || 0) > 0)) {
+      if (!topVoteInfo || topVoteInfo.votes <= 0) continue;
+      const winner = members.find(m => String(m.ig || "").toLowerCase() === topVoteInfo.ig);
+      if (winner) {
         window.weeklyCamatByKec[kLow] = winner.ig;
         members.forEach(m => { m.is_camat = (m.ig === winner.ig); });
       }
@@ -2060,6 +2057,7 @@ let activeQuestSystem = null;
           localStorage.setItem("piraku_house_keys" + suf, "3");
         }
         if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
+        if (typeof window.syncPirakuMissionsFromCloud === "function") window.syncPirakuMissionsFromCloud();
         if (typeof window.autoSpawnRegisteredDistrict === "function") window.autoSpawnRegisteredDistrict(true);
       } else if (registeredCitizensList.length > 0 || supabaseClient) {
         // Sesi lama di browser ini sudah tidak ada di database (misal pasca-reset) -> bersihkan otomatis
@@ -2614,6 +2612,10 @@ let activeQuestSystem = null;
     const cleanHandle = rawIg.replace(/^@+/, '').trim().toLowerCase();
     const formattedIg = '@' + cleanHandle;
     if (!/^[a-z0-9._]{1,30}$/.test(cleanHandle)) { alert('Username Instagram hanya boleh huruf, angka, titik, dan garis bawah (maks 30 karakter).'); return; }
+    if (cleanHandle !== 'yelclaw' && /admin|moderator|official|pirakubdg/.test(cleanHandle)) {
+      alert('⚠️ Username yang mengandung unsur "admin" / resmi tidak dapat digunakan!');
+      return;
+    }
 
     const btn = document.getElementById('btn-submit-login');
     btn.disabled = true; btn.innerText = 'Memverifikasi akun...';
@@ -2646,10 +2648,22 @@ let activeQuestSystem = null;
           return;
         }
 
+        const dbXp = typeof user.xp === 'number' ? user.xp : 0;
+        const lvlObj = typeof window.computePirakuLevelFromTotalXp === 'function'
+          ? window.computePirakuLevelFromTotalXp(dbXp)
+          : { level: user.level || 1 };
         localStorage.setItem('piraku_my_ig', user.ig);
-        localStorage.setItem('piraku_my_level', user.level || 1);
-        localStorage.setItem('piraku_my_xp', user.xp || 0);
+        localStorage.setItem('piraku_my_level', String(lvlObj.level));
+        localStorage.setItem('piraku_my_xp', String(dbXp));
         localStorage.setItem('piraku_my_kec', user.kecamatan || 'Bandung Wetan');
+        if (user.color !== undefined) localStorage.setItem('piraku_my_color', String(user.color));
+        if (user.acc) localStorage.setItem('piraku_my_acc', String(user.acc));
+        if (user.has_house) {
+          const suf = '_' + String(user.ig || '').trim().toLowerCase().replace(/^@/, '');
+          localStorage.setItem('piraku_has_house' + suf, '1');
+          localStorage.setItem('piraku_house_keys' + suf, '3');
+          window.pirakuDistrictHasHouse = true;
+        }
         if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
 
         let foundMesh = animC.find(a => String(a.userData?.a?.c?.ig || '').toLowerCase() === String(user.ig || '').toLowerCase());
@@ -2662,6 +2676,7 @@ let activeQuestSystem = null;
           foundMesh.rotation.y = 0;
         }
         setupActivePlayer(foundMesh, user);
+        if (typeof window.syncPirakuMissionsFromCloud === "function") window.syncPirakuMissionsFromCloud();
         if (typeof window.autoSpawnRegisteredDistrict === "function") window.autoSpawnRegisteredDistrict(true);
 
         window.updateAutoDetectButton();
@@ -2688,6 +2703,11 @@ let activeQuestSystem = null;
     const cleanHandle = rawIg.replace(/^@+/, '').trim().toLowerCase();
     const formattedIg = '@' + cleanHandle;
     if (!/^[a-z0-9._]{1,30}$/.test(cleanHandle)) { alert('Username Instagram hanya boleh huruf, angka, titik, dan garis bawah (maks 30 karakter).'); return; }
+    const lowerName = name.toLowerCase();
+    if (cleanHandle !== 'yelclaw' && (/admin|moderator|official|pirakubdg/.test(cleanHandle) || /admin|moderator|official|pirakubdg/.test(lowerName))) {
+      alert('⚠️ Username atau nama yang mengandung unsur "admin" / resmi tidak dapat digunakan!');
+      return;
+    }
 
     const btn = document.getElementById('btn-submit-signup');
     btn.disabled = true; btn.innerText = 'Mendaftarkan warga...';

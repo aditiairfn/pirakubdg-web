@@ -281,7 +281,7 @@
         const nextVotes = ((latestCand.data && typeof latestCand.data.votes === "number") ? latestCand.data.votes : currentVotes) + 1;
         await sb.from("pemilu_camat").update({ votes: nextVotes }).eq("id", candidateId);
         localStorage.setItem(voteLsKey, String(candidateId));
-        localStorage.setItem("piraku_did_vote_" + new Date().toISOString().slice(0, 10) + getCivicUserSuffix(), "1");
+        localStorage.setItem("piraku_did_vote_" + getLocalDateKey() + getCivicUserSuffix(), "1");
         await window.grantPirakuXP(60, "Menyalurkan Hak Suara Pemilu");
         if (typeof window.evaluateWeeklyCamatRotation === "function" && Array.isArray(window.registeredCitizensList)) {
           await window.evaluateWeeklyCamatRotation(window.registeredCitizensList);
@@ -360,7 +360,7 @@
     if (_lastPatrolPos) {
       const stepDist = Math.hypot(x - _lastPatrolPos.x, z - _lastPatrolPos.z);
       if (stepDist > 0.25 && stepDist < 45) {
-        const today = new Date().toISOString().slice(0, 10);
+        const today = getLocalDateKey();
         const key = "piraku_patrol_dist_" + today + getCivicUserSuffix();
         const cur = parseFloat(localStorage.getItem(key) || "0");
         localStorage.setItem(key, String(Math.min(9999, cur + stepDist)));
@@ -370,7 +370,7 @@
   }, 600);
 
   window.markPirakuGotongRoyongDone = function () {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateKey();
     localStorage.setItem("piraku_did_gotong_" + today + getCivicUserSuffix(), "1");
   };
 
@@ -381,10 +381,12 @@
     const day = String(d.getDate()).padStart(2, "0");
     return `${y}-${m}-${day}`;
   }
+  window.getPirakuLocalDateKey = getLocalDateKey;
 
   window.recordPirakuAngkotHit = function () {
     const today = getLocalDateKey();
     const suf = getCivicUserSuffix();
+    if (localStorage.getItem("piraku_claimed_angkot_" + today + suf) === "1") return;
     const key = "piraku_angkot_hits_" + today + suf;
     const prev = parseInt(localStorage.getItem(key) || "0", 10);
     if (prev >= 3) return;
@@ -496,6 +498,27 @@
     const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
     if (!myIg) return false;
     const suf = getCivicUserSuffix();
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const owned = window.PirakuEconomy.getState().owned || [];
+      if (owned.includes("has_house_built") || owned.some(x => String(x).startsWith("house_tier_"))) {
+        localStorage.setItem("piraku_has_house" + suf, "1");
+        localStorage.setItem("piraku_house_keys" + suf, "3");
+        window.pirakuDistrictHasHouse = true;
+        return true;
+      }
+      owned.forEach(tag => {
+        const s = String(tag || "");
+        if (s.startsWith("house_keys_")) {
+          const kv = parseInt(s.replace("house_keys_", ""), 10) || 0;
+          const curK = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) || 0;
+          if (kv > curK) localStorage.setItem("piraku_house_keys" + suf, String(Math.min(3, kv)));
+        }
+        if (s.startsWith("claimed_")) {
+          const mKey = s.slice("claimed_".length);
+          localStorage.setItem("piraku_claimed_" + mKey + suf, "1");
+        }
+      });
+    }
     if (window.pirakuDistrictHasHouse || parseInt(localStorage.getItem("piraku_house_tier" + suf) || "0", 10) >= 1) {
       localStorage.setItem("piraku_has_house" + suf, "1");
       localStorage.setItem("piraku_house_keys" + suf, "3");
@@ -526,22 +549,44 @@
   async function syncDailyClaimsFromCloud(today, suf) {
     const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
     const sb = window.pirakuSupabase;
-    if (!myIg || !sb || !Array.isArray(window.registeredCitizensList)) return;
-    const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
-    if (!me || !me.id) return;
+    if (!myIg || !sb) return;
+    let wargaId = null;
+    if (Array.isArray(window.registeredCitizensList)) {
+      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
+      if (me && me.id) wargaId = me.id;
+    }
+    if (!wargaId) {
+      try {
+        const { data: u } = await sb.from("warga_piraku").select("id").ilike("ig", myIg).maybeSingle();
+        if (u && u.id) wargaId = u.id;
+      } catch (e) {}
+    }
+    if (!wargaId) return;
     try {
       const { data, error } = await sb
         .from("warga_daily_quests")
         .select("quest_id")
-        .eq("warga_id", me.id)
+        .eq("warga_id", wargaId)
         .eq("completed_date", today);
       if (!error && Array.isArray(data)) {
         data.forEach(r => {
-          if (r && r.quest_id) localStorage.setItem("piraku_claimed_" + r.quest_id + suf, "1");
+          if (r && r.quest_id) {
+            localStorage.setItem("piraku_claimed_" + r.quest_id + suf, "1");
+            if (String(r.quest_id).startsWith("angkot_")) {
+              localStorage.setItem("piraku_angkot_hits_" + today + suf, "3");
+            }
+          }
         });
       }
     } catch (e) {}
   }
+
+  window.syncPirakuMissionsFromCloud = async function () {
+    const suf = getCivicUserSuffix();
+    await syncHouseStatusFromCloud();
+    await syncDailyClaimsFromCloud(getLocalDateKey(), suf);
+  };
+  setTimeout(() => { window.syncPirakuMissionsFromCloud(); }, 950);
 
   window.openMissionsHubModal = async function () {
     const modal = ensureCivicModal();
@@ -619,7 +664,7 @@
 
         '<div style="display:flex;flex-direction:column;gap:9px;">',
           missions.map(function (m) {
-            return '<div style="background:rgba(255,255,255,0.07);border-radius:14px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
+            return '<div style="background:rgba(255,255,255,' + (m.done ? '0.03' : '0.07') + ');opacity:' + (m.done ? '0.68' : '1') + ';border-radius:14px;padding:11px 12px;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
               '<div>' +
                 '<span style="font-size:9px;font-weight:800;background:rgba(255,207,74,0.2);color:#ffcf4a;padding:2px 6px;border-radius:5px;">' + m.cat + '</span>' +
                 '<div style="font-weight:800;font-size:13px;margin-top:3px;">' + m.title + '</div>' +
@@ -651,14 +696,34 @@
     const curKeys = hasHouseAlready ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) + 1);
     localStorage.setItem("piraku_house_keys" + suf, String(curKeys));
 
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const ecoState = window.PirakuEconomy.getState();
+      if (Array.isArray(ecoState.owned)) {
+        const claimTag = "claimed_" + missionKey;
+        const keyTag = "house_keys_" + curKeys;
+        if (!ecoState.owned.includes(claimTag)) ecoState.owned.push(claimTag);
+        if (!ecoState.owned.includes(keyTag)) ecoState.owned.push(keyTag);
+      }
+    }
+
     // Simpan klaim ke Supabase agar tidak bisa diulang di hari yang sama lintas sesi/perangkat
     const sb = window.pirakuSupabase;
     const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
-    if (sb && myIg && Array.isArray(window.registeredCitizensList)) {
-      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
-      if (me && me.id) {
+    if (sb && myIg) {
+      let wargaId = null;
+      if (Array.isArray(window.registeredCitizensList)) {
+        const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
+        if (me && me.id) wargaId = me.id;
+      }
+      if (!wargaId) {
         try {
-          await sb.from("warga_daily_quests").insert([{ warga_id: me.id, quest_id: missionKey, completed_date: getLocalDateKey() }]);
+          const { data: u } = await sb.from("warga_piraku").select("id").ilike("ig", myIg).maybeSingle();
+          if (u && u.id) wargaId = u.id;
+        } catch (e) {}
+      }
+      if (wargaId) {
+        try {
+          await sb.from("warga_daily_quests").insert([{ warga_id: wargaId, quest_id: missionKey, completed_date: getLocalDateKey() }]);
         } catch (e) {}
       }
     }
@@ -790,6 +855,15 @@
     localStorage.setItem("piraku_has_house" + suf, "1");
     localStorage.setItem("piraku_house_keys" + suf, "3");
     localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
+    window.pirakuDistrictHasHouse = true;
+    if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
+      const ecoState = window.PirakuEconomy.getState();
+      if (Array.isArray(ecoState.owned)) {
+        if (!ecoState.owned.includes("has_house_built")) ecoState.owned.push("has_house_built");
+        if (!ecoState.owned.includes("house_keys_3")) ecoState.owned.push("house_keys_3");
+        if (typeof window.PirakuEconomy.saveNow === "function") window.PirakuEconomy.saveNow();
+      }
+    }
     if (typeof window.playSynthTone === "function") window.playSynthTone(1040, "sine", 0.45);
 
     const sb = window.pirakuSupabase;

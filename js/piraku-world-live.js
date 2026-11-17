@@ -72,21 +72,23 @@
 
   window.hydratePirakuWalletFromSupabase = async function() {
     const sb = window.pirakuSupabase;
-    if (!sb) return null;
+    if (!sb) return { status: "error" };
     const idObj = getCitizenIdentity();
-    if (!idObj || !idObj.key || idObj.key.startsWith("warga_")) return null;
+    if (!idObj || !idObj.key || idObj.key.startsWith("warga_")) return { status: "guest" };
     try {
       const { data, error } = await sb
         .from("piraku_wallets")
         .select("*")
         .eq("citizen_key", idObj.key)
         .maybeSingle();
-      if (!error && data) {
+      if (error) return { status: "error" };
+      if (data) {
         let ownedList = Array.isArray(data.owned_items) ? [...data.owned_items] : ["tier_1"];
         if (!ownedList.includes("tier_1")) ownedList.unshift("tier_1");
         if (data.tier_id && !ownedList.includes(data.tier_id)) ownedList.push(data.tier_id);
         if (data.equipped_outfit && !ownedList.includes(data.equipped_outfit)) ownedList.push(data.equipped_outfit);
         return {
+          status: "ok",
           citizen_key: idObj.key,
           coins: typeof data.coins === "number" ? data.coins : 25,
           owned: ownedList,
@@ -94,45 +96,64 @@
           equippedOutfit: data.equipped_outfit || null,
           equippedVehicle: (data.equipped_vehicle && Number(data.rental_expires_at || 0) > Date.now()) ? data.equipped_vehicle : null,
           rentalExpiresAt: Number(data.rental_expires_at || 0),
-          billboardText: data.billboard_text || "WILUJENG SUMPING DI PIRAKU BANDUNG!"
+          billboardText: data.billboard_text || "WILUJENG SUMPING DI PIRAKU BANDUNG!",
+          updatedAt: data.updated_at ? Date.parse(data.updated_at) || 0 : 0
         };
       }
-    } catch (e) {}
-    return null;
+      return { status: "empty" };
+    } catch (e) {
+      return { status: "error" };
+    }
   };
 
-  window.syncPirakuWalletToSupabase = async function(state) {
-    const sb = window.pirakuSupabase;
-    if (!sb || !state) return;
-    const idObj = getCitizenIdentity();
-    if (!idObj || !idObj.key || idObj.key.startsWith("warga_")) return;
-    try {
-      const payload = {
-        citizen_key: idObj.key,
-        display_name: idObj.displayName,
-        coins: Math.round(state.coins || 0),
-        owned_items: Array.isArray(state.owned) ? state.owned : ["tier_1"],
-        tier_id: state.tier || "tier_1",
-        equipped_outfit: state.equippedOutfit || null,
-        equipped_vehicle: (state.equippedVehicle && Number(state.rentalExpiresAt || 0) > Date.now()) ? state.equippedVehicle : null,
-        rental_expires_at: Number(state.rentalExpiresAt || 0),
-        billboard_text: state.billboardText || null,
-        updated_at: new Date().toISOString()
-      };
-      const { error } = await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
-      if (error) {
-        // Fallback jika kolom owned_items belum dibuat di Supabase
-        delete payload.owned_items;
-        const { error: err2 } = await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
-        if (err2) {
-          delete payload.tier_id;
-          delete payload.equipped_outfit;
-          delete payload.equipped_vehicle;
-          delete payload.rental_expires_at;
-          await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+  let walletSyncTimer = null;
+  let latestWalletState = null;
+  window.syncPirakuWalletToSupabase = function(state) {
+    if (!state) return;
+    latestWalletState = {
+      coins: state.coins,
+      owned: Array.isArray(state.owned) ? [...state.owned] : ["tier_1"],
+      tier: state.tier,
+      equippedOutfit: state.equippedOutfit,
+      equippedVehicle: state.equippedVehicle,
+      rentalExpiresAt: state.rentalExpiresAt,
+      billboardText: state.billboardText
+    };
+    clearTimeout(walletSyncTimer);
+    walletSyncTimer = setTimeout(async () => {
+      const sb = window.pirakuSupabase;
+      const snap = latestWalletState;
+      if (!sb || !snap) return;
+      const idObj = getCitizenIdentity();
+      if (!idObj || !idObj.key || idObj.key.startsWith("warga_")) return;
+      try {
+        const payload = {
+          citizen_key: idObj.key,
+          display_name: idObj.displayName,
+          coins: Math.round(snap.coins || 0),
+          owned_items: snap.owned,
+          tier_id: snap.tier || "tier_1",
+          equipped_outfit: snap.equippedOutfit || null,
+          equipped_vehicle: (snap.equippedVehicle && Number(snap.rentalExpiresAt || 0) > Date.now()) ? snap.equippedVehicle : null,
+          rental_expires_at: Number(snap.rentalExpiresAt || 0),
+          billboard_text: snap.billboardText || null,
+          updated_at: new Date().toISOString()
+        };
+        const { error } = await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+        if (error) {
+          // Fallback jika kolom owned_items belum dibuat di Supabase
+          delete payload.owned_items;
+          const { error: err2 } = await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+          if (err2) {
+            delete payload.tier_id;
+            delete payload.equipped_outfit;
+            delete payload.equipped_vehicle;
+            delete payload.rental_expires_at;
+            await sb.from("piraku_wallets").upsert(payload, { onConflict: "citizen_key" });
+          }
         }
-      }
-    } catch (e) {}
+      } catch (e) {}
+    }, 60);
   };
 
   // ================= 2. PODIUM 3D TOP 3 SULTAN KOIN PIRAKU =================

@@ -62,10 +62,60 @@
   }
 
   let state = loadState();
+  let lastLocalMutationTs = 0;
+  let pullVersion = 0;
+  let pendingCoinDelta = 0;
+
+  function unpackCloudTagsToLocalStorage(ownedArr) {
+    const rawIg = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    if (!rawIg || !Array.isArray(ownedArr)) return;
+    const suf = "_" + rawIg;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let houseChanged = false;
+
+    if (ownedArr.includes("has_house_built") || ownedArr.some(x => String(x).startsWith("house_tier_"))) {
+      if (localStorage.getItem("piraku_has_house" + suf) !== "1") houseChanged = true;
+      localStorage.setItem("piraku_has_house" + suf, "1");
+      localStorage.setItem("piraku_house_keys" + suf, "3");
+      window.pirakuDistrictHasHouse = true;
+    } else {
+      let maxK = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) || 0;
+      ownedArr.forEach(tag => {
+        if (String(tag).startsWith("house_keys_")) {
+          const kv = parseInt(String(tag).replace("house_keys_", ""), 10) || 0;
+          if (kv > maxK) maxK = kv;
+        }
+      });
+      if (maxK > 0) localStorage.setItem("piraku_house_keys" + suf, String(Math.min(3, maxK)));
+    }
+
+    ownedArr.forEach(tag => {
+      const s = String(tag || "");
+      if (s.startsWith("claimed_")) {
+        const mKey = s.slice("claimed_".length);
+        localStorage.setItem("piraku_claimed_" + mKey + suf, "1");
+        if (mKey.startsWith("angkot_") && mKey.endsWith(today)) {
+          localStorage.setItem("piraku_angkot_hits_" + today + suf, "3");
+        }
+      }
+    });
+
+    if (houseChanged && window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
+      window.refreshActiveDistrictHouses();
+    }
+  }
+
   function saveState(skipRemote) {
     activeAccountKey = getAccountStorageKey();
-    if (!skipRemote && typeof window.syncPirakuWalletToSupabase === "function") {
-      window.syncPirakuWalletToSupabase(state);
+    const isLoggedUser = Boolean((localStorage.getItem("piraku_my_ig") || "").trim());
+    if (!skipRemote) {
+      lastLocalMutationTs = Date.now();
+      state.updatedAt = lastLocalMutationTs;
+      // Jangan kirim state default ke Supabase sebelum hidrasi cloud selesai (mencegah reset koin ke 25 di HP baru/incognito!)
+      if ((!isLoggedUser || state._hydrated) && typeof window.syncPirakuWalletToSupabase === "function") {
+        window.syncPirakuWalletToSupabase(state);
+      }
     }
     try { localStorage.setItem(activeAccountKey, JSON.stringify(state)); } catch (e) {}
     updateWalletHUD();
@@ -73,27 +123,58 @@
   }
 
   async function pullAccountWalletFromCloud() {
+    const myPullVer = ++pullVersion;
     const newKey = getAccountStorageKey();
-    if (newKey !== activeAccountKey) {
+    const isAccountSwitch = (newKey !== activeAccountKey);
+    if (isAccountSwitch) {
       state = loadState();
+      lastLocalMutationTs = 0;
+      pendingCoinDelta = 0;
       updateWalletHUD();
       syncPlayer3DAttachments();
     }
     if (typeof window.hydratePirakuWalletFromSupabase === "function") {
       const cloud = await window.hydratePirakuWalletFromSupabase();
-      if (cloud) {
-        state.coins = cloud.coins;
-        state.owned = cloud.owned;
-        state.tier = cloud.tier;
-        state.equippedOutfit = cloud.equippedOutfit;
-        state.equippedVehicle = cloud.equippedVehicle;
-        state.rentalExpiresAt = cloud.rentalExpiresAt;
-        state.billboardText = cloud.billboardText;
-        saveState(true);
+      if (myPullVer !== pullVersion || getAccountStorageKey() !== newKey || !cloud) return;
+      if (cloud.status === "error" || cloud.status === "guest") return;
+
+      if (cloud.status === "ok") {
+        const localTs = Number(state.updatedAt || 0);
+        const cloudTs = Number(cloud.updatedAt || 0);
+        const wasHydrated = Boolean(state._hydrated);
+        const preferLocalCoins = wasHydrated && !isAccountSwitch && (localTs > cloudTs && cloudTs > 0);
+
+        if (!wasHydrated) {
+          state.coins = Math.max(0, cloud.coins + pendingCoinDelta);
+          pendingCoinDelta = 0;
+        } else if (!preferLocalCoins) {
+          state.coins = cloud.coins;
+        }
+
+        const d = new Date();
+        const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const mergedOwned = Array.from(new Set([...(Array.isArray(state.owned) ? state.owned : []), ...(Array.isArray(cloud.owned) ? cloud.owned : [])]))
+          .filter(tag => {
+            const s = String(tag || "");
+            if (s.startsWith("claimed_") && !s.endsWith(today)) return false;
+            return true;
+          });
+        state.owned = mergedOwned;
+        state.tier = cloud.tier || state.tier;
+        state.equippedOutfit = cloud.equippedOutfit || state.equippedOutfit;
+        state.equippedVehicle = cloud.equippedVehicle || state.equippedVehicle;
+        state.rentalExpiresAt = cloud.rentalExpiresAt || state.rentalExpiresAt;
+        state.billboardText = cloud.billboardText || state.billboardText;
+        state.updatedAt = Math.max(localTs, cloudTs, Date.now());
+        state._hydrated = true;
+        unpackCloudTagsToLocalStorage(mergedOwned);
+        saveState(preferLocalCoins ? false : true);
         const modal = document.getElementById("piraku-economy-modal");
         if (modal && modal.style.display === "flex") renderEconomyModal();
-      } else {
-        // Akun baru yang belum punya record di piraku_wallets -> simpan initial state-nya ke Supabase
+      } else if (cloud.status === "empty") {
+        // Benar-benar akun baru yang belum punya baris di piraku_wallets -> aman simpan state awal
+        state._hydrated = true;
+        pendingCoinDelta = 0;
         saveState(false);
       }
     }
@@ -107,6 +188,9 @@
     addCoins(amount, reason) {
       const val = Math.round(Number(amount) || 0);
       if (!val) return state.coins;
+      if (!state._hydrated && (localStorage.getItem("piraku_my_ig") || "").trim()) {
+        pendingCoinDelta += val;
+      }
       state.coins = Math.max(0, state.coins + val);
       state.history.unshift({ label: reason || (val > 0 ? "Hadiah Aktivitas" : "Belanja Kota"), delta: val, ts: Date.now() });
       if (state.history.length > 25) state.history.length = 25;
@@ -115,11 +199,13 @@
       return state.coins;
     },
     spendCoins(amount, reason) {
-      if (state.coins < amount) {
+      const cost = Math.round(Number(amount) || 0);
+      if (cost <= 0) return true;
+      if (state.coins < cost) {
         showCoinToast("Koin Piraku belum cukup! Main mini-game dulu yuk 🪙", true);
         return false;
       }
-      this.addCoins(-amount, reason);
+      this.addCoins(-cost, reason);
       return true;
     },
     getActiveRental() {
@@ -972,19 +1058,15 @@
     if (mesh && !mesh.getObjectByName("piraku-shop-attachments") && (state.equippedOutfit || window.PirakuEconomy.getActiveRental())) {
       syncPlayer3DAttachments();
     }
-  }, 1000);
-
-  setTimeout(() => {
     try {
       const ig = (localStorage.getItem("piraku_my_ig") || "").toLowerCase().replace(/^@/, "");
-      if (ig === "yelclaw" && !localStorage.getItem("piraku_yelclaw_topup_10k_done")) {
+      if (ig === "yelclaw" && state._hydrated && Array.isArray(state.owned) && !state.owned.includes("founder_topup_10k")) {
+        state.owned.push("founder_topup_10k");
         localStorage.setItem("piraku_yelclaw_topup_10k_done", "1");
-        if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-          window.PirakuEconomy.addCoins(10000, "Top-Up Admin Founder (@yelclaw)");
-        }
+        window.PirakuEconomy.addCoins(10000, "Top-Up Admin Founder (@yelclaw)");
       }
     } catch (e) {}
-  }, 1500);
+  }, 1000);
 
   setTimeout(pullAccountWalletFromCloud, 1200);
   setInterval(() => {
