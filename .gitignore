@@ -5,3 +5,4 @@ models/*.glb
 .vercel
 .DS_Store
 .vscode/
+supabase/.temp/
