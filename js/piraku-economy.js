@@ -1,7 +1,7 @@
 // ================= PIRAKUBDG ECONOMY, WALLET, 10-MIN VEHICLE RENTAL & 3D SHOP =================
 (function() {
   function getAccountStorageKey() {
-    const rawIg = (localStorage.getItem("piraku_my_ig") || localStorage.getItem("piraku_citizen_name") || localStorage.getItem("piraku_username") || "").trim().toLowerCase().replace(/^@/, "");
+    const rawIg = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     const guestId = localStorage.getItem("piraku_guest_id") || "guest";
     return "piraku_economy_v2_" + (rawIg || guestId);
   }
@@ -103,6 +103,7 @@
   window.PirakuEconomy = {
     getCoins: () => state.coins,
     getState: () => state,
+    saveNow: () => saveState(false),
     addCoins(amount, reason) {
       const val = Math.round(Number(amount) || 0);
       if (!val) return state.coins;

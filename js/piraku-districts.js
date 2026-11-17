@@ -1580,7 +1580,9 @@
       if (Array.isArray(ecoState.owned)) {
         const tag = "house_tier_" + nextInfo.tier;
         if (!ecoState.owned.includes(tag)) ecoState.owned.push(tag);
-        if (typeof window.syncPirakuWalletToSupabase === "function") {
+        if (typeof window.PirakuEconomy.saveNow === "function") {
+          window.PirakuEconomy.saveNow();
+        } else if (typeof window.syncPirakuWalletToSupabase === "function") {
           window.syncPirakuWalletToSupabase(ecoState);
         }
       }
@@ -1961,6 +1963,10 @@
         const clean = String(localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
         const suf = clean ? ("_" + clean) : "_guest";
         const hasH = localStorage.getItem("piraku_has_house" + suf) === "1" || myDistrictKavlingInfo.hasHouse;
+        if (hasH) {
+          window.pirakuDistrictHasHouse = true;
+          if (localStorage.getItem("piraku_has_house" + suf) !== "1") localStorage.setItem("piraku_has_house" + suf, "1");
+        }
         const keys = hasH ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
         if (!hasH) {
           if (keys >= 3) {

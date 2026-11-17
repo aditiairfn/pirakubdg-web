@@ -2768,6 +2768,7 @@ let activeQuestSystem = null;
         document.getElementById('ktp-avatar-role').innerText = selectedRole.toUpperCase();
         document.getElementById('ktp-level-text').innerText = 'Lv. 1';
         document.getElementById('ktp-quote').innerText = '“' + wish + '”'; 
+        window._pirakuPendingDistrictSpawn = true;
         document.getElementById('ktp-modal').style.display = 'flex';
         return;
       } catch (err) {}
@@ -2778,6 +2779,12 @@ let activeQuestSystem = null;
   window.closeKTP = () => { 
     const m = document.getElementById('ktp-modal');
     if (m) m.style.display = 'none'; 
+    if (window._pirakuPendingDistrictSpawn) {
+      window._pirakuPendingDistrictSpawn = false;
+      if (typeof window.autoSpawnRegisteredDistrict === 'function') {
+        setTimeout(() => window.autoSpawnRegisteredDistrict(true), 120);
+      }
+    }
     if (typeof window.onPirakuKtpCompleted === 'function') {
       setTimeout(() => window.onPirakuKtpCompleted(), 180);
     }
@@ -2909,6 +2916,7 @@ let activeQuestSystem = null;
       localStorage.removeItem('piraku_my_acc');
       localStorage.removeItem('piraku_my_inventory');
       if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+      window.pirakuDistrictHasHouse = false;
       myPlayerMesh = null;
       isControlledByPlayer = false;
       activeQuestSystem = null;
@@ -2919,7 +2927,13 @@ let activeQuestSystem = null;
       const card = document.getElementById('quest-tracker-card');
       if (card) card.style.display = 'none';
       window.updateAutoDetectButton(); 
-      closeKTP(); 
+      closeKTP();
+      if (window.pirakuInDistrict && typeof window.enterDistrictMap === "function") {
+        window.enterDistrictMap("bandung_wetan");
+      }
+      if (typeof window.spawnGuestCitizen === "function") {
+        setTimeout(() => window.spawnGuestCitizen(), 150);
+      }
       showToast('Berhasil keluar akun!'); 
     }
   };
