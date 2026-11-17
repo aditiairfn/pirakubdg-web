@@ -1,6 +1,6 @@
 // ================= PIRAKUBDG GLOBAL REALTIME MULTIPLAYER & PROXIMITY VOICE CHAT =================
 (function() {
-  const SEND_INTERVAL_MS = 90;
+  const SEND_INTERVAL_MS = 180;
   let currentWorldRoomId = 'bandung_wetan';
   function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
@@ -535,10 +535,20 @@
     const now = Date.now();
     const dt = Math.min(delta || 0.016, 0.1);
 
-    // 1. Kirim posisi, rotasi, & outfit kita ke semua warga di satu peta
-    if (mpChannel && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
-      if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null)) && (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position) {
+    // 1. Kirim posisi, rotasi, & outfit kita hanya jika WebSocket channel sudah 'joined' & ada perubahan gerak (atau heartbeat 4s)
+    const activeMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    if (mpChannel && mpChannel.state === 'joined' && activeMesh && activeMesh.position && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
+      const px = Number(activeMesh.position.x.toFixed(3));
+      const pz = Number(activeMesh.position.z.toFixed(3));
+      const prot = Number((activeMesh.rotation ? activeMesh.rotation.y : 0).toFixed(3));
+      const moved = !mpChannel._lastSentPos ||
+        Math.abs(px - mpChannel._lastSentPos.x) > 0.015 ||
+        Math.abs(pz - mpChannel._lastSentPos.z) > 0.015 ||
+        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.03 ||
+        (now - (mpChannel._lastSentPos.ts || 0) >= 4000);
+      if (moved) {
         lastBroadcastTime = now;
+        mpChannel._lastSentPos = { x: px, z: pz, rot: prot, ts: now };
         const id = getMyIdentity();
         mpChannel.send({
           type: 'broadcast',
@@ -550,9 +560,9 @@
             color: id.color,
             acc: id.acc,
             role: id.role,
-            x: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.x.toFixed(3)),
-            z: Number((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).position.z.toFixed(3)),
-            rotY: Number(((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null).rotation.y : 0).toFixed(3))
+            x: px,
+            z: pz,
+            rotY: prot
           }
         });
       }
@@ -639,7 +649,7 @@
 
   
   function sendMyLiveSnapshot() {
-    if (!mpChannel) return;
+    if (!mpChannel || mpChannel.state !== "joined") return;
     const id = getMyIdentity();
     const am = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     // Ambil posisi dari mesh aktif atau fallback ke titik kecamatan/rumah jika tersimpan
