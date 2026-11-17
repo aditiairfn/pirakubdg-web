@@ -575,7 +575,19 @@
       while (p) { keepVisible.add(p); p = p.parent; }
       sc.children.forEach(obj => {
         const isSkyDome = obj === window.__pirakuSkyDome || (obj.geometry && obj.geometry.type === "SphereGeometry" && obj.material && obj.material.side === THREE.BackSide);
-        if (keepVisible.has(obj) || obj.isLight || obj.isCamera || obj.isPoints || isSkyDome || obj === customDistrictGroup) return;
+        if (obj.isLight || obj.isCamera || obj.isPoints || isSkyDome || obj === customDistrictGroup) return;
+        if (keepVisible.has(obj)) {
+          // Jika grup warga (citizensGroup) ikut keepVisible karena berisi playerMesh, sembunyikan NPC warga lainnya di dalam grup ini!
+          if (obj !== playerMesh && Array.isArray(obj.children) && obj.children.length > 1) {
+            obj.children.forEach(ch => {
+              if (!keepVisible.has(ch) && ch.visible) {
+                ch.visible = false;
+                hiddenMainObjects.push(ch);
+              }
+            });
+          }
+          return;
+        }
         if (obj.visible) {
           obj.visible = false;
           hiddenMainObjects.push(obj);

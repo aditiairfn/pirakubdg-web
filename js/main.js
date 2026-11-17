@@ -2020,7 +2020,18 @@ let activeQuestSystem = null;
       const { data, error } = await supabaseClient.from('warga_publik').select('*').order('id', { ascending: true });
       if (error) throw error;
       if (data && data.length > 0) {
-        data.forEach(c => createCitizenMesh(c)); 
+        const mySavedIg = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase();
+        let ambientNpcCount = 0;
+        data.forEach(c => {
+          const isMe = mySavedIg && String(c?.ig || '').trim().toLowerCase() === mySavedIg;
+          if (isMe || ambientNpcCount < 10) {
+            createCitizenMesh(c);
+            if (!isMe) ambientNpcCount++;
+          } else {
+            // Tetap simpan ke registeredCitizensList untuk pencarian, leaderboard & distrik tanpa memenuhi Gedung Sate dengan NPC offline
+            registeredCitizensList.push(c);
+          }
+        });
         totalWarga = 1 + data.length;
       }
       const counterEl = document.getElementById('warga-counter');
