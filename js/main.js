@@ -1834,7 +1834,13 @@ let activeQuestSystem = null;
     hitbox.userData = c;
     hitbox.userData.meshGroup = cg;
     clickableObjects.push(hitbox);
-    registeredCitizensList.push(c);
+    const normNewIg = String(c?.ig || '').trim().toLowerCase().replace(/^@/, '');
+    const existingIdx = normNewIg ? registeredCitizensList.findIndex(x => String(x?.ig || '').trim().toLowerCase().replace(/^@/, '') === normNewIg) : -1;
+    if (existingIdx >= 0) {
+      registeredCitizensList[existingIdx] = Object.assign({}, registeredCitizensList[existingIdx], c);
+    } else {
+      registeredCitizensList.push(c);
+    }
     citizensGroup.add(cg);
 
     const myIg = localStorage.getItem('piraku_my_ig');

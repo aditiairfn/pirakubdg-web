@@ -32,6 +32,8 @@
   window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
   window.pirakuRemoteOutfits = window.pirakuRemoteOutfits || {};
   window.pirakuRemoteVehicles = window.pirakuRemoteVehicles || {};
+  window.pirakuRemoteHouses = window.pirakuRemoteHouses || {};
+  window.pirakuRemoteHouseTiers = window.pirakuRemoteHouseTiers || {};
   const TIER_META = {
     tier_2: { tierId: "tier_2", tierName: "Wargi Aktif", tierBadge: "⭐" },
     tier_3: { tierId: "tier_3", tierName: "Sesepuh Bandung", tierBadge: "👑" },
@@ -42,8 +44,9 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
-      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at");
+      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at, owned_items");
       if (!error && Array.isArray(data)) {
+        let houseChanged = false;
         data.forEach(r => {
           const k1 = String(r.citizen_key || "").toLowerCase().replace(/^@/, "").trim();
           const k2 = String(r.display_name || "").toLowerCase().replace(/^@/, "").trim();
@@ -54,11 +57,33 @@
           const activeVeh = (r.equipped_vehicle && Number(r.rental_expires_at || 0) > Date.now()) ? r.equipped_vehicle : null;
           if (k1) window.pirakuRemoteVehicles[k1] = activeVeh;
           if (k2) window.pirakuRemoteVehicles[k2] = activeVeh;
+
+          const ownedArr = Array.isArray(r.owned_items) ? r.owned_items : [];
+          const hasH = ownedArr.includes("has_house_built") || ownedArr.some(x => String(x).startsWith("house_tier_"));
+          if (hasH) {
+            let hTier = 1;
+            if (ownedArr.includes("house_tier_4")) hTier = 4;
+            else if (ownedArr.includes("house_tier_3")) hTier = 3;
+            else if (ownedArr.includes("house_tier_2")) hTier = 2;
+            if (k1) {
+              if (!window.pirakuRemoteHouses[k1] || window.pirakuRemoteHouseTiers[k1] !== hTier) houseChanged = true;
+              window.pirakuRemoteHouses[k1] = true;
+              window.pirakuRemoteHouseTiers[k1] = hTier;
+            }
+            if (k2) {
+              window.pirakuRemoteHouses[k2] = true;
+              window.pirakuRemoteHouseTiers[k2] = hTier;
+            }
+          }
+
           const meta = TIER_META[r.tier_id];
           if (!meta) return;
           if (k1) window.pirakuRemoteTiers[k1] = meta;
           if (k2) window.pirakuRemoteTiers[k2] = meta;
         });
+        if (houseChanged && window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
+          window.refreshActiveDistrictHouses();
+        }
       }
     } catch (e) {}
   }

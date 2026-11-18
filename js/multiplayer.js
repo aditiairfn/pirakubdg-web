@@ -695,7 +695,7 @@
       try { supabaseClient.removeChannel(mpChannel); } catch (e) {}
       mpChannel = null;
     }
-    updateOnlineCount(1);
+    updateOnlineCount(Math.max(1, globalOnlineCount || 1));
     connectGlobalWorld();
   };
 
@@ -726,7 +726,7 @@
         lastBroadcastTime = 0;
         const state = mpChannel.presenceState();
         const sids = Object.keys(state);
-        updateOnlineCount(sids.length);
+        updateOnlineCount(Math.max(globalOnlineCount || 1, sids.length));
         remotePlayers.forEach((_, sid) => {
           if (!state[sid]) removeRemoteAvatar(sid);
         });
@@ -848,12 +848,36 @@
     connectGlobalWorld();
   };
 
+  let globalPresenceChannel = null;
+  let globalOnlineCount = 1;
+  function connectGlobalPresenceCount() {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient || globalPresenceChannel) return;
+    const myInfo = getMyIdentity();
+    globalPresenceChannel = supabaseClient.channel('piraku-global-presence', {
+      config: { presence: { key: mySessionId } }
+    });
+    globalPresenceChannel
+      .on('presence', { event: 'sync' }, () => {
+        if (!globalPresenceChannel) return;
+        globalOnlineCount = Math.max(1, Object.keys(globalPresenceChannel.presenceState()).length);
+        updateOnlineCount(globalOnlineCount);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          try {
+            await globalPresenceChannel.track({ ig: myInfo.ig, online_at: new Date().toISOString() });
+          } catch (e) {}
+        }
+      });
+  }
+
   function initPirakuMultiplayer() {
     if (typeof supabaseClient === 'undefined' || !supabaseClient) {
       setTimeout(initPirakuMultiplayer, 400);
       return;
     }
     injectBubbleLayer();
+    connectGlobalPresenceCount();
     connectGlobalWorld();
     setTimeout(() => { ensureGuestPlayerSpawned(); window.forceBroadcastMyAppearance(); }, 900);
   }

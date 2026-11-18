@@ -204,6 +204,9 @@
     const clean = String(igRaw || "").trim().toLowerCase().replace(/^@/, "");
     if (!clean) return 1;
     let tier = parseInt(localStorage.getItem("piraku_house_tier_" + clean) || "1", 10) || 1;
+    if (window.pirakuRemoteHouseTiers && window.pirakuRemoteHouseTiers[clean]) {
+      tier = Math.max(tier, Number(window.pirakuRemoteHouseTiers[clean]) || 1);
+    }
     const myIg = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     if (clean === myIg && window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
       const owned = window.PirakuEconomy.getState().owned || [];
@@ -905,30 +908,40 @@
     const kecLow = String(d.name || "").trim().toLowerCase();
     const idLow = String(d.id || "").trim().toLowerCase();
     const allCitizens = Array.isArray(window.registeredCitizensList) ? window.registeredCitizensList : [];
-    const districtMembers = allCitizens.filter(c => {
+    const memberMap = new Map();
+    allCitizens.forEach(c => {
+      if (!c || !c.ig) return;
       const ck = String(c.kecamatan || "").trim().toLowerCase().replace(/[_-]+/g, " ");
-      return ck === kecLow || ck === idLow.replace(/[_-]+/g, " ");
+      if (ck !== kecLow && ck !== idLow.replace(/[_-]+/g, " ")) return;
+      const normIg = String(c.ig || "").trim().toLowerCase().replace(/^@/, "");
+      if (!normIg) return;
+      const prev = memberMap.get(normIg);
+      if (!prev) {
+        memberMap.set(normIg, { ...c });
+      } else {
+        prev.has_house = Boolean(prev.has_house || c.has_house);
+        prev.xp = Math.max(Number(prev.xp || 0), Number(c.xp || 0));
+      }
     });
+    const districtMembers = Array.from(memberMap.values());
 
     const myProf = getCitizenProfile();
     const myCleanIg = myProf.isRegistered ? String(myProf.ig || "").trim().toLowerCase().replace(/^@/, "") : "";
     const isMyHomeDistrict = myProf.isRegistered && myProf.district && myProf.district.id === d.id;
-    if (isMyHomeDistrict && myCleanIg) {
-      const alreadyIn = districtMembers.some(m => String(m.ig || "").trim().toLowerCase().replace(/^@/, "") === myCleanIg);
-      if (!alreadyIn) {
-        districtMembers.unshift({
-          ig: myProf.ig.startsWith("@") ? myProf.ig : "@" + myProf.ig,
-          kecamatan: d.name,
-          has_house: localStorage.getItem("piraku_has_house_" + myCleanIg) === "1"
-        });
-      }
+    if (isMyHomeDistrict && myCleanIg && !memberMap.has(myCleanIg)) {
+      districtMembers.unshift({
+        ig: myProf.ig.startsWith("@") ? myProf.ig : "@" + myProf.ig,
+        kecamatan: d.name,
+        has_house: localStorage.getItem("piraku_has_house_" + myCleanIg) === "1"
+      });
     }
 
     const camatIg = (window.weeklyCamatByKec && (window.weeklyCamatByKec[kecLow] || window.weeklyCamatByKec[idLow])) || null;
-    const camatMember = camatIg
-      ? districtMembers.find(m => String(m.ig || "").toLowerCase() === String(camatIg).toLowerCase())
+    const camatNorm = camatIg ? String(camatIg).trim().toLowerCase().replace(/^@/, "") : "";
+    const camatMember = camatNorm
+      ? districtMembers.find(m => String(m.ig || "").trim().toLowerCase().replace(/^@/, "") === camatNorm)
       : null;
-    const regularMembers = districtMembers.filter(m => !camatMember || m.ig !== camatMember.ig);
+    const regularMembers = districtMembers.filter(m => !camatNorm || String(m.ig || "").trim().toLowerCase().replace(/^@/, "") !== camatNorm);
 
     // Aturan Baku: 20 Kavling Tapak (Slot #0 = Rumah Dinas Camat, Slot #1..#19 = 19 Warga Pertama)
     // Warga ke-21 dst. otomatis masuk ke 1 bangunan Tower Apartemen Kecamatan.
@@ -946,7 +959,12 @@
       const resCleanIg = resident ? String(resident.ig || "").trim().toLowerCase().replace(/^@/, "") : "";
       const isMySlot = Boolean(myCleanIg && resCleanIg && resCleanIg === myCleanIg);
       const resHasHouse = Boolean(
-        resident && (resident.has_house || isCamatSlot || localStorage.getItem("piraku_has_house_" + resCleanIg) === "1")
+        resident && (
+          resident.has_house ||
+          isCamatSlot ||
+          (window.pirakuRemoteHouses && window.pirakuRemoteHouses[resCleanIg]) ||
+          localStorage.getItem("piraku_has_house_" + resCleanIg) === "1"
+        )
       );
       const pTier = resident ? getPersonalHouseTierFor(resident.ig) : 0;
       let unit;
