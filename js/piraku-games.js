@@ -1694,38 +1694,66 @@
 
       if (hud) {
         if (ojolState.stage === "travel") {
-          hud.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-              <span style="color:#facc15;">📦 ${ojolState.cargo.label} • Lintas Peta</span>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <span style="background:${remSec < 12 ? "#ef4444" : "#1e293b"};color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
-                <button onclick="stopOjol3DGame()" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:20px;height:20px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+          const sig = `ojol_travel_${ojolState.targetDistrict.id}_${ojolState.cargo.label}`;
+          if (hud.dataset.sig !== sig) {
+            hud.dataset.sig = sig;
+            hud.innerHTML = `
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span style="color:#facc15;">📦 ${ojolState.cargo.label} • Lintas Peta</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span id="ojol-hud-timer" style="background:#1e293b;color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
+                  <button id="ojol-hud-stop" type="button" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:22px;height:22px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+                </div>
               </div>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-              <span style="font-size:11px;color:#e2e8f0;">Tujuan: <b>Kec. ${ojolState.targetDistrict.name}</b></span>
-              <button onclick="if(typeof enterDistrictMap==='function') enterDistrictMap('${ojolState.targetDistrict.id}')" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:5px 10px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">🏘️ Masuk Kec. ${ojolState.targetDistrict.name} →</button>
-            </div>
-          `;
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-size:11px;color:#e2e8f0;">Tujuan: <b>Kec. ${ojolState.targetDistrict.name}</b></span>
+                <button id="ojol-hud-enter-dist" type="button" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:6px 11px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">🏘️ Masuk Kec. ${ojolState.targetDistrict.name} →</button>
+              </div>
+            `;
+            const stopB = hud.querySelector("#ojol-hud-stop");
+            if (stopB) stopB.onclick = () => window.stopOjol3DGame();
+            const entB = hud.querySelector("#ojol-hud-enter-dist");
+            if (entB) entB.onclick = () => { if (typeof window.enterDistrictMap === "function") window.enterDistrictMap(ojolState.targetDistrict.id); };
+          }
+          const tEl = hud.querySelector("#ojol-hud-timer");
+          if (tEl) {
+            tEl.textContent = `⏱️ ${remSec.toFixed(1)}d`;
+            tEl.style.background = remSec < 12 ? "#ef4444" : "#1e293b";
+          }
         } else {
           const isDrop = ojolState.stage === "dropoff";
           const badgeCol = isDrop ? "#facc15" : "#4ade80";
           const targetLabel = isDrop
             ? `Antar ke ${ojolState.dropoff.icon} ${ojolState.dropoff.name}`
             : `Ambil di ${ojolState.pickup.icon} ${ojolState.pickup.name}`;
-          hud.innerHTML = `
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-              <span style="color:${badgeCol};">🛵 ${ojolState.cargo.label}</span>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <span style="background:${remSec < 12 ? "#ef4444" : "#1e293b"};color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
-                <button onclick="stopOjol3DGame()" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:20px;height:20px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+          const sig = `ojol_${ojolState.stage}_${targetLabel}`;
+          if (hud.dataset.sig !== sig) {
+            hud.dataset.sig = sig;
+            hud.innerHTML = `
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span style="color:${badgeCol};">🛵 ${ojolState.cargo.label}</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span id="ojol-hud-timer" style="background:#1e293b;color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
+                  <button id="ojol-hud-stop" type="button" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:22px;height:22px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+                </div>
               </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#e2e8f0;">
-              <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${badgeCol};color:#0f172a;font-size:14px;font-weight:900;transform:rotate(${Math.round(screenArrowDeg)}deg);flex-shrink:0;">▲</span>
-              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${targetLabel} <b style="color:#38bdf8;">(${Math.round(distM)}m)</b></span>
-            </div>
-          `;
+              <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#e2e8f0;">
+                <span id="ojol-hud-arrow" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:${badgeCol};color:#0f172a;font-size:14px;font-weight:900;flex-shrink:0;">▲</span>
+                <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${targetLabel} <b id="ojol-hud-dist" style="color:#38bdf8;">(${Math.round(distM)}m)</b></span>
+              </div>
+            `;
+            const stopB = hud.querySelector("#ojol-hud-stop");
+            if (stopB) stopB.onclick = () => window.stopOjol3DGame();
+          }
+          const tEl = hud.querySelector("#ojol-hud-timer");
+          if (tEl) {
+            tEl.textContent = `⏱️ ${remSec.toFixed(1)}d`;
+            tEl.style.background = remSec < 12 ? "#ef4444" : "#1e293b";
+          }
+          const arrEl = hud.querySelector("#ojol-hud-arrow");
+          if (arrEl) arrEl.style.transform = `rotate(${Math.round(screenArrowDeg)}deg)`;
+          const distEl = hud.querySelector("#ojol-hud-dist");
+          if (distEl) distEl.textContent = `(${Math.round(distM)}m)`;
         }
       }
 
@@ -1946,19 +1974,34 @@
       }
 
       if (hud) {
-        hud.innerHTML = `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
-            <span style="color:#38bdf8;">🏁 BALAP GASIBU • ${raceState.cpIdx + 1}/${RACE_CHECKPOINTS.length}</span>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="background:${remSec < 10 ? "#ef4444" : "#1e293b"};color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
-              <button onclick="stopGasibuRace3D()" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:20px;height:20px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+        const sig = `race_${raceState.cpIdx}`;
+        if (hud.dataset.sig !== sig) {
+          hud.dataset.sig = sig;
+          hud.innerHTML = `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+              <span style="color:#38bdf8;">🏁 BALAP GASIBU • ${raceState.cpIdx + 1}/${RACE_CHECKPOINTS.length}</span>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span id="race-hud-timer" style="background:#1e293b;color:#fff;padding:2px 7px;border-radius:99px;font-size:10.5px;">⏱️ ${remSec.toFixed(1)}d</span>
+                <button id="race-hud-stop" type="button" style="border:none;background:rgba(255,255,255,0.16);color:#fff;border-radius:99px;width:22px;height:22px;font-size:11px;font-weight:800;cursor:pointer;">✕</button>
+              </div>
             </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#e2e8f0;">
-            <span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#38bdf8;color:#0f172a;font-size:14px;font-weight:900;transform:rotate(${Math.round(screenArrowDeg)}deg);flex-shrink:0;">▲</span>
-            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${target.name} <b style="color:#fde047;">(${Math.round(distM)}m)</b></span>
-          </div>
-        `;
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#e2e8f0;">
+              <span id="race-hud-arrow" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#38bdf8;color:#0f172a;font-size:14px;font-weight:900;flex-shrink:0;">▲</span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${target.name} <b id="race-hud-dist" style="color:#fde047;">(${Math.round(distM)}m)</b></span>
+            </div>
+          `;
+          const stopB = hud.querySelector("#race-hud-stop");
+          if (stopB) stopB.onclick = () => window.stopGasibuRace3D();
+        }
+        const tEl = hud.querySelector("#race-hud-timer");
+        if (tEl) {
+          tEl.textContent = `⏱️ ${remSec.toFixed(1)}d`;
+          tEl.style.background = remSec < 10 ? "#ef4444" : "#1e293b";
+        }
+        const arrEl = hud.querySelector("#race-hud-arrow");
+        if (arrEl) arrEl.style.transform = `rotate(${Math.round(screenArrowDeg)}deg)`;
+        const distEl = hud.querySelector("#race-hud-dist");
+        if (distEl) distEl.textContent = `(${Math.round(distM)}m)`;
       }
 
       raceState.rafId = requestAnimationFrame(tickRace);

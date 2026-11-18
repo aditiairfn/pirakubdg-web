@@ -400,7 +400,7 @@
 
     if (localAudioStream) {
       localAudioStream.getTracks().forEach(track => pc.addTrack(track, localAudioStream));
-    } else if (isInitiator) {
+    } else {
       try { pc.addTransceiver("audio", { direction: "sendrecv" }); } catch (_) {}
     }
 
@@ -433,6 +433,10 @@
         if (typeof showToast === 'function') {
           showToast('🔊 Ketuk layar sekali untuk mendengar suara wargi!');
         }
+        const unlock = () => {
+          remoteAudioEls.forEach(el => { try { el.play().catch(() => {}); } catch (_) {} });
+        };
+        window.addEventListener('pointerdown', unlock, { once: true });
       });
     };
 
@@ -858,6 +862,16 @@
     });
     globalPresenceChannel
       .on('presence', { event: 'sync' }, () => {
+        if (!globalPresenceChannel) return;
+        globalOnlineCount = Math.max(1, Object.keys(globalPresenceChannel.presenceState()).length);
+        updateOnlineCount(globalOnlineCount);
+      })
+      .on('presence', { event: 'join' }, () => {
+        if (!globalPresenceChannel) return;
+        globalOnlineCount = Math.max(1, Object.keys(globalPresenceChannel.presenceState()).length);
+        updateOnlineCount(globalOnlineCount);
+      })
+      .on('presence', { event: 'leave' }, () => {
         if (!globalPresenceChannel) return;
         globalOnlineCount = Math.max(1, Object.keys(globalPresenceChannel.presenceState()).length);
         updateOnlineCount(globalOnlineCount);

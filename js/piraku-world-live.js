@@ -88,7 +88,7 @@
     } catch (e) {}
   }
   window.refreshPirakuRemoteTiers = loadAllRemoteTiersFromSupabase;
-  setTimeout(loadAllRemoteTiersFromSupabase, 1000);
+  setTimeout(loadAllRemoteTiersFromSupabase, 150);
   setInterval(loadAllRemoteTiersFromSupabase, 10000);
 
   window.getPirakuCitizenKey = function() {

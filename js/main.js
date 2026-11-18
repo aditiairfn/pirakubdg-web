@@ -3226,9 +3226,11 @@ let activeQuestSystem = null;
 
   function applyBatterySaverState(isOn) {
     if (typeof renderer !== 'undefined' && renderer) {
-      renderer.setPixelRatio(isOn ? 1 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
-      renderer.shadowMap.enabled = !isOn;
-      renderer.shadowMap.needsUpdate = true;
+      renderer.setPixelRatio(isOn ? 0.75 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
+      renderer.setSize(window.innerWidth, window.innerHeight, false);
+      // Jangan ubah shadowMap.enabled karena memicu kompilasi ulang semua shader; cukup hentikan autoUpdate bayangan!
+      renderer.shadowMap.autoUpdate = !isOn;
+      if (!isOn) renderer.shadowMap.needsUpdate = true;
     }
     const badge = document.getElementById('battery-saver-badge');
     if (badge) {

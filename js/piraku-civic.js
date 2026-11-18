@@ -263,6 +263,7 @@
         const existing = await sb.from("pemilu_votes").select("candidate_id").eq("district_id", distId).ilike("voter_ig", myIg).maybeSingle();
         if (existing.data) {
           localStorage.setItem(voteLsKey, String(existing.data.candidate_id));
+          localStorage.setItem("piraku_did_vote_" + getLocalDateKey() + getCivicUserSuffix(), "1");
           alert("Kamu sudah pernah mencoblos di kecamatan ini!");
           window.openPemiluCamatModal();
           return;
@@ -413,8 +414,23 @@
     const patrolDist = Math.floor(parseFloat(localStorage.getItem("piraku_patrol_dist_" + today + suf) || "0"));
     const patrolTarget = 150;
     const cleanVoterCheck = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
-    const didVote = localStorage.getItem("piraku_did_vote_" + today + suf) === "1" ||
-                    !!localStorage.getItem("piraku_voted_camat_" + dist.id + "_" + cleanVoterCheck);
+    const homeKecId = (localStorage.getItem("piraku_my_kec") || dist.name || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
+    let hasAnyVotedCamat = Boolean(
+      localStorage.getItem("piraku_voted_camat_" + dist.id + "_" + cleanVoterCheck) ||
+      (homeKecId && localStorage.getItem("piraku_voted_camat_" + homeKecId + "_" + cleanVoterCheck))
+    );
+    if (!hasAnyVotedCamat && cleanVoterCheck) {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i) || "";
+          if (k.startsWith("piraku_voted_camat_") && k.endsWith("_" + cleanVoterCheck)) {
+            hasAnyVotedCamat = true;
+            break;
+          }
+        }
+      } catch (e) {}
+    }
+    const didVote = localStorage.getItem("piraku_did_vote_" + today + suf) === "1" || hasAnyVotedCamat;
     const didGotong = localStorage.getItem("piraku_did_gotong_" + today + suf) === "1";
     const didCuanki = localStorage.getItem("piraku_did_cuanki_" + today + suf) === "1";
     const angkotHits = Math.min(3, parseInt(localStorage.getItem("piraku_angkot_hits_" + today + suf) || "0", 10));
@@ -562,6 +578,18 @@
       } catch (e) {}
     }
     if (!wargaId) return;
+    try {
+      const cleanVoter = myIg.toLowerCase().replace(/^@/, "");
+      const { data: vData } = await sb.from("pemilu_votes").select("district_id, candidate_id").ilike("voter_ig", myIg);
+      if (Array.isArray(vData) && vData.length > 0) {
+        vData.forEach(vr => {
+          if (vr && vr.district_id) {
+            localStorage.setItem("piraku_voted_camat_" + vr.district_id + "_" + cleanVoter, String(vr.candidate_id || "1"));
+          }
+        });
+        localStorage.setItem("piraku_did_vote_" + today + suf, "1");
+      }
+    } catch (e) {}
     try {
       const { data, error } = await sb
         .from("warga_daily_quests")
@@ -1009,16 +1037,7 @@
     const dock = document.querySelector(".bottom-nav-dock");
     if (!dock) return;
 
-    const pill = document.getElementById("piraku-active-map-pill");
-    let activeName = "Bandung Wetan";
-    if (pill && pill.style.display !== "none") {
-      const spanEl = pill.querySelector("span");
-      const txt = spanEl ? spanEl.textContent : "";
-      const clean = txt.replace(/^[^\w]+/, "").replace(/▾$/, "").trim();
-      if (clean) activeName = clean;
-    }
-
-    const isDistrictMode = activeName.toLowerCase() !== "bandung wetan";
+    const isDistrictMode = Boolean(window.pirakuInDistrict);
     const modeKey = isDistrictMode ? "district" : "main";
     if (modeKey === lastFooterMode) return;
     lastFooterMode = modeKey;
@@ -1078,9 +1097,12 @@
         '</button>'
       ].join('');
     }
+    updateGuidedQuestHud();
   }
 
+  window.updateBottomDockByMode = updateBottomDockByMode;
   updateBottomDockByMode();
+  setInterval(updateBottomDockByMode, 600);
   document.addEventListener("click", function(){ setTimeout(updateBottomDockByMode, 120); }, { passive: true });
 
   })();

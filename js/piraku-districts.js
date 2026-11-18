@@ -134,34 +134,25 @@
     return Number(localInvest[d.id] || 0);
   }
 
-  async function resetAllDistrictsInSupabaseOnce() {
-    const sb = window.pirakuSupabase;
-    if (!sb || localStorage.getItem("piraku_districts_reset_v2") === "1") return;
-    try {
-      const rows = DISTRICTS.map(d => ({
-        district_id: d.id,
-        district_name: d.name,
-        zone_group: d.zone,
-        invested_coins: 0,
-        updated_at: new Date().toISOString()
-      }));
-      await sb.from("piraku_districts").upsert(rows, { onConflict: "district_id" });
-      localStorage.setItem("piraku_districts_reset_v2", "1");
-    } catch (e) {}
-  }
-
   async function syncDistrictsFromSupabase() {
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
       const { data, error } = await sb.from("piraku_districts").select("district_id, invested_coins");
       if (!error && data && data.length > 0) {
+        let activeChanged = false;
         data.forEach(row => {
           if (typeof row.invested_coins === "number") {
-            localInvest[row.district_id] = Math.max(localInvest[row.district_id] || 0, row.invested_coins);
+            const prev = localInvest[row.district_id] || 0;
+            const next = Math.max(prev, row.invested_coins);
+            localInvest[row.district_id] = next;
+            if (next !== prev && row.district_id === activeMapId) activeChanged = true;
           }
         });
         saveLocal();
+        if (activeChanged && window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
+          window.refreshActiveDistrictHouses();
+        }
       }
     } catch (e) {}
   }
@@ -1132,36 +1123,161 @@
     }
 
     window.refreshActiveDistrictHouses = function() {
-      if (window.pirakuInDistrict) buildDedicatedDistrictScene(d);
+      if (!window.pirakuInDistrict) return;
+      const pm = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+      const savedX = pm && pm.position ? pm.position.x : null;
+      const savedZ = pm && pm.position ? pm.position.z : null;
+      buildDedicatedDistrictScene(d);
+      if (pm && pm.position && savedX !== null && savedZ !== null) {
+        pm.position.x = savedX;
+        pm.position.z = savedZ;
+        if (pm.userData && pm.userData.a && pm.userData.a.c) {
+          pm.userData.a.c.x = savedX;
+          pm.userData.a.c.z = savedZ;
+        }
+      }
     };
 
     if (cur.lv >= 2) {
+      // 1. MUSHOLA KOMPLEK (Serambi berpilar, menara kecil, kubah emas bertingkat, & jendela menyala malam)
       const mushola = new THREE.Group();
-      const mBody = new THREE.Mesh(new THREE.BoxGeometry(4.6, 2.6, 4.6), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
-      mBody.position.y = 1.3;
-      const mDome = new THREE.Mesh(new THREE.SphereGeometry(1.7, 16, 12), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.6, roughness: 0.2 }));
-      mDome.position.y = 2.9;
-      mushola.add(mBody, mDome);
+      const mStone = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.75 });
+      const mWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
+      const mGreen = new THREE.MeshStandardMaterial({ color: 0x059669, roughness: 0.55 });
+      const mGold = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.68, roughness: 0.22 });
+
+      const mPlinth = new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.28, 5.8), mStone);
+      mPlinth.position.y = 0.14;
+      const mBody = new THREE.Mesh(new THREE.BoxGeometry(4.8, 2.7, 4.6), mWhite);
+      mBody.position.y = 1.63;
+      const mTrim = new THREE.Mesh(new THREE.BoxGeometry(5.05, 0.22, 4.85), mGreen);
+      mTrim.position.y = 2.95;
+      const mDrum = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.75, 0.55, 16), mGreen);
+      mDrum.position.y = 3.28;
+      const mDome = new THREE.Mesh(new THREE.SphereGeometry(1.65, 20, 14), mGold);
+      mDome.position.y = 3.65;
+      const mSpire = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.9, 8), mGold);
+      mSpire.position.y = 5.55;
+
+      // Serambi depan berpilar
+      const mPorchRoof = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.18, 1.3), mGreen);
+      mPorchRoof.position.set(0, 2.35, 2.65);
+      [-1.35, 1.35].forEach(px => {
+        const pil = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.13, 2.1, 8), mWhite);
+        pil.position.set(px, 1.3, 3.1);
+        mushola.add(pil);
+      });
+      // Pintu & jendela hangat
+      const mDoor = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.75, 0.12), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      mDoor.position.set(0, 1.15, 2.32);
+      [-1.55, 1.55].forEach(wx => {
+        const w = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.0, 0.1), districtHouseGlassMat);
+        w.position.set(wx, 1.65, 2.32);
+        mushola.add(w);
+      });
+      // Menara sudut mushola
+      const minBase = new THREE.Mesh(new THREE.CylinderGeometry(0.38, 0.48, 4.6, 10), mWhite);
+      minBase.position.set(-2.35, 2.3, 2.1);
+      const minCap = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 10), mGold);
+      minCap.position.set(-2.35, 4.75, 2.1);
+
+      mushola.add(mPlinth, mBody, mTrim, mDrum, mDome, mSpire, mPorchRoof, mDoor, minBase, minCap);
       mushola.position.set(-34, 0, -24);
       grp.add(mushola);
     }
     if (cur.lv >= 3) {
+      // 2. KAFE & PUJASERA KOMPLEK (Dek kayu, kanopi garis, jendela hangat, & payung meja outdoor)
       const cafe = new THREE.Group();
-      const cBase = new THREE.Mesh(new THREE.BoxGeometry(5.0, 2.4, 3.6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
-      cBase.position.y = 1.2;
-      const cAwning = new THREE.Mesh(new THREE.BoxGeometry(5.4, 0.25, 4.8), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
-      cAwning.position.set(0, 2.5, 0.5);
-      cafe.add(cBase, cAwning);
+      const cDeck = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.18, 5.6), new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.85 }));
+      cDeck.position.set(0, 0.09, 0.6);
+      const cLower = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.1, 3.6), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.8 }));
+      cLower.position.set(0, 0.72, -0.35);
+      const cUpper = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.5, 3.6), new THREE.MeshStandardMaterial({ color: 0xfef3c7, roughness: 0.65 }));
+      cUpper.position.set(0, 2.02, -0.35);
+      const cRoof = createGableRoof(5.6, 1.15, 4.0, 0x334155);
+      cRoof.position.set(0, 2.75, -0.35);
+
+      // Etalase kaca hangat + papan nama kafe
+      const cWindow = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.05, 0.1), districtHouseGlassMat);
+      cWindow.position.set(0, 1.75, 1.47);
+      const cSign = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.45, 0.14), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+      cSign.position.set(0, 2.65, 1.52);
+
+      // Kanopi kafe bergaris merah-krem
+      for (let s = 0; s < 5; s++) {
+        const stripe = new THREE.Mesh(
+          new THREE.BoxGeometry(1.04, 0.14, 1.45),
+          new THREE.MeshStandardMaterial({ color: s % 2 === 0 ? 0xdc2626 : 0xfefce8, roughness: 0.6 })
+        );
+        stripe.position.set(-2.08 + s * 1.04, 2.28, 2.05);
+        stripe.rotation.x = 0.22;
+        cafe.add(stripe);
+      }
+
+      // 2 Set meja & payung outdoor di dek depan
+      [[-1.6, 2.6, 0x0ea5e9], [1.6, 2.6, 0xf59e0b]].forEach(([ux, uz, uCol]) => {
+        const tbl = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 12), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+        tbl.position.set(ux, 0.72, uz);
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.6, 8), new THREE.MeshStandardMaterial({ color: 0x334155 }));
+        leg.position.set(ux, 0.42, uz);
+        const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.55, 6), new THREE.MeshStandardMaterial({ color: 0x475569 }));
+        pole.position.set(ux, 1.45, uz);
+        const umb = new THREE.Mesh(new THREE.ConeGeometry(1.05, 0.52, 8), new THREE.MeshStandardMaterial({ color: uCol, roughness: 0.6 }));
+        umb.position.set(ux, 2.22, uz);
+        cafe.add(tbl, leg, pole, umb);
+      });
+
+      cafe.add(cDeck, cLower, cUpper, cRoof, cWindow, cSign);
       cafe.position.set(34, 0, -24);
       grp.add(cafe);
     }
     if (cur.lv >= 4) {
+      // 3. BALAI WARGA BANDUNG (Teras tangga, 4 pilar klasik, atap limas emas, & tiang bendera)
       const balai = new THREE.Group();
-      const bBody = new THREE.Mesh(new THREE.BoxGeometry(6.2, 3.6, 4.4), new THREE.MeshStandardMaterial({ color: 0x1d4ed8 }));
-      bBody.position.y = 1.8;
-      const bRoof = createGableRoof(6.6, 1.6, 4.8, 0xfacc15);
-      bRoof.position.y = 3.6;
-      balai.add(bBody, bRoof);
+      const bStone = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.75 });
+      const bWall = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
+      const bBlue = new THREE.MeshStandardMaterial({ color: 0x1e40af, roughness: 0.55 });
+      const bGold = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.55, roughness: 0.3 });
+
+      const bStep1 = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.2, 5.6), bStone);
+      bStep1.position.y = 0.1;
+      const bStep2 = new THREE.Mesh(new THREE.BoxGeometry(6.6, 0.2, 5.0), bStone);
+      bStep2.position.y = 0.3;
+      const bBody = new THREE.Mesh(new THREE.BoxGeometry(6.0, 3.2, 4.0), bWall);
+      bBody.position.set(0, 2.0, -0.2);
+      const bAccent = new THREE.Mesh(new THREE.BoxGeometry(6.15, 0.42, 4.15), bBlue);
+      bAccent.position.set(0, 3.45, -0.2);
+      const bRoof = createGableRoof(6.6, 1.65, 4.6, 0xb45309);
+      bRoof.position.set(0, 3.65, -0.2);
+
+      // Serambi depan 4 pilar klasik
+      const bPortico = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.22, 1.2), bBlue);
+      bPortico.position.set(0, 3.25, 2.25);
+      [-1.8, -0.65, 0.65, 1.8].forEach(px => {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 2.85, 10), bWall);
+        col.position.set(px, 1.82, 2.55);
+        balai.add(col);
+      });
+      // Pintu utama & jendela menyala malam
+      const bDoor = new THREE.Mesh(new THREE.BoxGeometry(1.2, 2.0, 0.12), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      bDoor.position.set(0, 1.4, 1.82);
+      [-2.1, -1.2, 1.2, 2.1].forEach(wx => {
+        const bw = new THREE.Mesh(new THREE.BoxGeometry(0.62, 1.05, 0.1), districtHouseGlassMat);
+        bw.position.set(wx, 2.1, 1.82);
+        balai.add(bw);
+      });
+      // Medali jam / lambang di atap + Tiang Bendera Merah Putih
+      const bClock = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.14, 16), bGold);
+      bClock.rotation.x = Math.PI / 2;
+      bClock.position.set(0, 4.25, 2.12);
+      const flagPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 4.5, 8), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.6 }));
+      flagPole.position.set(-3.2, 2.25, 2.6);
+      const flagRed = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.28, 0.04), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+      flagRed.position.set(-2.72, 4.25, 2.6);
+      const flagWht = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.28, 0.04), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
+      flagWht.position.set(-2.72, 3.97, 2.6);
+
+      balai.add(bStep1, bStep2, bBody, bAccent, bRoof, bPortico, bDoor, bClock, flagPole, flagRed, flagWht);
       balai.position.set(34, 0, 24);
       grp.add(balai);
     }
@@ -1471,11 +1587,32 @@
     }
   }
 
+  function showMapTransitionCover(labelText) {
+    if (!document.body) return;
+    let cov = document.getElementById("piraku-map-transition-cover");
+    if (!cov) {
+      cov = document.createElement("div");
+      cov.id = "piraku-map-transition-cover";
+      cov.style.cssText = "position:fixed;inset:0;z-index:99998;background:rgba(9,13,22,0.92);backdrop-filter:blur(8px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#f8fafc;font-family:'Bricolage Grotesque',sans-serif;pointer-events:auto;transition:opacity 0.25s ease;";
+      document.body.appendChild(cov);
+    }
+    cov.innerHTML = `<div style="width:36px;height:36px;border-radius:50%;border:3px solid rgba(56,189,248,0.25);border-top-color:#38bdf8;animation:spin 0.7s linear infinite;"></div><div style="font-size:14px;font-weight:800;color:#7dd3fc;">${labelText}</div>`;
+    cov.style.opacity = "1";
+    cov.style.display = "flex";
+    clearTimeout(cov._t);
+    cov._t = setTimeout(() => {
+      cov.style.opacity = "0";
+      setTimeout(() => { cov.style.display = "none"; }, 260);
+    }, 340);
+  }
+
   window.enterDistrictMap = function(districtId) {
     const d = districtId === CENTRAL_HUB.id ? CENTRAL_HUB : (DISTRICTS.find(x => x.id === districtId) || CENTRAL_HUB);
+    showMapTransitionCover(d.isMainMap ? "🏛️ Menuju Pusat Kota Bandung..." : `${d.icon} Memasuki Kec. ${d.name}...`);
     activeMapId = d.id;
     window.pirakuActiveMapId = d.id;
     window.pirakuInDistrict = !d.isMainMap; // dibaca main.js buat batas gerak
+    if (typeof window.updateBottomDockByMode === "function") window.updateBottomDockByMode();
 
     if (typeof window.switchMultiplayerMapRoom === "function") {
       window.switchMultiplayerMapRoom(d.id);
@@ -2220,7 +2357,7 @@
   setTimeout(() => {
     populateSignupKecamatan();
     updateMapIndicatorHUD(CENTRAL_HUB);
-    resetAllDistrictsInSupabaseOnce().then(() => syncDistrictsFromSupabase());
+    syncDistrictsFromSupabase();
     requestAnimationFrame(tickDistrictLoop);
-  }, 1500);
+  }, 600);
 })();
