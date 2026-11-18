@@ -1,6 +1,16 @@
 // ================= PIRAKUBDG GLOBAL REALTIME MULTIPLAYER & PROXIMITY VOICE CHAT =================
 (function() {
-  const SEND_INTERVAL_MS = 180;
+  // Isi URL Worker Cloudflare di sini setelah `npx wrangler deploy` (contoh: "https://pirakubdg-realtime.username.workers.dev")
+  // Jika kosong (""), otomatis fallback ke Supabase Realtime.
+  const DEFAULT_CF_REALTIME_URL = "https://pirakubdg-realtime.pirakubdg.workers.dev";
+  function getCfRealtimeBaseUrl() {
+    const raw = (typeof window !== "undefined" && window.PIRAKU_CF_REALTIME_URL) || DEFAULT_CF_REALTIME_URL || "";
+    return String(raw).trim().replace(/\/+$/, "");
+  }
+  function useCloudflareRealtime() {
+    return /^https?:\/\/|^wss?:\/\//i.test(getCfRealtimeBaseUrl());
+  }
+  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 120 : 300;
   let currentWorldRoomId = 'bandung_wetan';
   function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
@@ -683,6 +693,139 @@
       } catch (_) {}
     }
   };
+  function createCloudflareChannel(wsPath, sessionId) {
+    const base = getCfRealtimeBaseUrl().replace(/^http:/i, "ws:").replace(/^https:/i, "wss:");
+    const sep = wsPath.indexOf("?") >= 0 ? "&" : "?";
+    const fullUrl = base + wsPath + sep + "sessionId=" + encodeURIComponent(sessionId);
+
+    const presenceHandlers = {};
+    const broadcastHandlers = {};
+    let presenceMap = {};
+    let ws = null;
+    let closedByClient = false;
+    let reconnectTimer = null;
+    let pingTimer = null;
+    let subscribeCb = null;
+    let pendingTrack = null;
+
+    const channelObj = {
+      state: "closed",
+      on(type, filter, cb) {
+        const ev = filter && filter.event;
+        if (!ev || typeof cb !== "function") return channelObj;
+        if (type === "presence") {
+          presenceHandlers[ev] = presenceHandlers[ev] || [];
+          presenceHandlers[ev].push(cb);
+        } else if (type === "broadcast") {
+          broadcastHandlers[ev] = broadcastHandlers[ev] || [];
+          broadcastHandlers[ev].push(cb);
+        }
+        return channelObj;
+      },
+      presenceState() {
+        return presenceMap;
+      },
+      send(msg) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        try {
+          ws.send(JSON.stringify(msg));
+        } catch (_) {}
+      },
+      async track(payload) {
+        pendingTrack = payload;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({ type: "track", payload }));
+          } catch (_) {}
+        }
+      },
+      subscribe(cb) {
+        subscribeCb = cb;
+        connectWs();
+        return channelObj;
+      },
+      unsubscribe() {
+        closedByClient = true;
+        channelObj.state = "closed";
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+        if (ws) {
+          try { ws.close(); } catch (_) {}
+          ws = null;
+        }
+      }
+    };
+
+    function emitPresence(ev) {
+      const list = presenceHandlers[ev];
+      if (!list) return;
+      list.forEach((fn) => { try { fn(); } catch (_) {} });
+    }
+
+    function connectWs() {
+      if (closedByClient) return;
+      try {
+        ws = new WebSocket(fullUrl);
+      } catch (_) {
+        scheduleReconnect();
+        return;
+      }
+
+      ws.addEventListener("open", () => {
+        channelObj.state = "joined";
+        if (pendingTrack) {
+          try { ws.send(JSON.stringify({ type: "track", payload: pendingTrack })); } catch (_) {}
+        }
+        if (pingTimer) clearInterval(pingTimer);
+        pingTimer = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            try { ws.send('{"type":"ping"}'); } catch (_) {}
+          }
+        }, 25000);
+        if (typeof subscribeCb === "function") {
+          try { subscribeCb("SUBSCRIBED"); } catch (_) {}
+        }
+      });
+
+      ws.addEventListener("message", (event) => {
+        let data;
+        try { data = JSON.parse(event.data); } catch (_) { return; }
+        if (!data || typeof data !== "object") return;
+        if (data.type === "presence_sync") {
+          presenceMap = data.state && typeof data.state === "object" ? data.state : {};
+          emitPresence("sync");
+          return;
+        }
+        if (data.type === "broadcast" && data.event) {
+          const list = broadcastHandlers[data.event];
+          if (list) {
+            list.forEach((fn) => { try { fn({ payload: data.payload }); } catch (_) {} });
+          }
+        }
+      });
+
+      ws.addEventListener("close", () => {
+        channelObj.state = "closed";
+        if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+        if (!closedByClient) scheduleReconnect();
+      });
+
+      ws.addEventListener("error", () => {
+        try { ws.close(); } catch (_) {}
+      });
+    }
+
+    function scheduleReconnect() {
+      if (closedByClient || reconnectTimer) return;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectWs();
+      }, 1500);
+    }
+
+    return channelObj;
+  }
+
   window.switchMultiplayerMapRoom = function(newRoomId) {
     const nextRoom = (newRoomId || "bandung_wetan").toLowerCase();
     if (nextRoom === currentWorldRoomId && mpChannel) return;
@@ -702,8 +845,13 @@
     });
     remoteAudioEls.clear();
 
-    if (mpChannel && typeof supabaseClient !== "undefined" && supabaseClient) {
-      try { supabaseClient.removeChannel(mpChannel); } catch (e) {}
+    if (mpChannel) {
+      try {
+        if (typeof mpChannel.unsubscribe === "function") mpChannel.unsubscribe();
+        if (typeof supabaseClient !== "undefined" && supabaseClient && typeof supabaseClient.removeChannel === "function") {
+          supabaseClient.removeChannel(mpChannel);
+        }
+      } catch (e) {}
       mpChannel = null;
     }
     updateOnlineCount(Math.max(1, globalOnlineCount || 1));
@@ -711,16 +859,19 @@
   };
 
   function connectGlobalWorld() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+    const useCf = useCloudflareRealtime();
+    if (!useCf && (typeof supabaseClient === 'undefined' || !supabaseClient)) return;
     if (mpChannel) return;
 
     const myInfo = getMyIdentity();
-    mpChannel = supabaseClient.channel(getRoomChannelName(), {
-      config: {
-        presence: { key: mySessionId },
-        broadcast: { self: false }
-      }
-    });
+    mpChannel = useCf
+      ? createCloudflareChannel('/ws/room/' + encodeURIComponent(currentWorldRoomId), mySessionId)
+      : supabaseClient.channel(getRoomChannelName(), {
+          config: {
+            presence: { key: mySessionId },
+            broadcast: { self: false }
+          }
+        });
 
     mpChannel
       .on("presence", { event: "sync" }, () => {
@@ -876,11 +1027,14 @@
   let globalPresenceChannel = null;
   let globalOnlineCount = 1;
   function connectGlobalPresenceCount() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient || globalPresenceChannel) return;
+    const useCf = useCloudflareRealtime();
+    if ((!useCf && (typeof supabaseClient === 'undefined' || !supabaseClient)) || globalPresenceChannel) return;
     const myInfo = getMyIdentity();
-    globalPresenceChannel = supabaseClient.channel('piraku-global-presence', {
-      config: { presence: { key: mySessionId } }
-    });
+    globalPresenceChannel = useCf
+      ? createCloudflareChannel('/ws/global', mySessionId)
+      : supabaseClient.channel('piraku-global-presence', {
+          config: { presence: { key: mySessionId } }
+        });
     globalPresenceChannel
       .on('presence', { event: 'sync' }, () => {
         if (!globalPresenceChannel) return;
@@ -907,7 +1061,7 @@
   }
 
   function initPirakuMultiplayer() {
-    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+    if (!useCloudflareRealtime() && (typeof supabaseClient === 'undefined' || !supabaseClient)) {
       setTimeout(initPirakuMultiplayer, 400);
       return;
     }

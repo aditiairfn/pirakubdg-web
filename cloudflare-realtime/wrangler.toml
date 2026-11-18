@@ -1,0 +1,11 @@
+name = "pirakubdg-realtime"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[[durable_objects.bindings]]
+name = "ROOM_DO"
+class_name = "PirakuRoomDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PirakuRoomDO"]

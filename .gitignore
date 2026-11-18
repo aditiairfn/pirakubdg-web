@@ -6,3 +6,4 @@ models/*.glb
 .DS_Store
 .vscode/
 supabase/.temp/
+.wrangler/
