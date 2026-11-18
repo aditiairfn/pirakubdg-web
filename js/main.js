@@ -2152,7 +2152,7 @@ let activeQuestSystem = null;
           <div style="padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div id="kec-apt-title" style="font-weight:800;color:#38bdf8;font-size:15px;">🏢 Apartemen Kecamatan</div>
-              <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga setelah 20 kavling tapak terisi</div>
+              <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga setelah 36 kavling tapak terisi</div>
             </div>
             <button onclick="document.getElementById('kec-apartment-modal').style.display='none'" style="background:rgba(148,163,184,0.15);border:none;color:#f8fafc;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
           </div>

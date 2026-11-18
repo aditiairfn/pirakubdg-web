@@ -272,6 +272,159 @@
     return new THREE.Mesh(geom, new THREE.MeshStandardMaterial({ color, roughness: 0.55 }));
   }
 
+  function createKopdesBiruPutihMesh() {
+    const kopdes = new THREE.Group();
+    const kdWhite = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
+    const kdPlinth = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.85 });
+    const kdPaving = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.9 });
+    const kdGrey = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.72 });
+    const kdDark = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.75 });
+    const kdBlue = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.45 });
+    const kdLightBlue = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.45 });
+    const kdNavy = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, roughness: 0.55 });
+    const kdGlass = districtHouseGlassMat || new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0xfef08a, emissiveIntensity: 0.25, metalness: 0.6, roughness: 0.2 });
+
+    // Teras paving depan & pondasi beton bertingkat
+    const apron = new THREE.Mesh(new THREE.BoxGeometry(10.2, 0.08, 6.2), kdPaving);
+    apron.position.set(0.05, 0.04, 0.55);
+    const base = new THREE.Mesh(new THREE.BoxGeometry(9.6, 0.22, 4.9), kdPlinth);
+    base.position.set(0.05, 0.14, -0.1);
+    const leftBody = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.55, 3.6), kdWhite);
+    leftBody.position.set(-1.7, 1.5, -0.2);
+
+    // 4 Kios / Ruko biru-putih berderet (etalase kaca + rak cemilan + pintu lipat biru-putih)
+    [-3.8, -2.4, -1.0, 0.4].forEach((kx, kIdx) => {
+      if (kIdx === 1 || kIdx === 2) {
+        const winGlass = new THREE.Mesh(new THREE.BoxGeometry(1.14, 1.95, 0.08), kdGlass);
+        winGlass.position.set(kx, 1.24, 1.62);
+        const frame = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.12, 0.12), kdBlue);
+        frame.position.set(kx, 1.24, 1.64);
+        const shelf = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.9, 0.28), kdLightBlue);
+        shelf.position.set(kx, 0.95, 1.38);
+        kopdes.add(winGlass, frame, shelf);
+      } else {
+        const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.12, 2.05, 0.1), kdBlue);
+        doorLeaf.position.set(kx, 1.26, 1.62);
+        const midStripe = new THREE.Mesh(new THREE.BoxGeometry(1.14, 0.14, 0.12), kdWhite);
+        midStripe.position.set(kx, 1.25, 1.63);
+        kopdes.add(doorLeaf, midStripe);
+      }
+      const topValance = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.24, 0.16), kdBlue);
+      topValance.position.set(kx, 2.18, 1.66);
+      kopdes.add(topValance);
+    });
+
+    // Pilar putih antar kios & kanopi miring + siku penyangga segitiga
+    [-4.45, -3.1, -1.7, -0.3, 1.05].forEach(px => {
+      const pil = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.55, 0.22), kdWhite);
+      pil.position.set(px, 1.5, 1.66);
+      const brace = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.85), kdDark);
+      brace.position.set(px, 2.24, 2.0);
+      brace.rotation.x = -0.35;
+      kopdes.add(pil, brace);
+    });
+    const frontCanopy = new THREE.Mesh(new THREE.BoxGeometry(5.85, 0.11, 1.15), kdBlue);
+    frontCanopy.position.set(-1.7, 2.44, 2.15);
+    frontCanopy.rotation.x = 0.14;
+    const canopyTrim = new THREE.Mesh(new THREE.BoxGeometry(5.88, 0.08, 0.08), kdWhite);
+    canopyTrim.position.set(-1.7, 2.36, 2.71);
+    kopdes.add(frontCanopy, canopyTrim);
+
+    // Dinding Logo Abu-abu tengah-kanan
+    const logoWall = new THREE.Mesh(new THREE.BoxGeometry(1.85, 2.55, 3.6), kdGrey);
+    logoWall.position.set(2.02, 1.5, -0.2);
+
+    const cv = document.createElement("canvas");
+    cv.width = 512; cv.height = 280;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "#475569";
+    ctx.fillRect(0, 0, 512, 280);
+    ctx.strokeStyle = "#f8fafc";
+    ctx.lineWidth = 10;
+    ctx.strokeRect(8, 8, 496, 264);
+    ctx.fillStyle = "#1d4ed8";
+    ctx.fillRect(28, 28, 456, 86);
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "900 44px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("KOPDES", 256, 72);
+    ctx.fillStyle = "#93c5fd";
+    ctx.font = "900 42px sans-serif";
+    ctx.fillText("BIRU PUTIH", 256, 175);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "700 24px sans-serif";
+    ctx.fillText("KOPERASI KELURAHAN", 256, 232);
+    const signTex = new THREE.CanvasTexture(cv);
+    const signMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.65, 0.95),
+      new THREE.MeshBasicMaterial({ map: signTex })
+    );
+    signMesh.position.set(2.02, 1.65, 1.62);
+
+    // Garasi / Loading Bay kanan + mobil MPV detail (roda, bumper, kaca)
+    const garageBack = new THREE.Mesh(new THREE.BoxGeometry(1.65, 2.55, 0.25), kdNavy);
+    garageBack.position.set(3.75, 1.5, -1.85);
+    const garageRightWall = new THREE.Mesh(new THREE.BoxGeometry(0.22, 2.55, 3.6), kdWhite);
+    garageRightWall.position.set(4.52, 1.5, -0.2);
+    const garageRoofBeam = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.38, 3.6), kdWhite);
+    garageRoofBeam.position.set(3.75, 2.58, -0.2);
+
+    const vanBody = new THREE.Mesh(new THREE.BoxGeometry(0.96, 0.52, 1.6), new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.35, roughness: 0.35 }));
+    vanBody.position.set(3.75, 0.56, 0.2);
+    const vanCab = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.4, 0.98), kdWhite);
+    vanCab.position.set(3.75, 0.98, 0.04);
+    const vanGlass = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.3, 0.06), kdDark);
+    vanGlass.position.set(3.75, 0.98, 0.55);
+    const vanGrille = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.18, 0.06), kdDark);
+    vanGrille.position.set(3.75, 0.5, 1.01);
+    kopdes.add(vanBody, vanCab, vanGlass, vanGrille);
+    [[-0.46, -0.35], [0.46, -0.35], [-0.46, 0.72], [0.46, 0.72]].forEach(([wx, wz]) => {
+      const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 10), kdDark);
+      wheel.rotation.z = Math.PI / 2;
+      wheel.position.set(3.75 + wx, 0.3, wz);
+      kopdes.add(wheel);
+    });
+
+    // Kisi-kisi ventilasi gelap + tiang konsol baja miring + atap pelana bergaris spandek
+    const ventStrip = new THREE.Mesh(new THREE.BoxGeometry(9.05, 0.44, 3.45), kdDark);
+    ventStrip.position.set(0.05, 2.95, -0.2);
+    [-4.2, -2.5, -0.8, 0.9, 2.6, 4.3].forEach(sx => {
+      const strut = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.65, 0.07), kdDark);
+      strut.position.set(sx, 2.92, 1.85);
+      strut.rotation.x = 0.45;
+      kopdes.add(strut);
+    });
+    const longRoof = createGableRoof(4.7, 1.15, 9.8, 0x1e40af);
+    longRoof.rotation.y = Math.PI / 2;
+    longRoof.position.set(0.05, 3.16, -0.2);
+    const ridgeCap = new THREE.Mesh(new THREE.BoxGeometry(9.85, 0.1, 0.22), kdWhite);
+    ridgeCap.position.set(0.05, 4.32, -0.2);
+    const fasciaWhite = new THREE.Mesh(new THREE.BoxGeometry(9.85, 0.15, 0.12), kdWhite);
+    fasciaWhite.position.set(0.05, 3.15, 2.15);
+
+    // Tiang bendera mini di kanan depan & ring interaksi di kiri depan
+    const fPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 3.6, 8), kdPlinth);
+    fPole.position.set(4.85, 1.8, 2.35);
+    const fRed = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.22, 0.03), new THREE.MeshStandardMaterial({ color: 0xdc2626 }));
+    fRed.position.set(5.22, 3.42, 2.35);
+    const fWht = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.22, 0.03), kdWhite);
+    fWht.position.set(5.22, 3.2, 2.35);
+
+    const martRing = new THREE.Mesh(
+      new THREE.RingGeometry(0.75, 1.05, 24),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
+    );
+    martRing.rotation.x = -Math.PI / 2;
+    martRing.position.set(-2.4, 0.09, 3.25);
+
+    kopdes.add(apron, base, leftBody, logoWall, signMesh, garageBack, garageRightWall, garageRoofBeam, ventStrip, longRoof, ridgeCap, fasciaWhite, fPole, fRed, fWht, martRing);
+    kopdes.traverse(ch => {
+      if (ch.isMesh) ch.userData = { ...(ch.userData || {}), isPirakuMart: true };
+    });
+    return kopdes;
+  }
+
   function createModernHouseMesh(idx, lv, personalTier = 0) {
     const g = new THREE.Group();
     const isSultan = personalTier >= 4;
@@ -321,12 +474,18 @@
 
     const deck = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.18, 1.2), woodMat);
     deck.position.set(-0.9, 0.12, 1.55);
-    const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.14, 1.35), trimMat);
-    canopy.position.set(-0.9, 2.12, 1.6);
-    const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.95, 8), trimMat);
+    const canopy = createGableRoof(2.8, 0.55, 1.45, roofColor);
+    canopy.position.set(-0.9, 2.08, 1.62);
+    const colL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.95, 8), trimMat);
     colL.position.set(-2.1, 1.12, 2.15);
     const colR = colL.clone(); colR.position.x = 0.25;
-    g.add(deck, canopy, colL, colR);
+    // Semak taman kecil & batu pijakan di halaman depan
+    const bushMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 });
+    const b1 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.32, 0), bushMat);
+    b1.position.set(-2.15, 0.26, 2.55);
+    const b2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.26, 0), bushMat);
+    b2.position.set(-1.65, 0.22, 2.65);
+    g.add(deck, canopy, colL, colR, b1, b2);
 
     const door = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.65, 0.12), woodMat);
     door.position.set(-1.2, 1.05, 1.12);
@@ -334,7 +493,14 @@
     winFrame.position.set(0.45, 1.4, 1.12);
     const winPane = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.88, 0.14), glassMat);
     winPane.position.set(0.45, 1.4, 1.13);
-    g.add(door, winFrame, winPane);
+    const winSill = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.1, 0.22), trimMat);
+    winSill.position.set(0.45, 0.86, 1.16);
+    // Jendela samping agar rumah tidak terlihat polos dari samping
+    const sideWinL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.82, 1.15), glassMat);
+    sideWinL.position.set(-2.42, 1.35, -0.7);
+    const sideWinR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.82, 1.0), glassMat);
+    sideWinR.position.set(2.52, 1.25, -0.4);
+    g.add(door, winFrame, winPane, winSill, sideWinL, sideWinR);
 
     if (isTwoStory) {
       const body2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.9, 3.1), wallMat);
@@ -361,10 +527,17 @@
     if (hasCar) {
       const carCols = [0xef4444, 0x2563eb, 0xf8fafc, 0x0f172a];
       const carCol = isSultan ? 0xdc2626 : carCols[idx % carCols.length];
-      const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 2.0), new THREE.MeshStandardMaterial({ color: carCol, metalness: 0.55, roughness: 0.22 }));
-      carBody.position.set(1.95, 0.32, 1.5);
-      const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 1.1), glassMat);
-      carCabin.position.set(1.95, 0.68, 1.4);
+      const carBody = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.42, 2.0), new THREE.MeshStandardMaterial({ color: carCol, metalness: 0.55, roughness: 0.22 }));
+      carBody.position.set(1.95, 0.34, 1.5);
+      const carCabin = new THREE.Mesh(new THREE.BoxGeometry(0.88, 0.32, 1.05), glassMat);
+      carCabin.position.set(1.95, 0.66, 1.4);
+      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+      [[-0.5, -0.6], [0.5, -0.6], [-0.5, 0.6], [0.5, 0.6]].forEach(([wx, wz]) => {
+        const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.12, 8), wheelMat);
+        wh.rotation.z = Math.PI / 2;
+        wh.position.set(1.95 + wx, 0.16, 1.5 + wz);
+        g.add(wh);
+      });
       g.add(carBody, carCabin);
     }
 
@@ -389,10 +562,20 @@
     g.add(soil);
     const stakeMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
     [[-2.4, -2.8], [2.4, -2.8], [-2.4, 2.8], [2.4, 2.8]].forEach(([sx, sz]) => {
-      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.75, 6), stakeMat);
-      p.position.set(sx, 0.38, sz);
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.78, 6), stakeMat);
+      p.position.set(sx, 0.39, sz);
       g.add(p);
     });
+    // Palang kayu pagar samping & semak kecil agar kavling kosong terlihat rapi
+    const railMat = new THREE.MeshStandardMaterial({ color: 0xb45309 });
+    [-2.4, 2.4].forEach(rx => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 5.6), railMat);
+      rail.position.set(rx, 0.52, 0);
+      g.add(rail);
+    });
+    const tuft = new THREE.Mesh(new THREE.DodecahedronGeometry(0.32, 0), new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.85 }));
+    tuft.position.set(-1.5, 0.2, -1.6);
+    g.add(tuft);
     return g;
   }
 
@@ -649,16 +832,16 @@
 
     const horizonGround = new THREE.Mesh(
       new THREE.CircleGeometry(900, 48),
-      new THREE.MeshStandardMaterial({ color: 0x5c7c4e, roughness: 0.94, metalness: 0.0 })
+      new THREE.MeshStandardMaterial({ color: 0x2b6a30, roughness: 0.94, metalness: 0.0 })
     );
     horizonGround.rotation.x = -Math.PI / 2;
     horizonGround.position.y = -0.04;
     horizonGround.receiveShadow = true;
     grp.add(horizonGround);
 
-    // Horizon Pegunungan Cekungan Bandung 360° Halus (Senada dengan Pusat Kota Gedung Sate)
+    // Horizon Pegunungan Cekungan Bandung 360° Halus
     function createDistrictMountainRing(radius, segments, baseHeight, variation, colorHex) {
-      const geo = new THREE.CylinderGeometry(radius, radius + 85, 1, segments, 1, true);
+      const geo = new THREE.CylinderGeometry(radius, radius + 75, 1, segments, 1, true);
       const pos = geo.attributes.position;
       for (let i = 0; i < pos.count; i++) {
         if (pos.getY(i) > 0) {
@@ -680,12 +863,41 @@
       );
     }
     grp.add(
-      createDistrictMountainRing(480, 96, 32, 18, 0x6b8cae),
-      createDistrictMountainRing(330, 72, 16, 10, 0x4f745c)
+      createDistrictMountainRing(340, 96, 36, 20, 0x6488b4),
+      createDistrictMountainRing(215, 72, 19, 12, 0x457459)
     );
 
+    // Siluet rumah & pepohonan pinggir kota (horizon komplek agar tidak kosong)
+    const perimHouseColors = [0xf8fafc, 0xfef3c7, 0xe2e8f0, 0xffedd5];
+    const perimRoofColors = [0x9a3412, 0x334155, 0x1e40af, 0xb45309];
+    const perimLeafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.85 });
+    const perimTrunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+    for (let i = 0; i < 28; i++) {
+      const ang = (i / 28) * Math.PI * 2 + (i % 2) * 0.07;
+      const dist = 76 + (i % 4) * 14;
+      const hx = Math.cos(ang) * dist;
+      const hz = Math.sin(ang) * dist;
+      if (Math.abs(hx) < 8 || Math.abs(hz) < 8) continue;
+      if (hx < -32 && hx > -64 && hz > 4 && hz < 34) continue;
+      const hW = 3.2 + (i % 3) * 0.7;
+      const hH = 2.2 + (i % 2) * 1.1;
+      const hb = new THREE.Mesh(new THREE.BoxGeometry(hW, hH, 3.2), new THREE.MeshStandardMaterial({ color: perimHouseColors[i % perimHouseColors.length], roughness: 0.85 }));
+      hb.position.set(hx, hH / 2, hz);
+      hb.rotation.y = -ang;
+      const hr = new THREE.Mesh(new THREE.ConeGeometry(hW * 0.78, 1.35, 4), new THREE.MeshStandardMaterial({ color: perimRoofColors[i % perimRoofColors.length], roughness: 0.75 }));
+      hr.position.set(hx, hH + 0.65, hz);
+      hr.rotation.y = Math.PI / 4 - ang;
+      const tx = hx + Math.cos(ang + 0.25) * 3.8;
+      const tz = hz + Math.sin(ang + 0.25) * 3.8;
+      const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, 1.4, 5), perimTrunkMat);
+      trk.position.set(tx, 0.7, tz);
+      const crn = new THREE.Mesh(new THREE.DodecahedronGeometry(1.35, 0), perimLeafMat);
+      crn.position.set(tx, 2.0, tz);
+      grp.add(hb, hr, trk, crn);
+    }
+
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(116, 116),
+      new THREE.CircleGeometry(72, 48),
       new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.88 })
     );
     ground.rotation.x = -Math.PI / 2;
@@ -750,11 +962,16 @@
       grp.add(swMesh);
     });
 
-    // Jalan Komplek / Gang Utara & Selatan + Trotoar (berhenti sebelum jalan utama ±4.6m)
+    // Jalan Komplek / Gang Utara & Selatan (baris dalam z = ±17.5 & baris luar z = ±26.5 untuk kavling z = ±31)
     const gangN = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
     gangN.rotation.x = -Math.PI / 2; gangN.position.set(0, 0.012, -17.5);
     const gangS = new THREE.Mesh(new THREE.PlaneGeometry(72, 4.4), roadMat);
     gangS.rotation.x = -Math.PI / 2; gangS.position.set(0, 0.012, 17.5);
+    const gangN2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 4.4), roadMat);
+    gangN2.rotation.x = -Math.PI / 2; gangN2.position.set(0, 0.012, -26.5);
+    const gangS2 = new THREE.Mesh(new THREE.PlaneGeometry(60, 4.4), roadMat);
+    gangS2.rotation.x = -Math.PI / 2; gangS2.position.set(0, 0.012, 26.5);
+
     const gangSideLen = 30.8;
     const gangSideCenter = 5.2 + gangSideLen / 2;
     [
@@ -768,7 +985,20 @@
       grp.add(gsw);
     });
 
-    grp.add(roadNS, roadEW, roundaboutAsphalt, gangN, gangS);
+    const gangOuterLen = 24.8;
+    const gangOuterCenter = 5.2 + gangOuterLen / 2;
+    [
+      [-gangOuterCenter, -29.25], [gangOuterCenter, -29.25],
+      [-gangOuterCenter, -23.75], [gangOuterCenter, -23.75],
+      [-gangOuterCenter, 23.75], [gangOuterCenter, 23.75],
+      [-gangOuterCenter, 29.25], [gangOuterCenter, 29.25]
+    ].forEach(([gx, gz]) => {
+      const gsw = new THREE.Mesh(new THREE.BoxGeometry(gangOuterLen, 0.07, 1.1), sidewalkMat);
+      gsw.position.set(gx, 0.035, gz);
+      grp.add(gsw);
+    });
+
+    grp.add(roadNS, roadEW, roundaboutAsphalt, gangN, gangS, gangN2, gangS2);
 
     // Marka Jalan Putih Tengah & Garis Tepi Kuning Khas Bandung Wetan
 
@@ -890,12 +1120,173 @@
     roundPaving.rotation.x = -Math.PI / 2; roundPaving.position.set(0, 0.02, 0);
     grp.add(roundGrass, roundPaving);
 
-    const monH = 1.8 + cur.lv * 0.75;
-    const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 2.1, 0.8, 16), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-    ped.position.y = 0.4;
-    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.65, monH, 12), new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.55, roughness: 0.25 }));
-    pillar.position.y = 0.8 + monH / 2;
-    grp.add(ped, pillar);
+    const monH = 1.9 + cur.lv * 0.75;
+    const pedBase = new THREE.Mesh(new THREE.CylinderGeometry(2.05, 2.45, 0.45, 8), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.7 }));
+    pedBase.position.y = 0.225;
+    const pedTop = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.85, 0.55, 8), new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.65 }));
+    pedTop.position.y = 0.725;
+    const pedRing = new THREE.Mesh(new THREE.TorusGeometry(1.52, 0.08, 8, 24), new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.72, roughness: 0.22 }));
+    pedRing.rotation.x = Math.PI / 2;
+    pedRing.position.y = 0.98;
+    const monGrp = new THREE.Group();
+    monGrp.add(pedBase, pedTop, pedRing);
+    const accMat = new THREE.MeshStandardMaterial({ color: d.accent, metalness: 0.55, roughness: 0.28 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.72, roughness: 0.22 });
+    const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.55 });
+
+    // 4 sudut pilar taman kecil di sekeliling pedestal tugu
+    [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(ang => {
+      const bollard = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.55, 8), whiteMat);
+      bollard.position.set(Math.cos(ang) * 2.25, 0.275, Math.sin(ang) * 2.25);
+      const cap = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), accMat);
+      cap.position.set(Math.cos(ang) * 2.25, 0.6, Math.sin(ang) * 2.25);
+      monGrp.add(bollard, cap);
+    });
+
+    if (d.id === "antapani") {
+      // Tugu Pelangi Antapani (3 lengkungan pelangi + awan/tiang)
+      [0xef4444, 0xfacc15, 0x38bdf8].forEach((col, i) => {
+        const arc = new THREE.Mesh(
+          new THREE.TorusGeometry(2.2 - i * 0.38, 0.15, 10, 26, Math.PI),
+          new THREE.MeshStandardMaterial({ color: col, roughness: 0.35 })
+        );
+        arc.position.y = 0.98;
+        monGrp.add(arc);
+      });
+    } else if (d.id === "cicendo") {
+      // Tugu Pesawat Bandara Husein (hidung kerucut + sayap menyudut)
+      const pPost = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.48, monH, 12), accMat);
+      pPost.position.y = 1.0 + monH / 2;
+      const planeGrp = new THREE.Group();
+      planeGrp.position.y = 1.15 + monH;
+      planeGrp.rotation.x = -0.22;
+      const fuse = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.14, 2.1, 12), whiteMat);
+      fuse.rotation.x = Math.PI / 2;
+      const nose = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.65, 12), accMat);
+      nose.rotation.x = Math.PI / 2;
+      nose.position.z = 1.35;
+      [-1, 1].forEach(side => {
+        const wing = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.07, 0.55), accMat);
+        wing.position.set(side * 0.78, 0, -0.08);
+        wing.rotation.y = side * -0.26;
+        const hTail = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.32), accMat);
+        hTail.position.set(side * 0.3, 0.08, -0.88);
+        hTail.rotation.y = side * -0.25;
+        planeGrp.add(wing, hTail);
+      });
+      const fin = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.65, 4), accMat);
+      fin.position.set(0, 0.35, -0.88);
+      fin.rotation.x = -0.3;
+      planeGrp.add(fuse, nose, fin);
+      monGrp.add(pPost, planeGrp);
+    } else if (d.id === "bojongloa_kidul") {
+      // Tugu Sepatu Cibaduyut (siluet sepatu melengkung + sol + tali)
+      const sPost = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.68, monH * 0.8, 12), accMat);
+      sPost.position.y = 1.0 + monH * 0.4;
+      const sole = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.58, 0.22, 16), whiteMat);
+      sole.scale.set(1.9, 1, 0.85);
+      sole.position.y = 1.1 + monH * 0.8;
+      const heel = new THREE.Mesh(new THREE.CylinderGeometry(0.46, 0.5, 0.82, 14), new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.45 }));
+      heel.position.set(-0.42, 1.52 + monH * 0.8, 0);
+      const toe = new THREE.Mesh(new THREE.SphereGeometry(0.52, 14, 10), new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4 }));
+      toe.scale.set(1.45, 0.75, 0.82);
+      toe.position.set(0.32, 1.38 + monH * 0.8, 0);
+      monGrp.add(sPost, sole, heel, toe);
+    } else if (d.id === "regol" || d.id === "astanaanyar") {
+      // Tugu Api Bandung Lautan Api (4 sirip penopang + nyala api)
+      const baseP = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.68, monH, 8), whiteMat);
+      baseP.position.y = 1.0 + monH / 2;
+      [0, Math.PI / 2, Math.PI, Math.PI * 1.5].forEach(ang => {
+        const fin = new THREE.Mesh(new THREE.ConeGeometry(0.22, monH * 0.85, 4), accMat);
+        fin.position.set(Math.cos(ang) * 0.48, 1.0 + monH * 0.4, Math.sin(ang) * 0.48);
+        monGrp.add(fin);
+      });
+      const flameOuter = new THREE.Mesh(new THREE.ConeGeometry(0.66, 1.55, 10), new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.65 }));
+      flameOuter.position.y = 1.0 + monH + 0.7;
+      const flameCore = new THREE.Mesh(new THREE.ConeGeometry(0.36, 1.05, 8), goldMat);
+      flameCore.position.y = 1.0 + monH + 0.55;
+      monGrp.add(baseP, flameOuter, flameCore);
+    } else if (d.theme === "stadium") {
+      // Tugu Bola & Obor Olahraga (Gedebage / Arcamanik)
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.62, monH, 12), accMat);
+      pillar.position.y = 1.0 + monH / 2;
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(0.95, 0.08, 8, 24), goldMat);
+      ring.position.y = 1.0 + monH + 0.55;
+      const ring2 = ring.clone();
+      ring2.rotation.y = Math.PI / 2;
+      const ball = new THREE.Mesh(new THREE.IcosahedronGeometry(0.65, 1), whiteMat);
+      ball.position.y = 1.0 + monH + 0.55;
+      monGrp.add(pillar, ring, ring2, ball);
+    } else if (d.theme === "campus") {
+      // Tugu 3 Pilar Melengkung & Kristal Pengetahuan
+      [0, 2.09, 4.18].forEach(a => {
+        const col = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.26, monH, 10), whiteMat);
+        col.position.set(Math.cos(a) * 0.52, 1.0 + monH / 2, Math.sin(a) * 0.52);
+        monGrp.add(col);
+      });
+      const crownRing = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.07, 8, 18), goldMat);
+      crownRing.rotation.x = Math.PI / 2;
+      crownRing.position.y = 1.0 + monH;
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.62, 0), new THREE.MeshStandardMaterial({ color: d.accent, emissive: d.accent, emissiveIntensity: 0.45, metalness: 0.4 }));
+      gem.position.y = 1.0 + monH + 0.65;
+      monGrp.add(crownRing, gem);
+    } else if (d.theme === "forest") {
+      // Tugu Pohon Pinus & Bukit Hijau
+      const trk = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.42, monH * 0.6, 10), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+      trk.position.y = 1.0 + monH * 0.3;
+      monGrp.add(trk);
+      [0, 1, 2].forEach(lvIdx => {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(1.22 - lvIdx * 0.28, 1.18, 10), accMat);
+        cone.position.y = 1.0 + monH * 0.55 + lvIdx * 0.72;
+        monGrp.add(cone);
+      });
+    } else if (d.theme === "culinary") {
+      // Tugu Lampion Kuliner Bandung
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.48, monH, 12), accMat);
+      pole.position.y = 1.0 + monH / 2;
+      const lantern = new THREE.Mesh(new THREE.SphereGeometry(0.7, 16, 12), new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.45 }));
+      lantern.scale.y = 1.22;
+      lantern.position.y = 1.0 + monH + 0.6;
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.32, 12), goldMat);
+      cap.position.y = 1.0 + monH + 1.48;
+      monGrp.add(pole, lantern, cap);
+    } else if (d.theme === "heritage") {
+      // Tugu Menara Art Deco Braga (oktagonal bertingkat + kubah runcing emas)
+      [1.05, 0.74, 0.48].forEach((r, idx) => {
+        const tier = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.88, r, monH * 0.36, 8), idx % 2 === 0 ? whiteMat : accMat);
+        tier.position.y = 1.0 + monH * (0.18 + idx * 0.33);
+        monGrp.add(tier);
+      });
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(0.32, 1.05, 8), goldMat);
+      spire.position.y = 1.0 + monH * 1.15;
+      monGrp.add(spire);
+    } else if (d.theme === "transit") {
+      // Tugu Gerbang Lengkung & Jam Stasiun
+      const arch = new THREE.Mesh(new THREE.TorusGeometry(0.85, 0.16, 10, 20, Math.PI), whiteMat);
+      arch.position.y = 1.0 + monH * 0.55;
+      [-0.85, 0.85].forEach(px => {
+        const p = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.22, monH * 0.58, 10), whiteMat);
+        p.position.set(px, 1.0 + monH * 0.28, 0);
+        monGrp.add(p);
+      });
+      const dial = new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 0.24, 16), goldMat);
+      dial.rotation.x = Math.PI / 2;
+      dial.position.y = 1.0 + monH * 0.55 + 0.85;
+      monGrp.add(arch, dial);
+    } else {
+      // Tugu Menara Kristal & Cincin Orbit Emas
+      const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.65, monH, 12), accMat);
+      pillar.position.y = 1.0 + monH / 2;
+      const orb1 = new THREE.Mesh(new THREE.TorusGeometry(0.92, 0.075, 8, 24), goldMat);
+      orb1.position.y = 1.0 + monH + 0.4;
+      orb1.rotation.x = 0.6;
+      const orb2 = orb1.clone();
+      orb2.rotation.y = Math.PI / 2;
+      const top = new THREE.Mesh(new THREE.OctahedronGeometry(0.48, 0), goldMat);
+      top.position.y = 1.0 + monH + 0.4;
+      monGrp.add(pillar, orb1, orb2, top);
+    }
+    grp.add(monGrp);
 
     const gateCv = document.createElement("canvas");
     gateCv.width = 512; gateCv.height = 112;
@@ -906,19 +1297,23 @@
     gctx.fillText(`KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`, 256, 44);
     gctx.fillStyle = "#e2e8f0"; gctx.font = "17px sans-serif";
     const gateStats = getRealDistrictHouseStats(d);
-    gctx.fillText(`${cur.title} (${gateStats.builtHouses}/20 Rumah Terbangun)`, 256, 82);
+    gctx.fillText(`${cur.title} (${gateStats.builtHouses}/36 Rumah Terbangun)`, 256, 82);
 
     const gateBanner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv), side: THREE.DoubleSide }));
     gateBanner.position.set(0, 4.2, 29);
     const gateColL = new THREE.Mesh(new THREE.BoxGeometry(0.7, 5.2, 0.7), new THREE.MeshStandardMaterial({ color: 0xf8fafc }));
     gateColL.position.set(-4.3, 2.6, 29);
     const gateColR = gateColL.clone(); gateColR.position.x = 4.3;
+    const gateAccentMat = new THREE.MeshStandardMaterial({ color: d.accent, roughness: 0.4, metalness: 0.25 });
+    const gateCapL = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.35, 0.95), gateAccentMat);
+    gateCapL.position.set(-4.3, 5.35, 29);
+    const gateCapR = gateCapL.clone(); gateCapR.position.x = 4.3;
 
     const posBox = new THREE.Mesh(new THREE.BoxGeometry(2.4, 2.2, 2.4), new THREE.MeshStandardMaterial({ color: 0xfef3c7 }));
     posBox.position.set(-6.2, 1.1, 28);
-    const posRoof = createGableRoof(2.8, 1.0, 2.8, 0x991b1b);
+    const posRoof = createGableRoof(2.8, 1.0, 2.8, d.accent);
     posRoof.position.set(-6.2, 2.2, 28);
-    grp.add(gateBanner, gateColL, gateColR, posBox, posRoof);
+    grp.add(gateBanner, gateColL, gateColR, gateCapL, gateCapR, posBox, posRoof);
 
     // --- HUNIAN SERVER KECAMATAN: SLOT #0 CAMAT MINGGUAN + 19 WARGA (TANAH KOSONG -> MISI -> RUMAH) + APARTEMEN KE-21+ ---
     function makeDistrictPlaque(labelText, isCamatPlaque) {
@@ -1120,32 +1515,80 @@
     });
     if (apartmentResidents.length > 0) {
       const aptGroup = new THREE.Group();
-      aptGroup.position.set(-35, 0, 22);
-      aptGroup.rotation.y = Math.PI;
+      aptGroup.position.set(-49, 0, 17.5);
+      aptGroup.rotation.y = Math.PI / 2;
 
-      const podium = new THREE.Mesh(new THREE.BoxGeometry(7.2, 0.25, 6.8), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-      podium.position.y = 0.125;
-      const tower = new THREE.Mesh(new THREE.BoxGeometry(6.0, 11.5, 5.4), new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.6 }));
-      tower.position.y = 6.0;
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(6.3, 0.35, 5.7), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-      roof.position.y = 11.9;
-      aptGroup.add(podium, tower, roof);
+      const aptLawnMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.9 });
+      const aptPlazaMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.85 });
+      const aptStoneMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.75 });
+      const aptWallMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.58 });
+      const aptAccentMat = new THREE.MeshStandardMaterial({ color: 0x1e40af, roughness: 0.48 });
+
+      // Lahan wilayah apartemen luas + jalan penghubung pas sejajar gangS (z = 17.5)
+      const estateGround = new THREE.Mesh(new THREE.BoxGeometry(20, 0.08, 22), aptLawnMat);
+      estateGround.position.set(0, 0.04, 2.5);
+      const courtyard = new THREE.Mesh(new THREE.BoxGeometry(15.5, 0.12, 16.5), aptPlazaMat);
+      courtyard.position.set(0, 0.06, 2.2);
+      const driveWay = new THREE.Mesh(new THREE.BoxGeometry(4.4, 0.06, 6.0), roadMat);
+      driveWay.position.set(0, 0.032, 11.8);
+
+      // Podium lobi & Menara Apartemen 6 lantai yang lebih megah
+      const podium = new THREE.Mesh(new THREE.BoxGeometry(10.6, 1.8, 7.6), aptStoneMat);
+      podium.position.set(0, 0.9, -2.5);
+      const lobbyCanopy = new THREE.Mesh(new THREE.BoxGeometry(4.8, 0.22, 2.2), aptAccentMat);
+      lobbyCanopy.position.set(0, 2.05, 1.8);
+      const tower = new THREE.Mesh(new THREE.BoxGeometry(8.6, 14.8, 6.2), aptWallMat);
+      tower.position.set(0, 9.1, -2.5);
+      const sideWingL = new THREE.Mesh(new THREE.BoxGeometry(1.4, 12.6, 6.8), aptAccentMat);
+      sideWingL.position.set(-4.5, 8.0, -2.5);
+      const sideWingR = sideWingL.clone();
+      sideWingR.position.x = 4.5;
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(9.2, 0.45, 6.8), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+      roof.position.set(0, 16.7, -2.5);
+      const pent = new THREE.Mesh(new THREE.BoxGeometry(4.6, 1.3, 3.4), aptStoneMat);
+      pent.position.set(0, 17.55, -2.5);
+      aptGroup.add(estateGround, courtyard, driveWay, podium, lobbyCanopy, tower, sideWingL, sideWingR, roof, pent);
 
       const glassMatApt = districtHouseGlassMat || new THREE.MeshStandardMaterial({ color: 0x0f172a, emissive: 0xfef08a, emissiveIntensity: 0.0, metalness: 0.75, roughness: 0.15 });
-      for (let fl = 0; fl < 4; fl++) {
-        const fy = 1.8 + fl * 2.5;
-        [-1.8, 0, 1.8].forEach(wx => {
-          const win = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.35, 5.5), glassMatApt);
-          win.position.set(wx, fy, 0);
+      for (let fl = 0; fl < 5; fl++) {
+        const fy = 3.2 + fl * 2.6;
+        [-2.7, -0.9, 0.9, 2.7].forEach(wx => {
+          const win = new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.45, 6.35), glassMatApt);
+          win.position.set(wx, fy, -2.5);
           aptGroup.add(win);
         });
+        const balc = new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.14, 0.45), aptStoneMat);
+        balc.position.set(0, fy - 0.8, 0.78);
+        aptGroup.add(balc);
       }
 
+      // Taman Depan Apartemen: Kolam Air Mancur, Bangku Taman, Pohon Rindang, & Pagar Tanaman
+      const fountainRim = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.5, 0.45, 20), aptStoneMat);
+      fountainRim.position.set(0, 0.28, 6.2);
+      const fountainWater = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.32, 20), new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.15, metalness: 0.3 }));
+      fountainWater.position.set(0, 0.36, 6.2);
+      const fountainSpire = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.45, 1.4, 12), aptWallMat);
+      fountainSpire.position.set(0, 0.9, 6.2);
+      aptGroup.add(fountainRim, fountainWater, fountainSpire);
+
+      [[-3.6, 6.2], [3.6, 6.2]].forEach(([bx, bz]) => {
+        const bench = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.42, 1.8), new THREE.MeshStandardMaterial({ color: 0x92400e }));
+        bench.position.set(bx, 0.32, bz);
+        aptGroup.add(bench);
+      });
+      [[-6.2, 3.2], [6.2, 3.2], [-6.2, 9.2], [6.2, 9.2]].forEach(([tx, tz]) => {
+        const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.24, 1.6, 6), new THREE.MeshStandardMaterial({ color: 0x78350f }));
+        tr.position.set(tx, 0.9, tz);
+        const cr = new THREE.Mesh(new THREE.DodecahedronGeometry(1.25, 0), aptLawnMat);
+        cr.position.set(tx, 2.25, tz);
+        aptGroup.add(tr, cr);
+      });
+
       const aptPlaque = new THREE.Mesh(
-        new THREE.PlaneGeometry(4.6, 0.72),
+        new THREE.PlaneGeometry(5.6, 0.88),
         makeDistrictPlaque("🏢 APT. " + d.name.toUpperCase() + " (" + apartmentResidents.length + ")", false)
       );
-      aptPlaque.position.set(0, 12.6, 2.9);
+      aptPlaque.position.set(0, 17.55, -0.75);
       aptGroup.add(aptPlaque);
 
       // Klik Tower Apartemen untuk membuka daftar penghuninya
@@ -1412,64 +1855,12 @@
       grp.add(balai);
     }
 
-    // 4. MINIMARKET PIRAKU MART 24J (Tersedia di setiap distrik untuk beli cemilan!)
-    (function addDistrictMinimarket() {
-      const mart = new THREE.Group();
-      const mmWall = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.65 });
-      const mmPlinth = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.8 });
-      const mmBlue = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.5 });
-      const mmRed = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.5 });
-      const mmYellow = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.45 });
-
-      const base = new THREE.Mesh(new THREE.BoxGeometry(6.2, 0.22, 4.8), mmPlinth);
-      base.position.y = 0.11;
-      const body = new THREE.Mesh(new THREE.BoxGeometry(5.6, 2.75, 3.8), mmWall);
-      body.position.set(0, 1.58, -0.2);
-      // Atap miring modern & fascia strip biru-merah-kuning khas minimarket
-      const roof = new THREE.Mesh(new THREE.BoxGeometry(6.0, 0.24, 4.4), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.6 }));
-      roof.position.set(0, 3.05, 0.05);
-      const bandBlue = new THREE.Mesh(new THREE.BoxGeometry(5.85, 0.32, 0.14), mmBlue);
-      bandBlue.position.set(0, 2.84, 2.2);
-      const bandRed = new THREE.Mesh(new THREE.BoxGeometry(5.85, 0.14, 0.14), mmRed);
-      bandRed.position.set(0, 2.61, 2.2);
-      const bandYel = new THREE.Mesh(new THREE.BoxGeometry(5.85, 0.1, 0.14), mmYellow);
-      bandYel.position.set(0, 2.49, 2.2);
-
-      // Pintu kaca + etalase cemilan + plang Piraku Mart
-      const doorGlass = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.95, 0.1), districtHouseGlassMat);
-      doorGlass.position.set(0, 1.2, 1.72);
-      [-1.7, 1.7].forEach(wx => {
-        const win = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.45, 0.1), districtHouseGlassMat);
-        win.position.set(wx, 1.45, 1.72);
-        mart.add(win);
-      });
-      const signMesh = new THREE.Mesh(
-        new THREE.PlaneGeometry(3.2, 0.62),
-        makeDistrictPlaque("🏪 PIRAKU MART 24J", true)
-      );
-      signMesh.position.set(0, 3.55, 2.15);
-
-      // Cooler minuman outdoor & bangku depan
-      const cooler = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.15, 0.55), mmBlue);
-      cooler.position.set(-2.25, 0.78, 2.02);
-      const bench = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.36, 0.48), new THREE.MeshStandardMaterial({ color: 0xb45309 }));
-      bench.position.set(1.95, 0.38, 2.02);
-
-      // Ring indikator interaksi di trotoar depan minimarket
-      const martRing = new THREE.Mesh(
-        new THREE.RingGeometry(0.7, 0.98, 24),
-        new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide })
-      );
-      martRing.rotation.x = -Math.PI / 2;
-      martRing.position.set(0, 0.05, 3.2);
-
-      mart.add(base, body, roof, bandBlue, bandRed, bandYel, doorGlass, signMesh, cooler, bench, martRing);
-      mart.position.set(34, 0, -10.5);
-      mart.traverse(ch => {
-        if (ch.isMesh) ch.userData = { ...(ch.userData || {}), isPirakuMart: true };
-      });
-      grp.add(mart);
-    })();
+    // 4. KOPDES BIRU PUTIH (Arsitektur memanjang khas Kopdes: deretan kios biru-putih, dinding logo abu-abu, atap pelana panjang, & garasi mobil kanan)
+    {
+      const kopdes = createKopdesBiruPutihMesh();
+      kopdes.position.set(34, 0, -10.5);
+      grp.add(kopdes);
+    }
 
     const poleMat = new THREE.MeshStandardMaterial({ color: 0x334155 });
     const bulbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
@@ -1848,7 +2239,7 @@
       const { cur } = getLevelInfo(getCoinsFor(d));
       const bStats = getRealDistrictHouseStats(d);
       titleEl.textContent = `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
-      subEl.textContent = `${cur.title} (${bStats.builtHouses}/20 Rumah)`;
+      subEl.textContent = `${cur.title} (${bStats.builtHouses}/36 Rumah)`;
     }
     banner.style.opacity = "1";
     banner.style.transform = "translateX(-50%) translateY(0px)";
@@ -2323,6 +2714,19 @@
   }
 
   let lastActionHtmlSig = "";
+  let centralKopdesGroup = null;
+  function ensureCentralKopdesInScene() {
+    const sc = window.pirakuScene;
+    if (!sc || typeof THREE === "undefined") return;
+    if (!centralKopdesGroup) {
+      centralKopdesGroup = createKopdesBiruPutihMesh();
+      centralKopdesGroup.position.set(34.5, 0, -17.5);
+      centralKopdesGroup.rotation.y = Math.PI;
+      sc.add(centralKopdesGroup);
+    }
+    centralKopdesGroup.visible = (activeMapId === CENTRAL_HUB.id);
+  }
+
   function updateDistrictWorldActionPrompt(pPos, nowMs) {
     let bar = document.getElementById("piraku-3d-action-bar");
     if (!bar && document.body) {
@@ -2333,7 +2737,30 @@
     }
     if (!bar) return;
 
-    if (!customDistrictGroup || !pPos || activeMapId === CENTRAL_HUB.id) {
+    if (!pPos) {
+      if (bar.style.display !== "none") bar.style.display = "none";
+      return;
+    }
+
+    if (activeMapId === CENTRAL_HUB.id) {
+      ensureCentralKopdesInScene();
+      const dCentralKopdes = Math.hypot(pPos.x - 35.5, pPos.z - (-20.6));
+      if (dCentralKopdes < 6.0) {
+        const cHtml = `<span>🏬 Kopdes Biru Putih</span>` +
+                      `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🛒 Jajan &amp; Minum</button>`;
+        if (lastActionHtmlSig !== cHtml) {
+          bar.innerHTML = cHtml;
+          lastActionHtmlSig = cHtml;
+        }
+        if (bar.style.display !== "flex") bar.style.display = "flex";
+      } else {
+        if (bar.style.display !== "none") bar.style.display = "none";
+        lastActionHtmlSig = "";
+      }
+      return;
+    }
+
+    if (!customDistrictGroup) {
       if (bar.style.display !== "none") bar.style.display = "none";
       return;
     }
@@ -2390,12 +2817,12 @@
       }
     }
 
-    // 3. Cek jarak ke Minimarket Piraku Mart 24J (34, 0, -10.5 -> depan pintu z = -7.3)
+    // 3. Cek jarak ke KOPDES BIRU PUTIH (34, 0, -10.5 -> sepanjang depan kios z = -7.3)
     if (!html) {
-      const dMart = Math.hypot(pPos.x - 34, pPos.z - (-7.3));
-      if (dMart < 5.0) {
-        html = `<span>🏪 Piraku Mart 24J</span>` +
-               `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#38bdf8,#0284c7);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🛒 Beli Cemilan</button>`;
+      const dMart = Math.hypot(pPos.x - 32.8, pPos.z - (-7.3));
+      if (dMart < 5.8) {
+        html = `<span>🏬 Kopdes Biru Putih</span>` +
+               `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🛒 Jajan &amp; Minum</button>`;
       }
     }
 
@@ -2449,7 +2876,7 @@
           <span style="font-size:10.5px;font-weight:800;color:#fde047;">🪪 DOMISILI KTP (${profile.ig})</span>
           <span style="background:#0f172a;color:#4ade80;border:1px solid rgba(74,222,128,0.45);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;">✓ Terdaftar</span>
         </div>
-        <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myStats.builtHouses}/20 Rumah)</span></div>
+        <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myStats.builtHouses}/36 Rumah)</span></div>
         <div style="font-size:11px;color:#cbd5e1;margin:3px 0 8px;">🏘️ ${myLv.cur.title} • Dana: <b style="color:#fde047;">🪙 ${myCoins.toLocaleString("id-ID")}</b></div>
         <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;">
           <button data-enter="${myD.id}" style="padding:8px 6px;border-radius:9px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:11px;font-weight:800;cursor:pointer;">🏘️ Masuk Komplek</button>
@@ -2502,7 +2929,7 @@
             return `
               <div style="padding:10px 12px;border-radius:14px;background:#1e293b;border:1px solid ${isCurrentMap ? "#38bdf8" : "rgba(148,163,184,0.2)"};display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div>
-                  <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${rankIdx} ${d.icon} ${d.name} <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(56,189,248,0.16);color:#38bdf8;">Lv.${lvInfo.cur.lv} • ${dStats.builtHouses}/20</span></div>
+                  <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${rankIdx} ${d.icon} ${d.name} <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(56,189,248,0.16);color:#38bdf8;">Lv.${lvInfo.cur.lv} • ${dStats.builtHouses}/36</span></div>
                   <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">${lvInfo.cur.title} • <b style="color:#fde047;">🪙 ${c.toLocaleString("id-ID")}</b></div>
                 </div>
                 <div style="display:flex;gap:5px;flex-shrink:0;">
@@ -2559,10 +2986,16 @@
   }
 
   const PIRAKU_MART_SNACKS = [
-    { id: "cireng", icon: "🥟", name: "Cireng Bumbu Rujak", cost: 10, boostSec: 30, desc: "Ngebut +30 detik!" },
-    { id: "seblak", icon: "🍜", name: "Seblak Cup Pedas", cost: 15, boostSec: 45, desc: "Ngebut +45 detik!" },
-    { id: "kopi",   icon: "🧋", name: "Es Kopi Susu Braga", cost: 12, boostSec: 40, desc: "Segar & ngebut 40 detik!" },
-    { id: "surabi", icon: "🥞", name: "Surabi Oncom Hangat", cost: 8,  boostSec: 20, desc: "Cemilan hemat +20 detik!" }
+    // Jajanan
+    { id: "cireng", cat: "jajanan", icon: "🥟", name: "Cireng Bumbu Rujak", cost: 10, boostSec: 30, desc: "Ngebut +30 detik!" },
+    { id: "seblak", cat: "jajanan", icon: "🍜", name: "Seblak Cup Pedas", cost: 15, boostSec: 45, desc: "Ngebut +45 detik!" },
+    { id: "surabi", cat: "jajanan", icon: "🥞", name: "Surabi Oncom Hangat", cost: 8,  boostSec: 20, desc: "Cemilan hemat +20 detik!" },
+    { id: "cilok",  cat: "jajanan", icon: "🍡", name: "Cilok Kuah Kacang", cost: 10, boostSec: 28, desc: "Ngebut +28 detik!" },
+    // Minuman
+    { id: "kopi",   cat: "minuman", icon: "🧋", name: "Es Kopi Susu Braga", cost: 12, boostSec: 40, desc: "Segar & ngebut +40 detik!" },
+    { id: "esteh",  cat: "minuman", icon: "🍵", name: "Es Teh Manis Kampus", cost: 6,  boostSec: 15, desc: "Segar hemat +15 detik!" },
+    { id: "bandrek",cat: "minuman", icon: "🥤", name: "Bandrek Susu Hangat", cost: 12, boostSec: 35, desc: "Hangat & ngebut +35 detik!" },
+    { id: "kelapa", cat: "minuman", icon: "🥥", name: "Es Kelapa Muda Dago", cost: 14, boostSec: 42, desc: "Segar & ngebut +42 detik!" }
   ];
 
   window.openPirakuMartModal = function() {
@@ -2573,33 +3006,39 @@
       modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.75);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
       modal.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
       modal.innerHTML = `
-        <div style="background:#0f172a;border:1.5px solid rgba(56,189,248,0.45);border-radius:18px;width:100%;max-width:390px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.65);color:#f8fafc;">
-          <div style="padding:14px 16px;background:linear-gradient(135deg,#0284c7,#1d4ed8);display:flex;justify-content:space-between;align-items:center;">
+        <div style="background:#0f172a;border:1.5px solid rgba(59,130,246,0.55);border-radius:18px;width:100%;max-width:410px;max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,0.65);color:#f8fafc;">
+          <div style="padding:14px 16px;background:linear-gradient(135deg,#1d4ed8,#2563eb);display:flex;justify-content:space-between;align-items:center;">
             <div>
-              <div style="font-weight:900;font-size:15px;">🏪 Piraku Mart 24J</div>
-              <div style="font-size:11px;color:#e0f2fe;">Jajan cemilan khas Bandung pakai Koin!</div>
+              <div style="font-weight:900;font-size:15px;">🏬 KOPDES BIRU PUTIH</div>
+              <div style="font-size:11px;color:#dbeafe;">Koperasi Kelurahan — Jajanan &amp; Minuman Warga!</div>
             </div>
             <button onclick="document.getElementById('piraku-mart-modal').style.display='none'" style="border:none;background:rgba(15,23,42,0.45);color:#f8fafc;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:800;">✕</button>
           </div>
-          <div id="piraku-mart-items" style="padding:12px 14px;display:flex;flex-direction:column;gap:8px;"></div>
+          <div id="piraku-mart-items" style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       `;
       document.body.appendChild(modal);
     }
     const list = document.getElementById("piraku-mart-items");
     if (list) {
-      list.innerHTML = PIRAKU_MART_SNACKS.map(s => `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(30,41,59,0.75);border:1px solid rgba(148,163,184,0.2);border-radius:12px;padding:10px 12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:22px;">${s.icon}</span>
-            <div>
-              <div style="font-weight:800;font-size:13px;">${s.name}</div>
-              <div style="font-size:11px;color:#94a3b8;">${s.desc}</div>
+      const renderGroup = (title, items) => `
+        <div style="font-size:11px;font-weight:900;letter-spacing:0.06em;color:#93c5fd;text-transform:uppercase;margin-top:4px;">${title}</div>
+        ${items.map(s => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(30,41,59,0.78);border:1px solid rgba(96,165,250,0.22);border-radius:12px;padding:9px 12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:22px;">${s.icon}</span>
+              <div>
+                <div style="font-weight:800;font-size:13px;">${s.name}</div>
+                <div style="font-size:11px;color:#94a3b8;">${s.desc}</div>
+              </div>
             </div>
+            <button onclick="buyPirakuMartSnack('${s.id}')" style="border:none;background:linear-gradient(135deg,#f8fafc,#dbeafe);color:#1e3a8a;padding:7px 11px;border-radius:10px;font-weight:900;font-size:11.5px;cursor:pointer;white-space:nowrap;">🪙 ${s.cost}</button>
           </div>
-          <button onclick="buyPirakuMartSnack('${s.id}')" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:7px 11px;border-radius:10px;font-weight:900;font-size:11.5px;cursor:pointer;white-space:nowrap;">🪙 ${s.cost}</button>
-        </div>
-      `).join("");
+        `).join("")}
+      `;
+      list.innerHTML =
+        renderGroup("🍢 Jajanan Bandung", PIRAKU_MART_SNACKS.filter(s => s.cat === "jajanan")) +
+        renderGroup("🥤 Minuman Segar & Hangat", PIRAKU_MART_SNACKS.filter(s => s.cat === "minuman"));
     }
     modal.style.display = "flex";
   };
@@ -2607,12 +3046,23 @@
   window.buyPirakuMartSnack = function(snackId) {
     const item = PIRAKU_MART_SNACKS.find(s => s.id === snackId);
     if (!item || !window.PirakuEconomy) return;
-    if (!window.PirakuEconomy.spendCoins(item.cost, "Jajan " + item.name + " di Piraku Mart")) return;
+    if (!window.PirakuEconomy.spendCoins(item.cost, "Jajan " + item.name + " di Kopdes Biru Putih")) return;
     window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + item.boostSec * 1000;
+    let contribMsg = "";
+    if (activeMapId && activeMapId !== CENTRAL_HUB.id) {
+      const curD = DISTRICTS.find(x => x.id === activeMapId);
+      if (curD) {
+        const nextVal = getCoinsFor(curD) + 2;
+        localInvest[curD.id] = nextVal;
+        saveLocal();
+        pushDistrictToSupabase(curD, nextVal, 2);
+        contribMsg = ` (+2 Kas Kec. ${curD.name})`;
+      }
+    }
     const modal = document.getElementById("piraku-mart-modal");
     if (modal) modal.style.display = "none";
     if (typeof window.showToast === "function") {
-      window.showToast(`${item.icon} Nyam! Beli ${item.name} — lari ngebut +${item.boostSec} detik!`);
+      window.showToast(`${item.icon} Nyam! Beli ${item.name} — ngebut +${item.boostSec}d${contribMsg}`);
     }
   };
 

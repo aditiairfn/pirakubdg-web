@@ -205,11 +205,20 @@
     }
     const v = new THREE.Vector3();
     mesh.getWorldPosition(v);
+    const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+    const refDist = (!isSelf && selfMesh && selfMesh.position)
+      ? Math.hypot(v.x - selfMesh.position.x, v.z - selfMesh.position.z)
+      : (camObj.position ? camObj.position.distanceTo(v) * 0.45 : 0);
+    if (!isSelf && refDist > 24) {
+      tag.style.display = "none";
+      return;
+    }
     v.y += 1.85;
     v.project(camObj);
     if (v.z > 1) { tag.style.display = "none"; }
     else {
       tag.style.display = "block";
+      tag.style.opacity = (!isSelf && refDist > 16) ? Math.max(0.28, 1 - (refDist - 16) / 9).toFixed(2) : "1";
       tag.style.left = ((v.x * 0.5 + 0.5) * window.innerWidth).toFixed(1) + "px";
       tag.style.top = ((-(v.y * 0.5) + 0.5) * window.innerHeight).toFixed(1) + "px";
     }
