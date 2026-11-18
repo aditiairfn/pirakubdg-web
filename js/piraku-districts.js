@@ -1904,29 +1904,15 @@
     ];
 
     const angkotConfigs = [
-      // Jalur Utara (armIdx: 0, bergerak dari -Z menuju bundaran)
-      { armIdx: 0, startDist: -16, turnSteps: 2, speed: 7.8, body: 0x16a34a, stripe: 0xfacc15 }, // Angkot Kalapa-Dago (Hijau-Kuning)
-      { armIdx: 0, startDist: -27, turnSteps: 1, speed: 8.4, carColor: 0xef4444 },               // Mobil Merah
-      { armIdx: 0, startDist: -39, turnSteps: 3, speed: 7.5, body: 0x0284c7, stripe: 0xfef08a }, // Angkot Cisitu-Tegallega (Biru Muda-Kuning)
-      { armIdx: 0, startDist: -51, turnSteps: 2, speed: 8.8, carColor: 0x38bdf8 },               // Mobil Biru Langit
-
-      // Jalur Barat (armIdx: 1, bergerak dari -X menuju bundaran)
-      { armIdx: 1, startDist: -18, turnSteps: 3, speed: 7.4, body: 0xfef3c7, stripe: 0xdc2626 }, // Angkot St.Hall-Lembang (Krem-Merah)
-      { armIdx: 1, startDist: -30, turnSteps: 2, speed: 8.5, carColor: 0xfacc15 },               // Mobil Kuning
-      { armIdx: 1, startDist: -42, turnSteps: 1, speed: 7.9, body: 0x15803d, stripe: 0xf97316 }, // Angkot Cicaheum-Ciroyom (Hijau-Oranye)
-      { armIdx: 1, startDist: -54, turnSteps: 2, speed: 8.9, carColor: 0xa855f7 },               // Mobil Ungu
-
-      // Jalur Selatan (armIdx: 2, bergerak dari +Z menuju bundaran)
-      { armIdx: 2, startDist: 17, turnSteps: 1, speed: 7.6, body: 0x2563eb, stripe: 0xf8fafc },  // Angkot Sederhana-Cimindi (Biru-Putih)
-      { armIdx: 2, startDist: 28, turnSteps: 3, speed: 8.3, carColor: 0x0f172a },                // Mobil Hitam
-      { armIdx: 2, startDist: 40, turnSteps: 2, speed: 7.7, body: 0xeab308, stripe: 0x1d4ed8 },  // Angkot Margahayu-Ledeng (Kuning-Biru)
-      { armIdx: 2, startDist: 52, turnSteps: 1, speed: 8.7, carColor: 0x10b981 },                // Mobil Emerald
-
-      // Jalur Timur (armIdx: 3, bergerak dari +X menuju bundaran)
-      { armIdx: 3, startDist: 19, turnSteps: 2, speed: 8.2, carColor: 0xf8fafc },                // Mobil Putih
-      { armIdx: 3, startDist: 31, turnSteps: 1, speed: 7.5, body: 0x9a3412, stripe: 0xfef3c7 },  // Angkot Ciwastra-Ujungberung (Coklat-Krem)
-      { armIdx: 3, startDist: 43, turnSteps: 3, speed: 8.6, carColor: 0xf97316 },                // Mobil Oranye
-      { armIdx: 3, startDist: 55, turnSteps: 2, speed: 7.8, body: 0xbe123c, stripe: 0xf8fafc }   // Angkot Cibaduyut (Merah Maroon-Putih)
+      // Ringan & seimbang (8 kendaraan aktif: 2 per arah agar tetap ramai tanpa lag)
+      { armIdx: 0, startDist: -18, turnSteps: 2, speed: 7.8, body: 0x16a34a, stripe: 0xfacc15 }, // Angkot Kalapa-Dago
+      { armIdx: 0, startDist: -42, turnSteps: 1, speed: 8.4, carColor: 0xef4444 },               // Mobil Merah
+      { armIdx: 1, startDist: -20, turnSteps: 3, speed: 7.4, body: 0xfef3c7, stripe: 0xdc2626 }, // Angkot St.Hall-Lembang
+      { armIdx: 1, startDist: -44, turnSteps: 2, speed: 8.5, carColor: 0x38bdf8 },               // Mobil Biru Langit
+      { armIdx: 2, startDist: 20, turnSteps: 1, speed: 7.6, body: 0x2563eb, stripe: 0xf8fafc },  // Angkot Sederhana-Cimindi
+      { armIdx: 2, startDist: 44, turnSteps: 2, speed: 8.3, carColor: 0xfacc15 },                // Mobil Kuning
+      { armIdx: 3, startDist: 22, turnSteps: 2, speed: 7.5, body: 0x9a3412, stripe: 0xfef3c7 },  // Angkot Ciwastra-Ujungberung
+      { armIdx: 3, startDist: 46, turnSteps: 3, speed: 8.6, carColor: 0xf97316 }                 // Mobil Oranye
     ];
     angkotConfigs.forEach(cfg => {
       const veh = cfg.body ? createBandungAngkotMesh(cfg.body, cfg.stripe) : createPrivateCarMesh(cfg.carColor);
