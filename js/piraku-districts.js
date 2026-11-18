@@ -89,6 +89,31 @@
     }
   }
 
+  function getRealDistrictHouseStats(d) {
+    const kecLow = String(d.name || "").trim().toLowerCase();
+    const idLow = String(d.id || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+    const allCitizens = Array.isArray(window.registeredCitizensList) ? window.registeredCitizensList : [];
+    const seen = new Map();
+    allCitizens.forEach(c => {
+      if (!c || !c.ig) return;
+      const ck = String(c.kecamatan || "").trim().toLowerCase().replace(/[_-]+/g, " ");
+      if (ck !== kecLow && ck !== idLow) return;
+      const norm = String(c.ig || "").trim().toLowerCase().replace(/^@/, "");
+      if (!norm) return;
+      const prev = seen.get(norm);
+      const hasH = Boolean(
+        c.has_house ||
+        (window.pirakuRemoteHouses && window.pirakuRemoteHouses[norm]) ||
+        localStorage.getItem("piraku_has_house_" + norm) === "1"
+      );
+      if (!prev) seen.set(norm, hasH);
+      else if (hasH) seen.set(norm, true);
+    });
+    let built = 0;
+    seen.forEach(v => { if (v) built++; });
+    return { totalCitizens: seen.size, builtHouses: Math.min(20, built) };
+  }
+
   function getLevelInfo(coins) {
     let cur = LEVELS[0], next = LEVELS[1];
     for (let i = 0; i < LEVELS.length; i++) {
@@ -157,17 +182,21 @@
     } catch (e) {}
   }
 
-  async function pushDistrictToSupabase(d, newCoins) {
+  async function pushDistrictToSupabase(d, newCoins, deltaAmt) {
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
       if (typeof window.markPirakuGotongRoyongDone === "function") window.markPirakuGotongRoyongDone();
+      const { data: curRow } = await sb.from("piraku_districts").select("invested_coins").eq("district_id", d.id).maybeSingle();
+      const cloudVal = Number(curRow?.invested_coins || 0);
+      const safeCoins = Math.max(Number(newCoins) || 0, cloudVal + (Number(deltaAmt) || 0));
+      localInvest[d.id] = safeCoins;
+      saveLocal();
       await sb.from("piraku_districts").upsert({
         district_id: d.id,
         district_name: d.name,
         zone_group: d.zone,
-        invested_coins: newCoins,
-      // Tandai Misi 4 Gotong Royong selesai
+        invested_coins: safeCoins,
         updated_at: new Date().toISOString()
       }, { onConflict: "district_id" });
     } catch (e) {}
@@ -863,7 +892,8 @@
     gctx.fillStyle = "#fde047"; gctx.font = "bold 22px sans-serif"; gctx.textAlign = "center";
     gctx.fillText(`KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`, 256, 44);
     gctx.fillStyle = "#e2e8f0"; gctx.font = "17px sans-serif";
-    gctx.fillText(`${cur.title} (${cur.houses}/20 Kavling Terbangun)`, 256, 82);
+    const gateStats = getRealDistrictHouseStats(d);
+    gctx.fillText(`${cur.title} (${gateStats.builtHouses}/20 Rumah Terbangun)`, 256, 82);
 
     const gateBanner = new THREE.Mesh(new THREE.PlaneGeometry(8.4, 1.8), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(gateCv), side: THREE.DoubleSide }));
     gateBanner.position.set(0, 4.2, 29);
@@ -1657,8 +1687,9 @@
       subEl.textContent = d.landmark;
     } else {
       const { cur } = getLevelInfo(getCoinsFor(d));
+      const bStats = getRealDistrictHouseStats(d);
       titleEl.textContent = `${d.icon} KOMPLEK KEC. ${d.name.toUpperCase()} • LV.${cur.lv}`;
-      subEl.textContent = `${cur.title} (${cur.houses}/20 Kavling)`;
+      subEl.textContent = `${cur.title} (${bStats.builtHouses}/20 Rumah)`;
     }
     banner.style.opacity = "1";
     banner.style.transform = "translateX(-50%) translateY(0px)";
@@ -2226,6 +2257,9 @@
     }
     modal.style.display = "flex";
     renderDistrictsModal();
+    syncDistrictsFromSupabase().then(() => {
+      if (modal.style.display === "flex") renderDistrictsModal();
+    });
   };
 
   function renderDistrictsModal() {
@@ -2236,6 +2270,7 @@
     const myD = profile.district;
     const myCoins = getCoinsFor(myD);
     const myLv = getLevelInfo(myCoins);
+    const myStats = getRealDistrictHouseStats(myD);
 
     const ranked = [...DISTRICTS].sort((a, b) => getCoinsFor(b) - getCoinsFor(a));
     const filtered = filterZone === "Semua" ? ranked : ranked.filter(d => d.zone === filterZone);
@@ -2246,7 +2281,7 @@
           <span style="font-size:10.5px;font-weight:800;color:#fde047;">🪪 DOMISILI KTP (${profile.ig})</span>
           <span style="background:#0f172a;color:#4ade80;border:1px solid rgba(74,222,128,0.45);border-radius:999px;padding:2px 8px;font-size:10px;font-weight:800;">✓ Terdaftar</span>
         </div>
-        <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myLv.cur.houses}/20 Rumah)</span></div>
+        <div style="font-size:15px;font-weight:800;">${myD.icon} Kec. ${myD.name} • <span style="color:#4ade80;">Lv.${myLv.cur.lv} (${myStats.builtHouses}/20 Rumah)</span></div>
         <div style="font-size:11px;color:#cbd5e1;margin:3px 0 8px;">🏘️ ${myLv.cur.title} • Dana: <b style="color:#fde047;">🪙 ${myCoins.toLocaleString("id-ID")}</b></div>
         <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:6px;">
           <button data-enter="${myD.id}" style="padding:8px 6px;border-radius:9px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;font-size:11px;font-weight:800;cursor:pointer;">🏘️ Masuk Komplek</button>
@@ -2290,6 +2325,7 @@
             const rankIdx = ranked.findIndex(r => r.id === d.id) + 1;
             const c = getCoinsFor(d);
             const lvInfo = getLevelInfo(c);
+            const dStats = getRealDistrictHouseStats(d);
             const isCurrentMap = activeMapId === d.id;
             const isOwnDistrict = profile.isRegistered && profile.district.id === d.id;
             const investBtnHtml = isOwnDistrict
@@ -2298,7 +2334,7 @@
             return `
               <div style="padding:10px 12px;border-radius:14px;background:#1e293b;border:1px solid ${isCurrentMap ? "#38bdf8" : "rgba(148,163,184,0.2)"};display:flex;align-items:center;justify-content:space-between;gap:8px;">
                 <div>
-                  <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${rankIdx} ${d.icon} ${d.name} <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(56,189,248,0.16);color:#38bdf8;">Lv.${lvInfo.cur.lv} • ${lvInfo.cur.houses}/20</span></div>
+                  <div style="font-size:13px;font-weight:800;color:#f8fafc;">#${rankIdx} ${d.icon} ${d.name} <span style="font-size:10px;padding:1px 6px;border-radius:999px;background:rgba(56,189,248,0.16);color:#38bdf8;">Lv.${lvInfo.cur.lv} • ${dStats.builtHouses}/20</span></div>
                   <div style="font-size:10.5px;color:#94a3b8;margin-top:2px;">${lvInfo.cur.title} • <b style="color:#fde047;">🪙 ${c.toLocaleString("id-ID")}</b></div>
                 </div>
                 <div style="display:flex;gap:5px;flex-shrink:0;">
@@ -2333,7 +2369,7 @@
         const nextVal = getCoinsFor(d) + amt;
         localInvest[d.id] = nextVal;
         saveLocal();
-        pushDistrictToSupabase(d, nextVal);
+        pushDistrictToSupabase(d, nextVal, amt);
         if (activeMapId === d.id && !d.isMainMap) {
           buildDedicatedDistrictScene(d);
           updateKomplekMinimap(d);
