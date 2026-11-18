@@ -184,6 +184,7 @@
   window.PirakuEconomy = {
     getCoins: () => state.coins,
     getState: () => state,
+    getCatalog: () => CATALOG,
     saveNow: () => saveState(false),
     addCoins(amount, reason) {
       const val = Math.round(Number(amount) || 0);

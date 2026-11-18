@@ -2894,17 +2894,19 @@ let activeQuestSystem = null;
     const lvl = found.level || parseInt(localStorage.getItem('piraku_my_level') || '1', 10) || 1;
     const kec = found.kecamatan || localStorage.getItem('piraku_my_kec') || 'Bandung';
     const coins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : 0;
+    const isFounder = String(found.ig || '').trim().toLowerCase().replace(/^@/, '') === 'yelclaw';
     modal.innerHTML = `
-      <div style="width:100%;max-width:340px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(56,189,248,0.45);border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);">
+      <div style="width:100%;max-width:340px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid ${isFounder ? 'rgba(250,204,21,0.7)' : 'rgba(56,189,248,0.45)'};border-radius:20px;padding:16px;color:#f8fafc;box-shadow:0 22px 50px rgba(0,0,0,0.78);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div>
-            <div style="font-size:10px;color:#7dd3fc;font-weight:800;letter-spacing:.7px;">AKUN WARGA AKTIF</div>
-            <div style="font-size:16px;font-weight:800;color:#fff;margin-top:2px;">${found.ig} <span style="font-size:11px;background:#2563eb;padding:2px 7px;border-radius:999px;vertical-align:middle;">LVL ${lvl}</span></div>
+            <div style="font-size:10px;color:${isFounder ? '#facc15' : '#7dd3fc'};font-weight:800;letter-spacing:.7px;">${isFounder ? '🛡️ FOUNDER & ADMIN KOTA' : 'AKUN WARGA AKTIF'}</div>
+            <div style="font-size:16px;font-weight:800;color:#fff;margin-top:2px;">${found.ig} <span style="font-size:11px;background:${isFounder ? '#d97706' : '#2563eb'};padding:2px 7px;border-radius:999px;vertical-align:middle;">LVL ${lvl}</span></div>
             <div style="font-size:11px;color:#94a3b8;margin-top:2px;">Kec. ${kec} • 🪙 ${coins.toLocaleString('id-ID')}</div>
           </div>
           <button id="btn-close-myacc" style="width:30px;height:30px;border-radius:50%;border:none;background:#0f172a;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px;">
+          ${isFounder ? `<button id="btn-myacc-founder" style="width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid rgba(250,204,21,0.65);background:linear-gradient(135deg,rgba(245,158,11,0.28),rgba(120,53,15,0.45));color:#fef08a;font-size:13px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:space-between;"><span>🛡️ Panel Admin Founder (Kirim Hadiah)</span><span>›</span></button>` : ''}
           <button id="btn-myacc-wardrobe" style="width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(30,41,59,0.9);color:#f8fafc;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
             <span>👕 Ganti Pakaian &amp; Karakter</span><span style="color:#94a3b8;">›</span>
           </button>
@@ -2918,6 +2920,13 @@ let activeQuestSystem = null;
       </div>`;
     modal.style.display = 'flex';
     modal.querySelector('#btn-close-myacc').onclick = () => { modal.style.display = 'none'; };
+    const fBtn = modal.querySelector('#btn-myacc-founder');
+    if (fBtn) {
+      fBtn.onclick = () => {
+        modal.style.display = 'none';
+        if (typeof window.openFounderAdminModal === 'function') window.openFounderAdminModal();
+      };
+    }
     modal.querySelector('#btn-myacc-wardrobe').onclick = () => {
       modal.style.display = 'none';
       if (typeof window.openWardrobeModal === 'function') window.openWardrobeModal();
@@ -2929,6 +2938,150 @@ let activeQuestSystem = null;
     modal.querySelector('#btn-myacc-logout').onclick = () => {
       modal.style.display = 'none';
       window.resetMyDeviceCitizen();
+    };
+  };
+
+  window.openFounderAdminModal = function() {
+    const myClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
+    if (myClean !== 'yelclaw') { showToast('Khusus akun Founder @yelclaw!'); return; }
+    let modal = document.getElementById('piraku-founder-admin-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-founder-admin-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.8);backdrop-filter:blur(8px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:14px;';
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+      document.body.appendChild(modal);
+    }
+    const cat = (window.PirakuEconomy && typeof window.PirakuEconomy.getCatalog === 'function')
+      ? window.PirakuEconomy.getCatalog()
+      : { outfit: [], mobility: [], tier: [] };
+    const allItems = [
+      ...cat.outfit.map(i => ({ ...i, catType: 'outfit' })),
+      ...cat.mobility.map(i => ({ ...i, catType: 'mobility' })),
+      ...cat.tier.filter(i => i.id !== 'tier_1').map(i => ({ ...i, catType: 'tier' }))
+    ];
+    const citizens = (Array.isArray(registeredCitizensList) ? registeredCitizensList : [])
+      .filter(c => c && c.ig && String(c.ig).toLowerCase().replace(/^@/, '') !== 'yelclaw');
+
+    modal.innerHTML = `
+      <div style="width:100%;max-width:410px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(250,204,21,0.65);border-radius:22px;padding:18px;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);max-height:86dvh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;color:#facc15;font-weight:800;letter-spacing:.8px;">🛡️ ROLE KHUSUS FOUNDER (@yelclaw)</div>
+            <div style="font-size:18px;font-weight:800;">Panel Admin &amp; Hadiah Warga</div>
+          </div>
+          <button id="fa-close" style="width:30px;height:30px;border-radius:50%;border:none;background:#090d16;color:#cbd5e1;font-size:15px;cursor:pointer;">✕</button>
+        </div>
+
+        <label style="display:block;font-size:11px;font-weight:800;color:#94a3b8;margin-bottom:4px;">PILIH WARGA PENERIMA</label>
+        <select id="fa-target-select" style="width:100%;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12.5px;margin-bottom:6px;">
+          <option value="">-- Pilih dari daftar warga (${citizens.length}) --</option>
+          ${citizens.map(c => `<option value="${String(c.ig).replace(/^@/, '')}">${c.ig} (${c.kecamatan || 'Bandung'})</option>`).join('')}
+        </select>
+        <input id="fa-target-ig" type="text" placeholder="Atau ketik @username IG penerima..." style="width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12.5px;margin-bottom:12px;">
+
+        <div style="padding:12px;border-radius:14px;background:rgba(15,23,42,0.75);border:1px solid rgba(250,204,21,0.3);margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:800;color:#fde047;margin-bottom:8px;">🪙 Kirim Koin Piraku</div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;">
+            <input id="fa-coin-amt" type="number" value="100" min="1" max="50000" style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid #334155;background:#090d16;color:#fde047;font-weight:800;font-size:13px;">
+            <button id="fa-send-coins" style="padding:8px 14px;border-radius:9px;border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;font-weight:900;font-size:12px;cursor:pointer;">Kirim Koin 🪙</button>
+          </div>
+          <div style="display:flex;gap:6px;">
+            ${[50, 150, 500, 1000].map(v => `<button class="fa-quick-coin" data-v="${v}" style="flex:1;padding:5px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#cbd5e1;font-size:11px;font-weight:800;cursor:pointer;">+${v}</button>`).join('')}
+          </div>
+        </div>
+
+        <div style="padding:12px;border-radius:14px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.3);margin-bottom:10px;">
+          <div style="font-size:12px;font-weight:800;color:#7dd3fc;margin-bottom:8px;">🎁 Kirim Item / Kendaraan / Gelar</div>
+          <select id="fa-item-select" style="width:100%;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12px;margin-bottom:8px;">
+            ${allItems.map(i => `<option value="${i.id}" data-cat="${i.catType}">${i.icon} ${i.name}</option>`).join('')}
+          </select>
+          <button id="fa-send-item" style="width:100%;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-weight:900;font-size:12.5px;cursor:pointer;">Kirim Item ke Warga 🎁</button>
+        </div>
+
+        <div style="padding:12px;border-radius:14px;background:rgba(15,23,42,0.75);border:1px solid rgba(74,222,128,0.3);">
+          <div style="font-size:12px;font-weight:800;color:#4ade80;margin-bottom:6px;">📢 Pengumuman Global (Gratis Admin)</div>
+          <div style="display:flex;gap:6px;">
+            <input id="fa-announce-txt" type="text" maxlength="100" placeholder="Tulis pengumuman ke seluruh kota..." style="flex:1;padding:8px 10px;border-radius:9px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12px;">
+            <button id="fa-send-announce" style="padding:8px 12px;border-radius:9px;border:none;background:#10b981;color:#fff;font-weight:900;font-size:12px;cursor:pointer;">Siarkan</button>
+          </div>
+        </div>
+      </div>`;
+    modal.style.display = 'flex';
+    modal.querySelector('#fa-close').onclick = () => { modal.style.display = 'none'; };
+    const selEl = modal.querySelector('#fa-target-select');
+    const inpEl = modal.querySelector('#fa-target-ig');
+    selEl.onchange = () => { if (selEl.value) inpEl.value = '@' + selEl.value; };
+    modal.querySelectorAll('.fa-quick-coin').forEach(b => { b.onclick = () => { modal.querySelector('#fa-coin-amt').value = b.dataset.v; }; });
+
+    async function upsertGiftToCitizen(targetKey, applyFn, summaryText) {
+      if (!supabaseClient) { showToast('Supabase belum siap!'); return; }
+      const { data: cur } = await supabaseClient.from('piraku_wallets').select('*').eq('citizen_key', targetKey).maybeSingle();
+      const base = cur ? {
+        citizen_key: targetKey,
+        display_name: cur.display_name || ('@' + targetKey),
+        coins: Number(cur.coins ?? 25),
+        owned_items: Array.isArray(cur.owned_items) ? [...cur.owned_items] : ['tier_1'],
+        tier_id: cur.tier_id || 'tier_1',
+        equipped_outfit: cur.equipped_outfit || null,
+        equipped_vehicle: cur.equipped_vehicle || null,
+        rental_expires_at: Number(cur.rental_expires_at || 0),
+        billboard_text: cur.billboard_text || null,
+        updated_at: new Date().toISOString()
+      } : {
+        citizen_key: targetKey,
+        display_name: '@' + targetKey,
+        coins: 25,
+        owned_items: ['tier_1'],
+        tier_id: 'tier_1',
+        equipped_outfit: null,
+        equipped_vehicle: null,
+        rental_expires_at: 0,
+        billboard_text: null,
+        updated_at: new Date().toISOString()
+      };
+      applyFn(base);
+      const { error } = await supabaseClient.from('piraku_wallets').upsert(base, { onConflict: 'citizen_key' });
+      if (error) { showToast('Gagal mengirim hadiah: ' + error.message); return; }
+      if (typeof window.broadcastFounderGift === 'function') window.broadcastFounderGift(targetKey, summaryText);
+      if (typeof window.refreshPirakuRemoteTiers === 'function') window.refreshPirakuRemoteTiers();
+      showToast('✅ Berhasil kirim ke @' + targetKey + ': ' + summaryText);
+    }
+
+    modal.querySelector('#fa-send-coins').onclick = async () => {
+      const targetKey = (inpEl.value || '').trim().toLowerCase().replace(/^@/, '');
+      const amt = Math.round(Number(modal.querySelector('#fa-coin-amt').value) || 0);
+      if (!targetKey) { showToast('Pilih/ketik @username penerima dulu!'); return; }
+      if (amt <= 0) { showToast('Jumlah koin harus > 0!'); return; }
+      await upsertGiftToCitizen(targetKey, (w) => { w.coins = Math.max(0, w.coins + amt); }, `+${amt} 🪙 Koin`);
+    };
+
+    modal.querySelector('#fa-send-item').onclick = async () => {
+      const targetKey = (inpEl.value || '').trim().toLowerCase().replace(/^@/, '');
+      if (!targetKey) { showToast('Pilih/ketik @username penerima dulu!'); return; }
+      const itemSel = modal.querySelector('#fa-item-select');
+      const itemId = itemSel.value;
+      const itemObj = allItems.find(x => x.id === itemId);
+      if (!itemObj) return;
+      await upsertGiftToCitizen(targetKey, (w) => {
+        if (!w.owned_items.includes(itemId)) w.owned_items.push(itemId);
+        if (itemObj.catType === 'outfit') w.equipped_outfit = itemId;
+        else if (itemObj.catType === 'tier') w.tier_id = itemId;
+        else if (itemObj.catType === 'mobility') {
+          w.equipped_vehicle = itemId;
+          w.rental_expires_at = Math.max(Date.now(), Number(w.rental_expires_at || 0)) + (itemObj.durationMin || 10) * 60 * 1000;
+        }
+      }, `${itemObj.icon} ${itemObj.name}`);
+    };
+
+    modal.querySelector('#fa-send-announce').onclick = async () => {
+      const msg = (modal.querySelector('#fa-announce-txt').value || '').trim();
+      if (!msg) return;
+      if (supabaseClient) {
+        await supabaseClient.from('chat_warga').insert([{ sender_ig: '@yelclaw', message: '[MEGAFON] ' + msg }]);
+      }
+      modal.querySelector('#fa-announce-txt').value = '';
+      showToast('📢 Pengumuman Founder disiarkan!');
     };
   };
 

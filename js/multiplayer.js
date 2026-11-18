@@ -169,9 +169,16 @@
       tag.style.borderColor = tierStyle.border;
       tag.style.color = tierStyle.text;
     }
+    const isFounder = String(label || "").trim().toLowerCase().replace(/^@/, "") === "yelclaw";
     const isSpeaking = !!speakingPeers.get(key);
-    const displayLabel = isSpeaking ? ("🎙️ " + label) : label;
+    const baseLabel = isFounder ? ("🛡️ FOUNDER " + label) : label;
+    const displayLabel = isSpeaking ? ("🎙️ " + baseLabel) : baseLabel;
     if (tag.textContent !== displayLabel) tag.textContent = displayLabel;
+    if (isFounder && !isSpeaking) {
+      tag.style.background = "linear-gradient(135deg, rgba(120,53,15,0.95), rgba(15,23,42,0.95))";
+      tag.style.borderColor = "#facc15";
+      tag.style.color = "#fde047";
+    }
     if (isSpeaking) {
       const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
       tag.style.borderColor = "#22c55e";
@@ -754,6 +761,14 @@
           spawnFloatingBubble(entry.mesh, payload.ig, payload.message);
         }
       })
+      .on('broadcast', { event: 'founder-gift' }, ({ payload }) => {
+        if (!payload || !payload.targetIg) return;
+        const myClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
+        if (myClean && myClean === String(payload.targetIg).trim().toLowerCase().replace(/^@/, '')) {
+          if (typeof window.reloadPirakuEconomyForCurrentUser === 'function') window.reloadPirakuEconomyForCurrentUser();
+          if (typeof window.showToast === 'function') window.showToast('🎁 Hadiah dari Founder @yelclaw: ' + (payload.summaryText || 'Cek dompet & tasmu!'));
+        }
+      })
       .on('broadcast', { event: 'voice-ready' }, ({ payload }) => {
         if (!payload || !payload.from || payload.from === mySessionId) return;
         const pc = createPeerConnection(payload.from, false);
@@ -848,6 +863,12 @@
   }
 
   // Tetap dukung fungsi lama jika dipanggil dari main.js, tapi tetap di 1 dunia global
+  window.broadcastFounderGift = function(targetIg, summaryText) {
+    if (mpChannel && mpChannel.state === 'joined') {
+      mpChannel.send({ type: 'broadcast', event: 'founder-gift', payload: { targetIg, summaryText } });
+    }
+  };
+
   window.switchMultiplayerDistrict = function() {
     connectGlobalWorld();
   };
