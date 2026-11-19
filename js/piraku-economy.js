@@ -17,16 +17,19 @@
       { id: "aura_emas", name: "Aura Langkah Emas", price: 750, icon: "✨", desc: "Cincin cahaya emas berputar di bawah kaki karakter." }
     ],
     mobility: [
-      { id: "skateboard_gasibu", name: "Skateboard Neon (Sewa 10 Menit)", price: 15, durationMin: 10, speed: 1.25, icon: "🛹", desc: "Sewa 10 menit • Meluncur santai 1.25x keliling Gasibu." },
-      { id: "sepeda_kota", name: "Sepeda Boseh (Sewa 10 Menit)", price: 25, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit • Kecepatan gerak 1.35x + sepeda 3D." },
-      { id: "skuter_listrik", name: "Skuter Listrik (Sewa 10 Menit)", price: 45, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit • Meluncur 1.65x keliling Gasibu & Monju." },
-      { id: "vespa_bandung", name: "Vespa Klasik Braga (Sewa 10 Menit)", price: 70, durationMin: 10, speed: 1.92, icon: "🛵", desc: "Sewa 10 menit • Paling kencang 1.92x buat kejar Ojol & Balap Gasibu!" }
+      { id: "skateboard_gasibu", name: "Skateboard Neon", price: 15, buyPrice: 1500, durationMin: 10, speed: 1.25, icon: "🛹", desc: "Sewa 10 menit / Beli permanen • Meluncur santai 1.25x keliling Gasibu." },
+      { id: "sepeda_kota", name: "Sepeda Boseh", price: 25, buyPrice: 3000, durationMin: 10, speed: 1.35, icon: "🚲", desc: "Sewa 10 menit / Beli permanen • Kecepatan gerak 1.35x + sepeda 3D." },
+      { id: "skuter_listrik", name: "Skuter Listrik", price: 45, buyPrice: 6500, durationMin: 10, speed: 1.65, icon: "🛴", desc: "Sewa 10 menit / Beli permanen • Meluncur 1.65x keliling Gasibu & Monju." },
+      { id: "vespa_bandung", name: "Vespa Klasik Braga", price: 70, buyPrice: 12000, durationMin: 10, speed: 1.92, icon: "🛵", desc: "Sewa 10 menit / Beli permanen • Paling kencang 1.92x buat kejar Ojol & Balap Gasibu!" }
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
       { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 350, desc: "Lencana bintang di label nama + prioritas polling." },
       { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 1200, desc: "Mahkota emas di label nama + gelar Sesepuh." },
-      { id: "tier_4", name: "Sultan Dago", badge: "💎", price: 4500, desc: "Gelar tertinggi Piraku Bandung dengan bingkai berlian." }
+      { id: "tier_4", name: "Sultan Kecamatan", badge: "💎", price: 4500, dynamicKec: true, desc: "Gelar Sultan sesuai kecamatanmu dengan bingkai berlian." },
+      { id: "tier_5", name: "Sultan Bandung", badge: "🦁", price: 12000, desc: "Sultan tertinggi se-Kota Bandung dengan lencana singa." },
+      { id: "tier_6", name: "Sultan Jabar", badge: "🦅", price: 25000, desc: "Penguasa Jawa Barat dengan lencana elang eksklusif." },
+      { id: "tier_7", name: "Sultan Indo", badge: "🔱", price: 50000, desc: "Gelar paling langka se-Indonesia dengan aura trisula!" }
     ]
   };
 
@@ -39,6 +42,7 @@
       equippedOutfit: null,
       equippedVehicle: null,
       rentalExpiresAt: 0,
+      rentals: {},
       tier: "tier_1",
       billboardText: "WILUJENG SUMPING DI PIRAKU BANDUNG!",
       history: [{ label: "Bonus Warga Baru Piraku", delta: 25, ts: Date.now() }]
@@ -54,6 +58,10 @@
         if (typeof parsed.coins === "number") {
           if (!Array.isArray(parsed.owned)) parsed.owned = ["tier_1"];
           if (typeof parsed.rentalExpiresAt !== "number") parsed.rentalExpiresAt = 0;
+          if (!parsed.rentals || typeof parsed.rentals !== "object") parsed.rentals = {};
+          if (parsed.equippedVehicle && parsed.rentalExpiresAt > Date.now() && !parsed.rentals[parsed.equippedVehicle]) {
+            parsed.rentals[parsed.equippedVehicle] = parsed.rentalExpiresAt;
+          }
           return parsed;
         }
       }
@@ -228,19 +236,37 @@
       this.addCoins(-cost, reason);
       return true;
     },
+    getVehicleRemainingMs(vehId) {
+      if (!vehId) return 0;
+      if (Array.isArray(state.owned) && state.owned.includes(vehId)) return Infinity;
+      const exp = (state.rentals && state.rentals[vehId]) || (state.equippedVehicle === vehId ? state.rentalExpiresAt : 0) || 0;
+      return Math.max(0, exp - Date.now());
+    },
     getActiveRental() {
-      if (!state.equippedVehicle || !state.rentalExpiresAt) return null;
-      const remMs = state.rentalExpiresAt - Date.now();
-      if (remMs <= 0) return null;
+      if (!state.equippedVehicle) return null;
       const item = CATALOG.mobility.find(m => m.id === state.equippedVehicle);
-      return item ? { item, remMs } : null;
+      if (!item) return null;
+      const isOwned = Array.isArray(state.owned) && state.owned.includes(item.id);
+      if (isOwned) return { item, remMs: Infinity, permanent: true };
+      const remMs = this.getVehicleRemainingMs(item.id);
+      if (remMs <= 0) return null;
+      return { item, remMs, permanent: false };
+    },
+    getEquippedVehicleId() {
+      const r = this.getActiveRental();
+      return r ? r.item.id : null;
     },
     getSpeedMultiplier() {
       const r = this.getActiveRental();
       return r ? r.item.speed : 1.0;
     },
     getTierObj() {
-      return CATALOG.tier.find(t => t.id === state.tier) || CATALOG.tier[0];
+      const base = CATALOG.tier.find(t => t.id === state.tier) || CATALOG.tier[0];
+      if (base && base.dynamicKec) {
+        const kec = (localStorage.getItem("piraku_my_kec") || "").trim();
+        return Object.assign({}, base, { name: "Sultan " + (kec || "Dago") });
+      }
+      return base;
     }
   });
 
@@ -381,6 +407,7 @@
   window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId) {
     if (!cg || typeof THREE === "undefined" || !cg.userData || !cg.userData.a || !cg.userData.a.head) return;
     cg.userData._activeShopVehicle = vehicleId || null;
+    if (outfitId || vehicleId) ensureShopAnimLoop();
     const headNode = cg.userData.a.head;
 
     // Bersihkan attachment lama di akar karakter maupun di kepala
@@ -826,7 +853,7 @@
     if (!pill) return;
     const tier = window.PirakuEconomy.getTierObj();
     const rental = window.PirakuEconomy.getActiveRental();
-    const badgeStr = rental ? `${rental.item.icon} ${formatRem(rental.remMs)}` : `${tier.badge} Toko`;
+    const badgeStr = rental ? (rental.permanent ? `${rental.item.icon} Permanen` : `${rental.item.icon} ${formatRem(rental.remMs)}`) : `${tier.badge} Toko`;
     pill.innerHTML = `<span>🪙 ${state.coins.toLocaleString("id-ID")}</span><span style="font-size:10px;background:rgba(250,204,21,0.18);padding:1px 6px;border-radius:999px;color:#fef08a;">${badgeStr}</span>`;
   }
 
@@ -878,21 +905,29 @@
       }).join("");
     } else if (activeTab === "mobility") {
       const rental = window.PirakuEconomy.getActiveRental();
-      bodyHTML = `<div style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:8px 10px;border-radius:10px;margin-bottom:8px;">⏱️ Sistem sewa berlaku <b>10 menit</b> real-time sejak disewa.</div>` +
+      bodyHTML = `<div style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:8px 10px;border-radius:10px;margin-bottom:8px;">⏱️ Sewa berlaku <b>10 menit</b> (bisa gonta-ganti tanpa hangus), atau <b>Beli Permanen</b> biar jadi milik selamanya!</div>` +
         CATALOG.mobility.map(item => {
-          const isThisActive = rental && rental.item.id === item.id;
-          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${isThisActive ? "#38bdf8" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:10px;">
+          const isOwned = Array.isArray(state.owned) && state.owned.includes(item.id);
+          const remMs = window.PirakuEconomy.getVehicleRemainingMs(item.id);
+          const isRented = !isOwned && remMs > 0;
+          const isEquipped = rental && rental.item.id === item.id;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${isEquipped ? "#38bdf8" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0;">
               <span style="font-size:24px;">${item.icon}</span>
-              <div>
+              <div style="min-width:0;">
                 <div style="font-size:13px;font-weight:700;color:#f8fafc;">${item.name}</div>
                 <div style="font-size:11px;color:#94a3b8;">${item.desc}</div>
-                ${isThisActive ? `<div style="font-size:11px;font-weight:800;color:#4ade80;margin-top:2px;">Aktif • Sisa waktu: ${formatRem(rental.remMs)}</div>` : ""}
+                ${isOwned ? `<div style="font-size:10.5px;font-weight:800;color:#facc15;margin-top:2px;">👑 MILIK PERMANEN ${isEquipped ? "• Dipakai ✓" : ""}</div>` : isRented ? `<div style="font-size:11px;font-weight:800;color:#4ade80;margin-top:2px;">${isEquipped ? "Dipakai" : "Tersedia"} • Sisa sewa: ${formatRem(remMs)}</div>` : ""}
               </div>
             </div>
-            <button data-rent-veh="${item.id}" style="padding:7px 11px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isThisActive ? "#38bdf8" : "#f59e0b"};color:#0f172a;">
-              ${isThisActive ? "+10m (🪙 " + item.price + ")" : "Sewa 🪙 " + item.price}
-            </button>
+            <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+              ${isOwned
+                ? `<button data-equip-veh="${item.id}" style="padding:7px 11px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isEquipped ? "#22c55e" : "#38bdf8"};color:#0f172a;">${isEquipped ? "Turun" : "Pakai"}</button>`
+                : `${isRented && !isEquipped ? `<button data-equip-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:#22c55e;color:#0f172a;">Pakai</button>` : ""}
+                   <button data-rent-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isEquipped ? "#38bdf8" : "#f59e0b"};color:#0f172a;">${isRented ? "+10m (🪙 " + item.price + ")" : "Sewa 🪙 " + item.price}</button>
+                   <button data-buy-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:1px solid rgba(250,204,21,0.5);font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:#0f172a;color:#facc15;">Beli 🪙 ${item.buyPrice.toLocaleString("id-ID")}</button>`
+              }
+            </div>
           </div>`;
         }).join("");
     } else if (activeTab === "city") {
@@ -932,19 +967,21 @@
             </div>`;
           }).join("");
     } else if (activeTab === "tier") {
+      const myKecName = (localStorage.getItem("piraku_my_kec") || "").trim();
       bodyHTML = CATALOG.tier.map(t => {
         const owned = state.owned.includes(t.id);
         const current = state.tier === t.id;
+        const dispName = t.dynamicKec ? ("Sultan " + (myKecName || "Dago")) : t.name;
         return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${current ? "#a78bfa" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:22px;">${t.badge}</span>
             <div>
-              <div style="font-size:13px;font-weight:700;color:#f8fafc;">${t.name}</div>
+              <div style="font-size:13px;font-weight:700;color:#f8fafc;">${dispName}</div>
               <div style="font-size:11px;color:#94a3b8;">${t.desc}</div>
             </div>
           </div>
           <button data-buy-tier="${t.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${current ? "#22c55e" : owned ? "#a78bfa" : "#f59e0b"};color:#0f172a;">
-            ${current ? "Gelar Aktif" : owned ? "Pasang" : "🪙 " + t.price}
+            ${current ? "Gelar Aktif" : owned ? "Pasang" : "🪙 " + t.price.toLocaleString("id-ID")}
           </button>
         </div>`;
       }).join("");
@@ -986,18 +1023,55 @@
       };
     });
 
+    modal.querySelectorAll("[data-equip-veh]").forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.equipVeh;
+        const isOwned = Array.isArray(state.owned) && state.owned.includes(id);
+        const remMs = window.PirakuEconomy.getVehicleRemainingMs(id);
+        if (!isOwned && remMs <= 0) return;
+        state.equippedVehicle = (state.equippedVehicle === id) ? null : id;
+        if (state.equippedVehicle && !isOwned && state.rentals && state.rentals[id]) {
+          state.rentalExpiresAt = state.rentals[id];
+        }
+        saveState();
+        if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
+        renderEconomyModal();
+      };
+    });
+
     modal.querySelectorAll("[data-rent-veh]").forEach(btn => {
       btn.onclick = () => {
         const id = btn.dataset.rentVeh;
         const item = CATALOG.mobility.find(x => x.id === id);
         if (!item) return;
-        const curRental = window.PirakuEconomy.getActiveRental();
-        const isExtend = curRental && curRental.item.id === id;
+        if (!state.rentals || typeof state.rentals !== "object") state.rentals = {};
+        const curRem = window.PirakuEconomy.getVehicleRemainingMs(id);
+        const isExtend = curRem > 0 && curRem !== Infinity;
         if (!window.PirakuEconomy.spendCoins(item.price, (isExtend ? "Perpanjang " : "Sewa ") + item.name)) return;
-        const baseTime = isExtend ? state.rentalExpiresAt : Date.now();
+        const baseTime = isExtend ? state.rentals[id] : Date.now();
+        const newExp = baseTime + (item.durationMin || 10) * 60 * 1000;
+        state.rentals[id] = newExp;
         state.equippedVehicle = id;
-        state.rentalExpiresAt = baseTime + (item.durationMin || 10) * 60 * 1000;
+        state.rentalExpiresAt = newExp;
         saveState();
+        if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
+        renderEconomyModal();
+      };
+    });
+
+    modal.querySelectorAll("[data-buy-veh]").forEach(btn => {
+      btn.onclick = () => {
+        const id = btn.dataset.buyVeh;
+        const item = CATALOG.mobility.find(x => x.id === id);
+        if (!item || !item.buyPrice) return;
+        if (!Array.isArray(state.owned)) state.owned = ["tier_1"];
+        if (state.owned.includes(id)) return;
+        if (!window.PirakuEconomy.spendCoins(item.buyPrice, "Beli Permanen " + item.name)) return;
+        state.owned.push(id);
+        state.equippedVehicle = id;
+        saveState();
+        if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
+        showCoinToast("👑 " + item.name + " sekarang milik permanen kamu!");
         renderEconomyModal();
       };
     });
@@ -1013,6 +1087,7 @@
         }
         state.tier = id;
         saveState();
+        if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
         renderEconomyModal();
       };
     });
@@ -1063,14 +1138,22 @@
 
   setInterval(() => {
     injectWalletHUD();
-    if (state.equippedVehicle && (!state.rentalExpiresAt || Date.now() >= state.rentalExpiresAt)) {
-      const expiredItem = CATALOG.mobility.find(m => m.id === state.equippedVehicle);
-      state.equippedVehicle = null;
-      state.rentalExpiresAt = 0;
-      saveState();
-      showCoinToast("⏱️ Waktu sewa " + (expiredItem ? expiredItem.name.split(" (")[0] : "kendaraan") + " habis!", true);
-      const modal = document.getElementById("piraku-economy-modal");
-      if (modal && modal.style.display === "flex" && activeTab === "mobility") renderEconomyModal();
+    if (state.equippedVehicle) {
+      const isOwnedVeh = Array.isArray(state.owned) && state.owned.includes(state.equippedVehicle);
+      const remVehMs = window.PirakuEconomy.getVehicleRemainingMs(state.equippedVehicle);
+      if (!isOwnedVeh && remVehMs <= 0) {
+        const expiredItem = CATALOG.mobility.find(m => m.id === state.equippedVehicle);
+        if (state.rentals) delete state.rentals[state.equippedVehicle];
+        state.equippedVehicle = null;
+        state.rentalExpiresAt = 0;
+        saveState();
+        if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
+        showCoinToast("⏱️ Waktu sewa " + (expiredItem ? expiredItem.name : "kendaraan") + " habis!", true);
+        const modal = document.getElementById("piraku-economy-modal");
+        if (modal && modal.style.display === "flex" && activeTab === "mobility") renderEconomyModal();
+      } else {
+        updateWalletHUD();
+      }
     } else {
       updateWalletHUD();
     }

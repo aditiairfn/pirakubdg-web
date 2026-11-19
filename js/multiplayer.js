@@ -136,8 +136,9 @@
     const eco = window.PirakuEconomy;
     const tierObj = eco && typeof eco.getTierObj === "function" ? eco.getTierObj() : { id: "tier_1", name: "Warga Baru", badge: "🌱" };
     const shopOutfit = eco && typeof eco.getState === "function" ? eco.getState().equippedOutfit : null;
-    const activeRental = eco && typeof eco.getActiveRental === "function" ? eco.getActiveRental() : null;
-    const shopVehicle = activeRental ? activeRental.item.id : null;
+    const shopVehicle = eco && typeof eco.getEquippedVehicleId === "function"
+      ? eco.getEquippedVehicleId()
+      : (eco && typeof eco.getActiveRental === "function" && eco.getActiveRental() ? eco.getActiveRental().item.id : null);
     return {
       sessionId: mySessionId,
       ig,
@@ -269,8 +270,12 @@
 
   function updateOnlineCount(count) {
     const total = Math.max(1, count);
+    window.pirakuOnlineCount = total;
     const el = document.getElementById('top-online-count');
     if (el) el.textContent = total + ' Warga Online';
+    if (typeof window.syncAmbientOfflineNpcVisibility === 'function') {
+      window.syncAmbientOfflineNpcVisibility(total);
+    }
   }
 
   function getOrCreateRemoteAvatar(payload) {
@@ -278,7 +283,16 @@
     const activeScene = window.pirakuScene || (typeof scene !== "undefined" ? scene : null);
     if (!activeScene) return null;
 
+    if (payload.ig && payload.tierId) {
+      const cleanIg = String(payload.ig).toLowerCase().replace(/^@/, "").trim();
+      if (cleanIg) {
+        window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
+        window.pirakuRemoteTiers[cleanIg] = { tierId: payload.tierId, tierName: payload.tierName || "", tierBadge: payload.tierBadge || "" };
+      }
+    }
     let entry = remotePlayers.get(payload.sessionId);
+    const nextShopOutfit = payload.shopOutfit || null;
+    const nextShopVehicle = payload.shopVehicle || null;
     if (entry && entry.mesh) {
       // Update outfit live jika warga mengganti baju/aksesoris
       if ((payload.color && entry.color !== payload.color) || (payload.acc && entry.acc !== payload.acc)) {
@@ -286,6 +300,14 @@
         else (window.pirakuScene || scene).remove(entry.mesh);
         entry.mesh = null;
       } else {
+        if ((payload.shopOutfit !== undefined && entry.shopOutfit !== nextShopOutfit) ||
+            (payload.shopVehicle !== undefined && entry.shopVehicle !== nextShopVehicle)) {
+          entry.shopOutfit = nextShopOutfit;
+          entry.shopVehicle = nextShopVehicle;
+          if (typeof window.attachPirakuShopToCitizen === 'function') {
+            window.attachPirakuShopToCitizen(entry.mesh, entry.shopOutfit, entry.shopVehicle);
+          }
+        }
         return entry;
       }
     }
@@ -344,9 +366,14 @@
         ig: payload.ig || 'Wargi',
         color: payload.color,
         acc: payload.acc,
+        shopOutfit: nextShopOutfit,
+        shopVehicle: nextShopVehicle,
         lastSeen: Date.now(),
         walkPhase: 0
       };
+      if ((nextShopOutfit || nextShopVehicle) && typeof window.attachPirakuShopToCitizen === 'function') {
+        window.attachPirakuShopToCitizen(mesh, nextShopOutfit, nextShopVehicle);
+      }
       remotePlayers.set(payload.sessionId, entry);
     }
     return entry;
@@ -587,6 +614,8 @@
       const showFishSig = showFishObj ? `${showFishObj.id}_${showFishObj.kg}_${showFishObj.mut || ""}` : "";
       const rodCarryObj = window.pirakuCarriedRodState || null;
       const rodCarrySig = rodCarryObj ? `${rodCarryObj.id}_${rodCarryObj.hold ? 1 : 0}` : "";
+      const idNow = getMyIdentity();
+      const shopSig = `${idNow.shopOutfit || ""}|${idNow.shopVehicle || ""}|${idNow.tierId || ""}`;
       const moved = !mpChannel._lastSentPos ||
         Math.abs(px - mpChannel._lastSentPos.x) > 0.22 ||
         Math.abs(py - mpChannel._lastSentPos.y) > 0.12 ||
@@ -596,11 +625,12 @@
         fishSig !== mpChannel._lastSentPos.fishSig ||
         showFishSig !== mpChannel._lastSentPos.showFishSig ||
         rodCarrySig !== mpChannel._lastSentPos.rodCarrySig ||
+        shopSig !== mpChannel._lastSentPos.shopSig ||
         (now - (mpChannel._lastSentPos.ts || 0) >= 25000);
       if (moved) {
         lastBroadcastTime = now;
-        mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, ts: now };
-        const id = getMyIdentity();
+        mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, shopSig, ts: now };
+        const id = idNow;
         mpChannel.send({
           type: 'broadcast',
           event: 'pos',
@@ -611,6 +641,11 @@
             color: id.color,
             acc: id.acc,
             role: id.role,
+            tierId: id.tierId,
+            tierName: id.tierName,
+            tierBadge: id.tierBadge,
+            shopOutfit: id.shopOutfit,
+            shopVehicle: id.shopVehicle,
             x: px,
             y: py,
             z: pz,
@@ -743,7 +778,7 @@
     const x = am && am.position ? Number(am.position.x.toFixed(3)) : defaultX;
     const z = am && am.position ? Number(am.position.z.toFixed(3)) : defaultZ;
     const rotY = am && am.rotation ? Number(am.rotation.y.toFixed(3)) : 0;
-    mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, x, z, rotY } });
+    mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x, z, rotY } });
   }
   window.forceBroadcastMyAppearance = async function() {
     lastBroadcastTime = 0;
@@ -751,8 +786,10 @@
     if (mpChannel) {
       const id = getMyIdentity();
       const am = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+      const px = am && am.position ? Number(am.position.x.toFixed(2)) : 0;
+      const pz = am && am.position ? Number(am.position.z.toFixed(2)) : 2.5;
       try {
-        await mpChannel.track({ ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, x: am && am.position ? Number(am.position.x.toFixed(2)) : 0, z: am && am.position ? Number(am.position.z.toFixed(2)) : 2.5, rotY: 0, color: myInfo.color, acc: myInfo.acc, role: myInfo.role, x: 0, z: 2.5, rotY: 0, online_at: new Date().toISOString() });
+        await mpChannel.track({ ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x: px, z: pz, rotY: 0, online_at: new Date().toISOString() });
       } catch (_) {}
     }
   };
@@ -943,7 +980,7 @@
           if (sid === mySessionId) return;
           const info = Array.isArray(st[sid]) && st[sid].length ? st[sid][st[sid].length - 1] : null;
           if (info) {
-            const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
+            const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, tierId: info.tierId, tierName: info.tierName, tierBadge: info.tierBadge, shopOutfit: info.shopOutfit || null, shopVehicle: info.shopVehicle || null, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
             if (en) en.lastSeen = Date.now();
           }
         });

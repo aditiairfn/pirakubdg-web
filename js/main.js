@@ -546,20 +546,19 @@ let activeQuestSystem = null;
 
   const controls = new THREE.OrbitControls(cam, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
+  controls.dampingFactor = 0.08;
+  controls.enablePan = false;
+  controls.rotateSpeed = (window.innerWidth <= 900) ? 0.85 : 0.8;
+  controls.zoomSpeed = 0.9;
   controls.maxPolarAngle = PI / 2.08;
-  controls.minDistance = 3;
-  controls.maxDistance = 155; window.pirakuControls = controls;
+  controls.minDistance = 4.5;
+  controls.maxDistance = 85; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
-  if (window.innerWidth <= 900) {
-    controls.enablePan = false;
-    controls.rotateSpeed = 0.52;
-    controls.zoomSpeed = 0.55;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    if (typeof THREE !== 'undefined' && THREE.TOUCH) {
-      controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_ROTATE };
-    }
+  if (typeof THREE !== 'undefined' && THREE.MOUSE) {
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+  }
+  if (window.innerWidth <= 900 && typeof THREE !== 'undefined' && THREE.TOUCH) {
+    controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   }
 
   // Pencahayaan — pagi cerah Bandung (langit biru lembut, matahari rendah, kabut tipis)
@@ -2103,6 +2102,20 @@ let activeQuestSystem = null;
 
   let totalWarga = 1;
 
+  window.syncAmbientOfflineNpcVisibility = function(onlineCount) {
+    const count = Number(onlineCount) || 1;
+    window.pirakuOnlineCount = count;
+    const hideAmbient = count > 10;
+    animC.forEach(g => {
+      if (g && g !== myPlayerMesh && g.userData && g.userData.isAmbientOfflineNpc) {
+        g.visible = !hideAmbient;
+        if (hideAmbient && activeCitizenTarget && activeCitizenTarget.meshGroup === g) {
+          hideCitizenSpeech();
+        }
+      }
+    });
+  };
+
   async function loadCitizensFromDB() {
     if (!supabaseClient) { 
       const counterEl = document.getElementById('warga-counter');
@@ -2130,13 +2143,19 @@ let activeQuestSystem = null;
         allRows.forEach(c => {
           const isMe = mySavedIg && String(c?.ig || '').trim().toLowerCase() === mySavedIg;
           if (isMe || ambientNpcCount < 10) {
-            createCitizenMesh(c);
-            if (!isMe) ambientNpcCount++;
+            const cg = createCitizenMesh(c);
+            if (!isMe) {
+              if (cg) cg.userData.isAmbientOfflineNpc = true;
+              ambientNpcCount++;
+            }
           } else {
             // Tetap simpan ke registeredCitizensList untuk pencarian, leaderboard & distrik tanpa memenuhi Gedung Sate dengan NPC offline
             registeredCitizensList.push(c);
           }
         });
+        if (typeof window.syncAmbientOfflineNpcVisibility === 'function') {
+          window.syncAmbientOfflineNpcVisibility(window.pirakuOnlineCount || 1);
+        }
         totalWarga = 1 + allRows.length;
       }
       const counterEl = document.getElementById('warga-counter');
@@ -2210,16 +2229,27 @@ let activeQuestSystem = null;
 
   // Raycaster Tap
   const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
-  let touchStartPos = { x: 0, y: 0 }, touchStartTime = 0;
-  window.addEventListener('pointerdown', e => { touchStartTime = performance.now(); touchStartPos = { x: e.clientX, y: e.clientY }; });
+  let touchStartPos = { x: 0, y: 0 }, touchStartTime = 0, activeTapPointerId = null;
+  window.addEventListener('pointerdown', e => {
+    if (e.target !== renderer.domElement) { activeTapPointerId = null; return; }
+    if (e.pointerType === 'mouse' && e.button !== 0) { activeTapPointerId = null; return; }
+    activeTapPointerId = e.pointerId;
+    touchStartTime = performance.now();
+    touchStartPos = { x: e.clientX, y: e.clientY };
+  });
   window.addEventListener('pointerup', e => {
+    if (e.target !== renderer.domElement) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (activeTapPointerId !== null && e.pointerId !== activeTapPointerId) return;
+    activeTapPointerId = null;
     if (performance.now() - touchStartTime < 300 && Math.hypot(e.clientX - touchStartPos.x, e.clientY - touchStartPos.y) < 8) {
       mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
       const myIgLower = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
       const hits = raycaster.intersectObjects(clickableObjects).filter(h => {
         const ud = h.object && h.object.userData;
-        if (ud && ((typeof myPlayerMesh !== 'undefined' && myPlayerMesh && ud.meshGroup === myPlayerMesh) || (myIgLower && (ud.ig || '').toLowerCase().replace(/^@/, '') === myIgLower))) return false;
+        if (!ud) return false;
+        if ((typeof myPlayerMesh !== 'undefined' && myPlayerMesh && ud.meshGroup === myPlayerMesh) || (myIgLower && (ud.ig || '').toLowerCase().replace(/^@/, '') === myIgLower)) return false;
         let p = h.object;
         while (p) { if (p.visible === false) return false; p = p.parent; }
         return true;
@@ -2239,10 +2269,12 @@ let activeQuestSystem = null;
         }
       }
       if (hits.length > 0) {
+        pirakuTapWalkTarget = null;
+        if (pirakuTapMarker) pirakuTapMarker.visible = false;
         showCitizenSpeech(hits[0].object.userData);
       } else {
         hideCitizenSpeech();
-        if (e.target === renderer.domElement && typeof myPlayerMesh !== 'undefined' && myPlayerMesh && !isRidingTram) {
+        if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh && !isRidingTram) {
           const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
           const tapPt = new THREE.Vector3();
           if (raycaster.ray.intersectPlane(groundPlane, tapPt)) {
@@ -2369,10 +2401,13 @@ let activeQuestSystem = null;
       card = document.createElement('div');
       card.id = 'piraku-npc-dialogue';
       card.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:99990;width:min(380px,calc(100vw - 24px));background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,41,59,0.97));border:2px solid #facc15;border-radius:18px;padding:14px 16px;color:#f8fafc;box-shadow:0 18px 45px rgba(0,0,0,0.78);display:none;';
+      card.addEventListener('pointerdown', ev => ev.stopPropagation());
+      card.addEventListener('pointerup', ev => ev.stopPropagation());
       document.body.appendChild(card);
     }
     if (!card) return;
-    const lines = getNpcLines(data);
+    const rawLines = getNpcLines(data);
+    const lines = rawLines.map(l => l || 'Wilujeng sumping di Piraku Bandung!').filter(Boolean);
     let lineIdx = 0;
     const badgeText = data.npcBadge || '🏛️ NPC KOTA';
     const renderLine = () => {
@@ -2447,11 +2482,18 @@ let activeQuestSystem = null;
   }
   function updateBubblePos() {
     if (!activeCitizenTarget || !bubbleEl) return;
-    tempV.set(activeCitizenTarget.x, 2.3, activeCitizenTarget.z).project(cam);
-    if (tempV.z > 1) { bubbleEl.style.display = 'none'; return; }
+    const bx = activeCitizenTarget.meshGroup ? activeCitizenTarget.meshGroup.position.x : (activeCitizenTarget.x || 0);
+    const bz = activeCitizenTarget.meshGroup ? activeCitizenTarget.meshGroup.position.z : (activeCitizenTarget.z || 0);
+    tempV.set(bx, 2.3, bz).project(cam);
+    if (tempV.z > 1 || Math.abs(tempV.x) > 1.08 || Math.abs(tempV.y) > 1.08) {
+      bubbleEl.style.display = 'none';
+      return;
+    }
     bubbleEl.style.display = 'block';
-    bubbleEl.style.left = (tempV.x * 0.5 + 0.5) * W + 'px';
-    bubbleEl.style.top = (-tempV.y * 0.5 + 0.5) * H + 'px';
+    const px = Math.max(90, Math.min(W - 90, (tempV.x * 0.5 + 0.5) * W));
+    const py = Math.max(80, Math.min(H - 40, (-tempV.y * 0.5 + 0.5) * H));
+    bubbleEl.style.left = px + 'px';
+    bubbleEl.style.top = py + 'px';
   }
 
   // Emotes
@@ -3682,30 +3724,39 @@ let activeQuestSystem = null;
         <div style="display:flex;flex-direction:column;gap:9px;font-size:11.8px;line-height:1.48;color:#cbd5e1;">
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
             <b style="color:#7dd3fc;">🕹️ Kontrol Gerak &amp; Kamera</b><br>
-            • <b>Jalan</b>: Geser <b>Joystick</b> kiri bawah (HP) atau tekan <b>W A S D</b> (PC).<br>
-            • <b>Lompat</b>: Tekan tombol <b>🦘</b> di kanan bawah atau <b>Space</b>.<br>
-            • <b>Kamera &amp; Radar</b>: Geser layar untuk putar sudut, cubit/scroll untuk zoom, dan ketuk <b>Minimap Radar</b> untuk memperbesar peta mini.
+            • <b>Jalan (2 Cara)</b>: Geser <b>Joystick</b> (HP) / tekan <b>W A S D</b> (PC), <b>ATAU</b> cukup <b>Tap / Klik langsung ke tanah</b> agar karakter otomatis berjalan ke sana.<br>
+            • <b>Lompat</b>: Tekan tombol <b>🦘</b> di kanan bawah (HP) atau <b>Space</b> (PC).<br>
+            • <b>Kamera di HP</b>: Geser layar dengan jari kanan sambil jalan pakai joystick kiri (multi-touch), cubit 2 jari untuk zoom.<br>
+            • <b>Kamera di PC</b>: Drag <b>Klik Kanan</b> (atau Klik Kiri) untuk putar kamera, <b>Scroll</b> untuk zoom, atau tekan <b>Q / E</b> &amp; <b>Panah Kiri/Kanan</b> untuk putar halus sambil jalan.<br>
+            • <b>Reset Kamera</b>: Tekan <b>R</b> (PC) atau klik <b>🎥 Reset Cam</b> di kanan layar untuk meluruskan kamera ke belakang karakter.
           </div>
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
-            <b style="color:#c084fc;">🪪 Akun Warga, KTP &amp; Tampilan</b><br>
-            • Ketuk tombol <b>@username LVL</b> di kanan atas untuk <b>👕 Ganti Pakaian &amp; Karakter</b>, <b>🪪 Kelola E-KTP</b> (Unduh / Selfie Poster / Salin Link), atau <b>🚪 Logout</b>.<br>
+            <b style="color:#c084fc;">🪪 Akun Warga, KTP &amp; Tujuan Main</b><br>
+            • Ketuk <b>+ Masuk / Daftar</b> (atau <b>@username LVL</b>) di kanan atas untuk membuat E-KTP, ganti pakaian/warna karakter, atau logout.<br>
             • Warga ber-KTP otomatis spawn di komplek kecamatannya masing-masing (atau Pusat Kota untuk Bandung Wetan).
           </div>
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
-            <b style="color:#4ade80;">🏙️ 30 Kecamatan, Kavling Rumah &amp; Pemilu</b><br>
-            • Buka tab <b>PETA</b> di bawah untuk pindah antara <b>Pusat Kota</b> &amp; <b>30 Komplek Kecamatan</b>.<br>
-            • Kumpulkan <b>3 Kunci (🔑)</b> dari tab <b>MISI</b> untuk mendirikan rumah 3D di kavlingmu dan upgrade hingga <b>Villa Sultan Lv.4</b>.<br>
-            • Ikut <b>PEMILU</b> mingguan untuk memilih atau mencalonkan diri jadi <b>Camat</b>, dan hampiri <b>🍜 Mang Cuanki Keliling</b> untuk beli booster lari cepat!
+            <b style="color:#4ade80;">🎯 Panduan Misi, Hunian 3D &amp; Pemilu</b><br>
+            • Buka tab <b>MISI</b> di bawah untuk cek daftar misi harian: <b>Absen Harian</b>, <b>Jalan Keliling Kota</b>, <b>Sapa Warga</b>, <b>Naik Angkot/Ojol</b>, &amp; <b>Mancing</b>.<br>
+            • Setiap misi selesai memberi <b>Kunci (🔑)</b>, <b>Koin (🪙)</b>, &amp; <b>XP</b>. Kumpulkan <b>3 Kunci 🔑 + 100 🪙</b> untuk membangun <b>Rumah 3D</b> di kavling kecamatanmu (upgrade hingga <b>Villa Sultan Lv.4</b>)!<br>
+            • Jika 36 kavling tapak di kecamatan penuh, kamu otomatis masuk <b>Tower Apartemen</b> dan bisa ikut patungan upgrade tower.<br>
+            • Buka tab <b>PEMILU</b> untuk memilih atau mencalonkan diri jadi <b>Camat</b> (minimal Lv.2).
           </div>
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
-            <b style="color:#fde047;">🪙 Toko Kota, Kendaraan &amp; Game 3D</b><br>
-            • Ketuk pill <b>🪙 Toko</b> di bawah minimap untuk membeli/menyewa <b>Vespa Klasik</b>, <b>Skateboard</b>, <b>Sepeda Boseh</b>, <b>Skuter Listrik</b>, outfit spesial, <b>Megafon</b>, atau sewa <b>Billboard LED Gasibu 3D</b>.<br>
-            • Buka tab <b>GAME</b> untuk main <b>Misi Kurir Ojol 3D</b>, <b>Balap Time Trial Gasibu 3D</b>, dan 5 mini-game Arcade berhadiah Koin &amp; XP.
+            <b style="color:#38bdf8;">🎣 Mancing 3D &amp; Mini-Game (Tab GAME)</b><br>
+            • Pergi ke <b>Danau Taman Lansia</b> (Timur Gedung Sate, ikuti garis biru di minimap) lalu ketuk tombol <b>🎣 Mancing di sini</b>.<br>
+            • Tangkap 40 jenis ikan langka, jual hasil tangkapan untuk <b>Koin</b> melimpah, beli joran lebih kuat (hingga <b>Joran Kristal &amp; Naga</b>), atau klik <b>Pamer Ikan</b>!<br>
+            • Buka tab <b>GAME</b> untuk main <b>Kurir Ojol 3D</b>, <b>Balap Gasibu 3D</b>, &amp; mini-game Arcade lainnya.
           </div>
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
-            <b style="color:#fda4af;">💬 Interaksi Sosial &amp; Menu Cepat (⋯)</b><br>
-            • Ketuk kepala warga untuk <b>👋 Lambai</b> atau <b>❤️ Setuju</b>, pakai <b>Obrolan</b> untuk chat realtime, dan tombol <b>Mic</b> untuk Voice Chat.<br>
-            • Menu <b>⋯</b> di kanan atas berisi: <b>🔍 Cari Warga</b>, <b>🏆 Peringkat</b>, <b>⚡ Mode Hemat Baterai</b>, <b>🙈 Mode Layar Bersih</b>, &amp; <b>📣 Lapor Bug/Saran</b>.
+            <b style="color:#fde047;">🪙 Toko Kota, Kendaraan &amp; Gelar Sultan</b><br>
+            • Ketuk pill <b>🪙 Toko</b> di bawah minimap untuk <b>Sewa (10 menit)</b> atau <b>Beli Permanen</b> kendaraan (Skateboard, Sepeda Boseh, Skuter, <b>Vespa Klasik</b>), outfit/sayap neon, <b>Megafon</b>, atau <b>Billboard LED Gasibu</b>.<br>
+            • Kumpulkan koin untuk naik gelar hingga <b>Sultan Kecamatan</b>, <b>🦁 Sultan Bandung</b>, <b>🦅 Sultan Jabar</b>, sampai <b>🔱 Sultan Indo</b>!
+          </div>
+          <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
+            <b style="color:#fda4af;">💬 Sosial, Audio &amp; Menu Cepat (⋯)</b><br>
+            • Ketuk karakter warga lain untuk <b>👋 Lambai</b> atau <b>❤️ Setuju</b>, pakai <b>Obrolan</b> untuk chat realtime, dan tombol <b>Mic</b> untuk Voice Chat jarak dekat.<br>
+            • Menu <b>⋯</b> di kanan atas berisi: <b>🔍 Cari Warga</b>, <b>🏆 Peringkat</b>, <b>🙈 Mode Layar Bersih</b>, &amp; <b>📣 Lapor Bug/Saran</b>. Di kanan layar tersedia tombol <b>⚡ Hemat Baterai</b> &amp; <b>🎥 Reset Cam</b>.
           </div>
         </div>
       </div>`;
@@ -4356,16 +4407,46 @@ let activeQuestSystem = null;
     }
   });
 
-  const keys = { w: false, a: false, s: false, d: false };
+  const keys = { w: false, a: false, s: false, d: false, q: false, e: false, arrowleft: false, arrowright: false };
   window.addEventListener('keydown', e => {
-    if (isTypingInField(e)) { keys.w = keys.a = keys.s = keys.d = false; return; }
+    if (isTypingInField(e)) { keys.w = keys.a = keys.s = keys.d = keys.q = keys.e = keys.arrowleft = keys.arrowright = false; return; }
     const k = (e.key || '').toLowerCase();
+    if (k === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (typeof window.resetPirakuCamera === 'function') window.resetPirakuCamera();
+      return;
+    }
     if (keys.hasOwnProperty(k)) keys[k] = true;
   });
   window.addEventListener('keyup', e => {
     const k = (e.key || '').toLowerCase();
     if (keys.hasOwnProperty(k)) keys[k] = false;
   });
+
+  window.resetPirakuCamera = function () {
+    if (typeof controls === 'undefined' || !controls) return;
+    if (myPlayerMesh) {
+      const yaw = myPlayerMesh.rotation.y || 0;
+      const dist = 12;
+      const targetX = myPlayerMesh.position.x;
+      const targetY = myPlayerMesh.position.y + 1.3;
+      const targetZ = myPlayerMesh.position.z;
+      const camX = targetX - Math.sin(yaw) * dist;
+      const camY = targetY + 5.2;
+      const camZ = targetZ - Math.cos(yaw) * dist;
+      if (typeof gsap !== 'undefined') {
+        gsap.to(controls.target, { x: targetX, y: targetY, z: targetZ, duration: 0.45, ease: 'power2.out' });
+        gsap.to(cam.position, { x: camX, y: camY, z: camZ, duration: 0.45, ease: 'power2.out' });
+      } else {
+        controls.target.set(targetX, targetY, targetZ);
+        cam.position.set(camX, camY, camZ);
+      }
+      showToast('Kamera diluruskan ke belakang karakter 🎥');
+    } else {
+      controls.target.set(0, 3, 5);
+      cam.position.set(-26, 26, -55);
+      showToast('Kamera direset 🎥');
+    }
+  };
 
   const joystickZone = document.getElementById('joystick-zone');
   const joystickKnob = document.getElementById('joystick-knob');
@@ -4403,7 +4484,7 @@ let activeQuestSystem = null;
       e.stopPropagation();
       const t = e.changedTouches[0];
       activeJoyTouchId = t.identifier;
-      joyActive = true; if (typeof controls !== "undefined" && controls) controls.enabled = false;
+      joyActive = true;
       const rect = joystickZone.getBoundingClientRect();
       joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       handleJoyMoveClient(t.clientX, t.clientY);
@@ -4610,6 +4691,17 @@ let activeQuestSystem = null;
       const mobileSpeedBoost = (window.innerWidth <= 900) ? 0.85 : 0.95;
       inputForward -= joyVector.y * mobileSpeedBoost;
       inputRight += joyVector.x * mobileSpeedBoost;
+    }
+
+    // Putar kamera halus di PC pakai Q / E atau Panah Kiri / Kanan
+    const camYawInput = (keys.q || keys.arrowleft ? 1 : 0) - (keys.e || keys.arrowright ? 1 : 0);
+    if (camYawInput !== 0 && typeof controls !== 'undefined' && controls) {
+      const ang = camYawInput * 2.1 * delta;
+      const offX = cam.position.x - controls.target.x;
+      const offZ = cam.position.z - controls.target.z;
+      const cosA = Math.cos(ang), sinA = Math.sin(ang);
+      cam.position.x = controls.target.x + offX * cosA - offZ * sinA;
+      cam.position.z = controls.target.z + offX * sinA + offZ * cosA;
     }
 
     // === SCREEN-RELATIVE ISOMETRIC CONTROL (ANTI-PUSING) ===
@@ -4823,7 +4915,7 @@ let activeQuestSystem = null;
     }
 
     animC.forEach(g => {
-      if (g === myPlayerMesh || (g.userData && g.userData.a && g.userData.a.isRemotePlayer)) return;
+      if (g === myPlayerMesh || !g.visible || (g.userData && g.userData.a && g.userData.a.isRemotePlayer)) return;
 
       const a = g.userData.a;
       let isWalking = 0;

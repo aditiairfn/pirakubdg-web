@@ -1066,6 +1066,7 @@
     </div>
     <button class="hud-pill-btn" id="btn-voice-mic" onclick="toggleVoiceChat()" title="Aktifkan obrolan suara jarak dekat" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span>Mic Off</span></button>
     <button class="hud-pill-btn" id="btn-hud-battery" onclick="toggleBatterySaverMode()" title="Mode Hemat Baterai / Grafis Ringan" style="display:inline-flex;align-items:center;gap:5px;"><span>⚡ Hemat: OFF</span></button>
+    <button class="hud-pill-btn" id="btn-reset-cam" onclick="window.resetPirakuCamera && window.resetPirakuCamera()" title="Reset sudut kamera ke belakang karakter (Tombol R)" style="display:inline-flex;align-items:center;gap:5px;"><span>🎥 Reset Cam</span></button>
   </div>
 
   <!-- Bottom Navigation Dock (6 Tab Rapi dengan Palet Hijau Teh Bandung & Emas) -->
@@ -1155,8 +1156,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v23"></script>
-  <script defer src="js/multiplayer.js?v=20261119v24"></script>
+  <script defer src="./js/main.js?v=20261119v26"></script>
+  <script defer src="js/multiplayer.js?v=20261119v27"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
   <script defer src="js/map-beautify.js?v=20261119v20"></script>
@@ -1299,7 +1300,7 @@
     })();
   </script>
 
-  <script defer src="js/piraku-economy.js?v=20261119v23"></script>
+  <script defer src="js/piraku-economy.js?v=20261119v25"></script>
   <script defer src="js/piraku-games.js?v=20261119v3"></script>
   <script defer src="js/piraku-world-live.js?v=20261118v98"></script>
   <script defer src="js/piraku-nav-modals.js?v=20261119v18"></script>
@@ -1402,11 +1403,12 @@
         if (!raw.startsWith("@") || raw.length > 48) return;
         const baseHandle = raw.split("•")[0].trim();
         const tierInfo = resolveTierForUsername(baseHandle);
-        el.classList.remove("nametag-tier-2", "nametag-tier-3", "nametag-tier-4");
+        el.classList.remove("nametag-tier-2", "nametag-tier-3", "nametag-tier-4", "nametag-tier-5", "nametag-tier-6", "nametag-tier-7");
         if (tierInfo && tierInfo.tierId !== "tier_1") {
           const desired = baseHandle + " • " + tierInfo.tierBadge + " " + tierInfo.tierName;
           if (el.textContent !== desired) el.textContent = desired;
-          el.classList.add("nametag-" + tierInfo.tierId.replace("_", "-"));
+          const normCls = ["tier_5", "tier_6", "tier_7"].includes(tierInfo.tierId) ? "nametag-tier-4" : ("nametag-" + tierInfo.tierId.replace("_", "-"));
+          el.classList.add(normCls);
         }
       });
 
@@ -1417,18 +1419,19 @@
         const nameEl = cardEl.querySelector("strong, b, h3, h4, .bubble-name, [id^=b-name], [id^=b-ig]") || cardEl.firstElementChild;
         const targetHandle = nameEl ? nameEl.textContent : "";
         const targetTier = resolveTierForUsername(targetHandle);
-        cardEl.classList.remove("popup-card-tier-2", "popup-card-tier-3", "popup-card-tier-4");
+        cardEl.classList.remove("popup-card-tier-2", "popup-card-tier-3", "popup-card-tier-4", "popup-card-tier-5", "popup-card-tier-6", "popup-card-tier-7");
         let banner = cardEl.querySelector(".piraku-vip-banner");
         if (targetTier && targetTier.tierId !== "tier_1") {
-          cardEl.classList.add("popup-card-" + targetTier.tierId.replace("_", "-"));
+          const cardCls = ["tier_5", "tier_6", "tier_7"].includes(targetTier.tierId) ? "popup-card-tier-4" : ("popup-card-" + targetTier.tierId.replace("_", "-"));
+          cardEl.classList.add(cardCls);
           if (!banner) {
             banner = document.createElement("div");
             banner.className = "piraku-vip-banner";
             cardEl.insertBefore(banner, cardEl.firstChild);
           }
-          const isSultan = targetTier.tierId === "tier_4";
+          const isSultan = ["tier_4", "tier_5", "tier_6", "tier_7"].includes(targetTier.tierId);
           banner.style.cssText = "margin:-4px -4px 7px -4px;padding:4px 8px;border-radius:8px;font-size:9.5px;font-weight:900;letter-spacing:0.6px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px;background:" + (isSultan ? "linear-gradient(90deg,#0284c7,#38bdf8,#0284c7)" : "linear-gradient(90deg,#b45309,#f59e0b)") + ";color:" + (isSultan ? "#041322" : "#1c0a00") + ";";
-          banner.textContent = targetTier.tierBadge + " " + targetTier.tierName + (isSultan ? " • VIP BANDUNG" : "");
+          banner.textContent = targetTier.tierBadge + " " + targetTier.tierName + (isSultan ? " • VIP" : "");
         } else if (banner) {
           banner.remove();
         }
@@ -1473,7 +1476,7 @@
     }, 450);
   </script>
 
-  <script defer src="js/piraku-civic.js?v=20261118v98"></script>
+  <script defer src="js/piraku-civic.js?v=20261119v1"></script>
   <script defer src="js/piraku-perf.js?v=20261118v98"></script>
 
 
