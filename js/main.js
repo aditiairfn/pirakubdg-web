@@ -1331,10 +1331,11 @@ let activeQuestSystem = null;
   const ROOF_COLORS = [0xba5232, 0xa84425, 0x96391d, 0x475569, 0x334155, 0xc26241];
   const bl = [{ x: -999, z: -999, w: 0.001, d: 0.001, f: 1, k: 1, c: 0x000000, r: 0x000000 }];
   const SK = [
-    [-36, 36, -26, 18],      // Poros Gasibu - Gedung Sate
+    [-36, 36, -26, 46],      // Poros Gasibu - Gedung Sate (bebas gedung di belakang Gedung Sate)
     [-18, 18, -66, -27],     // Pelataran Monumen Perjuangan (Monju)
     [-39, -27, -26, -5],     // Koridor barat Gasibu
     [27, 48, -20, -2],       // Taman Lansia & Kuliner Cisangkuy
+    [24, 58, 4, 34],         // Area Danau Besar Taman Lansia (luas ke selatan & bebas gedung)
     [39, 66, 12, 38],        // GOR Saparua & Ruko Komunitas
     [-65, -45, -48, -32],    // Dago / Cikapayang Skatepark
     [22, 48, -48, -31]       // Kavling Perumahan Warga
@@ -1392,7 +1393,8 @@ let activeQuestSystem = null;
   [[31, -6], [35, -5.5], [42, -6.5], [44, -14]].forEach(p => rawTrees.push({ x: p[0], z: p[1], s: 1.0 }));
 
   const inMuseumFront = (x, z) => (x >= 25.0 && x <= 44.0 && z >= -9.5 && z <= 1.5);
-  const trees = rawTrees.filter(t => !nearRoad(t.x, t.z, 4.7) && !inMuseumFront(t.x, t.z));
+  const inLansiaLake = (x, z) => (x >= 26.0 && x <= 55.0 && z >= 6.0 && z <= 33.0);
+  const trees = rawTrees.filter(t => !nearRoad(t.x, t.z, 4.7) && !inMuseumFront(t.x, t.z) && !inLansiaLake(t.x, t.z));
   const trunkM = IM(trunkG, MAT(0x7a5a40), trees.length), crownM = IM(crownG, clay, trees.length * 2);
   trees.forEach((t, i) => {
     const c = [0x4d7348, 0x5a8852, 0x3d6639, 0x66945c][i % 4];
@@ -1480,9 +1482,9 @@ let activeQuestSystem = null;
 
   // Lampu jalan sepanjang koridor Diponegoro, Dago & Riau
   for (let x = -56; x <= 56; x += 8) {
-    if (!onRoad(x, 6.7, 3.3)) furn.push(['l', x, 6.7]);
+    if (!onRoad(x, 6.7, 3.3) && !(x >= 28 && x <= 55)) furn.push(['l', x, 6.7]);
     if (Math.abs(x) > 18 && !onRoad(x + 4, -0.7, 3.3)) furn.push(['l', x + 4, -0.7]);
-    if (!onRoad(x, 19.6, 3.3)) furn.push(['l', x, 19.6]);
+    if (!onRoad(x, 19.6, 3.3) && !(x >= 28 && x <= 55)) furn.push(['l', x, 19.6]);
   }
   for (let z = -44; z <= 32; z += 9) {
     if (!onRoad(-45.6, z, 3.3)) furn.push(['l', -45.6, z]);
@@ -4301,11 +4303,18 @@ let activeQuestSystem = null;
       }
     }
 
-    // Collider khusus: dua pilar Monumen Perjuangan (x=±1.6, z=-35)
+    // Collider khusus: dua pilar Monumen Perjuangan (x=±1.6, z=-35) & Gazebo/Dermaga/Air Terjun Taman Lansia
     if (!window.pirakuInDistrict) {
       boxes.push(
         { minX: -2.35, maxX: -0.85, minZ: -35.75, maxZ: -34.25 },
-        { minX: 0.85, maxX: 2.35, minZ: -35.75, maxZ: -34.25 }
+        { minX: 0.85, maxX: 2.35, minZ: -35.75, maxZ: -34.25 },
+        // Gazebo Danau Taman Lansia (world 29.5, 27.5)
+        { minX: 27.5, maxX: 31.5, minZ: 25.5, maxZ: 29.5 },
+        // Pagar samping kiri/kanan Dermaga Taman Lansia (pintu masuk barat tetap terbuka)
+        { minX: 27.5, maxX: 35.5, minZ: 14.35, maxZ: 14.75 },
+        { minX: 27.5, maxX: 35.5, minZ: 17.25, maxZ: 17.65 },
+        // Batu Air Terjun Taman Lansia (world 48.2, 12.8)
+        { minX: 46.2, maxX: 50.2, minZ: 10.8, maxZ: 14.8 }
       );
     }
 
@@ -4416,7 +4425,9 @@ let activeQuestSystem = null;
       myPlayerMesh.rotation.y += diffRot * Math.min(0.35, Math.min(delta, 0.05) * 10);
 
       const cuankiBoost = (window.pirakuSpeedBoostUntil && Date.now() < window.pirakuSpeedBoostUntil) ? 1.55 : 1.0;
-      const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92) * cuankiBoost;
+      const inFishingWater = (typeof window.getPirakuFishingGroundY === "function" && window.getPirakuFishingGroundY(myPlayerMesh.position.x, myPlayerMesh.position.z) === -0.72);
+      const waterSlow = inFishingWater ? 0.38 : 1.0;
+      const effectiveSpeed = speed * Math.max(0.35, inputMag * 0.92) * cuankiBoost * waterSlow;
       myPlayerMesh.position.x += moveFinalVec.x * effectiveSpeed;
       myPlayerMesh.position.z += moveFinalVec.z * effectiveSpeed;
 
@@ -4473,7 +4484,8 @@ let activeQuestSystem = null;
       if (a.armR) a.armR.rotation.x *= 0.6;
     }
 
-    const groundY = getPasupatiDeckY(myPlayerMesh.position.x, myPlayerMesh.position.z, myPlayerMesh.position.y);
+    const fishingFloorY = (typeof window.getPirakuFishingGroundY === "function") ? window.getPirakuFishingGroundY(myPlayerMesh.position.x, myPlayerMesh.position.z) : null;
+    const groundY = (fishingFloorY !== null) ? fishingFloorY : getPasupatiDeckY(myPlayerMesh.position.x, myPlayerMesh.position.z, myPlayerMesh.position.y);
     if (isGrounded) {
       if (myPlayerMesh.position.y > groundY + 0.35) {
         isGrounded = false;

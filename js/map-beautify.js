@@ -718,6 +718,15 @@
     ctx.fillStyle = "#c084fc";
     ctx.fillRect(toX(-5), toY(-49), 10 * scale, 6 * scale);
 
+    // 4. Danau Taman Lansia & Dermaga (Timur Gedung Sate)
+    ctx.fillStyle = "rgba(2, 132, 199, 0.85)";
+    [[39, 15, 6.6], [44.5, 14.5, 5.4], [40, 22, 6.8], [43.5, 26.2, 5.4]].forEach(([lx, lz, lr]) => {
+      ctx.beginPath(); ctx.arc(toX(lx), toY(lz), lr * scale, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.strokeStyle = "#b45309";
+    ctx.lineWidth = 3.2;
+    ctx.beginPath(); ctx.moveTo(toX(27.5), toY(16)); ctx.lineTo(toX(35.5), toY(16)); ctx.stroke();
+
     // Label mini landmark
     ctx.fillStyle = "rgba(248, 250, 252, 0.88)";
     ctx.font = "bold 10px -apple-system, BlinkMacSystemFont, sans-serif";
@@ -728,6 +737,9 @@
     ctx.fillText("GASIBU", toX(0), toY(-10));
     ctx.fillStyle = "rgba(216, 180, 254, 0.85)";
     ctx.fillText("MONJU", toX(0), toY(-53));
+    ctx.fillStyle = "rgba(125, 211, 252, 0.95)";
+    ctx.font = "bold 8px -apple-system, BlinkMacSystemFont, sans-serif";
+    ctx.fillText("🎣 DANAU", toX(41.5), toY(20.5));
 
     // Penunjuk arah mata angin (U, T, S, B)
     ctx.fillStyle = "#38bdf8";

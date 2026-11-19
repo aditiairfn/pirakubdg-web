@@ -35,17 +35,6 @@
       how: "Swipe kiri/kanan atau tap lajur di layar selama 25 detik. Nabrak barikade 3x = mogok!"
     },
     {
-      id: "fishing",
-      icon: "🎣",
-      title: "Mancing Kolam Taman Lansia",
-      place: "Taman Timur Gedung Sate",
-      reward: "12 – 34 Koin",
-      x: 26,
-      z: 10,
-      desc: "Tarik-ulur joran di Taman Lansia! Tangkap Mujair, Koi Kohaku, atau Koi Naga Emas Langka sebelum senar putus.",
-      how: "Tahan layar kolam atau tombol TARIK JORAN agar indikator tetap di zona hijau saat ikan berontak!"
-    },
-    {
       id: "sate",
       icon: "🍢",
       title: "Bakar Sate Gedung Sate",
@@ -286,6 +275,22 @@
           <button id="g-start-race" style="width:100%;padding:9px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,#38bdf8,#0284c7);color:#041322;font-size:12px;font-weight:900;cursor:pointer;">🏁 Mulai Balap Gasibu 3D</button>
         </div>
 
+        <div style="padding:12px;border-radius:16px;background:linear-gradient(135deg,rgba(14,165,233,0.22),rgba(15,23,42,0.92));border:1.5px solid rgba(56,189,248,0.55);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:42px;height:42px;border-radius:12px;background:rgba(56,189,248,0.2);display:flex;align-items:center;justify-content:center;font-size:24px;">🎣</div>
+              <div>
+                <div style="font-size:14px;font-weight:800;color:#f8fafc;">Mancing 3D Danau Taman Lansia</div>
+                <div style="font-size:11px;color:#cbd5e1;">📍 Timur Gedung Sate • <span style="color:#fde047;font-weight:700;">🪙 Jual Ikan & Upgrade Joran di Kopdes</span></div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:#e2e8f0;line-height:1.38;margin-bottom:9px;">
+            Jalan ke dermaga <b>Danau Taman Lansia</b>, lempar joran langsung di peta 3D, tangkap ikan langka, lalu jual hasilnya ke <b>Kopdes</b>!
+          </div>
+          <button id="g-guide-fishing" style="width:100%;padding:9px 12px;border-radius:10px;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-size:12px;font-weight:900;cursor:pointer;">📍 Tunjukkan Tempat Mancing (Tanpa Teleport)</button>
+        </div>
+
         <div style="font-size:10.5px;font-weight:800;color:#fde047;letter-spacing:.6px;margin:4px 0 6px;">🕹️ ARCADE KOTA BANDUNG</div>
         <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:14px;">
           ${GAMES.map(g => {
@@ -328,6 +333,13 @@
       raceBtn.onclick = () => {
         closeGamesModal();
         if (typeof window.startGasibuRace3D === "function") window.startGasibuRace3D();
+      };
+    }
+    const fishGuideBtn = modal.querySelector("#g-guide-fishing");
+    if (fishGuideBtn) {
+      fishGuideBtn.onclick = () => {
+        closeGamesModal();
+        if (typeof window.guideToPirakuFishingSpot === "function") window.guideToPirakuFishingSpot();
       };
     }
     modal.querySelector("#g-shop").onclick = () => { closeGamesModal(); if (window.openEconomyModal) window.openEconomyModal("outfit"); };
@@ -384,7 +396,6 @@
       if (id === "penalty") playPenaltyGBLA();
       else if (id === "padel") playPadel();
       else if (id === "angkot") playAngkot();
-      else if (id === "fishing") playFishing();
       else if (id === "sate") playSate();
     };
   }

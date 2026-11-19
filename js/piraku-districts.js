@@ -1640,9 +1640,9 @@
       aptPlaque.position.set(0, 17.55, -0.75);
       aptGroup.add(aptPlaque);
 
-      // Klik Tower Apartemen untuk membuka daftar penghuninya
+      // Klik Tower Apartemen untuk membuka daftar penghuninya (kecuali kolam air mancur untuk mancing!)
       aptGroup.traverse(ch => {
-        if (ch.isMesh) {
+        if (ch.isMesh && ch !== fountainRim && ch !== fountainWater && ch !== fountainSpire) {
           ch.userData = { isKecamatanApartment: true, kecKey: d.name, occupants: apartmentResidents };
         }
       });
@@ -2798,7 +2798,7 @@
       const dCentralKopdes = Math.hypot(pPos.x - 35.5, pPos.z - (-20.6));
       if (dCentralKopdes < 6.0) {
         const cHtml = `<span>🏬 Kopdes Biru Putih</span>` +
-                      `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🛒 Jajan &amp; Minum</button>`;
+                      `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🏬 Masuk Kopdes</button>`;
         if (lastActionHtmlSig !== cHtml) {
           bar.innerHTML = cHtml;
           lastActionHtmlSig = cHtml;
@@ -2873,7 +2873,7 @@
       const dMart = Math.hypot(pPos.x - 32.8, pPos.z - (-7.3));
       if (dMart < 5.8) {
         html = `<span>🏬 Kopdes Biru Putih</span>` +
-               `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🛒 Jajan &amp; Minum</button>`;
+               `<button onclick="openPirakuMartModal()" style="border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#f8fafc;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🏬 Masuk Kopdes</button>`;
       }
     }
 
@@ -3061,14 +3061,21 @@
           <div style="padding:14px 16px;background:linear-gradient(135deg,#1d4ed8,#2563eb);display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div style="font-weight:900;font-size:15px;">🏬 KOPDES BIRU PUTIH</div>
-              <div style="font-size:11px;color:#dbeafe;">Koperasi Kelurahan — Jajanan &amp; Minuman Warga!</div>
+              <div style="font-size:11px;color:#dbeafe;">Jajanan, Minuman, Jual Ikan &amp; Toko Joran!</div>
             </div>
             <button onclick="document.getElementById('piraku-mart-modal').style.display='none'" style="border:none;background:rgba(15,23,42,0.45);color:#f8fafc;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:800;">✕</button>
+          </div>
+          <div id="kopdes-fishing-bar" style="padding:10px 14px 0;">
+            <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openFishingHubModal==='function') window.openFishingHubModal();" style="width:100%;border:none;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;">🎣 Jual Hasil Mancing, Beli Umpan &amp; Upgrade Joran →</button>
           </div>
           <div id="piraku-mart-items" style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       `;
       document.body.appendChild(modal);
+    }
+    const fBar = document.getElementById("kopdes-fishing-bar");
+    if (fBar) {
+      fBar.innerHTML = `<button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openFishingHubModal==='function') window.openFishingHubModal();" style="width:100%;border:none;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;">🎣 Jual Ikan, Beli Umpan &amp; Upgrade Joran →</button>`;
     }
     const list = document.getElementById("piraku-mart-items");
     if (list) {
