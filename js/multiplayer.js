@@ -191,52 +191,48 @@
     }
 
     const TIER_STYLES = {
-      tier_7: { bg: "linear-gradient(120deg,rgba(69,10,10,0.96),rgba(185,28,28,0.96),rgba(180,83,9,0.96))", border: "#facc15", badgeCol: "#fde047", text: "#fb923c", shadow: "0 0 16px rgba(250,204,21,0.85), 0 0 24px rgba(239,68,68,0.45)" },
-      tier_6: { bg: "linear-gradient(120deg,rgba(46,16,101,0.95),rgba(126,34,206,0.95))", border: "#d8b4fe", badgeCol: "#f0abfc", text: "#c084fc", shadow: "0 0 14px rgba(192,132,252,0.75)" },
-      tier_5: { bg: "linear-gradient(120deg,rgba(23,37,84,0.95),rgba(29,78,216,0.95))", border: "#60a5fa", badgeCol: "#fde047", text: "#60a5fa", shadow: "0 0 14px rgba(59,130,246,0.72)" },
-      tier_4: { bg: "linear-gradient(120deg,rgba(6,24,44,0.95),rgba(14,116,144,0.95))", border: "#38bdf8", badgeCol: "#7dd3fc", text: "#38bdf8", shadow: "0 0 12px rgba(56,189,248,0.68)" },
-      tier_3: { bg: "linear-gradient(135deg,rgba(41,21,3,0.95),rgba(146,64,14,0.95))", border: "#fbbf24", badgeCol: "#fde047", text: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.52)" },
-      tier_2: { bg: "linear-gradient(135deg,rgba(30,27,75,0.94),rgba(55,48,163,0.94))", border: "#818cf8", badgeCol: "#a5b4fc", text: "#818cf8", shadow: "0 0 8px rgba(129,140,248,0.45)" }
+      tier_7: { bg: "linear-gradient(135deg,rgba(15,23,42,0.95),rgba(66,32,6,0.95))", border: "#facc15", badgeCol: "#facc15", text: "#fef08a", shadow: "0 2px 10px rgba(250,204,21,0.45)" },
+      tier_6: { bg: "rgba(36,14,66,0.92)", border: "#c084fc", badgeCol: "#e879f9", text: "#e9d5ff", shadow: "0 2px 10px rgba(192,132,252,0.4)" },
+      tier_5: { bg: "rgba(15,29,68,0.92)", border: "#60a5fa", badgeCol: "#fde047", text: "#93c5fd", shadow: "0 2px 10px rgba(96,165,250,0.4)" },
+      tier_4: { bg: "rgba(8,30,48,0.92)", border: "#38bdf8", badgeCol: "#7dd3fc", text: "#bae6fd", shadow: "0 2px 8px rgba(56,189,248,0.38)" },
+      tier_3: { bg: "rgba(28,19,8,0.92)", border: "#f59e0b", badgeCol: "#fbbf24", text: "#fde68a", shadow: "0 2px 8px rgba(245,158,11,0.35)" },
+      tier_2: { bg: "rgba(30,27,75,0.90)", border: "#818cf8", badgeCol: "#a5b4fc", text: "#c7d2fe", shadow: "0 2px 8px rgba(129,140,248,0.32)" }
     };
     const tierStyle = resolvedTierId ? (TIER_STYLES[resolvedTierId] || null) : null;
     const isFounder = cleanHandle === "yelclaw";
     const isSpeaking = !!speakingPeers.get(key);
     const topBadgeText = [
-      isSpeaking ? "🎙️" : "",
       isFounder ? "🛡️ FOUNDER" : "",
       (resolvedTierBadge && resolvedTierName) ? (resolvedTierBadge + " " + resolvedTierName) : ""
     ].filter(Boolean).join(" ");
-    const handleText = (isSpeaking && !topBadgeText ? "🎙️ " : "") + label;
+    const handleText = (isSpeaking ? "🎙️ " : "") + label;
     const escTag = s => String(s || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[m]));
     const badgeColorCss = tierStyle ? `color:${tierStyle.badgeCol};` : (isFounder ? "color:#facc15;" : "");
     const nextHtml = topBadgeText
-      ? `<div style="font-size:8.5px;font-weight:900;letter-spacing:0.4px;line-height:1.15;margin-bottom:1px;${badgeColorCss}">${escTag(topBadgeText)}</div><div style="font-size:10.5px;font-weight:900;line-height:1.15;">${escTag(handleText)}</div>`
-      : escTag(handleText);
+      ? `<div style="font-size:8px;font-weight:800;letter-spacing:0.35px;line-height:1.15;margin-bottom:1px;${badgeColorCss}">${escTag(topBadgeText)}</div><div style="font-size:9.5px;font-weight:800;line-height:1.15;">${escTag(handleText)}</div>`
+      : `<div style="font-size:9.5px;font-weight:800;line-height:1.15;">${escTag(handleText)}</div>`;
     if (tag.dataset.lastHtml !== nextHtml) {
       tag.dataset.lastHtml = nextHtml;
       tag.innerHTML = nextHtml;
     }
     tag.style.textAlign = "center";
+    tag.style.transformOrigin = "bottom center";
 
-    if (isSpeaking) {
-      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
-      tag.style.borderColor = "#22c55e";
-      tag.style.boxShadow = "0 0 " + (8 + pulse * 8).toFixed(1) + "px rgba(34, 197, 94, " + (0.55 + pulse * 0.4).toFixed(2) + ")";
-      tag.style.background = "rgba(6, 78, 59, 0.94)";
-      tag.style.color = "#86efac";
-    } else if (tierStyle) {
+    if (tierStyle) {
       tag.style.background = tierStyle.bg;
       tag.style.borderColor = tierStyle.border;
       tag.style.color = tierStyle.text;
       tag.style.boxShadow = tierStyle.shadow;
-      tag.style.padding = "3px 9px";
-      tag.style.borderRadius = "999px";
-      tag.style.textShadow = "0 1px 4px rgba(0,0,0,0.65)";
+      tag.style.padding = "2px 7px";
+      tag.style.borderRadius = "8px";
+      tag.style.textShadow = "0 1px 2px rgba(0,0,0,0.6)";
     } else if (isFounder) {
-      tag.style.background = "linear-gradient(135deg, rgba(120,53,15,0.95), rgba(15,23,42,0.95))";
+      tag.style.background = "rgba(15, 23, 42, 0.90)";
       tag.style.borderColor = "#facc15";
       tag.style.color = "#fde047";
-      tag.style.boxShadow = "0 0 12px rgba(250,204,21,0.55)";
+      tag.style.boxShadow = "0 2px 8px rgba(250,204,21,0.35)";
+      tag.style.padding = "2px 7px";
+      tag.style.borderRadius = "8px";
     } else {
       tag.style.boxShadow = "none";
       tag.style.padding = "2px 6px";
@@ -246,8 +242,16 @@
       tag.style.borderColor = isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)";
       tag.style.color = isSelf ? "#fde047" : "#f8fafc";
     }
+    if (isSpeaking) {
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
+      tag.style.borderColor = "#22c55e";
+      tag.style.boxShadow = "0 0 0 1.5px rgba(34,197,94,0.85), 0 0 " + (8 + pulse * 8).toFixed(1) + "px rgba(34, 197, 94, " + (0.5 + pulse * 0.35).toFixed(2) + ")";
+    }
     const v = new THREE.Vector3();
     mesh.getWorldPosition(v);
+    const camDist = camObj.position ? camObj.position.distanceTo(v) : 14;
+    const tagScale = Math.max(0.52, Math.min(1.0, 14 / Math.max(12, camDist)));
+    tag.style.transform = "translate(-50%,-100%) scale(" + tagScale.toFixed(2) + ")";
     const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     const refDist = (!isSelf && selfMesh && selfMesh.position)
       ? Math.hypot(v.x - selfMesh.position.x, v.z - selfMesh.position.z)
