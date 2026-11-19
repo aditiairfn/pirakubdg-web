@@ -10,7 +10,7 @@
   function useCloudflareRealtime() {
     return /^https?:\/\/|^wss?:\/\//i.test(getCfRealtimeBaseUrl());
   }
-  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 120 : 300;
+  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 140 : 650;
   let currentWorldRoomId = 'bandung_wetan';
   function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
@@ -571,13 +571,13 @@
     const now = Date.now();
     const dt = Math.min(delta || 0.016, 0.1);
 
-    // 1. Kirim posisi, rotasi, & outfit kita hanya jika WebSocket channel sudah 'joined' & ada perubahan gerak (atau heartbeat 4s)
+    // 1. Kirim posisi, rotasi, & outfit kita hanya jika WebSocket channel sudah 'joined', tab aktif, & ada perubahan signifikan (atau heartbeat 25s)
     const activeMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-    if (mpChannel && mpChannel.state === 'joined' && activeMesh && activeMesh.position && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
-      const px = Number(activeMesh.position.x.toFixed(3));
-      const py = Number(activeMesh.position.y.toFixed(3));
-      const pz = Number(activeMesh.position.z.toFixed(3));
-      const prot = Number((activeMesh.rotation ? activeMesh.rotation.y : 0).toFixed(3));
+    if (!document.hidden && mpChannel && mpChannel.state === 'joined' && activeMesh && activeMesh.position && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
+      const px = Number(activeMesh.position.x.toFixed(2));
+      const py = Number(activeMesh.position.y.toFixed(2));
+      const pz = Number(activeMesh.position.z.toFixed(2));
+      const prot = Number((activeMesh.rotation ? activeMesh.rotation.y : 0).toFixed(2));
       const isJump = Boolean(window.pirakuIsAirborne);
       const fishObj = window.pirakuFishingSyncState || null;
       const fishSig = fishObj ? `${fishObj.state}_${fishObj.bx}_${fishObj.bz}` : "";
@@ -586,15 +586,15 @@
       const rodCarryObj = window.pirakuCarriedRodState || null;
       const rodCarrySig = rodCarryObj ? `${rodCarryObj.id}_${rodCarryObj.hold ? 1 : 0}` : "";
       const moved = !mpChannel._lastSentPos ||
-        Math.abs(px - mpChannel._lastSentPos.x) > 0.015 ||
-        Math.abs(py - mpChannel._lastSentPos.y) > 0.015 ||
-        Math.abs(pz - mpChannel._lastSentPos.z) > 0.015 ||
-        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.03 ||
+        Math.abs(px - mpChannel._lastSentPos.x) > 0.22 ||
+        Math.abs(py - mpChannel._lastSentPos.y) > 0.12 ||
+        Math.abs(pz - mpChannel._lastSentPos.z) > 0.22 ||
+        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.15 ||
         isJump !== mpChannel._lastSentPos.jump ||
         fishSig !== mpChannel._lastSentPos.fishSig ||
         showFishSig !== mpChannel._lastSentPos.showFishSig ||
         rodCarrySig !== mpChannel._lastSentPos.rodCarrySig ||
-        (now - (mpChannel._lastSentPos.ts || 0) >= 4000);
+        (now - (mpChannel._lastSentPos.ts || 0) >= 25000);
       if (moved) {
         lastBroadcastTime = now;
         mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, ts: now };
