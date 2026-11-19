@@ -3,10 +3,12 @@
   "use strict";
 
   const RODS = [
-    { id: "bamboo", name: "Joran Bambu Cikapundung", cost: 0,   barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋" },
-    { id: "fiber",  name: "Joran Fiber Braga",       cost: 80,  barWidth: 40, luckBonus: 0.14, mutChance: 0.10, color: 0x0284c7, badge: "🎣" },
-    { id: "carbon", name: "Joran Karbon Dago",       cost: 250, barWidth: 46, luckBonus: 0.30, mutChance: 0.16, color: 0x1e293b, badge: "⚡" },
-    { id: "gold",   name: "Joran Emas Siliwangi",    cost: 700, barWidth: 54, luckBonus: 0.52, mutChance: 0.26, color: 0xfacc15, badge: "👑" }
+    { id: "bamboo",    name: "Joran Bambu Cikapundung", cost: 0,    barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋" },
+    { id: "fiber",     name: "Joran Fiber Braga",       cost: 80,   barWidth: 40, luckBonus: 0.14, mutChance: 0.10, color: 0x0284c7, badge: "🎣" },
+    { id: "carbon",    name: "Joran Karbon Dago",       cost: 250,  barWidth: 46, luckBonus: 0.30, mutChance: 0.16, color: 0x1e293b, badge: "⚡" },
+    { id: "gold",      name: "Joran Emas Siliwangi",    cost: 700,  barWidth: 54, luckBonus: 0.52, mutChance: 0.26, color: 0xfacc15, badge: "👑" },
+    { id: "crystal",   name: "Joran Kristal Tangkuban", cost: 1600, barWidth: 60, luckBonus: 0.78, mutChance: 0.36, color: 0x38bdf8, badge: "💎" },
+    { id: "celestial", name: "Joran Naga Siliwangi",    cost: 3500, barWidth: 68, luckBonus: 1.15, mutChance: 0.50, color: 0xa855f7, badge: "🌌" }
   ];
 
   const BAITS = [
@@ -16,26 +18,122 @@
   ];
 
   const FISH_CATALOG = [
-    { id: "sepatu",   name: "Sepatu Bekas Cibaduyut", rarity: "Common",   col: "#94a3b8", minKg: 0.4,  maxKg: 1.2,  baseCoin: 0,   speed: 0.35, erratic: 0.15, weight: 8,   icon: "🥾", meshCol: 0x64748b },
-    { id: "lele",     name: "Lele Cikapundung",       rarity: "Common",   col: "#64748b", minKg: 0.6,  maxKg: 3.4,  baseCoin: 6,   speed: 0.45, erratic: 0.22, weight: 28,  icon: "🐟", meshCol: 0x475569 },
-    { id: "mujair",   name: "Mujair Taman Lansia",    rarity: "Common",   col: "#9ca3af", minKg: 0.5,  maxKg: 2.5,  baseCoin: 5,   speed: 0.42, erratic: 0.20, weight: 28,  icon: "🐠", meshCol: 0x94a3b8 },
-    { id: "nila",     name: "Nila Merah Bandung",     rarity: "Common",   col: "#f87171", minKg: 0.7,  maxKg: 3.0,  baseCoin: 7,   speed: 0.48, erratic: 0.25, weight: 22,  icon: "🐠", meshCol: 0xef4444 },
-    { id: "kancra",   name: "Ikan Mas Kancra",        rarity: "Uncommon", col: "#fbbf24", minKg: 1.5,  maxKg: 6.5,  baseCoin: 14,  speed: 0.62, erratic: 0.36, weight: 16,  icon: "🐡", meshCol: 0xf59e0b },
-    { id: "gurame",   name: "Gurame Soang",           rarity: "Uncommon", col: "#a78bfa", minKg: 2.0,  maxKg: 8.0,  baseCoin: 16,  speed: 0.68, erratic: 0.38, weight: 14,  icon: "🐟", meshCol: 0x8b5cf6 },
-    { id: "koi",      name: "Koi Kohaku Gasibu",      rarity: "Rare",     col: "#fb923c", minKg: 2.5,  maxKg: 11.0, baseCoin: 26,  speed: 0.85, erratic: 0.52, weight: 8,   icon: "🎏", meshCol: 0xf97316 },
-    { id: "belut",    name: "Belut Listrik Pasupati", rarity: "Rare",     col: "#38bdf8", minKg: 1.8,  maxKg: 9.5,  baseCoin: 30,  speed: 0.96, erratic: 0.64, weight: 7,   icon: "⚡", meshCol: 0x38bdf8 },
-    { id: "arwana",   name: "Arwana Sunda Perak",     rarity: "Epic",     col: "#e879f9", minKg: 4.5,  maxKg: 18.0, baseCoin: 52,  speed: 1.15, erratic: 0.75, weight: 4,   icon: "🐉", meshCol: 0xe879f9 },
-    { id: "koinaga",  name: "Koi Naga Emas",          rarity: "Epic",     col: "#f59e0b", minKg: 5.0,  maxKg: 22.0, baseCoin: 64,  speed: 1.24, erratic: 0.80, weight: 3,   icon: "🐲", meshCol: 0xfbbf24 },
-    { id: "purba",    name: "Ikan Purba Cikapundung", rarity: "Mythic",   col: "#22d3ee", minKg: 12.0, maxKg: 42.0, baseCoin: 130, speed: 1.48, erratic: 0.95, weight: 1.2, icon: "🦕", meshCol: 0x22d3ee },
-    { id: "koisultan",name: "Koi Sultan 24K",         rarity: "Mythic",   col: "#fde047", minKg: 10.0, maxKg: 38.0, baseCoin: 155, speed: 1.52, erratic: 1.00, weight: 1.0, icon: "👑", meshCol: 0xfacc15 }
+    // Common (10)
+    { id: "sepatu",      name: "Sepatu Bekas Cibaduyut", rarity: "Common",   col: "#94a3b8", accent: "#475569", shape: "boot",    minKg: 0.4,  maxKg: 1.2,  baseCoin: 0,   speed: 0.35, erratic: 0.15, weight: 4.0,  icon: "🥾", meshCol: 0x64748b },
+    { id: "wader",       name: "Wader Cilik Dago",       rarity: "Common",   col: "#fcd34d", accent: "#f59e0b", shape: "chubby",  minKg: 0.2,  maxKg: 0.9,  baseCoin: 2,   speed: 0.40, erratic: 0.18, weight: 10.0, icon: "🐟", meshCol: 0xfcd34d },
+    { id: "lele",        name: "Lele Cikapundung",       rarity: "Common",   col: "#64748b", accent: "#334155", shape: "whisker", minKg: 0.6,  maxKg: 3.4,  baseCoin: 3,   speed: 0.45, erratic: 0.22, weight: 9.0,  icon: "🐟", meshCol: 0x475569 },
+    { id: "mujair",      name: "Mujair Taman Lansia",    rarity: "Common",   col: "#9ca3af", accent: "#6b7280", shape: "chubby",  minKg: 0.5,  maxKg: 2.5,  baseCoin: 2,   speed: 0.42, erratic: 0.20, weight: 9.0,  icon: "🐠", meshCol: 0x94a3b8 },
+    { id: "nila",        name: "Nila Merah Bandung",     rarity: "Common",   col: "#f87171", accent: "#dc2626", shape: "chubby",  minKg: 0.7,  maxKg: 3.0,  baseCoin: 3,   speed: 0.48, erratic: 0.25, weight: 8.0,  icon: "🐠", meshCol: 0xef4444 },
+    { id: "bawal",       name: "Bawal Pipi Tembem",      rarity: "Common",   col: "#f9a8d4", accent: "#ec4899", shape: "round",   minKg: 0.8,  maxKg: 3.6,  baseCoin: 4,   speed: 0.50, erratic: 0.26, weight: 7.5,  icon: "🐡", meshCol: 0xf472b6 },
+    { id: "cere",        name: "Ikan Cere Gang Sempit",  rarity: "Common",   col: "#a3e635", accent: "#65a30d", shape: "chubby",  minKg: 0.1,  maxKg: 0.5,  baseCoin: 2,   speed: 0.38, erratic: 0.16, weight: 8.5,  icon: "🐟", meshCol: 0x84cc16 },
+    { id: "sepat",       name: "Sepat Rawa Antapani",    rarity: "Common",   col: "#38bdf8", accent: "#0284c7", shape: "round",   minKg: 0.4,  maxKg: 1.6,  baseCoin: 3,   speed: 0.44, erratic: 0.21, weight: 7.0,  icon: "🐠", meshCol: 0x38bdf8 },
+    { id: "betok",       name: "Betok Galak Cihampelas", rarity: "Common",   col: "#4ade80", accent: "#16a34a", shape: "chubby",  minKg: 0.5,  maxKg: 1.9,  baseCoin: 3,   speed: 0.49, erratic: 0.26, weight: 6.5,  icon: "🐟", meshCol: 0x22c55e },
+    { id: "gabuscilik",  name: "Gabus Cilik Cimahi",     rarity: "Common",   col: "#94a3b8", accent: "#1e293b", shape: "eel",     minKg: 0.8,  maxKg: 2.8,  baseCoin: 4,   speed: 0.52, erratic: 0.28, weight: 6.0,  icon: "🐟", meshCol: 0x64748b },
+    // Uncommon (9)
+    { id: "kancra",      name: "Ikan Mas Kancra",        rarity: "Uncommon", col: "#fbbf24", accent: "#d97706", shape: "chubby",  minKg: 1.5,  maxKg: 6.5,  baseCoin: 6,   speed: 0.62, erratic: 0.36, weight: 3.0,  icon: "🐡", meshCol: 0xf59e0b },
+    { id: "gurame",      name: "Gurame Soang",           rarity: "Uncommon", col: "#a78bfa", accent: "#7c3aed", shape: "round",   minKg: 2.0,  maxKg: 8.0,  baseCoin: 7,   speed: 0.68, erratic: 0.38, weight: 2.8,  icon: "🐟", meshCol: 0x8b5cf6 },
+    { id: "patin",       name: "Patin Kumis Lembang",    rarity: "Uncommon", col: "#60a5fa", accent: "#2563eb", shape: "whisker", minKg: 2.2,  maxKg: 9.0,  baseCoin: 8,   speed: 0.72, erratic: 0.42, weight: 2.6,  icon: "🐟", meshCol: 0x3b82f6 },
+    { id: "cupang",      name: "Cupang Pelangi Braga",   rarity: "Uncommon", col: "#f43f5e", accent: "#38bdf8", shape: "fancy",   minKg: 0.3,  maxKg: 1.1,  baseCoin: 9,   speed: 0.76, erratic: 0.48, weight: 2.4,  icon: "🐠", meshCol: 0xf43f5e },
+    { id: "tawes",       name: "Tawes Perak Arcamanik",  rarity: "Uncommon", col: "#cbd5e1", accent: "#64748b", shape: "chubby",  minKg: 1.2,  maxKg: 4.5,  baseCoin: 6,   speed: 0.60, erratic: 0.34, weight: 2.5,  icon: "🐟", meshCol: 0xcbd5e1 },
+    { id: "baung",       name: "Baung Sungai Citarum",   rarity: "Uncommon", col: "#d97706", accent: "#78350f", shape: "whisker", minKg: 1.8,  maxKg: 7.2,  baseCoin: 8,   speed: 0.70, erratic: 0.40, weight: 2.2,  icon: "🐟", meshCol: 0xd97706 },
+    { id: "nilem",       name: "Nilem Pipi Chubby",      rarity: "Uncommon", col: "#fb7185", accent: "#be123c", shape: "round",   minKg: 1.0,  maxKg: 3.9,  baseCoin: 7,   speed: 0.65, erratic: 0.37, weight: 2.2,  icon: "🐠", meshCol: 0xfb7185 },
+    { id: "guppy",       name: "Guppy Neon Taman Vanda", rarity: "Uncommon", col: "#2dd4bf", accent: "#f472b6", shape: "fancy",   minKg: 0.2,  maxKg: 0.8,  baseCoin: 9,   speed: 0.74, erratic: 0.46, weight: 2.0,  icon: "🐠", meshCol: 0x2dd4bf },
+    { id: "lemon",       name: "Ikan Lemon Setiabudi",   rarity: "Uncommon", col: "#fde047", accent: "#eab308", shape: "chubby",  minKg: 0.6,  maxKg: 2.1,  baseCoin: 8,   speed: 0.69, erratic: 0.41, weight: 2.0,  icon: "🐠", meshCol: 0xfde047 },
+    // Rare (7)
+    { id: "koi",         name: "Koi Kohaku Gasibu",      rarity: "Rare",     col: "#fb923c", accent: "#ffffff", shape: "koi",     minKg: 2.5,  maxKg: 11.0, baseCoin: 12,  speed: 0.85, erratic: 0.52, weight: 1.1,  icon: "🎏", meshCol: 0xf97316 },
+    { id: "belut",       name: "Belut Listrik Pasupati", rarity: "Rare",     col: "#38bdf8", accent: "#fde047", shape: "eel",     minKg: 1.8,  maxKg: 9.5,  baseCoin: 14,  speed: 0.96, erratic: 0.64, weight: 1.0,  icon: "⚡", meshCol: 0x38bdf8 },
+    { id: "buntal",      name: "Ikan Buntal Pipi Merah", rarity: "Rare",     col: "#fde047", accent: "#fb7185", shape: "puffer",  minKg: 1.0,  maxKg: 4.5,  baseCoin: 16,  speed: 0.92, erratic: 0.58, weight: 0.9,  icon: "🐡", meshCol: 0xfacc15 },
+    { id: "maskoki",     name: "Mas Koki Panda Punclut", rarity: "Rare",     col: "#f8fafc", accent: "#1e293b", shape: "round",   minKg: 0.9,  maxKg: 3.8,  baseCoin: 18,  speed: 0.94, erratic: 0.60, weight: 0.85, icon: "🐠", meshCol: 0xf8fafc },
+    { id: "oscar",       name: "Oscar Batik Bandung",    rarity: "Rare",     col: "#1e293b", accent: "#f97316", shape: "koi",     minKg: 2.0,  maxKg: 8.5,  baseCoin: 15,  speed: 0.90, erratic: 0.56, weight: 0.85, icon: "🐠", meshCol: 0xf97316 },
+    { id: "louhan",      name: "Louhan Jenong Cikutra",  rarity: "Rare",     col: "#f43f5e", accent: "#fde047", shape: "round",   minKg: 1.5,  maxKg: 5.5,  baseCoin: 17,  speed: 0.95, erratic: 0.62, weight: 0.80, icon: "🐡", meshCol: 0xf43f5e },
+    { id: "toman",       name: "Toman Loreng Ciwidey",   rarity: "Rare",     col: "#10b981", accent: "#064e3b", shape: "eel",     minKg: 4.0,  maxKg: 15.0, baseCoin: 18,  speed: 0.98, erratic: 0.65, weight: 0.75, icon: "🐟", meshCol: 0x10b981 },
+    // Epic (5)
+    { id: "arwana",      name: "Arwana Sunda Perak",     rarity: "Epic",     col: "#e879f9", accent: "#a855f7", shape: "fancy",   minKg: 4.5,  maxKg: 18.0, baseCoin: 25,  speed: 1.15, erratic: 0.75, weight: 0.45, icon: "🐉", meshCol: 0xe879f9 },
+    { id: "koinaga",     name: "Koi Naga Emas",          rarity: "Epic",     col: "#f59e0b", accent: "#fef08a", shape: "koi",     minKg: 5.0,  maxKg: 22.0, baseCoin: 30,  speed: 1.24, erratic: 0.80, weight: 0.40, icon: "🐲", meshCol: 0xfbbf24 },
+    { id: "axolotl",     name: "Axolotl Pink Tangkuban", rarity: "Epic",     col: "#f472b6", accent: "#fbcfe8", shape: "axolotl", minKg: 1.2,  maxKg: 4.2,  baseCoin: 35,  speed: 1.20, erratic: 0.78, weight: 0.35, icon: "🌸", meshCol: 0xf472b6 },
+    { id: "pari",        name: "Pari Polkadot Lembang",  rarity: "Epic",     col: "#818cf8", accent: "#e0e7ff", shape: "round",   minKg: 6.0,  maxKg: 24.0, baseCoin: 32,  speed: 1.22, erratic: 0.76, weight: 0.35, icon: "🛸", meshCol: 0x818cf8 },
+    { id: "hiucilik",    name: "Hiu Cilik Lucu Dago",    rarity: "Epic",     col: "#38bdf8", accent: "#f8fafc", shape: "whale",   minKg: 7.0,  maxKg: 26.0, baseCoin: 36,  speed: 1.26, erratic: 0.82, weight: 0.30, icon: "🦈", meshCol: 0x38bdf8 },
+    // Mythic ~1/100 (4)
+    { id: "purba",       name: "Ikan Purba Cikapundung", rarity: "Mythic",   col: "#22d3ee", accent: "#0891b2", shape: "crown",   minKg: 12.0, maxKg: 42.0, baseCoin: 55,  speed: 1.48, erratic: 0.95, weight: 0.30, icon: "🦕", meshCol: 0x22d3ee },
+    { id: "koisultan",   name: "Koi Sultan 24K",         rarity: "Mythic",   col: "#fde047", accent: "#f97316", shape: "crown",   minKg: 10.0, maxKg: 38.0, baseCoin: 65,  speed: 1.52, erratic: 1.00, weight: 0.25, icon: "👑", meshCol: 0xfacc15 },
+    { id: "pausmini",    name: "Paus Mini Awan Bandung", rarity: "Mythic",   col: "#7dd3fc", accent: "#e0f2fe", shape: "whale",   minKg: 16.0, maxKg: 55.0, baseCoin: 75,  speed: 1.56, erratic: 0.96, weight: 0.25, icon: "🐳", meshCol: 0x7dd3fc },
+    { id: "nagalangit",  name: "Naga Air Siliwangi",     rarity: "Mythic",   col: "#34d399", accent: "#fde047", shape: "crown",   minKg: 20.0, maxKg: 68.0, baseCoin: 85,  speed: 1.62, erratic: 1.05, weight: 0.20, icon: "🐲", meshCol: 0x34d399 },
+    // Secret ~1/1.000 (2)
+    { id: "kudanil",     name: "Kuda Laut Kristal Kawah",rarity: "Secret",   col: "#2dd4bf", accent: "#99f6e4", shape: "crown",   minKg: 8.0,  maxKg: 30.0, baseCoin: 120, speed: 1.68, erratic: 1.08, weight: 0.05, icon: "🦄", meshCol: 0x2dd4bf },
+    { id: "axogold",     name: "Axolotl Emas Keramat",   rarity: "Secret",   col: "#fbbf24", accent: "#fef08a", shape: "axolotl", minKg: 5.0,  maxKg: 18.0, baseCoin: 150, speed: 1.72, erratic: 1.10, weight: 0.05, icon: "✨", meshCol: 0xfbbf24 },
+    // Cosmic ~1/10.000 (2)
+    { id: "pausgalaxy",  name: "Paus Galaksi Bosscha",   rarity: "Cosmic",   col: "#a855f7", accent: "#f0abfc", shape: "whale",   minKg: 35.0, maxKg: 99.0, baseCoin: 250, speed: 1.80, erratic: 1.15, weight: 0.005,icon: "🌌", meshCol: 0xa855f7 },
+    { id: "koinova",     name: "Koi Supernova Parahyangan",rarity:"Cosmic",  col: "#f43f5e", accent: "#fde047", shape: "crown",   minKg: 28.0, maxKg: 88.0, baseCoin: 300, speed: 1.85, erratic: 1.18, weight: 0.005,icon: "🌠", meshCol: 0xf43f5e },
+    // Divine ~1/100.000 (1)
+    { id: "rajasamudra", name: "Raja Samudra Bandung",   rarity: "Divine",   col: "#fde047", accent: "#38bdf8", shape: "crown",   minKg: 50.0, maxKg: 150.0,baseCoin: 500, speed: 1.95, erratic: 1.25, weight: 0.001,icon: "🔱", meshCol: 0xfde047 }
   ];
 
+  function renderFishArt(fishOrItem, size) {
+    const f = FISH_CATALOG.find(x => x.id === fishOrItem.id) || fishOrItem || {};
+    const sz = size || 44;
+    const c = f.col || "#38bdf8";
+    const ac = f.accent || "#0284c7";
+    const sh = f.shape || "chubby";
+
+    if (sh === "boot") {
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64" style="display:inline-block;vertical-align:middle;">
+        <path d="M22 14h16v22l12 4c3 1 4 4 4 7v4H18V18c0-2 2-4 4-4z" fill="#64748b" stroke="#334155" stroke-width="2.5"/>
+        <rect x="17" y="47" width="38" height="6" rx="3" fill="#334155"/>
+        <path d="M26 24h8M26 30h8" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
+    }
+    if (sh === "whale") {
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64" style="display:inline-block;vertical-align:middle;">
+        <path d="M32 10c-2-4-7-4-8 0M32 10c2-4 7-4 8 0" stroke="#bae6fd" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M12 36c0-11 9-18 22-18 11 0 18 6 18 15 0 8-6 13-16 13H20c-5 0-8-4-8-10z" fill="${c}" stroke="#0284c7" stroke-width="2"/>
+        <path d="M12 36l-8-7 2 10-4 6 10-4z" fill="${c}" stroke="#0284c7" stroke-width="2"/>
+        <path d="M24 46c8 0 18-1 23-6H22z" fill="${ac}"/>
+        <circle cx="42" cy="31" r="3.2" fill="#0f172a"/><circle cx="43" cy="30" r="1.1" fill="#fff"/>
+        <ellipse cx="38" cy="36" rx="3" ry="1.8" fill="#fb7185" opacity="0.7"/>
+        <path d="M29 14l3-5 3 5 4-3-2 6h-10l-2-6z" fill="#fde047" stroke="#ca8a04" stroke-width="1.2"/>
+      </svg>`;
+    }
+    if (sh === "axolotl") {
+      return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64" style="display:inline-block;vertical-align:middle;">
+        <path d="M14 26l-7-5M13 31l-8 0M14 36l-7 5M50 26l7-5M51 31l8 0M50 36l7 5" stroke="#ec4899" stroke-width="3.2" stroke-linecap="round"/>
+        <ellipse cx="32" cy="34" rx="18" ry="14" fill="${c}" stroke="#db2777" stroke-width="2"/>
+        <ellipse cx="32" cy="38" rx="11" ry="7" fill="${ac}" opacity="0.85"/>
+        <circle cx="24" cy="31" r="3.2" fill="#0f172a"/><circle cx="25" cy="30" r="1.1" fill="#fff"/>
+        <circle cx="40" cy="31" r="3.2" fill="#0f172a"/><circle cx="41" cy="30" r="1.1" fill="#fff"/>
+        <path d="M29 36c2 2 4 2 6 0" stroke="#9d174d" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="21" cy="35" rx="2.5" ry="1.5" fill="#fb7185"/>
+        <ellipse cx="43" cy="35" rx="2.5" ry="1.5" fill="#fb7185"/>
+      </svg>`;
+    }
+    const isPuffer = sh === "puffer";
+    const isCrown = sh === "crown";
+    const isWhisker = sh === "whisker";
+    const isEel = sh === "eel";
+    const ry = isPuffer ? 17 : (sh === "round" ? 15 : 13);
+    const rx = isEel ? 20 : (isPuffer ? 17 : 18);
+    return `<svg width="${sz}" height="${sz}" viewBox="0 0 64 64" style="display:inline-block;vertical-align:middle;">
+      ${isPuffer ? `<path d="M32 11l3 5M32 53l3-5M15 20l4 3M49 20l-4 3M15 44l4-3M49 44l-4-3" stroke="${ac}" stroke-width="2.5" stroke-linecap="round"/>` : ""}
+      <path d="M15 32l-10-9v18z" fill="${ac}" stroke="#0f172a" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M26 19c2-7 10-7 12 0" fill="${ac}" stroke="#0f172a" stroke-width="1.5"/>
+      <ellipse cx="34" cy="32" rx="${rx}" ry="${ry}" fill="${c}" stroke="#0f172a" stroke-width="2"/>
+      ${sh === "koi" ? `<circle cx="30" cy="28" r="5" fill="${ac}" opacity="0.9"/><circle cx="41" cy="34" r="4" fill="${ac}" opacity="0.9"/>` : `<ellipse cx="32" cy="36" rx="9" ry="5" fill="${ac}" opacity="0.32"/>`}
+      ${isWhisker ? `<path d="M51 34c4 1 6 4 6 6M50 37c3 2 4 5 3 7" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>` : ""}
+      <circle cx="43" cy="29" r="3.4" fill="#0f172a"/><circle cx="44" cy="28" r="1.2" fill="#fff"/>
+      <ellipse cx="39" cy="34" rx="2.8" ry="1.6" fill="#fb7185" opacity="0.75"/>
+      <path d="M46 35c1.5 1.5 3.5 1.5 4.5 0" stroke="#0f172a" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+      ${isCrown ? `<path d="M28 18l3-6 3 5 3-5 3 6z" fill="#fde047" stroke="#ca8a04" stroke-width="1.3"/>` : ""}
+    </svg>`;
+  }
+
   const RARITY_STYLE = {
-    Common:   { bg: "#334155", fg: "#e2e8f0", border: "#64748b" },
-    Uncommon: { bg: "#065f46", fg: "#6ee7b7", border: "#10b981" },
-    Rare:     { bg: "#1e3a8a", fg: "#93c5fd", border: "#3b82f6" },
-    Epic:     { bg: "#581c87", fg: "#f0abfc", border: "#d946ef" },
-    Mythic:   { bg: "#78350f", fg: "#fde047", border: "#facc15" }
+    Common:   { bg: "#334155", fg: "#e2e8f0", border: "#64748b", odds: "" },
+    Uncommon: { bg: "#065f46", fg: "#6ee7b7", border: "#10b981", odds: "" },
+    Rare:     { bg: "#1e3a8a", fg: "#93c5fd", border: "#3b82f6", odds: "" },
+    Epic:     { bg: "#581c87", fg: "#f0abfc", border: "#d946ef", odds: "" },
+    Mythic:   { bg: "#78350f", fg: "#fde047", border: "#facc15", odds: "1/100" },
+    Secret:   { bg: "#064e3b", fg: "#5eead4", border: "#14b8a6", odds: "1/1.000" },
+    Cosmic:   { bg: "#4c1d95", fg: "#f5d0fe", border: "#c084fc", odds: "1/10.000" },
+    Divine:   { bg: "#713f12", fg: "#fef08a", border: "#fde047", odds: "1/100.000" }
   };
 
   const MUTATIONS = [
@@ -316,22 +414,111 @@
     rodMesh3D = bobberMesh3D = rippleMesh3D = jumpFishMesh3D = lineMesh3D = null;
   }
 
-  function createFishingRodGroup(rodColor, isGold) {
+  function createFishingRodGroup(rodColor, isGold, rodId) {
     const rodGrp = new THREE.Group();
-    const pole = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.022, 0.048, 2.35, 8),
-      new THREE.MeshStandardMaterial({ color: rodColor || 0xa16207, metalness: isGold ? 0.72 : 0.25, roughness: 0.45 })
+    const tilt = new THREE.Group();
+    tilt.rotation.x = 0.76;
+    const isCrystal = rodId === "crystal";
+    const isCelestial = rodId === "celestial";
+    const isHighTier = isGold || isCrystal || isCelestial;
+    const blankMat = new THREE.MeshStandardMaterial({
+      color: rodColor || 0xa16207,
+      metalness: isHighTier ? 0.75 : 0.3,
+      roughness: isHighTier ? 0.2 : 0.42,
+      emissive: isCelestial ? 0x581c87 : (isCrystal ? 0x0369a1 : 0x000000),
+      emissiveIntensity: isCelestial ? 0.45 : (isCrystal ? 0.35 : 0)
+    });
+    const trimMat = new THREE.MeshStandardMaterial({
+      color: isGold ? 0xfef08a : (isCelestial ? 0xf5d0fe : (isCrystal ? 0xbae6fd : 0xe2e8f0)),
+      metalness: 0.88,
+      roughness: 0.18
+    });
+
+    // Butt cap & gagang ergonomis dua lapis
+    const buttCap = new THREE.Mesh(new THREE.SphereGeometry(0.068, 8, 8), trimMat);
+    buttCap.position.set(0, -0.06, 0);
+    const grip = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.058, 0.065, 0.58, 10),
+      new THREE.MeshStandardMaterial({ color: isHighTier ? 0x0f172a : 0x78350f, roughness: 0.85 })
     );
-    pole.position.set(0, 1.0, 0.62);
-    pole.rotation.x = 0.78;
-    const reel = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8),
-      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7 })
-    );
-    reel.rotation.z = Math.PI / 2;
-    reel.position.set(0, 0.35, 0.14);
-    rodGrp.add(pole, reel);
-    rodGrp.position.set(0.32, 0.85, 0.2);
+    grip.position.set(0, 0.24, 0);
+
+    // 3-section parabolic rod blank (pangkal -> tengah -> ujung lentur)
+    const basePole = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.05, 1.05, 10), blankMat);
+    basePole.position.set(0, 1.02, 0);
+    const ferrule1 = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.07, 10), trimMat);
+    ferrule1.position.set(0, 1.54, 0);
+
+    const midSection = new THREE.Group();
+    midSection.position.set(0, 1.54, 0);
+    midSection.rotation.x = 0.09;
+    const midPole = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.034, 0.92, 10), blankMat);
+    midPole.position.set(0, 0.46, 0);
+    const ferrule2 = new THREE.Mesh(new THREE.CylinderGeometry(0.029, 0.029, 0.06, 10), trimMat);
+    ferrule2.position.set(0, 0.92, 0);
+    midSection.add(midPole, ferrule2);
+
+    const tipSection = new THREE.Group();
+    tipSection.position.set(0, 0.92, 0);
+    tipSection.rotation.x = 0.14;
+    const tipPole = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.022, 0.95, 8), blankMat);
+    tipPole.position.set(0, 0.475, 0);
+
+    const tipColor = isCelestial ? 0xf0abfc : (isCrystal ? 0x38bdf8 : (isGold ? 0xfde047 : 0x38bdf8));
+    const tipGeo = (isCrystal || isCelestial) ? new THREE.OctahedronGeometry(0.065, 0) : new THREE.SphereGeometry(0.038, 8, 8);
+    const tipGlow = new THREE.Mesh(tipGeo, new THREE.MeshBasicMaterial({ color: tipColor }));
+    tipGlow.position.set(0, 0.96, 0);
+    const tipMarker = new THREE.Object3D();
+    tipMarker.position.set(0, 0.96, 0);
+    tipSection.add(tipPole, tipGlow, tipMarker);
+    midSection.add(tipSection);
+
+    // 6 Cincin kolong senar (line guides) di sepanjang joran
+    [0.85, 1.32].forEach((gy, gi) => {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.048 - gi * 0.006, 0.009, 6, 12), trimMat);
+      r.position.set(0, gy, 0.056);
+      tilt.add(r);
+    });
+    [0.32, 0.72].forEach((gy, gi) => {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.036 - gi * 0.006, 0.008, 6, 10), trimMat);
+      r.position.set(0, gy, 0.045);
+      midSection.add(r);
+    });
+    [0.35, 0.72].forEach((gy, gi) => {
+      const r = new THREE.Mesh(new THREE.TorusGeometry(0.024 - gi * 0.005, 0.007, 6, 10), trimMat);
+      r.position.set(0, gy, 0.034);
+      tipSection.add(r);
+    });
+
+    // Aura cincin khusus Joran Kristal & Naga Siliwangi
+    if (isCelestial || isCrystal) {
+      const halo = new THREE.Mesh(
+        new THREE.TorusGeometry(0.11, 0.012, 8, 18),
+        new THREE.MeshBasicMaterial({ color: isCelestial ? 0xfde047 : 0x7dd3fc })
+      );
+      halo.rotation.x = Math.PI / 2;
+      halo.position.set(0, 0.92, 0);
+      tipSection.add(halo);
+    }
+
+    // Reel spinning lengkap: dudukan, bodi, spool metalik, bail arm, & engkol
+    const reelBody = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.13, 12), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 }));
+    reelBody.rotation.z = Math.PI / 2;
+    reelBody.position.set(0, 0.56, 0.12);
+    const reelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.15, 12), trimMat);
+    reelSpool.rotation.z = Math.PI / 2;
+    reelSpool.position.set(0, 0.56, 0.12);
+    const bailArm = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.009, 6, 12, Math.PI), trimMat);
+    bailArm.position.set(0, 0.56, 0.18);
+    const crankArm = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.15, 0.025), trimMat);
+    crankArm.position.set(0.095, 0.60, 0.12);
+    const crankKnob = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 6), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.6 }));
+    crankKnob.position.set(0.115, 0.66, 0.12);
+
+    tilt.add(buttCap, grip, basePole, ferrule1, midSection, reelBody, reelSpool, bailArm, crankArm, crankKnob);
+    rodGrp.add(tilt);
+    rodGrp.userData.tipMarker = tipMarker;
+    rodGrp.position.set(0.32, 0.72, 0.12);
     return rodGrp;
   }
 
@@ -359,7 +546,12 @@
   function updateFishingLine(lineObj, rodGrp, bobObj) {
     if (!lineObj || !rodGrp || !bobObj) return;
     rodGrp.updateMatrixWorld(true);
-    const tip = new THREE.Vector3(0, 1.82, 1.44).applyMatrix4(rodGrp.matrixWorld);
+    const tip = new THREE.Vector3();
+    if (rodGrp.userData && rodGrp.userData.tipMarker) {
+      rodGrp.userData.tipMarker.getWorldPosition(tip);
+    } else {
+      tip.set(0, 1.82, 1.44).applyMatrix4(rodGrp.matrixWorld);
+    }
     const posAttr = lineObj.geometry && lineObj.geometry.attributes && lineObj.geometry.attributes.position;
     if (posAttr) {
       posAttr.setXYZ(0, tip.x, tip.y, tip.z);
@@ -405,7 +597,7 @@
     if (!sc || !pm || typeof THREE === "undefined") return;
 
     const rod = getEquippedRod();
-    const rodGrp = createFishingRodGroup(rod.color, rod.id === "gold");
+    const rodGrp = createFishingRodGroup(rod.color, rod.id === "gold", rod.id);
     pm.add(rodGrp);
     rodMesh3D = rodGrp;
     castAnimStart = performance.now();
@@ -432,6 +624,7 @@
       state: "waiting",
       col: rod.color,
       gold: rod.id === "gold",
+      rodId: rod.id,
       bx: Number(bx.toFixed(2)),
       bz: Number(bz.toFixed(2)),
       wy: Number(pond.waterY.toFixed(2))
@@ -463,10 +656,10 @@
 
     const pool = FISH_CATALOG.map(f => {
       let w = f.weight;
-      if (f.rarity === "Rare" || f.rarity === "Epic" || f.rarity === "Mythic") {
+      if (f.rarity === "Rare" || f.rarity === "Epic" || f.rarity === "Mythic" || f.rarity === "Secret" || f.rarity === "Cosmic" || f.rarity === "Divine") {
         w *= (1 + totalLuck * 2.4) * (isRain ? 2.0 : 1.0);
       }
-      if (f.rarity === "Mythic" && rod.id === "bamboo" && baitId === "worm") w *= 0.25;
+      if ((f.rarity === "Mythic" || f.rarity === "Secret" || f.rarity === "Cosmic" || f.rarity === "Divine") && rod.id === "bamboo" && baitId === "worm") w *= 0.25;
       return { fish: f, w };
     });
     const total = pool.reduce((s, p) => s + p.w, 0);
@@ -712,7 +905,7 @@
       mutation = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
     }
     const kgFactor = 1 + (kg / Math.max(2, fish.maxKg)) * 0.45;
-    const coinVal = fish.baseCoin <= 0 ? 0 : Math.max(2, Math.round(fish.baseCoin * kgFactor * (mutation ? mutation.mult : 1)));
+    const coinVal = fish.baseCoin <= 0 ? 0 : Math.max(1, Math.round(fish.baseCoin * kgFactor * (mutation ? mutation.mult : 1)));
 
     const bag = getBag();
     const caughtItem = {
@@ -741,9 +934,9 @@
       if (typeof window.showToast === "function") {
         window.showToast(`${fish.icon} [${fish.rarity}] ${caughtItem.mutation ? caughtItem.mutation + " " : ""}${fish.name} (${kg} kg)${coinVal > 0 ? " • Jual di Kopdes: 🪙 " + coinVal : " • Sampah (0 🪙)"}!`);
       }
-      if ((fish.rarity === "Epic" || fish.rarity === "Mythic") && typeof window.broadcastChatMessage === "function") {
+      if (["Epic", "Mythic", "Secret", "Cosmic", "Divine"].includes(fish.rarity) && typeof window.broadcastChatMessage === "function") {
         const myIg = localStorage.getItem("piraku_my_ig") || "Warga";
-        window.broadcastChatMessage(`🎣 ${myIg} baru menangkap [${fish.rarity.toUpperCase()}] ${fish.name} (${kg} kg)!`);
+        window.broadcastChatMessage(`🎣 ${myIg} baru menangkap [${fish.rarity.toUpperCase()}${rStyle.odds ? " " + rStyle.odds : ""}] ${fish.name} (${kg} kg)!`);
       }
     } catch (_) {}
 
@@ -752,15 +945,16 @@
     modal.style.display = "flex";
     modal.innerHTML = `
       <div style="width:100%;max-width:360px;background:#0f172a;border:2px solid ${rStyle.border};border-radius:20px;padding:20px;text-align:center;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
-        <div style="font-size:44px;margin-bottom:4px;">${fish.icon}</div>
-        <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:900;background:${rStyle.bg};color:${rStyle.fg};border:1px solid ${rStyle.border};">${fish.rarity.toUpperCase()}</span>
+        <div style="margin-bottom:4px;">${renderFishArt(fish, 92)}</div>
+        <span style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:900;background:${rStyle.bg};color:${rStyle.fg};border:1px solid ${rStyle.border};">${fish.rarity.toUpperCase()}${rStyle.odds ? " • " + rStyle.odds : ""}</span>
         ${catchCombo > 1 ? `<span style="margin-left:6px;display:inline-block;padding:3px 8px;border-radius:999px;font-size:10.5px;font-weight:900;background:#9a3412;color:#fde047;">🔥 ${catchCombo}x Streak</span>` : ""}
         <h3 style="margin:8px 0 4px;font-size:19px;font-weight:900;">${caughtItem.mutation ? caughtItem.mutation + " " : ""}${fish.name}</h3>
         <div style="font-size:12.5px;color:#cbd5e1;margin-bottom:14px;">Berat: <b>${kg} kg</b> • ${coinVal > 0 ? `Harga Jual (di Kopdes): <b style="color:#fde047;">🪙 ${coinVal}</b>` : `<b style="color:#94a3b8;">Sampah (0 🪙)</b>`}</div>
         <div style="display:flex;gap:8px;">
           <button onclick="document.getElementById('piraku-fishing-modal').style.display='none'; castPirakuFishingRod();" style="flex:1;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:11px;border-radius:12px;font-weight:900;cursor:pointer;">🎣 Lempar Lagi</button>
-          <button onclick="openFishingHubModal()" style="flex:1;border:none;background:#1e293b;color:#f8fafc;padding:11px;border-radius:12px;font-weight:800;border:1px solid #475569;cursor:pointer;">🎒 Tas Ikan</button>
+          <button onclick="toggleShowOffFish(0); document.getElementById('piraku-fishing-modal').style.display='none';" style="flex:1;border:none;background:linear-gradient(135deg,#f59e0b,#eab308);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;cursor:pointer;">✨ Pamerkan!</button>
         </div>
+        <button onclick="openFishingHubModal()" style="width:100%;margin-top:8px;border:none;background:#1e293b;color:#f8fafc;padding:9px;border-radius:12px;font-weight:800;border:1px solid #475569;cursor:pointer;">🎒 Buka Tas Ikan</button>
       </div>
     `;
   }
@@ -918,11 +1112,13 @@
             ${bag.length === 0
               ? `<div style="font-size:11.5px;color:#94a3b8;background:rgba(30,41,59,0.5);padding:10px;border-radius:10px;text-align:center;">Belum ada ikan di tas. Pergi ke kolam & lempar joran!</div>`
               : `<div style="display:flex;flex-direction:column;gap:5px;">
-                  ${bag.slice(0, 12).map(f => {
+                  ${bag.slice(0, 12).map((f, idx) => {
                     const rs = RARITY_STYLE[f.rarity] || RARITY_STYLE.Common;
-                    return `<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(30,41,59,0.75);padding:7px 10px;border-radius:10px;border-left:3px solid ${rs.border};">
-                      <span style="font-size:12px;font-weight:800;">${f.icon} ${f.mutation ? f.mutation + " " : ""}${f.name} <span style="color:#94a3b8;font-weight:600;">(${f.kg} kg)</span></span>
-                      <span style="font-size:11.5px;font-weight:900;color:#fde047;">🪙 ${f.coins}</span>
+                    const isShown = window.pirakuShownFish && window.pirakuShownFish.id === f.id && window.pirakuShownFish.kg === f.kg;
+                    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:rgba(30,41,59,0.75);padding:7px 10px;border-radius:10px;border-left:3px solid ${rs.border};">
+                      <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;flex:1;min-width:0;">${renderFishArt(f, 28)} <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.mutation ? f.mutation + " " : ""}${f.name} <span style="color:#94a3b8;font-weight:600;">(${f.kg} kg)</span></span></span>
+                      <span style="font-size:11px;font-weight:900;color:#fde047;white-space:nowrap;">🪙 ${f.coins}</span>
+                      <button onclick="toggleShowOffFish(${idx})" style="border:none;background:${isShown ? "#ef4444" : "#38bdf8"};color:${isShown ? "#fff" : "#0f172a"};padding:4px 8px;border-radius:8px;font-size:10.5px;font-weight:900;cursor:pointer;white-space:nowrap;">${isShown ? "Simpan" : "✨ Pamer"}</button>
                     </div>`;
                   }).join("")}
                 </div>`}
@@ -1046,8 +1242,102 @@
       bar.style.display = "none";
     }
 
+    if (pm) {
+      window.syncShownFishOnMesh(pm, window.pirakuShownFish, now);
+    }
+
     requestAnimationFrame(tickFishing3D);
   }
+
+  function create3DFishModel(fishData) {
+    const f = FISH_CATALOG.find(x => x.id === fishData.id) || {};
+    const grp = new THREE.Group();
+    const col = f.meshCol || 0x38bdf8;
+    const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.35, metalness: fishData.rarity === "Mythic" ? 0.55 : 0.2 });
+    const kgScale = Math.max(0.75, Math.min(2.1, 0.72 + (parseFloat(fishData.kg) || 2) * 0.045)) * (fishData.mut && fishData.mut.includes("Giant") ? 1.35 : 1);
+
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), mat);
+    body.scale.set(0.85, 0.95, 1.45);
+    const tail = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.36, 4), mat);
+    tail.rotation.x = Math.PI / 2;
+    tail.position.z = -0.45;
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.055, 6, 6), eyeMat);
+    eyeL.position.set(0.18, 0.08, 0.24);
+    const eyeR = eyeL.clone();
+    eyeR.position.x = -0.18;
+    grp.add(body, tail, eyeL, eyeR);
+
+    if (fishData.rarity === "Epic" || fishData.rarity === "Mythic") {
+      const crown = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.18, 5), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
+      crown.position.set(0, 0.34, 0.05);
+      grp.add(crown);
+    }
+
+    // Label kecil nama ikan di atas ikan 3D
+    const cv = document.createElement("canvas");
+    cv.width = 320; cv.height = 64;
+    const ctx = cv.getContext("2d");
+    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
+    ctx.beginPath(); ctx.roundRect(6, 6, 308, 52, 26); ctx.fill();
+    ctx.strokeStyle = f.col || "#fde047"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#fde047"; ctx.font = "900 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(`${fishData.name} (${fishData.kg}kg)`, 160, 33);
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+    spr.scale.set(2.4, 0.48, 1);
+    spr.position.set(0, 0.65, 0);
+    grp.add(spr);
+
+    grp.scale.setScalar(kgScale);
+    return grp;
+  }
+
+  window.syncShownFishOnMesh = function (mesh, fishData, now) {
+    if (!mesh || typeof THREE === "undefined") return;
+    const sig = fishData ? `${fishData.id}_${fishData.kg}_${fishData.mut || ""}` : "";
+    if (!fishData) {
+      if (mesh._pirakuShownFishGrp) {
+        mesh.remove(mesh._pirakuShownFishGrp);
+        mesh._pirakuShownFishGrp = null;
+        mesh._pirakuShownFishSig = "";
+      }
+      return;
+    }
+    if (!mesh._pirakuShownFishGrp || mesh._pirakuShownFishSig !== sig) {
+      if (mesh._pirakuShownFishGrp) mesh.remove(mesh._pirakuShownFishGrp);
+      mesh._pirakuShownFishGrp = create3DFishModel(fishData);
+      mesh._pirakuShownFishSig = sig;
+      mesh.add(mesh._pirakuShownFishGrp);
+    }
+    mesh._pirakuShownFishGrp.position.set(0, 1.48 + Math.sin((now || performance.now()) * 0.004) * 0.09, 0.72);
+    mesh._pirakuShownFishGrp.rotation.y = Math.sin((now || performance.now()) * 0.0025) * 0.35;
+  };
+
+  window.toggleShowOffFish = function (bagIdx) {
+    const bag = getBag();
+    const item = bag[bagIdx];
+    if (!item) return;
+    const isSame = window.pirakuShownFish && window.pirakuShownFish.id === item.id && window.pirakuShownFish.kg === item.kg;
+    if (isSame) {
+      window.pirakuShownFish = null;
+      if (typeof window.showToast === "function") window.showToast("🎒 Ikan disimpan kembali ke tas.");
+    } else {
+      window.pirakuShownFish = {
+        id: item.id,
+        name: item.name,
+        rarity: item.rarity,
+        kg: item.kg,
+        mut: item.mutation || ""
+      };
+      if (typeof window.showToast === "function") {
+        window.showToast(`✨ Memamerkan ${item.mutation ? item.mutation + " " : ""}${item.name} (${item.kg} kg) ke semua warga!`);
+      }
+    }
+    const modal = document.getElementById("piraku-fishing-modal");
+    if (modal && modal.style.display === "flex" && modal.innerHTML.includes("Tas Ikan")) {
+      window.openFishingHubModal();
+    }
+  };
 
   window.clearRemotePlayerFishing3D = function (entry) {
     if (!entry) return;
@@ -1069,12 +1359,12 @@
       window.clearRemotePlayerFishing3D(entry);
       return;
     }
-    const sig = `${f.col || 0}_${f.bx || 0}_${f.bz || 0}`;
+    const sig = `${f.rodId || ""}_${f.col || 0}_${f.bx || 0}_${f.bz || 0}`;
     if (!entry.remoteRod || entry.remoteFishSig !== sig) {
       window.clearRemotePlayerFishing3D(entry);
       entry.remoteFishSig = sig;
       entry.remoteFishStart = now;
-      entry.remoteRod = createFishingRodGroup(f.col, !!f.gold);
+      entry.remoteRod = createFishingRodGroup(f.col, !!f.gold, f.rodId);
       entry.mesh.add(entry.remoteRod);
       const wy = typeof f.wy === "number" ? f.wy : 0.08;
       entry.remoteBobber = createBobberGroup(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z);
@@ -1122,5 +1412,27 @@
     }
   };
 
-  setTimeout(() => { requestAnimationFrame(tickFishing3D); }, 800);
+  function showFishingUpdateBanner() {
+    const verKey = "piraku_update_seen_20261119v6";
+    if (localStorage.getItem(verKey)) return;
+    if (!document.body || document.getElementById("piraku-fishing-update-banner")) return;
+    const b = document.createElement("div");
+    b.id = "piraku-fishing-update-banner";
+    b.style.cssText = "position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:99990;width:min(380px,calc(100vw - 24px));background:linear-gradient(135deg,rgba(15,23,42,0.96),rgba(30,41,59,0.96));border:1.5px solid #38bdf8;border-radius:14px;padding:10px 12px;color:#f8fafc;box-shadow:0 12px 32px rgba(0,0,0,0.65);display:flex;align-items:center;gap:10px;";
+    b.innerHTML = `
+      <div style="font-size:22px;line-height:1;">🎣</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11.5px;font-weight:900;color:#38bdf8;">UPDATE MANCING 3D BARU!</div>
+        <div style="font-size:10.5px;color:#cbd5e1;line-height:1.35;">40 Ikan (s/d 1/100.000), Joran Kristal &amp; Naga, + Pamer Ikan! Silakan refresh jika belum muncul.</div>
+      </div>
+      <button id="pf-upd-refresh" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:6px 10px;border-radius:8px;font-size:10.5px;font-weight:900;cursor:pointer;white-space:nowrap;">🔄 Refresh</button>
+      <button id="pf-upd-close" style="border:none;background:transparent;color:#94a3b8;font-size:14px;font-weight:900;cursor:pointer;padding:2px 4px;">✕</button>
+    `;
+    document.body.appendChild(b);
+    const dismiss = () => { localStorage.setItem(verKey, "1"); b.remove(); };
+    b.querySelector("#pf-upd-refresh").onclick = () => { localStorage.setItem(verKey, "1"); location.reload(true); };
+    b.querySelector("#pf-upd-close").onclick = dismiss;
+  }
+
+  setTimeout(() => { showFishingUpdateBanner(); requestAnimationFrame(tickFishing3D); }, 800);
 })();
