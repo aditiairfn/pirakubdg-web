@@ -2023,12 +2023,23 @@ let activeQuestSystem = null;
       return; 
     }
     try {
-      const { data, error } = await supabaseClient.from('warga_publik').select('*').order('id', { ascending: true });
-      if (error) throw error;
-      if (data && data.length > 0) {
+      const allRows = [];
+      const pageSize = 1000;
+      for (let from = 0; from < 50000; from += pageSize) {
+        const { data: page, error } = await supabaseClient
+          .from('warga_publik')
+          .select('*')
+          .order('id', { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (!page || page.length === 0) break;
+        allRows.push(...page);
+        if (page.length < pageSize) break;
+      }
+      if (allRows.length > 0) {
         const mySavedIg = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase();
         let ambientNpcCount = 0;
-        data.forEach(c => {
+        allRows.forEach(c => {
           const isMe = mySavedIg && String(c?.ig || '').trim().toLowerCase() === mySavedIg;
           if (isMe || ambientNpcCount < 10) {
             createCitizenMesh(c);
@@ -2038,7 +2049,7 @@ let activeQuestSystem = null;
             registeredCitizensList.push(c);
           }
         });
-        totalWarga = 1 + data.length;
+        totalWarga = 1 + allRows.length;
       }
       const counterEl = document.getElementById('warga-counter');
       if (counterEl) counterEl.innerText = totalWarga + ' WARGA';
