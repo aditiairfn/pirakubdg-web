@@ -555,8 +555,9 @@ let activeQuestSystem = null;
   controls.maxDistance = 85; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
   if (typeof THREE !== 'undefined' && THREE.MOUSE) {
-    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   }
+  renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
   if (window.innerWidth <= 900 && typeof THREE !== 'undefined' && THREE.TOUCH) {
     controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
   }
@@ -1653,7 +1654,7 @@ let activeQuestSystem = null;
   const citizensGroup = new THREE.Group(); scene.add(citizensGroup);
   const clickableObjects = [], registeredCitizensList = []; window.registeredCitizensList = registeredCitizensList;
   let activeCitizenTarget = null;
-  const animC = [], SKIN = [0xf1c9a0, 0xe0ac80, 0xc68a5c, 0x9a6a45];
+  const animC = [], SKIN = [0xf5d0b5, 0xf1c9a0, 0xe0ac80, 0xc68a5c, 0x9a6a45, 0x6f472d];
   const SP = (r, w = 12, h = 8) => new THREE.SphereGeometry(r, w, h);
 
   let myPlayerMesh = null;
@@ -1667,7 +1668,7 @@ let activeQuestSystem = null;
   }
 
   function parseCitizenStyle(c) {
-    // Format c.acc bisa berupa legacy ('none','glasses','peci','cat') atau 'acc|skinIdx|pantsIdx|hairStyle'
+    // Format c.acc: 'acc|skinIdx|pantsIdx|hairStyle|gender'
     const raw = String(c.acc || 'none');
     const parts = raw.split('|');
     const acc = parts[0] || 'none';
@@ -1675,12 +1676,13 @@ let activeQuestSystem = null;
     const seedStr = String(c.ig || c.name || 'bdg');
     for (let i = 0; i < seedStr.length; i++) hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
     const skinIdx = parts[1] !== undefined ? parseInt(parts[1], 10) : Math.abs(hash) % SKIN.length;
-    const pantsIdx = parts[2] !== undefined ? parseInt(parts[2], 10) : Math.abs(hash >> 2) % 5;
+    const pantsIdx = parts[2] !== undefined ? parseInt(parts[2], 10) : Math.abs(hash >> 2) % 7;
     const hairStyle = parts[3] || (Math.abs(hash >> 4) % 4 === 0 ? 'hijab' : 'short');
-    return { acc, skinIdx: isNaN(skinIdx) ? 1 : skinIdx, pantsIdx: isNaN(pantsIdx) ? 0 : pantsIdx, hairStyle };
+    const gender = parts[4] === 'female' ? 'female' : (parts[4] === 'male' ? 'male' : ((hairStyle === 'hijab' || hairStyle === 'ponytail' || hairStyle === 'long' || hairStyle === 'bob' || hairStyle === 'bun') ? 'female' : 'male'));
+    return { acc, skinIdx: isNaN(skinIdx) ? 2 : skinIdx, pantsIdx: isNaN(pantsIdx) ? 0 : pantsIdx, hairStyle, gender };
   }
 
-  const PANTS_PALETTE = [0x1e293b, 0x111827, 0x1d4ed8, 0x57534e, 0x7f1d1d];
+  const PANTS_PALETTE = [0x1e293b, 0x111827, 0x1d4ed8, 0x57534e, 0x7f1d1d, 0x14532d, 0xd6d3d1];
 
   function createCitizenMesh(c) {
     c.upvotes = c.upvotes || 0;
@@ -1714,8 +1716,9 @@ let activeQuestSystem = null;
     const legL = mkLeg(-1);
     const legR = mkLeg(1);
 
-    // Torso Baju + Kerah Putih Rapi
-    cyl(0.18, 0.22, 0.48, 16, 0, 0.34, 0, shirtColor, body);
+    // Torso Baju + Kerah Putih Rapi (siluet disesuaikan Male / Female)
+    const isFemale = st.gender === 'female';
+    cyl(isFemale ? 0.155 : 0.19, isFemale ? 0.21 : 0.22, 0.48, 16, 0, 0.34, 0, shirtColor, body);
     cyl(0.11, 0.12, 0.06, 14, 0, 0.81, 0, 0xf8fafc, body, false); // Kerah baju
 
     // Kepala Proporsional
@@ -1724,14 +1727,19 @@ let activeQuestSystem = null;
     body.add(head);
     mk(SP(0.25, 20, 16), skin, 0, 0, 0, head);
 
-    // Mata ekspresif + kilau putih + senyum tipis
-    [-0.085, 0.085].forEach(ex => {
+    // Mata ekspresif + kilau putih + senyum tipis (+ bulu mata / blush lembut untuk female)
+    [-0.085, 0.085].forEach((ex, eIdx) => {
       mk(SP(0.033, 10, 8), 0x0f172a, ex, -0.008, 0.226, head);
       mk(SP(0.011, 6, 6), 0xffffff, ex + 0.01, 0.004, 0.248, head, false);
+      if (isFemale) {
+        const lash = cyl(0.006, 0.006, 0.032, 6, ex + (eIdx === 0 ? -0.025 : 0.025), 0.012, 0.232, 0x0f172a, head, false);
+        lash.rotation.z = eIdx === 0 ? 0.65 : -0.65;
+        mk(SP(0.026, 8, 6), 0xf43f5e, ex + (eIdx === 0 ? -0.04 : 0.04), -0.048, 0.225, head, false);
+      }
       const brow = cyl(0.008, 0.008, 0.045, 6, ex, 0.048, 0.232, 0x1c1917, head, false);
       brow.rotation.z = Math.PI / 2;
     });
-    const smile = mk(new THREE.TorusGeometry(0.042, 0.008, 6, 12, Math.PI * 0.75), 0x9a3412, 0, -0.068, 0.228, head, false);
+    const smile = mk(new THREE.TorusGeometry(0.042, 0.008, 6, 12, Math.PI * 0.75), isFemale ? 0xe11d48 : 0x9a3412, 0, -0.068, 0.228, head, false);
     smile.rotation.z = Math.PI * 1.125;
 
     // Gaya Rambut / Hijab (Sculpted Halus, Tanpa Kotak)
@@ -1745,6 +1753,13 @@ let activeQuestSystem = null;
       mk(new THREE.TorusGeometry(0.055, 0.016, 8, 14), 0xfacc15, 0, 0.07, -0.245, head, false);
       const tail = cyl(0.065, 0.025, 0.24, 12, 0, -0.05, -0.29, 0x1c1917, head);
       tail.rotation.x = 0.25;
+    } else if (st.hairStyle === 'long') {
+      mk(new THREE.SphereGeometry(0.268, 20, 14, 0, PI * 2, 0, PI * 0.58), 0x1c1917, 0, 0.025, -0.02, head);
+      [-0.21, 0.21].forEach((sx, si) => {
+        const sHair = cyl(0.058, 0.045, 0.36, 12, sx, -0.14, -0.02, 0x1c1917, head, false);
+        sHair.rotation.z = si === 0 ? -0.06 : 0.06;
+      });
+      mk(new THREE.CylinderGeometry(0.255, 0.23, 0.34, 16, 1, false, Math.PI * 0.6, Math.PI * 0.8), 0x1c1917, 0, -0.13, -0.03, head, false);
     } else if (st.hairStyle === 'bob') {
       mk(new THREE.SphereGeometry(0.268, 20, 14, 0, PI * 2, 0, PI * 0.58), 0x1c1917, 0, 0.025, -0.02, head);
       const sideL = cyl(0.058, 0.048, 0.22, 12, -0.205, -0.06, -0.02, 0x1c1917, head, false);
@@ -1759,6 +1774,15 @@ let activeQuestSystem = null;
     } else if (st.hairStyle === 'curly') {
       mk(new THREE.SphereGeometry(0.282, 20, 14, 0, PI * 2, 0, PI * 0.6), 0x1c1917, 0, 0.03, -0.02, head);
       [[-0.21,0.11,-0.02],[0.21,0.11,-0.02],[0,0.23,-0.04],[-0.14,0.20,0.08],[0.14,0.20,0.08],[-0.15,0.16,-0.15],[0.15,0.16,-0.15]].forEach(p => mk(SP(0.102, 10, 8), 0x1c1917, p[0], p[1], p[2], head));
+    } else if (st.hairStyle === 'spiky') {
+      mk(new THREE.SphereGeometry(0.26, 18, 12, 0, PI * 2, 0, PI * 0.52), 0x111827, 0, 0.02, -0.015, head);
+      [[-0.09,0.24,0.06],[0.09,0.24,0.06],[0,0.27,0.08],[-0.07,0.25,-0.06],[0.07,0.25,-0.06]].forEach(p => {
+        mk(new THREE.ConeGeometry(0.055, 0.14, 8), 0x111827, p[0], p[1], p[2], head, false);
+      });
+    } else if (st.hairStyle === 'parted') {
+      mk(new THREE.SphereGeometry(0.264, 20, 14, 0, PI * 2, 0, PI * 0.56), 0x1c1917, 0, 0.025, -0.015, head);
+      mk(SP(0.085, 10, 8), 0x1c1917, -0.08, 0.19, 0.14, head, false);
+      mk(SP(0.085, 10, 8), 0x1c1917, 0.08, 0.19, 0.14, head, false);
     } else if (st.hairStyle === 'mohawk') {
       mk(new THREE.SphereGeometry(0.256, 18, 12, 0, PI * 2, 0, PI * 0.45), 0x27272a, 0, 0.02, -0.015, head);
       for (let mi = -2; mi <= 2; mi++) {
@@ -1783,6 +1807,19 @@ let activeQuestSystem = null;
       cyl(0.21, 0.23, 0.15, 20, 0, 0.16, 0, 0x0f172a, head);
     } else if (st.acc === 'caping') {
       cyl(0.04, 0.38, 0.18, 20, 0, 0.18, 0, 0xd97706, head);
+    } else if (st.acc === 'cap') {
+      mk(new THREE.SphereGeometry(0.268, 18, 12, 0, PI * 2, 0, PI * 0.5), 0x2563eb, 0, 0.04, -0.01, head);
+      mk(new THREE.CylinderGeometry(0.24, 0.25, 0.022, 16, 1, false, -0.85, 1.7), 0x1e40af, 0, 0.055, 0.08, head, false);
+    } else if (st.acc === 'headphones') {
+      mk(new THREE.TorusGeometry(0.265, 0.022, 8, 20, Math.PI), 0x1e293b, 0, 0.04, 0, head, false);
+      [-0.265, 0.265].forEach(hx => {
+        const cup = cyl(0.068, 0.068, 0.05, 12, hx, 0.0, 0, 0x38bdf8, head, false);
+        cup.rotation.z = Math.PI / 2;
+      });
+    } else if (st.acc === 'ribbon') {
+      mk(new THREE.ConeGeometry(0.06, 0.10, 6), 0xf43f5e, -0.14, 0.22, 0.06, head, false).rotation.z = 0.8;
+      mk(new THREE.ConeGeometry(0.06, 0.10, 6), 0xf43f5e, -0.04, 0.24, 0.06, head, false).rotation.z = -0.8;
+      mk(SP(0.028, 8, 8), 0xfb7185, -0.09, 0.23, 0.07, head, false);
     } else if (st.acc === 'cat') {
       const cat = new THREE.Group();
       cat.position.set(0.36, 0, 0.18);
@@ -2205,19 +2242,9 @@ let activeQuestSystem = null;
     if (!localStorage.getItem("piraku_my_ig") && window.spawnGuestCitizen) window.spawnGuestCitizen();
   });
 
-  // Ticker Aspirasi
+  // Ticker Aspirasi (dinonaktifkan)
   let currentTickerIndex = 0;
-  function initCitizenTicker() {
-    if (registeredCitizensList.length === 0) return;
-    setInterval(() => {
-      currentTickerIndex = (currentTickerIndex + 1) % registeredCitizensList.length;
-      const c = registeredCitizensList[currentTickerIndex];
-      const tickerEl = document.getElementById('ticker-text');
-      if (tickerEl && c) {
-        tickerEl.innerHTML = `<b>${esc(c.ig)} [${esc(c.kecamatan || 'Bandung')}]:</b> "${esc(c.wish)}"`;
-      }
-    }, 7000);
-  }
+  function initCitizenTicker() {}
 
   window.focusCurrentTickerCitizen = function() {
     const c = registeredCitizensList[currentTickerIndex];
@@ -2245,11 +2272,9 @@ let activeQuestSystem = null;
     if (performance.now() - touchStartTime < 300 && Math.hypot(e.clientX - touchStartPos.x, e.clientY - touchStartPos.y) < 8) {
       mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
-      const myIgLower = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
       const hits = raycaster.intersectObjects(clickableObjects).filter(h => {
         const ud = h.object && h.object.userData;
         if (!ud) return false;
-        if ((typeof myPlayerMesh !== 'undefined' && myPlayerMesh && ud.meshGroup === myPlayerMesh) || (myIgLower && (ud.ig || '').toLowerCase().replace(/^@/, '') === myIgLower)) return false;
         let p = h.object;
         while (p) { if (p.visible === false) return false; p = p.parent; }
         return true;
@@ -2462,7 +2487,6 @@ let activeQuestSystem = null;
       }
     }
     document.getElementById('b-kec').innerText = 'Kec. ' + (data.kecamatan || 'Bandung Wetan');
-    document.getElementById('b-wish').innerText = '“' + data.wish + '”';
     document.getElementById('b-upvotes').innerText = data.upvotes || 0;
     bubbleEl.style.display = 'block';
 
@@ -2523,7 +2547,7 @@ let activeQuestSystem = null;
     const voteKey = 'voted_user_' + cleanIg;
 
     if (localStorage.getItem(voteKey)) {
-      showToast('Kamu sudah pernah menyetujui aspirasi ini! ❤️');
+      showToast('Kamu sudah pernah mendukung wargi ini! ❤️');
       return;
     }
 
@@ -2532,7 +2556,7 @@ let activeQuestSystem = null;
     activeCitizenTarget.upvotes = nextCount;
     document.getElementById('b-upvotes').innerText = nextCount;
     localStorage.setItem(voteKey, 'true');
-    showToast('Aspirasi didukung! +1 ❤️');
+    showToast('Wargi didukung! +1 ❤️');
 
     if (supabaseClient) {
       try {
@@ -2881,6 +2905,17 @@ let activeQuestSystem = null;
       setTimeout(() => m.style.display = 'none', 280); 
     }
   };
+  let selectedGender = 'male', selectedSkinIdx = 3, selectedPantsIdx = 0, selectedHair = 'short';
+  window.pickGender = (el, g) => {
+    document.querySelectorAll('.gender-chip').forEach(c => c.classList.remove('selected'));
+    if (el) el.classList.add('selected');
+    selectedGender = g === 'female' ? 'female' : 'male';
+    const gBadge = document.getElementById('signup-gender-preview');
+    if (gBadge) gBadge.textContent = selectedGender === 'female' ? '👩 Perempuan' : '👨 Laki-laki';
+  };
+  window.pickSignupSkin = (el, idx) => { document.querySelectorAll('.signup-skin-swatch').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedSkinIdx = idx; };
+  window.pickSignupPants = (el, idx) => { document.querySelectorAll('.signup-pants-swatch').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedPantsIdx = idx; };
+  window.pickSignupHair = (el, h) => { document.querySelectorAll('.hair-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedHair = h; };
   window.pickRole = (el, r, e) => { document.querySelectorAll('.role-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedRole = r; selectedEmoji = e; };
   window.pickAcc = (el, a) => { document.querySelectorAll('.acc-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); selectedAcc = a; };
   window.pickColor = (el, hex) => { document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected')); el.classList.add('selected'); selectedColor = hex; };
@@ -2979,7 +3014,7 @@ let activeQuestSystem = null;
     const pin = document.getElementById('signup-pin').value.trim();
     const name = document.getElementById('signup-name').value.trim() || 'Warga Baru';
     const kecamatan = document.getElementById('signup-kecamatan').value;
-    const wish = document.getElementById('signup-wish').value.trim() || 'Bandung makin asri dan ramah pejalan kaki!';
+    const wish = '';
 
     if (!rawIg) { alert('Masukkan username Instagram kamu!'); return; }
     if (!pin || pin.length < 4) { alert('Buat 4 angka PIN keamanan akunmu!'); return; }
@@ -3022,12 +3057,13 @@ let activeQuestSystem = null;
         const assignedHouse = spawnCitizenHouse(draftCit, registeredCitizensList.length);
         const spawnX = assignedHouse ? assignedHouse.porchX : getSafeGasibuPos().x;
         const spawnZ = assignedHouse ? assignedHouse.porchZ : getSafeGasibuPos().z;
+        const encodedSignupAcc = (selectedAcc || 'none') + '|' + selectedSkinIdx + '|' + selectedPantsIdx + '|' + selectedHair + '|' + selectedGender;
         const newCit = { 
           name, 
           ig: formattedIg, 
           pin_warga: pin, 
           role: selectedRole, 
-          acc: selectedAcc, 
+          acc: encodedSignupAcc, 
           color: selectedColor, 
           kecamatan, 
           wish, 
@@ -3070,8 +3106,9 @@ let activeQuestSystem = null;
         document.getElementById('ktp-ig').innerText = newCit.ig;
         document.getElementById('ktp-avatar-emoji').innerText = selectedEmoji; 
         document.getElementById('ktp-avatar-role').innerText = selectedRole.toUpperCase();
+        const ktpGenEl = document.getElementById('ktp-gender-pill');
+        if (ktpGenEl) ktpGenEl.innerText = selectedGender === 'female' ? '♀️ PEREMPUAN' : '♂️ LAKI-LAKI';
         document.getElementById('ktp-level-text').innerText = 'Lv. 1';
-        document.getElementById('ktp-quote').innerText = '“' + wish + '”'; 
         window._pirakuPendingDistrictSpawn = true;
         document.getElementById('ktp-modal').style.display = 'flex';
         return;
@@ -3143,8 +3180,15 @@ let activeQuestSystem = null;
     setTxt('ktp-ig', found.ig || savedIg);
     setTxt('ktp-avatar-emoji', found.emoji || '☕');
     setTxt('ktp-avatar-role', (found.role || 'WARGA').toUpperCase());
+    const st = parseCitizenStyle(found);
+    setTxt('ktp-gender-pill', st.gender === 'female' ? '♀️ PEREMPUAN' : '♂️ LAKI-LAKI');
     setTxt('ktp-level-text', 'Lv. ' + lvl);
-    setTxt('ktp-quote', '“' + (found.wish || 'Semangat membangun Bandung!') + '”');
+    const ktpTierEl = document.getElementById('ktp-tier-pill');
+    const eco = window.PirakuEconomy;
+    if (ktpTierEl && eco && typeof eco.getTierObj === 'function') {
+      const t = eco.getTierObj();
+      ktpTierEl.textContent = t.badge + ' ' + t.name;
+    }
     const m = document.getElementById('ktp-modal');
     if (m) m.style.display = 'flex';
   };

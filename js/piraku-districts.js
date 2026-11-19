@@ -825,7 +825,35 @@
     // Abang tukang dagang yang mendorong di belakang gerobak
     const vendor = createDistrictNpcMesh(0xfacc15, false);
     vendor.position.set(0, 0, -0.85);
-    g.add(base, showcase, pot, pole, umbrella, vendor);
+
+    // Papan tanda jelas di atas payung + ring oranye di tanah agar Mang Cuanki mudah ditemukan
+    const signCv = document.createElement("canvas");
+    signCv.width = 256; signCv.height = 64;
+    const sctx = signCv.getContext("2d");
+    sctx.fillStyle = "rgba(15, 23, 42, 0.94)";
+    sctx.fillRect(0, 0, 256, 64);
+    sctx.strokeStyle = "#f97316";
+    sctx.lineWidth = 5;
+    sctx.strokeRect(3, 3, 250, 58);
+    sctx.fillStyle = "#fde047";
+    sctx.font = "bold 24px sans-serif";
+    sctx.textAlign = "center";
+    sctx.textBaseline = "middle";
+    sctx.fillText("🍜 MANG CUANKI", 128, 33);
+    const signMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.3, 0.58),
+      new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(signCv), side: THREE.DoubleSide })
+    );
+    signMesh.position.set(0, 2.95, 0.15);
+
+    const vendorRing = new THREE.Mesh(
+      new THREE.RingGeometry(1.1, 1.32, 28),
+      new THREE.MeshBasicMaterial({ color: 0xf97316, side: THREE.DoubleSide, transparent: true, opacity: 0.72 })
+    );
+    vendorRing.rotation.x = -Math.PI / 2;
+    vendorRing.position.set(0, 0.05, 0);
+
+    g.add(base, showcase, pot, pole, umbrella, vendor, signMesh, vendorRing);
     g.userData.limbs = vendor.userData.limbs;
     return g;
   }
@@ -1555,10 +1583,10 @@
       grp.add(unit);
     });
 
-    // Warga yang belum mendapat kavling tapak (kelebihan >19 rumah atau belum menyelesaikan misi bangun rumah) -> Tower Apartemen Kecamatan
+    // Warga yang belum mendapat kavling tapak & belum membangun rumah -> Tower Apartemen Kecamatan
     const apartmentResidents = regularMembers.filter(m => {
       const norm = String(m.ig || "").trim().toLowerCase().replace(/^@/, "");
-      return !landedIgSet.has(norm);
+      return !landedIgSet.has(norm) && !hasBuiltHouse(m);
     });
     if (apartmentResidents.length > 0) {
       const aptGroup = new THREE.Group();
@@ -1697,7 +1725,6 @@
                 <span style="background:rgba(56,189,248,0.16);color:#38bdf8;font-weight:700;font-size:10.5px;padding:2px 8px;border-radius:999px;">Lt. ${floor} • Unit ${unitNo}</span>
               </div>
               <div style="font-size:11px;color:#94a3b8;margin-top:2px;">${cit.role || "Warga"} • Lvl ${cit.level || 1} (${cit.xp || 0} XP)</div>
-              ${cit.wish ? `<div style="font-size:11px;color:#cbd5e1;margin-top:4px;font-style:italic;">"${String(cit.wish).slice(0, 80)}"</div>` : ""}
             </div>
           `;
         }).join("");
@@ -2140,6 +2167,21 @@
         if (Math.hypot(vx - cx, vz - cy) < 98) {
           ctx.fillStyle = "#fb923c";
           ctx.fillRect(vx - 2.5, vz - 2.5, 5, 5);
+        }
+      });
+
+      // Titik Live Gerobak Mang Cuanki di Minimap Komplek
+      districtPedestrians.forEach(p => {
+        if (!p.isVendor || !p.mesh) return;
+        const px = toM(p.mesh.position.x);
+        const pz = toM(p.mesh.position.z);
+        if (Math.hypot(px - cx, pz - cy) < 98) {
+          ctx.fillStyle = "#f97316";
+          ctx.beginPath(); ctx.arc(px, pz, 6, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "#fde047"; ctx.lineWidth = 1.4; ctx.stroke();
+          ctx.font = "9px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("🍜", px, pz + 3);
         }
       });
 

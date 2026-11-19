@@ -1003,8 +1003,11 @@
       } catch (e) {}
     }
 
+    const cleanIgKey = myIg.toLowerCase().replace(/^@/, "").trim();
+    window.pirakuRemoteHouses = window.pirakuRemoteHouses || {};
+    if (cleanIgKey) window.pirakuRemoteHouses[cleanIgKey] = true;
     if (Array.isArray(window.registeredCitizensList)) {
-      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
+      const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase().replace(/^@/, "").trim() === cleanIgKey);
       if (me) me.has_house = true;
     }
     if (typeof window.refreshActiveDistrictHouses === "function") {

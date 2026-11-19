@@ -397,6 +397,27 @@
             a.armL.rotation.z = 0;
             a.armR.rotation.z = 0;
           }
+
+          const tierAtt = cg.getObjectByName("piraku-shop-tier-att");
+          if (tierAtt) {
+            tierAtt.rotation.y = t * 0.9;
+            tierAtt.children.forEach((ch, idx) => {
+              if (ch.userData && ch.userData.spinSpeed) ch.rotation.z += ch.userData.spinSpeed;
+              if (ch.userData && ch.userData.orbitRadius) {
+                const ang = t * (ch.userData.orbitSpeed || 1.6) + idx * 1.05;
+                ch.position.x = Math.cos(ang) * ch.userData.orbitRadius;
+                ch.position.z = Math.sin(ang) * ch.userData.orbitRadius;
+                ch.position.y = (ch.userData.baseY || 0.9) + Math.sin(t * 2.5 + idx) * 0.12;
+              }
+            });
+          }
+          if (a.head) {
+            const tierHeadAtt = a.head.getObjectByName("piraku-shop-tier-head-att");
+            if (tierHeadAtt) {
+              tierHeadAtt.position.y = (tierHeadAtt.userData.baseY || 0.38) + Math.sin(t * 2.4) * 0.03;
+              if (tierHeadAtt.userData.rotateY) tierHeadAtt.rotation.y = t * 0.85;
+            }
+          }
         });
       }
       requestAnimationFrame(tick);
@@ -404,10 +425,13 @@
     requestAnimationFrame(tick);
   }
 
-  window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId) {
+  window.attachPirakuShopToCitizen = function(cg, outfitId, vehicleId, tierId) {
     if (!cg || typeof THREE === "undefined" || !cg.userData || !cg.userData.a || !cg.userData.a.head) return;
+    const isSelf = typeof window.getMyActivePlayerMesh === "function" && window.getMyActivePlayerMesh() === cg;
+    const resolvedTier = tierId || (isSelf ? state.tier : (cg.userData._activeShopTier || null));
     cg.userData._activeShopVehicle = vehicleId || null;
-    if (outfitId || vehicleId) ensureShopAnimLoop();
+    cg.userData._activeShopTier = resolvedTier || null;
+    if (outfitId || vehicleId || (resolvedTier && resolvedTier !== "tier_1")) ensureShopAnimLoop();
     const headNode = cg.userData.a.head;
 
     // Bersihkan attachment lama di akar karakter maupun di kepala
@@ -415,6 +439,165 @@
     if (oldBodyAtt) cg.remove(oldBodyAtt);
     const oldHeadAtt = headNode.getObjectByName("piraku-shop-head-att");
     if (oldHeadAtt) headNode.remove(oldHeadAtt);
+    const oldTierAtt = cg.getObjectByName("piraku-shop-tier-att");
+    if (oldTierAtt) cg.remove(oldTierAtt);
+    const oldTierHeadAtt = headNode.getObjectByName("piraku-shop-tier-head-att");
+    if (oldTierHeadAtt) headNode.remove(oldTierHeadAtt);
+
+    // 0. AURA & MAHKOTA KHUSUS PER GELAR (tier_2 s/d tier_7 masing-masing punya desain unik!)
+    if (resolvedTier && resolvedTier !== "tier_1") {
+      const tierGrp = new THREE.Group();
+      tierGrp.name = "piraku-shop-tier-att";
+      const tierHead = new THREE.Group();
+      tierHead.name = "piraku-shop-tier-head-att";
+      tierHead.userData.baseY = 0.40;
+      tierHead.position.set(0, 0.40, 0);
+
+      if (resolvedTier === "tier_2") {
+        // Wargi Aktif: Ring Indigo-Cyan + Permata Bintang mengambang
+        const r = new THREE.Mesh(
+          new THREE.RingGeometry(0.46, 0.56, 28),
+          new THREE.MeshBasicMaterial({ color: 0x818cf8, side: THREE.DoubleSide, transparent: true, opacity: 0.78 })
+        );
+        r.rotation.x = -Math.PI / 2; r.position.y = 0.04;
+        tierGrp.add(r);
+        const starGem = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.08, 0),
+          new THREE.MeshStandardMaterial({ color: 0x818cf8, emissive: 0x4f46e5, emissiveIntensity: 0.7, roughness: 0.2 })
+        );
+        tierHead.userData.rotateY = true;
+        tierHead.add(starGem);
+      } else if (resolvedTier === "tier_3") {
+        // Sesepuh Bandung: Dual Ring Emas-Amber + Halo Mahkota Emas
+        const r1 = new THREE.Mesh(
+          new THREE.RingGeometry(0.48, 0.58, 32),
+          new THREE.MeshBasicMaterial({ color: 0xf59e0b, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+        );
+        r1.rotation.x = -Math.PI / 2; r1.position.y = 0.04;
+        tierGrp.add(r1);
+        const halo = new THREE.Mesh(
+          new THREE.TorusGeometry(0.20, 0.022, 10, 28),
+          new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xd97706, emissiveIntensity: 0.65, metalness: 0.75, roughness: 0.2 })
+        );
+        halo.rotation.x = Math.PI / 2;
+        tierHead.userData.baseY = 0.36;
+        tierHead.position.y = 0.36;
+        tierHead.add(halo);
+      } else if (resolvedTier === "tier_4") {
+        // Sultan Kecamatan: Ring Berlian Cyan + 4 Kristal Mengorbit + Mahkota Kristal
+        const r1 = new THREE.Mesh(
+          new THREE.RingGeometry(0.50, 0.64, 32),
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+        );
+        r1.rotation.x = -Math.PI / 2; r1.position.y = 0.045;
+        tierGrp.add(r1);
+        for (let i = 0; i < 4; i++) {
+          const shard = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.065, 0),
+            new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x0284c7, emissiveIntensity: 0.8, roughness: 0.15 })
+          );
+          shard.userData = { orbitRadius: 0.60, orbitSpeed: 1.8, baseY: 0.85 };
+          tierGrp.add(shard);
+        }
+        const crownBand = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.17, 0.14, 0.08, 6),
+          new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0ea5e9, emissiveIntensity: 0.6, metalness: 0.7, roughness: 0.2 })
+        );
+        tierHead.userData.baseY = 0.36; tierHead.userData.rotateY = true;
+        tierHead.position.y = 0.36;
+        tierHead.add(crownBand);
+      } else if (resolvedTier === "tier_5") {
+        // Sultan Bandung: Twin Ring Sapphire-Emas + Mahkota Emas Bermutiara Biru
+        const r1 = new THREE.Mesh(
+          new THREE.RingGeometry(0.50, 0.62, 32),
+          new THREE.MeshBasicMaterial({ color: 0x2563eb, side: THREE.DoubleSide, transparent: true, opacity: 0.88 })
+        );
+        r1.rotation.x = -Math.PI / 2; r1.position.y = 0.045;
+        const r2 = new THREE.Mesh(
+          new THREE.RingGeometry(0.68, 0.75, 32),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+        );
+        r2.rotation.x = -Math.PI / 2; r2.position.y = 0.05;
+        tierGrp.add(r1, r2);
+        const baseRing = new THREE.Mesh(
+          new THREE.TorusGeometry(0.18, 0.024, 10, 24),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, metalness: 0.85, roughness: 0.15, emissive: 0xca8a04, emissiveIntensity: 0.4 })
+        );
+        baseRing.rotation.x = Math.PI / 2;
+        const gem = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.085, 0),
+          new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x1d4ed8, emissiveIntensity: 0.9 })
+        );
+        gem.position.y = 0.09;
+        tierHead.userData.baseY = 0.38; tierHead.userData.rotateY = true;
+        tierHead.position.y = 0.38;
+        tierHead.add(baseRing, gem);
+      } else if (resolvedTier === "tier_6") {
+        // Sultan Jabar: Orbit Kosmik Ungu-Emas + 3 Orb Energi + Diadem Amethyst
+        const r1 = new THREE.Mesh(
+          new THREE.RingGeometry(0.54, 0.68, 36),
+          new THREE.MeshBasicMaterial({ color: 0xa855f7, side: THREE.DoubleSide, transparent: true, opacity: 0.88 })
+        );
+        r1.rotation.x = -Math.PI / 2; r1.position.y = 0.05;
+        const r2 = new THREE.Mesh(
+          new THREE.TorusGeometry(0.72, 0.02, 10, 36),
+          new THREE.MeshBasicMaterial({ color: 0xfacc15, transparent: true, opacity: 0.75 })
+        );
+        r2.rotation.x = Math.PI / 2.6; r2.position.y = 0.78;
+        tierGrp.add(r1, r2);
+        for (let i = 0; i < 3; i++) {
+          const orb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.07, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0xc084fc, emissive: 0x9333ea, emissiveIntensity: 0.95 })
+          );
+          orb.userData = { orbitRadius: 0.68, orbitSpeed: 2.3, baseY: 1.05 };
+          tierGrp.add(orb);
+        }
+        const diadem = new THREE.Mesh(
+          new THREE.ConeGeometry(0.14, 0.18, 5),
+          new THREE.MeshStandardMaterial({ color: 0xa855f7, emissive: 0x7e22ce, emissiveIntensity: 0.85, metalness: 0.6, roughness: 0.2 })
+        );
+        tierHead.userData.baseY = 0.42; tierHead.userData.rotateY = true;
+        tierHead.position.y = 0.42;
+        tierHead.add(diadem);
+      } else if (resolvedTier === "tier_7") {
+        // Sultan Indo: Aura Trisula Prismatic (Merah-Emas-Cyan) + 6 Bintang Mengorbit + Mahkota Garuda Emas
+        const colors = [0xef4444, 0xfacc15, 0x38bdf8];
+        colors.forEach((col, idx) => {
+          const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.50 + idx * 0.14, 0.58 + idx * 0.14, 36),
+            new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: 0.86 })
+          );
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.y = 0.045 + idx * 0.01;
+          tierGrp.add(ring);
+        });
+        for (let i = 0; i < 6; i++) {
+          const star = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.068, 0),
+            new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0xfacc15 : 0xf87171, emissive: i % 2 === 0 ? 0xeab308 : 0xdc2626, emissiveIntensity: 0.95 })
+          );
+          star.userData = { orbitRadius: 0.76, orbitSpeed: 2.6, baseY: 1.08 };
+          tierGrp.add(star);
+        }
+        const garudaHalo = new THREE.Mesh(
+          new THREE.TorusGeometry(0.22, 0.026, 12, 32),
+          new THREE.MeshStandardMaterial({ color: 0xfacc15, emissive: 0xeab308, emissiveIntensity: 0.8, metalness: 0.9, roughness: 0.15 })
+        );
+        garudaHalo.rotation.x = Math.PI / 2;
+        const trisulaCore = new THREE.Mesh(
+          new THREE.OctahedronGeometry(0.11, 0),
+          new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xf59e0b, emissiveIntensity: 1.0, metalness: 0.8, roughness: 0.1 })
+        );
+        trisulaCore.position.y = 0.11;
+        tierHead.userData.baseY = 0.42; tierHead.userData.rotateY = true;
+        tierHead.position.y = 0.42;
+        tierHead.add(garudaHalo, trisulaCore);
+      }
+
+      cg.add(tierGrp);
+      headNode.add(tierHead);
+    }
 
     // A. AKSESORIS KEPALA (menempel langsung ke tulang head agar ikut gerak & proporsional)
     if (outfitId === "iket_sunda" || outfitId === "kacamata_hitam" || outfitId === "helm_biker" || outfitId === "topi_bobotoh") {
@@ -830,7 +1013,7 @@
     if (!mesh || typeof THREE === "undefined") return;
 
     const rental = window.PirakuEconomy.getActiveRental();
-    window.attachPirakuShopToCitizen(mesh, state.equippedOutfit, rental ? rental.item.id : null);
+    window.attachPirakuShopToCitizen(mesh, state.equippedOutfit, rental ? rental.item.id : null, state.tier);
     ensureShopAnimLoop();
 
     updateGasibuBillboard3D(state.billboardText);
@@ -968,20 +1151,33 @@
           }).join("");
     } else if (activeTab === "tier") {
       const myKecName = (localStorage.getItem("piraku_my_kec") || "").trim();
+      const TIER_THEMES = {
+        tier_1: { bg: "linear-gradient(135deg,#1e293b,#0f172a)", border: "rgba(148,163,184,0.28)", accent: "#94a3b8", tag: "DASAR" },
+        tier_2: { bg: "linear-gradient(135deg,#1e1b4b,#312e81)", border: "#818cf8", accent: "#c7d2fe", tag: "SILVER-INDIGO" },
+        tier_3: { bg: "linear-gradient(135deg,#451a03,#78350f)", border: "#f59e0b", accent: "#fde68a", tag: "EMAS KLASIK" },
+        tier_4: { bg: "linear-gradient(135deg,#082f49,#0e7490)", border: "#38bdf8", accent: "#bae6fd", tag: "BERLIAN KECAMATAN" },
+        tier_5: { bg: "linear-gradient(135deg,#172554,#1d4ed8)", border: "#60a5fa", accent: "#fde047", tag: "SAPPHIRE BANDUNG" },
+        tier_6: { bg: "linear-gradient(135deg,#3b0764,#6b21a8)", border: "#c084fc", accent: "#f3e8ff", tag: "KOSMIK JABAR" },
+        tier_7: { bg: "linear-gradient(135deg,#450a0a,#991b1b 55%,#78350f)", border: "#facc15", accent: "#fef08a", tag: "GARUDA PRISMATIC" }
+      };
       bodyHTML = CATALOG.tier.map(t => {
         const owned = state.owned.includes(t.id);
         const current = state.tier === t.id;
         const dispName = t.dynamicKec ? ("Sultan " + (myKecName || "Dago")) : t.name;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${current ? "#a78bfa" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <span style="font-size:22px;">${t.badge}</span>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#f8fafc;">${dispName}</div>
-              <div style="font-size:11px;color:#94a3b8;">${t.desc}</div>
+        const th = TIER_THEMES[t.id] || TIER_THEMES.tier_1;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:14px;background:${th.bg};border:1.8px solid ${current ? "#22c55e" : th.border};box-shadow:${current ? "0 0 16px rgba(34,197,94,0.35)" : "0 6px 16px rgba(0,0,0,0.28)"};margin-bottom:9px;">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <div style="width:42px;height:42px;border-radius:12px;background:rgba(2,6,23,0.45);border:1px solid ${th.border};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${t.badge}</div>
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:13.5px;font-weight:900;color:#ffffff;">${dispName}</span>
+                <span style="font-size:9px;font-weight:900;padding:2px 6px;border-radius:999px;background:rgba(2,6,23,0.55);color:${th.accent};border:1px solid ${th.border};">${th.tag}</span>
+              </div>
+              <div style="font-size:11px;color:#e2e8f0;opacity:0.88;margin-top:2px;">${t.desc}</div>
             </div>
           </div>
-          <button data-buy-tier="${t.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${current ? "#22c55e" : owned ? "#a78bfa" : "#f59e0b"};color:#0f172a;">
-            ${current ? "Gelar Aktif" : owned ? "Pasang" : "🪙 " + t.price.toLocaleString("id-ID")}
+          <button data-buy-tier="${t.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${current ? "#22c55e" : owned ? th.border : "#f59e0b"};color:#0f172a;">
+            ${current ? "Gelar Aktif ✓" : owned ? "Pasang" : "🪙 " + t.price.toLocaleString("id-ID")}
           </button>
         </div>`;
       }).join("");

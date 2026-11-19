@@ -404,11 +404,6 @@
       <button class="view-chip" id="chip-walkot" onclick="moveCam('walkot')">☕ Pak Walkot</button>
       <button class="view-chip" onclick="snapCity()">📷 Foto kota</button>
     </div>
-
-    <div class="citizen-ticker-bar" onclick="focusCurrentTickerCitizen()">
-      <span class="ticker-badge">CURHAT WARGA</span>
-      <span class="ticker-content" id="ticker-text">Memuat aspirasi wargi Bandung...</span>
-    </div>
   </div>
 
   <div id="citizen-bubble" style="z-index:990;">
@@ -418,7 +413,6 @@
         <span class="bubble-role" id="b-role" style="font-size:8.5px;padding:1px 6px;">LVL 1</span>
       </div>
       <span class="bubble-kec" id="b-kec" style="display:block;font-size:9.5px;margin-bottom:6px;opacity:.85;">Kec. Bandung Wetan</span>
-      <p class="bubble-quote" id="b-wish" style="display:none;"></p>
       <div class="bubble-emotes" style="display:flex;gap:4px;margin-bottom:5px;">
         
         <button class="btn-emote-action" style="flex:1;padding:4px 2px;font-size:10px;border-radius:8px;" onclick="triggerEmote('lambai')">👋 Lambai</button>
@@ -518,7 +512,7 @@
         <h3>Top Warga Berpengaruh 🏆</h3>
         <button class="btn-close" onclick="closeLeaderboardModal()">✕</button>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Aspirasi dengan dukungan ❤️ terbanyak dari wargi:</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Wargi dengan dukungan ❤️ terbanyak:</div>
       <div class="leaderboard-list" id="leaderboard-items">
         <div style="text-align:center;font-size:11px;color:#94a3b8;padding:20px;">Memuat peringkat...</div>
       </div>
@@ -627,36 +621,90 @@
           </select>
         </div>
         <div class="form-group">
+          <label>Jenis Kelamin Karakter</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="role-chip gender-chip selected" onclick="pickGender(this, 'male')" style="text-align:center;font-weight:800;">👨 Laki-laki (Male)</div>
+            <div class="role-chip gender-chip" onclick="pickGender(this, 'female')" style="text-align:center;font-weight:800;">👩 Perempuan (Female)</div>
+          </div>
+        </div>
+        <div class="form-group">
           <label>Peran di Kota</label>
-          <div class="chip-grid">
-            <div class="role-chip selected" onclick="pickRole(this, 'Barista', '☕')">☕ Akang Barista</div>
-            <div class="role-chip" onclick="pickRole(this, 'Indie', '🎸')">🎸 Anak Indie</div>
-            <div class="role-chip" onclick="pickRole(this, 'Gowes', '🚲')">🚲 Wargi Gowes</div>
-            <div class="role-chip" onclick="pickRole(this, 'Santai', '🚶')">🚶 Warga Santai</div>
+          <div class="chip-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;">
+            <div class="role-chip selected" onclick="pickRole(this, 'Barista', '☕')">☕ Barista</div>
+            <div class="role-chip" onclick="pickRole(this, 'Indie', '🎸')">🎸 Indie</div>
+            <div class="role-chip" onclick="pickRole(this, 'Gowes', '🚲')">🚲 Gowes</div>
+            <div class="role-chip" onclick="pickRole(this, 'Santai', '🚶')">🚶 Santai</div>
+            <div class="role-chip" onclick="pickRole(this, 'Seniman', '🎨')">🎨 Seniman</div>
+            <div class="role-chip" onclick="pickRole(this, 'Fotografer', '📸')">📸 Foto</div>
+            <div class="role-chip" onclick="pickRole(this, 'Kuliner', '🍜')">🍜 Kuliner</div>
+            <div class="role-chip" onclick="pickRole(this, 'Tech', '💻')">💻 Tech</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Warna Kulit</label>
+          <div class="color-row">
+            <div class="color-swatch signup-skin-swatch" style="background:#f5d0b5" onclick="pickSignupSkin(this, 0)"></div>
+            <div class="color-swatch signup-skin-swatch" style="background:#f1c9a0" onclick="pickSignupSkin(this, 1)"></div>
+            <div class="color-swatch signup-skin-swatch" style="background:#e0ac80" onclick="pickSignupSkin(this, 2)"></div>
+            <div class="color-swatch signup-skin-swatch selected" style="background:#c68a5c" onclick="pickSignupSkin(this, 3)"></div>
+            <div class="color-swatch signup-skin-swatch" style="background:#9a6a45" onclick="pickSignupSkin(this, 4)"></div>
+            <div class="color-swatch signup-skin-swatch" style="background:#6f472d" onclick="pickSignupSkin(this, 5)"></div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Gaya Rambut</label>
+          <div class="chip-grid" style="grid-template-columns:repeat(3,1fr);gap:6px;">
+            <div class="acc-chip hair-chip selected" onclick="pickSignupHair(this, 'short')">Pendek</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'parted')">Belah Tengah</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'spiky')">Spiky</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'ponytail')">Kuncir</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'long')">Panjang</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'bob')">Bob</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'bun')">Cepol</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'curly')">Kribo</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'mohawk')">Mohawk</div>
+            <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'hijab')">Hijab</div>
           </div>
         </div>
         <div class="form-group">
           <label>Aksesoris Skena Bandung</label>
-          <div class="chip-grid">
-            <div class="acc-chip selected" onclick="pickAcc(this, 'none')">Polos Santai</div>
-            <div class="acc-chip" onclick="pickAcc(this, 'glasses')">🕶️ Kacamata Hitam</div>
-            <div class="acc-chip" onclick="pickAcc(this, 'peci')">🎩 Peci / Kupluk</div>
-            <div class="acc-chip" onclick="pickAcc(this, 'cat')">🐈 Bawa Si Oyen</div>
+          <div class="chip-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;">
+            <div class="acc-chip selected" onclick="pickAcc(this, 'none')">Polos</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'glasses')">🕶️ Kacamata</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'peci')">🎩 Peci</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'caping')">👒 Caping</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'cap')">🧢 Topi</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'headphones')">🎧 Audio</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'ribbon')">🎀 Pita</div>
+            <div class="acc-chip" onclick="pickAcc(this, 'cat')">🐈 Oyen</div>
           </div>
         </div>
         <div class="form-group">
-          <label>Warna Outfit</label>
-          <div class="color-row">
+          <label>Warna Baju</label>
+          <div class="color-row" style="flex-wrap:wrap;gap:6px;">
             <div class="color-swatch selected" style="background:#1e3a8a" onclick="pickColor(this, 0x1e3a8a)"></div>
+            <div class="color-swatch" style="background:#2d6a4f" onclick="pickColor(this, 0x2d6a4f)"></div>
             <div class="color-swatch" style="background:#dc2626" onclick="pickColor(this, 0xdc2626)"></div>
             <div class="color-swatch" style="background:#16a34a" onclick="pickColor(this, 0x16a34a)"></div>
             <div class="color-swatch" style="background:#f59e0b" onclick="pickColor(this, 0xf59e0b)"></div>
+            <div class="color-swatch" style="background:#7e22ce" onclick="pickColor(this, 0x7e22ce)"></div>
+            <div class="color-swatch" style="background:#db2777" onclick="pickColor(this, 0xdb2777)"></div>
+            <div class="color-swatch" style="background:#0891b2" onclick="pickColor(this, 0x0891b2)"></div>
             <div class="color-swatch" style="background:#475569" onclick="pickColor(this, 0x475569)"></div>
+            <div class="color-swatch" style="background:#e7dec8" onclick="pickColor(this, 0xe7dec8)"></div>
           </div>
         </div>
         <div class="form-group">
-          <label>Aspirasi Tata Kota (Maks 60 Karakter)</label>
-          <input type="text" class="form-input" id="signup-wish" maxlength="60" placeholder="Misal: Perbanyak trotoar rindang Braga!">
+          <label>Warna Celana</label>
+          <div class="color-row">
+            <div class="color-swatch signup-pants-swatch selected" style="background:#1e293b" onclick="pickSignupPants(this, 0)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#111827" onclick="pickSignupPants(this, 1)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#1d4ed8" onclick="pickSignupPants(this, 2)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#57534e" onclick="pickSignupPants(this, 3)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#7f1d1d" onclick="pickSignupPants(this, 4)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#14532d" onclick="pickSignupPants(this, 5)"></div>
+            <div class="color-swatch signup-pants-swatch" style="background:#d6d3d1" onclick="pickSignupPants(this, 6)"></div>
+          </div>
         </div>
         <button class="btn-submit" id="btn-submit-signup" onclick="processUserSignup()">Daftar Jadi Warga Resmi 📜</button>
         <div style="text-align:center;margin-top:12px;font-size:11.5px;color:var(--sub);">
@@ -669,14 +717,21 @@
   <div class="ktp-overlay" id="ktp-modal">
     <div class="ktp-box" id="ktp-card-export">
       <div class="ktp-head">
-        <h4>E-KTP SIMULASI BANDUNG</h4>
+        <div>
+          <div style="font-size:8px;font-weight:800;letter-spacing:1.2px;color:#94a3b8;">REPUBLIK PIRAKU • JAWA BARAT</div>
+          <h4>E-KTP KOTA BANDUNG</h4>
+        </div>
         <span class="ktp-num" id="ktp-reg-num">NO: BDG-001</span>
       </div>
-      <div class="ktp-chip-icon"></div>
+      <div class="ktp-chip-row">
+        <div class="ktp-chip-icon"></div>
+        <span id="ktp-tier-pill" style="font-size:10px;font-weight:900;padding:3px 9px;border-radius:999px;background:rgba(250,204,21,0.16);border:1px solid rgba(250,204,21,0.5);color:#fde047;">🪪 Warga Biasa</span>
+      </div>
       <div class="ktp-body">
         <div class="ktp-avatar-box">
           <span id="ktp-avatar-emoji">☕</span>
-          <span style="font-size:9px;font-weight:800;color:var(--lampu);margin-top:4px" id="ktp-avatar-role">BARISTA</span>
+          <span style="font-size:9px;font-weight:900;color:#fde047;margin-top:4px;letter-spacing:0.4px;" id="ktp-avatar-role">BARISTA</span>
+          <span id="ktp-gender-pill" style="font-size:8px;font-weight:800;color:#bae6fd;background:rgba(2,6,23,0.55);padding:2px 6px;border-radius:999px;margin-top:5px;">♂️ LAKI-LAKI</span>
         </div>
         <div class="ktp-info">
           <div class="ktp-field">Nama Warga</div>
@@ -687,10 +742,9 @@
           <div class="ktp-val" id="ktp-ig">@aditiairfn</div>
         </div>
       </div>
-      <div class="ktp-quote" id="ktp-quote">"Perbanyak jalur sepeda dan trotoar rindang!"</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;">
-        <span style="font-size:8.5px;color:#9fb8af;">LEVEL WARGA: <b id="ktp-level-text" style="color:var(--lampu)">Lv. 1</b></span>
-        <span style="font-size:9px;color:#9fb8af;">@pirakubdg</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.12);">
+        <span style="font-size:9px;color:#cbd5e1;font-weight:700;">LEVEL WARGA: <b id="ktp-level-text" style="color:#fde047">Lv. 1</b></span>
+        <span style="font-size:9px;color:#4ade80;font-weight:800;">✓ TERVERIFIKASI • @pirakubdg</span>
       </div>
     </div>
     <div class="ktp-action" style="width:100%;max-width:350px">
@@ -841,12 +895,22 @@
             </div>
 
             <div>
+              <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">JENIS KELAMIN</div>
+              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-gender-row">
+                <button type="button" class="wd-pill active" data-val="male">👨 Laki-laki</button>
+                <button type="button" class="wd-pill" data-val="female">👩 Perempuan</button>
+              </div>
+            </div>
+
+            <div>
               <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">KULIT</div>
               <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-skin-row">
-                <button type="button" class="wd-swatch" data-idx="3" data-css="#9a6a45" style="background:#9a6a45"></button>
-                <button type="button" class="wd-swatch active" data-idx="2" data-css="#c68a5c" style="background:#c68a5c"></button>
-                <button type="button" class="wd-swatch" data-idx="1" data-css="#e0ac80" style="background:#e0ac80"></button>
-                <button type="button" class="wd-swatch" data-idx="0" data-css="#f1c9a0" style="background:#f1c9a0"></button>
+                <button type="button" class="wd-swatch" data-idx="5" data-css="#6f472d" style="background:#6f472d"></button>
+                <button type="button" class="wd-swatch" data-idx="4" data-css="#9a6a45" style="background:#9a6a45"></button>
+                <button type="button" class="wd-swatch active" data-idx="3" data-css="#c68a5c" style="background:#c68a5c"></button>
+                <button type="button" class="wd-swatch" data-idx="2" data-css="#e0ac80" style="background:#e0ac80"></button>
+                <button type="button" class="wd-swatch" data-idx="1" data-css="#f1c9a0" style="background:#f1c9a0"></button>
+                <button type="button" class="wd-swatch" data-idx="0" data-css="#f5d0b5" style="background:#f5d0b5"></button>
               </div>
             </div>
 
@@ -854,8 +918,11 @@
               <div style="font-size:10px; font-weight:800; letter-spacing:0.6px; color:#5c5346; margin-bottom:4px;">GAYA RAMBUT</div>
               <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-hair-row">
                 <button type="button" class="wd-pill active" data-val="short">Pendek</button>
+                <button type="button" class="wd-pill" data-val="parted">Belah Tengah</button>
+                <button type="button" class="wd-pill" data-val="spiky">Spiky</button>
                 <button type="button" class="wd-pill" data-val="hijab">Hijab</button>
                 <button type="button" class="wd-pill" data-val="ponytail">Kuncir</button>
+                <button type="button" class="wd-pill" data-val="long">Panjang</button>
                 <button type="button" class="wd-pill" data-val="bob">Bob</button>
                 <button type="button" class="wd-pill" data-val="bun">Cepol</button>
                 <button type="button" class="wd-pill" data-val="curly">Kribo</button>
@@ -869,7 +936,10 @@
                 <button type="button" class="wd-pill active" data-val="none">Tanpa</button>
                 <button type="button" class="wd-pill" data-val="peci">Peci</button>
                 <button type="button" class="wd-pill" data-val="caping">Caping</button>
+                <button type="button" class="wd-pill" data-val="cap">🧢 Topi</button>
                 <button type="button" class="wd-pill" data-val="glasses">Kacamata</button>
+                <button type="button" class="wd-pill" data-val="headphones">🎧 Audio</button>
+                <button type="button" class="wd-pill" data-val="ribbon">🎀 Pita</button>
                 <button type="button" class="wd-pill" data-val="cat">🐈 Oyen</button>
               </div>
             </div>
@@ -921,13 +991,13 @@
       let wdState = {
         shirtHex: 0x2d6a4f, shirtCss: '#2d6a4f',
         pantsIdx: 0, pantsCss: '#1e293b',
-        skinIdx: 2, skinCss: '#c68a5c',
-        hair: 'short', acc: 'none',
+        skinIdx: 3, skinCss: '#c68a5c',
+        hair: 'short', acc: 'none', gender: 'male',
         role: 'Barista', emoji: '☕'
       };
 
       function syncWardrobeStateToGlobals() {
-        const encodedAcc = wdState.acc + '|' + wdState.skinIdx + '|' + wdState.pantsIdx + '|' + wdState.hair;
+        const encodedAcc = wdState.acc + '|' + wdState.skinIdx + '|' + wdState.pantsIdx + '|' + wdState.hair + '|' + wdState.gender;
         if (typeof window.pickWardrobeColor === 'function') {
           const dummy = document.createElement('div');
           window.pickWardrobeColor(dummy, wdState.shirtHex);
@@ -993,6 +1063,14 @@
             btn.classList.add('active');
             wdState.pantsIdx = parseInt(btn.dataset.idx, 10);
             wdState.pantsCss = btn.dataset.css;
+            updateWardrobePreview();
+          });
+        });
+        document.querySelectorAll('#wd-gender-row .wd-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('#wd-gender-row .wd-pill').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            wdState.gender = btn.dataset.val;
             updateWardrobePreview();
           });
         });
@@ -1156,8 +1234,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v26"></script>
-  <script defer src="js/multiplayer.js?v=20261119v27"></script>
+  <script defer src="./js/main.js?v=20261119v29"></script>
+  <script defer src="js/multiplayer.js?v=20261119v29"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
   <script defer src="js/map-beautify.js?v=20261119v20"></script>
@@ -1300,12 +1378,12 @@
     })();
   </script>
 
-  <script defer src="js/piraku-economy.js?v=20261119v25"></script>
+  <script defer src="js/piraku-economy.js?v=20261119v26"></script>
   <script defer src="js/piraku-games.js?v=20261119v3"></script>
   <script defer src="js/piraku-world-live.js?v=20261118v98"></script>
   <script defer src="js/piraku-nav-modals.js?v=20261119v18"></script>
   <script defer src="js/piraku-vfx.js?v=20261118v98"></script>
-  <script defer src="js/piraku-districts.js?v=20261119v11"></script>
+  <script defer src="js/piraku-districts.js?v=20261119v12"></script>
   <script defer src="js/piraku-fishing.js?v=20261119v22"></script>
 
   
@@ -1320,6 +1398,40 @@
       0% { background-position: 0% 50%; }
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
+    }
+    .nametag-tier-7 {
+      background: linear-gradient(120deg, #450a0a 0%, #b91c1c 35%, #facc15 50%, #b91c1c 65%, #450a0a 100%) !important;
+      background-size: 240% 240% !important;
+      animation: sultanShimmer 2.6s ease infinite !important;
+      color: #fef08a !important;
+      border: 1.8px solid #facc15 !important;
+      box-shadow: 0 0 18px rgba(250, 204, 21, 0.85), 0 0 28px rgba(239, 68, 68, 0.45) !important;
+      padding: 4px 11px !important;
+      border-radius: 999px !important;
+      font-weight: 900 !important;
+      letter-spacing: 0.4px !important;
+    }
+    .nametag-tier-6 {
+      background: linear-gradient(120deg, #2e1065 0%, #7e22ce 45%, #e879f9 50%, #7e22ce 55%, #2e1065 100%) !important;
+      background-size: 220% 220% !important;
+      animation: sultanShimmer 3.0s ease infinite !important;
+      color: #fae8ff !important;
+      border: 1.6px solid #d8b4fe !important;
+      box-shadow: 0 0 16px rgba(192, 132, 252, 0.78) !important;
+      padding: 4px 10px !important;
+      border-radius: 999px !important;
+      font-weight: 900 !important;
+    }
+    .nametag-tier-5 {
+      background: linear-gradient(120deg, #172554 0%, #1d4ed8 45%, #fde047 50%, #1d4ed8 55%, #172554 100%) !important;
+      background-size: 220% 220% !important;
+      animation: sultanShimmer 3.2s ease infinite !important;
+      color: #fef08a !important;
+      border: 1.5px solid #60a5fa !important;
+      box-shadow: 0 0 16px rgba(59, 130, 246, 0.75) !important;
+      padding: 4px 10px !important;
+      border-radius: 999px !important;
+      font-weight: 900 !important;
     }
     .nametag-tier-4 {
       background: linear-gradient(120deg, #06182c 0%, #0e7490 45%, #38bdf8 50%, #0e7490 55%, #06182c 100%) !important;
@@ -1349,6 +1461,24 @@
       padding: 3px 9px !important;
       border-radius: 999px !important;
       font-weight: 800 !important;
+    }
+    .popup-card-tier-7 {
+      background: linear-gradient(160deg, #2a0606 0%, #7f1d1d 55%, #451a03 100%) !important;
+      color: #fef9c3 !important;
+      border: 2px solid #facc15 !important;
+      box-shadow: 0 18px 42px rgba(127, 29, 29, 0.8), 0 0 28px rgba(250, 204, 21, 0.55) !important;
+    }
+    .popup-card-tier-6 {
+      background: linear-gradient(160deg, #1e0538 0%, #581c87 60%, #3b0764 100%) !important;
+      color: #faf5ff !important;
+      border: 2px solid #c084fc !important;
+      box-shadow: 0 16px 38px rgba(88, 28, 135, 0.78), 0 0 24px rgba(192, 132, 252, 0.5) !important;
+    }
+    .popup-card-tier-5 {
+      background: linear-gradient(160deg, #0f172a 0%, #1e3a8a 60%, #172554 100%) !important;
+      color: #eff6ff !important;
+      border: 2px solid #60a5fa !important;
+      box-shadow: 0 16px 38px rgba(30, 58, 138, 0.75), 0 0 24px rgba(96, 165, 250, 0.45) !important;
     }
     .popup-card-tier-4 {
       background: linear-gradient(160deg, #071324 0%, #0c2744 60%, #083344 100%) !important;
@@ -1407,7 +1537,7 @@
         if (tierInfo && tierInfo.tierId !== "tier_1") {
           const desired = baseHandle + " • " + tierInfo.tierBadge + " " + tierInfo.tierName;
           if (el.textContent !== desired) el.textContent = desired;
-          const normCls = ["tier_5", "tier_6", "tier_7"].includes(tierInfo.tierId) ? "nametag-tier-4" : ("nametag-" + tierInfo.tierId.replace("_", "-"));
+          const normCls = "nametag-" + tierInfo.tierId.replace("_", "-");
           el.classList.add(normCls);
         }
       });
@@ -1422,7 +1552,7 @@
         cardEl.classList.remove("popup-card-tier-2", "popup-card-tier-3", "popup-card-tier-4", "popup-card-tier-5", "popup-card-tier-6", "popup-card-tier-7");
         let banner = cardEl.querySelector(".piraku-vip-banner");
         if (targetTier && targetTier.tierId !== "tier_1") {
-          const cardCls = ["tier_5", "tier_6", "tier_7"].includes(targetTier.tierId) ? "popup-card-tier-4" : ("popup-card-" + targetTier.tierId.replace("_", "-"));
+          const cardCls = "popup-card-" + targetTier.tierId.replace("_", "-");
           cardEl.classList.add(cardCls);
           if (!banner) {
             banner = document.createElement("div");
@@ -1430,7 +1560,16 @@
             cardEl.insertBefore(banner, cardEl.firstChild);
           }
           const isSultan = ["tier_4", "tier_5", "tier_6", "tier_7"].includes(targetTier.tierId);
-          banner.style.cssText = "margin:-4px -4px 7px -4px;padding:4px 8px;border-radius:8px;font-size:9.5px;font-weight:900;letter-spacing:0.6px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px;background:" + (isSultan ? "linear-gradient(90deg,#0284c7,#38bdf8,#0284c7)" : "linear-gradient(90deg,#b45309,#f59e0b)") + ";color:" + (isSultan ? "#041322" : "#1c0a00") + ";";
+          const bannerStyles = {
+            tier_7: { bg: "linear-gradient(90deg,#991b1b,#facc15,#991b1b)", col: "#1c0404" },
+            tier_6: { bg: "linear-gradient(90deg,#6b21a8,#c084fc,#6b21a8)", col: "#140321" },
+            tier_5: { bg: "linear-gradient(90deg,#1d4ed8,#fde047,#1d4ed8)", col: "#071330" },
+            tier_4: { bg: "linear-gradient(90deg,#0284c7,#38bdf8,#0284c7)", col: "#041322" },
+            tier_3: { bg: "linear-gradient(90deg,#b45309,#f59e0b)", col: "#1c0a00" },
+            tier_2: { bg: "linear-gradient(90deg,#4338ca,#818cf8)", col: "#eef2ff" }
+          };
+          const bs = bannerStyles[targetTier.tierId] || bannerStyles.tier_3;
+          banner.style.cssText = "margin:-4px -4px 7px -4px;padding:4px 8px;border-radius:8px;font-size:9.5px;font-weight:900;letter-spacing:0.6px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:5px;background:" + bs.bg + ";color:" + bs.col + ";";
           banner.textContent = targetTier.tierBadge + " " + targetTier.tierName + (isSultan ? " • VIP" : "");
         } else if (banner) {
           banner.remove();
@@ -1450,10 +1589,11 @@
           if (!k || k === myK) return;
           const targetOutfit = (window.pirakuRemoteOutfits || {})[k] || "";
           const targetVeh = (window.pirakuRemoteVehicles || {})[k] || "";
-          const sig = targetOutfit + "|" + targetVeh;
+          const targetTierId = ((window.pirakuRemoteTiers || {})[k] || {}).tierId || "";
+          const sig = targetOutfit + "|" + targetVeh + "|" + targetTierId;
           if (obj.userData._appliedShopSig !== sig) {
             obj.userData._appliedShopSig = sig;
-            window.attachPirakuShopToCitizen(obj, targetOutfit || null, targetVeh || null);
+            window.attachPirakuShopToCitizen(obj, targetOutfit || null, targetVeh || null, targetTierId || null);
           }
         });
       }
@@ -1476,7 +1616,7 @@
     }, 450);
   </script>
 
-  <script defer src="js/piraku-civic.js?v=20261119v1"></script>
+  <script defer src="js/piraku-civic.js?v=20261119v2"></script>
   <script defer src="js/piraku-perf.js?v=20261118v98"></script>
 
 

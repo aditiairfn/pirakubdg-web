@@ -168,41 +168,71 @@
       layer.appendChild(tag);
       onlineNameTags.set(key, tag);
     }
-    const tierStyle = key.includes("tier_4")
-      ? { bg: "rgba(8,47,73,0.92)", border: "#38bdf8", text: "#bae6fd" }
-      : key.includes("tier_3")
-      ? { bg: "rgba(69,26,3,0.92)", border: "#f59e0b", text: "#fde68a" }
-      : key.includes("tier_2")
-      ? { bg: "rgba(30,27,75,0.90)", border: "#818cf8", text: "#e0e7ff" }
-      : null;
-    if (tierStyle) {
-      tag.style.background = tierStyle.bg;
-      tag.style.borderColor = tierStyle.border;
-      tag.style.color = tierStyle.text;
+    const cleanHandle = String(label || "").trim().toLowerCase().replace(/^@/, "").split("•")[0].trim();
+    let resolvedTierId = null;
+    let resolvedTierBadge = "";
+    let resolvedTierName = "";
+    if (isSelf && window.PirakuEconomy && typeof window.PirakuEconomy.getTierObj === "function") {
+      const myT = window.PirakuEconomy.getTierObj();
+      if (myT && myT.id && myT.id !== "tier_1") {
+        resolvedTierId = myT.id;
+        resolvedTierBadge = myT.badge || "";
+        resolvedTierName = myT.name || "";
+      }
+    } else {
+      const remEntry = remotePlayers.get(key);
+      const remTier = (window.pirakuRemoteTiers || {})[cleanHandle];
+      const tid = (remEntry && remEntry.tierId) || (remTier && remTier.tierId) || null;
+      if (tid && tid !== "tier_1") {
+        resolvedTierId = tid;
+        resolvedTierBadge = (remTier && remTier.tierBadge) || "";
+        resolvedTierName = (remTier && remTier.tierName) || "";
+      }
     }
-    const isFounder = String(label || "").trim().toLowerCase().replace(/^@/, "") === "yelclaw";
+
+    const TIER_STYLES = {
+      tier_7: { bg: "linear-gradient(120deg,rgba(69,10,10,0.96),rgba(185,28,28,0.96),rgba(180,83,9,0.96))", border: "#facc15", text: "#fef08a", shadow: "0 0 16px rgba(250,204,21,0.85), 0 0 24px rgba(239,68,68,0.45)" },
+      tier_6: { bg: "linear-gradient(120deg,rgba(46,16,101,0.95),rgba(126,34,206,0.95))", border: "#d8b4fe", text: "#fae8ff", shadow: "0 0 14px rgba(192,132,252,0.75)" },
+      tier_5: { bg: "linear-gradient(120deg,rgba(23,37,84,0.95),rgba(29,78,216,0.95))", border: "#60a5fa", text: "#fef08a", shadow: "0 0 14px rgba(59,130,246,0.72)" },
+      tier_4: { bg: "linear-gradient(120deg,rgba(6,24,44,0.95),rgba(14,116,144,0.95))", border: "#7dd3fc", text: "#e0f2fe", shadow: "0 0 12px rgba(56,189,248,0.68)" },
+      tier_3: { bg: "linear-gradient(135deg,rgba(41,21,3,0.95),rgba(146,64,14,0.95))", border: "#fbbf24", text: "#fef3c7", shadow: "0 0 10px rgba(251,191,36,0.52)" },
+      tier_2: { bg: "linear-gradient(135deg,rgba(30,27,75,0.94),rgba(55,48,163,0.94))", border: "#818cf8", text: "#e0e7ff", shadow: "0 0 8px rgba(129,140,248,0.45)" }
+    };
+    const tierStyle = resolvedTierId ? (TIER_STYLES[resolvedTierId] || null) : null;
+    const isFounder = cleanHandle === "yelclaw";
     const isSpeaking = !!speakingPeers.get(key);
-    const baseLabel = isFounder ? ("🛡️ FOUNDER " + label) : label;
+    const tierSuffix = resolvedTierBadge && resolvedTierName ? (" • " + resolvedTierBadge + " " + resolvedTierName) : "";
+    const baseLabel = (isFounder ? ("🛡️ FOUNDER " + label) : label) + tierSuffix;
     const displayLabel = isSpeaking ? ("🎙️ " + baseLabel) : baseLabel;
     if (tag.textContent !== displayLabel) tag.textContent = displayLabel;
-    if (isFounder && !isSpeaking) {
-      tag.style.background = "linear-gradient(135deg, rgba(120,53,15,0.95), rgba(15,23,42,0.95))";
-      tag.style.borderColor = "#facc15";
-      tag.style.color = "#fde047";
-    }
+
     if (isSpeaking) {
       const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
       tag.style.borderColor = "#22c55e";
       tag.style.boxShadow = "0 0 " + (8 + pulse * 8).toFixed(1) + "px rgba(34, 197, 94, " + (0.55 + pulse * 0.4).toFixed(2) + ")";
       tag.style.background = "rgba(6, 78, 59, 0.94)";
       tag.style.color = "#86efac";
+    } else if (tierStyle) {
+      tag.style.background = tierStyle.bg;
+      tag.style.borderColor = tierStyle.border;
+      tag.style.color = tierStyle.text;
+      tag.style.boxShadow = tierStyle.shadow;
+      tag.style.padding = "3px 9px";
+      tag.style.borderRadius = "999px";
+      tag.style.textShadow = "0 1px 4px rgba(0,0,0,0.65)";
+    } else if (isFounder) {
+      tag.style.background = "linear-gradient(135deg, rgba(120,53,15,0.95), rgba(15,23,42,0.95))";
+      tag.style.borderColor = "#facc15";
+      tag.style.color = "#fde047";
+      tag.style.boxShadow = "0 0 12px rgba(250,204,21,0.55)";
     } else {
       tag.style.boxShadow = "none";
-      if (!tierStyle) {
-        tag.style.background = "rgba(15,23,42,0.78)";
-        tag.style.borderColor = isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)";
-        tag.style.color = isSelf ? "#fde047" : "#f8fafc";
-      }
+      tag.style.padding = "2px 6px";
+      tag.style.borderRadius = "6px";
+      tag.style.textShadow = "none";
+      tag.style.background = "rgba(15,23,42,0.78)";
+      tag.style.borderColor = isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)";
+      tag.style.color = isSelf ? "#fde047" : "#f8fafc";
     }
     const v = new THREE.Vector3();
     mesh.getWorldPosition(v);
@@ -300,12 +330,15 @@
         else (window.pirakuScene || scene).remove(entry.mesh);
         entry.mesh = null;
       } else {
+        const nextTierId = payload.tierId || entry.tierId || null;
         if ((payload.shopOutfit !== undefined && entry.shopOutfit !== nextShopOutfit) ||
-            (payload.shopVehicle !== undefined && entry.shopVehicle !== nextShopVehicle)) {
+            (payload.shopVehicle !== undefined && entry.shopVehicle !== nextShopVehicle) ||
+            (payload.tierId !== undefined && entry.tierId !== nextTierId)) {
           entry.shopOutfit = nextShopOutfit;
           entry.shopVehicle = nextShopVehicle;
+          entry.tierId = nextTierId;
           if (typeof window.attachPirakuShopToCitizen === 'function') {
-            window.attachPirakuShopToCitizen(entry.mesh, entry.shopOutfit, entry.shopVehicle);
+            window.attachPirakuShopToCitizen(entry.mesh, entry.shopOutfit, entry.shopVehicle, entry.tierId);
           }
         }
         return entry;
@@ -368,11 +401,12 @@
         acc: payload.acc,
         shopOutfit: nextShopOutfit,
         shopVehicle: nextShopVehicle,
+        tierId: payload.tierId || null,
         lastSeen: Date.now(),
         walkPhase: 0
       };
-      if ((nextShopOutfit || nextShopVehicle) && typeof window.attachPirakuShopToCitizen === 'function') {
-        window.attachPirakuShopToCitizen(mesh, nextShopOutfit, nextShopVehicle);
+      if ((nextShopOutfit || nextShopVehicle || (payload.tierId && payload.tierId !== 'tier_1')) && typeof window.attachPirakuShopToCitizen === 'function') {
+        window.attachPirakuShopToCitizen(mesh, nextShopOutfit, nextShopVehicle, payload.tierId || null);
       }
       remotePlayers.set(payload.sessionId, entry);
     }
