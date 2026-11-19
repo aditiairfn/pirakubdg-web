@@ -111,8 +111,55 @@
     });
     let built = 0;
     seen.forEach(v => { if (v) built++; });
-    return { totalCitizens: seen.size, builtHouses: Math.min(20, built) };
+    return { totalCitizens: seen.size, builtHouses: Math.min(36, built) };
   }
+
+  const APT_LEVELS = [
+    { lv: 1, min: 0,   title: "Apartemen Standar" },
+    { lv: 2, min: 100, title: "Apartemen Modern" },
+    { lv: 3, min: 300, title: "Apartemen Elite" },
+    { lv: 4, min: 600, title: "Sky Residence 👑" }
+  ];
+
+  function getApartmentLevelInfo(dId) {
+    const coins = parseInt(localStorage.getItem("piraku_apt_coins_" + dId) || "0", 10) || 0;
+    let cur = APT_LEVELS[0], next = APT_LEVELS[1];
+    for (let i = 0; i < APT_LEVELS.length; i++) {
+      if (coins >= APT_LEVELS[i].min) { cur = APT_LEVELS[i]; next = APT_LEVELS[i + 1] || null; }
+    }
+    return { coins, cur, next };
+  }
+
+  window.isDistrictKavlingFull = function(kecName) {
+    const kLow = String(kecName || "").trim().toLowerCase();
+    const d = DISTRICTS.find(x => x.name.toLowerCase() === kLow || x.id === kLow);
+    if (!d) return false;
+    return getRealDistrictHouseStats(d).builtHouses >= 36;
+  };
+
+  window.donateDistrictApartment = function(dId, amt) {
+    const d = DISTRICTS.find(x => x.id === dId) || DISTRICTS.find(x => x.id === activeMapId);
+    const amount = Number(amt || 20);
+    if (!d || !window.PirakuEconomy) return;
+    if (!window.PirakuEconomy.spendCoins(amount, "Sumbang Naikkan Level Apartemen Kec. " + d.name)) return;
+    const prev = parseInt(localStorage.getItem("piraku_apt_coins_" + d.id) || "0", 10) || 0;
+    const nextAptCoins = prev + amount;
+    localStorage.setItem("piraku_apt_coins_" + d.id, String(nextAptCoins));
+    const nextDistCoins = getCoinsFor(d) + amount;
+    localInvest[d.id] = nextDistCoins;
+    saveLocal();
+    pushDistrictToSupabase(d, nextDistCoins, amount);
+    const info = getApartmentLevelInfo(d.id);
+    if (typeof window.showToast === "function") {
+      window.showToast(`🏢 Terima kasih! Apartemen Kec. ${d.name} (${info.cur.title} • Lv.${info.cur.lv}) +${amount} 🪙!`);
+    }
+    if (activeMapId === d.id && typeof window.refreshActiveDistrictHouses === "function") {
+      window.refreshActiveDistrictHouses();
+    }
+    if (document.getElementById("kec-apartment-modal")?.style.display === "flex" && typeof window.openActiveDistrictApartmentModal === "function") {
+      window.openActiveDistrictApartmentModal();
+    }
+  };
 
   function getLevelInfo(coins) {
     let cur = LEVELS[0], next = LEVELS[1];
@@ -1584,9 +1631,11 @@
         aptGroup.add(tr, cr);
       });
 
+      const aptInfo = getApartmentLevelInfo(d.id);
+      const aptLv = aptInfo.cur.lv;
       const aptPlaque = new THREE.Mesh(
-        new THREE.PlaneGeometry(5.6, 0.88),
-        makeDistrictPlaque("🏢 APT. " + d.name.toUpperCase() + " (" + apartmentResidents.length + ")", false)
+        new THREE.PlaneGeometry(5.8, 0.92),
+        makeDistrictPlaque("🏢 APT. " + d.name.toUpperCase() + " LV." + aptLv + " (" + apartmentResidents.length + ")", aptLv >= 3)
       );
       aptPlaque.position.set(0, 17.55, -0.75);
       aptGroup.add(aptPlaque);
@@ -1611,17 +1660,33 @@
               <div style="padding:14px 16px;border-bottom:1px solid rgba(148,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
                 <div>
                   <div id="kec-apt-title" style="font-weight:800;color:#38bdf8;font-size:15px;">🏢 Apartemen Kecamatan</div>
-                  <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga ke-21 dst.</div>
+                  <div id="kec-apt-sub" style="font-size:11px;color:#94a3b8;">Hunian vertikal warga ke-37 dst.</div>
                 </div>
                 <button onclick="document.getElementById('kec-apartment-modal').style.display='none'" style="background:rgba(148,163,184,0.15);border:none;color:#f8fafc;width:28px;height:28px;border-radius:8px;cursor:pointer;font-weight:700;">✕</button>
               </div>
+              <div id="kec-apt-upgrade-box" style="padding:10px 14px;background:rgba(30,41,59,0.85);border-bottom:1px solid rgba(148,163,184,0.18);"></div>
               <div id="kec-apt-body" style="padding:12px 14px;overflow-y:auto;flex:1;"></div>
             </div>
           `;
           document.body.appendChild(modal);
         }
-        document.getElementById("kec-apt-title").innerText = "🏢 Apartemen Kec. " + d.name;
-        document.getElementById("kec-apt-sub").innerText = apartmentResidents.length + " Penghuni Terdaftar (Warga ke-21 dst.)";
+        const liveApt = getApartmentLevelInfo(d.id);
+        const pct = liveApt.next ? Math.min(100, Math.round(((liveApt.coins - liveApt.cur.min) / Math.max(1, liveApt.next.min - liveApt.cur.min)) * 100)) : 100;
+        document.getElementById("kec-apt-title").innerText = "🏢 Apartemen Kec. " + d.name + " · Lv." + liveApt.cur.lv;
+        document.getElementById("kec-apt-sub").innerText = apartmentResidents.length + " Penghuni Terdaftar (" + liveApt.cur.title + ")";
+        const upgBox = document.getElementById("kec-apt-upgrade-box");
+        if (upgBox) {
+          upgBox.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:11.5px;font-weight:800;color:#fde047;">✨ ${liveApt.cur.title} (Lv.${liveApt.cur.lv}/4)</span>
+              <span style="font-size:10.5px;color:#94a3b8;">${liveApt.next ? (liveApt.coins + " / " + liveApt.next.min + " 🪙") : "MAX LEVEL"}</span>
+            </div>
+            <div style="width:100%;height:6px;background:rgba(15,23,42,0.85);border-radius:99px;overflow:hidden;margin-bottom:8px;">
+              <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#38bdf8,#facc15);"></div>
+            </div>
+            <button onclick="donateDistrictApartment('${d.id}', 20)" style="width:100%;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">🏢 Sumbang Naikkan Level Apartemen (🪙 20)</button>
+          `;
+        }
         document.getElementById("kec-apt-body").innerHTML = apartmentResidents.map((cit, i) => {
           const floor = Math.floor(i / 4) + 1;
           const unitNo = floor * 100 + (i % 4) + 1;
@@ -2764,14 +2829,14 @@
           window.pirakuDistrictHasHouse = true;
           if (localStorage.getItem("piraku_has_house" + suf) !== "1") localStorage.setItem("piraku_has_house" + suf, "1");
         }
-        const keys = hasH ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
+        const keys = hasH ? 2 : Math.min(2, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
         if (!hasH) {
-          if (keys >= 3) {
+          if (keys >= 2) {
             html = `<span>📍 Kavlingmu Siap Dibangun!</span>` +
-                   `<button onclick="buildMyInstantHouse()" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;">🏠 Dirikan Rumah 3D (3/3 🔑)</button>`;
+                   `<button onclick="buildMyInstantHouse()" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:6px 11px;border-radius:10px;font-weight:900;font-size:11px;cursor:pointer;">🏠 Dirikan Rumah 3D (30 🪙)</button>`;
           } else {
-            html = `<span>📍 Tanah Kavlingmu (${keys}/3 🔑)</span>` +
-                   `<button onclick="openMissionsHubModal()" style="border:none;background:#38bdf8;color:#0f172a;padding:6px 10px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer;">🎯 Cari ${3 - keys} Kunci Lagi</button>`;
+            html = `<span>📍 Tanah Kavlingmu (${keys}/2 🔑)</span>` +
+                   `<button onclick="openMissionsHubModal()" style="border:none;background:#38bdf8;color:#0f172a;padding:6px 10px;border-radius:10px;font-weight:800;font-size:11px;cursor:pointer;">🎯 Cari ${2 - keys} Kunci Lagi</button>`;
           }
         } else {
           const curT = getPersonalHouseTierFor(clean);

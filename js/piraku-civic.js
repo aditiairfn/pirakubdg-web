@@ -3,6 +3,8 @@
   "use strict";
 
   const MAX_LEVEL = 99;
+  const HOUSE_REQ_KEYS = 2;
+  const HOUSE_BUILD_COST = 30;
 
   window.getPirakuXpRequiredForLevel = function (lvl) {
     const L = Math.max(1, Math.min(MAX_LEVEL, parseInt(lvl, 10) || 1));
@@ -518,7 +520,7 @@
       const owned = window.PirakuEconomy.getState().owned || [];
       if (owned.includes("has_house_built") || owned.some(x => String(x).startsWith("house_tier_"))) {
         localStorage.setItem("piraku_has_house" + suf, "1");
-        localStorage.setItem("piraku_house_keys" + suf, "3");
+        localStorage.setItem("piraku_house_keys" + suf, String(HOUSE_REQ_KEYS));
         window.pirakuDistrictHasHouse = true;
         return true;
       }
@@ -527,7 +529,7 @@
         if (s.startsWith("house_keys_")) {
           const kv = parseInt(s.replace("house_keys_", ""), 10) || 0;
           const curK = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) || 0;
-          if (kv > curK) localStorage.setItem("piraku_house_keys" + suf, String(Math.min(3, kv)));
+          if (kv > curK) localStorage.setItem("piraku_house_keys" + suf, String(Math.min(HOUSE_REQ_KEYS, kv)));
         }
         if (s.startsWith("claimed_")) {
           const mKey = s.slice("claimed_".length);
@@ -537,14 +539,14 @@
     }
     if (window.pirakuDistrictHasHouse || parseInt(localStorage.getItem("piraku_house_tier" + suf) || "0", 10) >= 1) {
       localStorage.setItem("piraku_has_house" + suf, "1");
-      localStorage.setItem("piraku_house_keys" + suf, "3");
+      localStorage.setItem("piraku_house_keys" + suf, String(HOUSE_REQ_KEYS));
       return true;
     }
     if (Array.isArray(window.registeredCitizensList)) {
       const me = window.registeredCitizensList.find(c => String(c.ig || "").toLowerCase() === myIg.toLowerCase());
       if (me && me.has_house) {
         localStorage.setItem("piraku_has_house" + suf, "1");
-        localStorage.setItem("piraku_house_keys" + suf, "3");
+        localStorage.setItem("piraku_house_keys" + suf, String(HOUSE_REQ_KEYS));
         return true;
       }
     }
@@ -554,7 +556,7 @@
         const { data } = await sb.from("warga_piraku").select("has_house, xp").ilike("ig", myIg).maybeSingle();
         if (data && data.has_house) {
           localStorage.setItem("piraku_has_house" + suf, "1");
-          localStorage.setItem("piraku_house_keys" + suf, "3");
+          localStorage.setItem("piraku_house_keys" + suf, String(HOUSE_REQ_KEYS));
           return true;
         }
       } catch (e) {}
@@ -630,7 +632,7 @@
     const myKecHome = localStorage.getItem("piraku_my_kec") || dist.name;
     const myHomeId = myKecHome.toLowerCase().replace(/[^a-z0-9]+/g, "_");
     const hasHouse = localStorage.getItem("piraku_has_house" + suf) === "1";
-    const houseKeys = hasHouse ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
+    const houseKeys = hasHouse ? HOUSE_REQ_KEYS : Math.min(HOUSE_REQ_KEYS, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10));
     const houseTier = typeof window.getMyPersonalHouseTier === "function" ? window.getMyPersonalHouseTier() : 1;
     const isFirstTimeTut = localStorage.getItem("piraku_mission_tut_seen") !== "1";
 
@@ -638,8 +640,9 @@
 
     const myCoins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : (parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0);
     const step1Done = Boolean((localStorage.getItem("piraku_my_ig") || "").trim());
-    const step2Done = hasHouse || houseKeys >= 3;
+    const step2Done = hasHouse || houseKeys >= HOUSE_REQ_KEYS;
     const step3Done = hasHouse;
+    const kavFull = !hasHouse && (typeof window.isDistrictKavlingFull === "function") && window.isDistrictKavlingFull(myKecHome);
 
     modal.style.display = "flex";
     modal.innerHTML = [
@@ -658,12 +661,12 @@
             '<div style="font-size:10px;font-weight:800;color:' + (step1Done ? '#4ade80' : '#cbd5e1') + ';margin-top:2px;">1. Daftar KTP</div>',
           '</div>',
           '<div style="padding:7px 8px;border-radius:11px;background:' + (step2Done ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.12)') + ';border:1px solid ' + (step2Done ? 'rgba(74,222,128,0.45)' : 'rgba(250,204,21,0.4)') + ';text-align:center;">',
-            '<div style="font-size:12px;">' + (step2Done ? '✅' : '🔑 ' + houseKeys + '/3') + '</div>',
-            '<div style="font-size:10px;font-weight:800;color:' + (step2Done ? '#4ade80' : '#fde047') + ';margin-top:2px;">2. 3 Kunci Misi</div>',
+            '<div style="font-size:12px;">' + (step2Done ? '✅' : '🔑 ' + houseKeys + '/' + HOUSE_REQ_KEYS) + '</div>',
+            '<div style="font-size:10px;font-weight:800;color:' + (step2Done ? '#4ade80' : '#fde047') + ';margin-top:2px;">2. ' + HOUSE_REQ_KEYS + ' Kunci Misi</div>',
           '</div>',
-          '<div style="padding:7px 8px;border-radius:11px;background:' + (step3Done ? 'rgba(34,197,94,0.18)' : (step2Done && myCoins >= 100 ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.06)')) + ';border:1px solid ' + (step3Done ? 'rgba(74,222,128,0.45)' : (step2Done && myCoins >= 100 ? '#38bdf8' : 'rgba(148,163,184,0.22)')) + ';text-align:center;">',
-            '<div style="font-size:12px;">' + (step3Done ? '🏠 ✓' : '🪙 ' + Math.min(100, myCoins) + '/100') + '</div>',
-            '<div style="font-size:10px;font-weight:800;color:' + (step3Done ? '#4ade80' : (step2Done && myCoins >= 100 ? '#7dd3fc' : '#cbd5e1')) + ';margin-top:2px;">3. Bangun Rumah</div>',
+          '<div style="padding:7px 8px;border-radius:11px;background:' + (step3Done ? 'rgba(34,197,94,0.18)' : (step2Done && myCoins >= HOUSE_BUILD_COST ? 'rgba(56,189,248,0.22)' : 'rgba(255,255,255,0.06)')) + ';border:1px solid ' + (step3Done ? 'rgba(74,222,128,0.45)' : (step2Done && myCoins >= HOUSE_BUILD_COST ? '#38bdf8' : 'rgba(148,163,184,0.22)')) + ';text-align:center;">',
+            '<div style="font-size:12px;">' + (step3Done ? '🏠 ✓' : '🪙 ' + Math.min(HOUSE_BUILD_COST, myCoins) + '/' + HOUSE_BUILD_COST) + '</div>',
+            '<div style="font-size:10px;font-weight:800;color:' + (step3Done ? '#4ade80' : (step2Done && myCoins >= HOUSE_BUILD_COST ? '#7dd3fc' : '#cbd5e1')) + ';margin-top:2px;">3. Bangun Rumah</div>',
           '</div>',
         '</div>',
 
@@ -673,8 +676,8 @@
             '<span id="mission-tutorial-arrow" style="font-size:10.5px;font-weight:700;color:#bae6fd;">' + (isFirstTimeTut ? '▲ Tutup' : '▼ Lihat Panduan') + '</span>',
           '</div>',
           '<div id="mission-tutorial-content" style="display:' + (isFirstTimeTut ? 'block' : 'none') + ';margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:#e2e8f0;line-height:1.5;">',
-            '<div style="margin-bottom:6px;"><b style="color:#ffcf4a;">🏘️ Kuota 36 Kavling Tapak & Apartemen:</b> Setiap kecamatan memiliki <b>36 Kavling Tapak</b> (1 Rumah Dinas Camat + 35 Warga Tercepat Bangun Rumah). Warga ke-37 dst. menghuni <b>Tower Apartemen Kecamatan</b>!</div>',
-            '<div style="margin-bottom:6px;"><b style="color:#38bdf8;">🏠 Syarat Bangun Rumah 3D:</b> Kumpulkan <b>3 Kunci 🔑</b> (dari misi harian) + <b>100 🪙 Koin Biaya Bangun</b> untuk mendirikan rumah di kavlingmu.</div>',
+            '<div style="margin-bottom:6px;"><b style="color:#ffcf4a;">🏘️ Kuota 36 Kavling Tapak & Apartemen:</b> Setiap kecamatan memiliki <b>36 Kavling Tapak</b> (1 Rumah Dinas Camat + 35 Warga Tercepat Bangun Rumah). Jika penuh, warga masuk <b>Tower Apartemen</b> dan bisa ikut patungan menaikkan level apartemen!</div>',
+            '<div style="margin-bottom:6px;"><b style="color:#38bdf8;">🏠 Syarat Bangun Rumah 3D:</b> Kumpulkan <b>' + HOUSE_REQ_KEYS + ' Kunci 🔑</b> (dari misi harian) + <b>' + HOUSE_BUILD_COST + ' 🪙 Koin Biaya Bangun</b> untuk mendirikan rumah di kavlingmu.</div>',
             '<div style="margin-bottom:6px;"><b style="color:#4ade80;">✨ Upgrade Rumah (Lv.1 → Lv.4 Villa Sultan):</b> Berdiri di depan rumahmu untuk upgrade bertahap (Lv.2: 350 🪙, Lv.3: 800 🪙, Lv.4 Villa Sultan: 2.000 🪙).</div>',
             '<div><b style="color:#f472b6;">👑 Pemilu Camat:</b> Capai minimal <b>Level 2</b> untuk mencalonkan diri menjadi Camat dan menempati Kavling Nomor #1!</div>',
           '</div>',
@@ -682,20 +685,24 @@
 
         '<div style="background:linear-gradient(135deg,rgba(255,207,74,0.22),rgba(16,185,129,0.2));border:1.5px solid rgba(255,207,74,0.55);border-radius:14px;padding:12px;margin-bottom:12px;">',
           '<div style="display:flex;justify-content:space-between;align-items:center;">',
-            '<span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Status Hunian: ' + (hasHouse ? ('RUMAH LV.' + houseTier + '/4 ✓') : (houseKeys + ' / 3 Kunci 🔑')) + '</span>',
+            '<span style="font-weight:800;font-size:12.5px;color:#ffcf4a;">🏠 Status Hunian: ' + (hasHouse ? ('RUMAH LV.' + houseTier + '/4 ✓') : (kavFull ? '36/36 KAVLING PENUH 🏢' : (houseKeys + ' / ' + HOUSE_REQ_KEYS + ' Kunci 🔑'))) + '</span>',
             '<span style="font-size:10px;font-weight:800;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;">Kec. ' + myKecHome + '</span>',
           '</div>',
           '<div style="font-size:11px;color:#f1f5f9;margin-top:5px;line-height:1.4;">',
             (hasHouse
               ? '🎉 <b>Rumah 3D</b> kamu sudah berdiri di <b>Kec. ' + myKecHome + '</b> (Tipe Lv.' + houseTier + '/4). Datangi depan rumahmu untuk upgrade!'
-              : houseKeys >= 3
-                ? '🔥 Kunci lengkap (3/3)! Siapkan <b>100 🪙 Koin</b> lalu klik tombol di bawah untuk mendirikan <b>Rumah 3D</b> milikmu!'
-                : 'Butuh <b>' + (3 - houseKeys) + ' Kunci 🔑 lagi</b> + <b>100 🪙 Koin</b> untuk membangun rumah di kavlingmu!'),
+              : kavFull
+                ? '🏢 Semua <b>36 Kavling Tapak</b> di Kec. ' + myKecHome + ' sudah terisi! Kamu otomatis menghuni <b>Apartemen Kecamatan</b> dan bisa menyumbang untuk menaikkan level apartemen.'
+                : houseKeys >= HOUSE_REQ_KEYS
+                  ? '🔥 Kunci lengkap (' + HOUSE_REQ_KEYS + '/' + HOUSE_REQ_KEYS + ')! Wajib klik tombol di bawah untuk mendirikan <b>Rumah 3D (' + HOUSE_BUILD_COST + ' 🪙)</b> sekarang!'
+                  : 'Butuh <b>' + (HOUSE_REQ_KEYS - houseKeys) + ' Kunci 🔑 lagi</b> + <b>' + HOUSE_BUILD_COST + ' 🪙 Koin</b> untuk membangun rumah di kavlingmu!'),
           '</div>',
           '<div style="display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;">',
-            ((!hasHouse && houseKeys >= 3)
-              ? '<button onclick="buildMyInstantHouse()" style="flex:1;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">🏠 BANGUN RUMAH 3D (100 🪙)</button>'
-              : ''),
+            ((!hasHouse && kavFull)
+              ? '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'; if(typeof window.donateDistrictApartment===\'function\') window.donateDistrictApartment(\'' + myHomeId + '\', 20);" style="flex:1;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-weight:900;font-size:12px;cursor:pointer;">🏢 Sumbang Level Apartemen (20 🪙)</button>'
+              : ((!hasHouse && houseKeys >= HOUSE_REQ_KEYS)
+                ? '<button onclick="buildMyInstantHouse()" style="flex:1;padding:10px;border:none;border-radius:11px;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0e2f2a;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 6px 18px rgba(245,158,11,0.4);">🏠 BANGUN RUMAH 3D (' + HOUSE_BUILD_COST + ' 🪙)</button>'
+                : '')),
             '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'; if(typeof window.walkToMyDistrictKavling===\'function\') window.walkToMyDistrictKavling(); else if(typeof window.enterDistrictMap===\'function\') window.enterDistrictMap(\'' + myHomeId + '\');" style="flex:1;padding:9px 10px;border:none;border-radius:11px;background:#38bdf8;color:#0f172a;font-weight:800;font-size:11.5px;cursor:pointer;">📍 Masuk Komplek ' + myKecHome + ' →</button>',
           '</div>',
         '</div>',
@@ -741,7 +748,7 @@
     localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
 
     const hasHouseAlready = localStorage.getItem("piraku_has_house" + suf) === "1";
-    const curKeys = hasHouseAlready ? 3 : Math.min(3, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) + 1);
+    const curKeys = hasHouseAlready ? HOUSE_REQ_KEYS : Math.min(HOUSE_REQ_KEYS, parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10) + 1);
     localStorage.setItem("piraku_house_keys" + suf, String(curKeys));
 
     if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
@@ -786,12 +793,22 @@
     }
 
     await window.grantPirakuXP(xpReward, title);
-    if (curKeys === 3 && localStorage.getItem("piraku_has_house" + suf) !== "1" && typeof window.showToast === "function") {
-      window.showToast("🔑 3/3 Kunci Terkumpul! Kumpulkan 100 🪙 untuk Bangun Rumah 3D di menu Misi!");
+    const hasHouseNow = localStorage.getItem("piraku_has_house" + suf) === "1";
+    if (curKeys >= HOUSE_REQ_KEYS && !hasHouseNow) {
+      const myKec = localStorage.getItem("piraku_my_kec") || "Coblong";
+      const kavFull = (typeof window.isDistrictKavlingFull === "function") && window.isDistrictKavlingFull(myKec);
+      if (!kavFull) {
+        if (typeof window.showToast === "function") {
+          window.showToast(`🔑 ${HOUSE_REQ_KEYS}/${HOUSE_REQ_KEYS} Kunci Terkumpul! Sekarang wajib Bangun Rumah (${HOUSE_BUILD_COST} 🪙)!`);
+        }
+        setTimeout(() => { window.openMandatoryBuildHouseModal(); }, 280);
+      } else if (typeof window.showToast === "function") {
+        window.showToast("🏢 36 Kavling penuh! Yuk sumbang untuk naikkan level Apartemen Kecamatan!");
+      }
     }
     updateGuidedQuestHud();
     const civicModal = document.getElementById("piraku-civic-modal");
-    if (civicModal && civicModal.style.display === "flex") {
+    if (civicModal && civicModal.style.display === "flex" && curKeys < HOUSE_REQ_KEYS) {
       window.openMissionsHubModal();
     }
   };
@@ -849,7 +866,7 @@
     }
     const dist = getActiveDistrictInfo();
     const readyCount = getDailyMissionsList(dist).filter(m => m.ready && !m.done).length;
-    const canBuildNow = !hasHouse && houseKeys >= 3 && myCoins >= 100;
+    const canBuildNow = !hasHouse && houseKeys >= HOUSE_REQ_KEYS && myCoins >= HOUSE_BUILD_COST;
     const total = readyCount + (canBuildNow ? 1 : 0);
     if (total > 0) {
       badge.textContent = canBuildNow ? "🏠" : String(total);
@@ -866,8 +883,10 @@
     const isReg = Boolean(myIg && !myIg.toLowerCase().startsWith("tamu_"));
     const suf = getCivicUserSuffix();
     const hasHouse = localStorage.getItem("piraku_has_house" + suf) === "1" || Boolean(window.pirakuDistrictHasHouse);
-    const houseKeys = hasHouse ? 3 : parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10);
+    const houseKeys = hasHouse ? HOUSE_REQ_KEYS : parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10);
     const myCoins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : (parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0);
+    const myKec = localStorage.getItem("piraku_my_kec") || "Coblong";
+    const kavFull = !hasHouse && (typeof window.isDistrictKavlingFull === "function") && window.isDistrictKavlingFull(myKec);
 
     updateMisiTabBadge(isReg, hasHouse, houseKeys, myCoins);
 
@@ -880,11 +899,11 @@
     }
     if (!hud) return;
 
-    const canBuildNow = isReg && !hasHouse && houseKeys >= 3 && myCoins >= 100;
+    const canBuildNow = isReg && !hasHouse && !kavFull && houseKeys >= HOUSE_REQ_KEYS && myCoins >= HOUSE_BUILD_COST;
     const onboardingDone = localStorage.getItem("piraku_onboarding_hud_done" + suf) === "1" || hasHouse || houseKeys >= 1;
 
-    // Hilangkan HUD setelah 1 misi / sudah punya rumah, kecuali saat tepat siap bangun rumah (3/3 + 100 koin)
-    if (isReg && onboardingDone && !canBuildNow) {
+    // Hilangkan HUD setelah punya rumah; jika siap bangun rumah (2/2 + 30 koin) tampilkan terus sampai klik Bangun Rumah
+    if (isReg && onboardingDone && !canBuildNow && !kavFull) {
       if (hud.style.display !== "none") hud.style.display = "none";
       return;
     }
@@ -898,13 +917,15 @@
       html = `<span style="color:#fde047;">🎯 Langkah Awal: Daftar KTP Warga Bandung</span>` +
              `<button onclick="if(typeof openJoinModal==='function') openJoinModal(); else if(typeof openAccountSocialModal==='function') openAccountSocialModal();" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:4px 9px;border-radius:99px;font-weight:900;font-size:10.5px;cursor:pointer;">🪪 Daftar KTP</button>` +
              `<button onclick="dismissPirakuOnboardingHud()" style="border:none;background:transparent;color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer;padding:0 3px;">✕</button>`;
+    } else if (kavFull) {
+      const myHomeId = myKec.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      html = `<span style="color:#7dd3fc;">🏢 36 Kavling Penuh!</span>` +
+             `<button onclick="if(typeof window.donateDistrictApartment==='function') window.donateDistrictApartment('${myHomeId}', 20);" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:4px 9px;border-radius:99px;font-weight:900;font-size:10.5px;cursor:pointer;">✨ Sumbang Level Apartemen (20 🪙)</button>`;
     } else if (canBuildNow) {
-      html = `<span style="color:#fde047;">🎉 Kunci 3/3 &amp; 100 🪙 Siap!</span>` +
-             `<button onclick="buildMyInstantHouse()" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:4px 9px;border-radius:99px;font-weight:900;font-size:10.5px;cursor:pointer;">🏠 Bangun Rumah!</button>` +
-             `<button onclick="dismissPirakuOnboardingHud()" style="border:none;background:transparent;color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer;padding:0 3px;">✕</button>`;
+      html = `<span style="color:#fde047;">🎉 Kunci ${HOUSE_REQ_KEYS}/${HOUSE_REQ_KEYS} Siap!</span>` +
+             `<button onclick="buildMyInstantHouse()" style="border:none;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;padding:4px 10px;border-radius:99px;font-weight:900;font-size:10.5px;cursor:pointer;">🏠 Bangun Rumah (${HOUSE_BUILD_COST} 🪙)!</button>`;
     } else {
-      const myKec = localStorage.getItem("piraku_my_kec") || "Coblong";
-      html = `<span>🏘️ Wargi Baru: Selesaikan 1 Misi Pertama di <b>Kec. ${myKec}</b></span>` +
+      html = `<span>🏘️ Wargi Baru: Selesaikan ${HOUSE_REQ_KEYS} Misi untuk Bangun Rumah di <b>Kec. ${myKec}</b></span>` +
              `<button onclick="openMissionsHubModal()" style="border:none;background:#10b981;color:#fff;padding:4px 9px;border-radius:99px;font-weight:800;font-size:10px;cursor:pointer;">🎯 Buka Misi</button>` +
              `<button onclick="dismissPirakuOnboardingHud()" style="border:none;background:transparent;color:#94a3b8;font-weight:800;font-size:11px;cursor:pointer;padding:0 3px;">✕</button>`;
     }
@@ -918,6 +939,30 @@
   setInterval(updateGuidedQuestHud, 1000);
   setTimeout(updateGuidedQuestHud, 600);
 
+  window.openMandatoryBuildHouseModal = function () {
+    const myIg = (localStorage.getItem("piraku_my_ig") || "").trim();
+    const myKec = localStorage.getItem("piraku_my_kec") || "Bandung Wetan";
+    if (!myIg) return;
+    const suf = getCivicUserSuffix();
+    if (localStorage.getItem("piraku_has_house" + suf) === "1" || window.pirakuDistrictHasHouse) return;
+    const myCoins = window.PirakuEconomy ? window.PirakuEconomy.getCoins() : (parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0);
+    const modal = ensureCivicModal();
+    modal.style.display = "flex";
+    modal.onclick = null;
+    modal.innerHTML = [
+      '<div style="width:100%;max-width:390px;background:linear-gradient(165deg,#0f172a,#0e2f2a);border:2px solid #facc15;border-radius:24px;padding:22px;color:#fff;font-family:\'Bricolage Grotesque\',sans-serif;box-shadow:0 24px 60px rgba(0,0,0,0.85);text-align:center;">',
+        '<div style="font-size:34px;margin-bottom:6px;">🏠🔑</div>',
+        '<div style="font-size:11px;font-weight:800;color:#facc15;letter-spacing:0.8px;text-transform:uppercase;">MISI KUNCI LENGKAP (' + HOUSE_REQ_KEYS + '/' + HOUSE_REQ_KEYS + ')!</div>',
+        '<h3 style="margin:6px 0 8px;font-size:20px;font-weight:900;">Waktunya Bangun Rumahmu!</h3>',
+        '<p style="font-size:12.5px;color:#cbd5e1;line-height:1.5;margin:0 0 16px;">Kavling di <b>Kec. ' + myKec + '</b> sudah menunggumu. Dirikan rumah 3D sekarang sebelum lanjut menjelajah kota!</p>',
+        (myCoins >= HOUSE_BUILD_COST
+          ? '<button onclick="buildMyInstantHouse()" style="width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#facc15,#f59e0b);color:#0f172a;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 8px 24px rgba(245,158,11,0.45);">🏠 BANGUN RUMAH SEKARANG (' + HOUSE_BUILD_COST + ' 🪙)</button>'
+          : '<div style="font-size:11.5px;color:#fca5a5;margin-bottom:10px;">Koinmu saat ini <b>' + myCoins + ' 🪙</b> (butuh <b>' + HOUSE_BUILD_COST + ' 🪙</b>). Klaim 1 misi lagi untuk dapat koin!</div>' +
+            '<button onclick="openMissionsHubModal()" style="width:100%;padding:12px;border:none;border-radius:14px;background:#10b981;color:#fff;font-weight:900;font-size:13px;cursor:pointer;">🎯 Kumpulkan Koin di Misi</button>'),
+      '</div>'
+    ].join("");
+  };
+
   window.buildMyInstantHouse = async function () {
     const myIg = localStorage.getItem("piraku_my_ig");
     const myKec = localStorage.getItem("piraku_my_kec") || "Bandung Wetan";
@@ -929,23 +974,23 @@
       return;
     }
     const houseKeys = parseInt(localStorage.getItem("piraku_house_keys" + suf) || "0", 10);
-    if (houseKeys < 3) {
-      if (typeof window.showToast === "function") window.showToast("🔒 Butuh 3 Kunci 🔑 dari Misi untuk membangun rumah!");
+    if (houseKeys < HOUSE_REQ_KEYS) {
+      if (typeof window.showToast === "function") window.showToast(`🔒 Butuh ${HOUSE_REQ_KEYS} Kunci 🔑 dari Misi untuk membangun rumah!`);
       return;
     }
     if (window.PirakuEconomy && typeof window.PirakuEconomy.spendCoins === "function") {
-      if (!window.PirakuEconomy.spendCoins(100, "Biaya Bangun Rumah 3D Kec. " + myKec)) return;
+      if (!window.PirakuEconomy.spendCoins(HOUSE_BUILD_COST, "Biaya Bangun Rumah 3D Kec. " + myKec)) return;
     }
 
     localStorage.setItem("piraku_has_house" + suf, "1");
-    localStorage.setItem("piraku_house_keys" + suf, "3");
+    localStorage.setItem("piraku_house_keys" + suf, String(HOUSE_REQ_KEYS));
     localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
     window.pirakuDistrictHasHouse = true;
     if (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function") {
       const ecoState = window.PirakuEconomy.getState();
       if (Array.isArray(ecoState.owned)) {
         if (!ecoState.owned.includes("has_house_built")) ecoState.owned.push("has_house_built");
-        if (!ecoState.owned.includes("house_keys_3")) ecoState.owned.push("house_keys_3");
+        if (!ecoState.owned.includes("house_keys_2")) ecoState.owned.push("house_keys_2");
         if (typeof window.PirakuEconomy.saveNow === "function") window.PirakuEconomy.saveNow();
       }
     }
