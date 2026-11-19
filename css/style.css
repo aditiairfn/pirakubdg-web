@@ -234,7 +234,8 @@
     z-index: 50; display: none; align-items: flex-end; justify-content: center;
   }
   .modal-card {
-    background: linear-gradient(180deg,#f7faf6,var(--mist)); width: 100%; max-width: 440px;
+    background: linear-gradient(180deg,#f7faf6,var(--mist)); width: 100%; max-width: min(440px, 100vw);
+    box-sizing: border-box; overflow-x: hidden;
     border-radius: 28px 28px 0 0; padding: 20px 18px max(20px, env(safe-area-inset-bottom));
     box-shadow: 0 -12px 40px rgba(6,24,20,.35); max-height: 85vh; overflow-y: auto;
     transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);

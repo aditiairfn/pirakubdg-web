@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap"></noscript>
-  <link rel="stylesheet" href="./css/style.css?v=20261118v98">
+  <link rel="stylesheet" href="./css/style.css?v=20261119v1">
 
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -23,7 +23,7 @@
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
-  <link rel="stylesheet" href="css/clean-hud.css?v=20261118v98">
+  <link rel="stylesheet" href="css/clean-hud.css?v=20261119v1">
   <link rel="stylesheet" href="./css/hud-polish.css?v=20261118v98">
   <style id="piraku-zindex-fix">
     body > div[style*="pointer-events: none"][style*="position: absolute"],
@@ -628,21 +628,8 @@
           </div>
         </div>
         <div class="form-group">
-          <label>Peran di Kota</label>
-          <div class="chip-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;">
-            <div class="role-chip selected" onclick="pickRole(this, 'Barista', '☕')">☕ Barista</div>
-            <div class="role-chip" onclick="pickRole(this, 'Indie', '🎸')">🎸 Indie</div>
-            <div class="role-chip" onclick="pickRole(this, 'Gowes', '🚲')">🚲 Gowes</div>
-            <div class="role-chip" onclick="pickRole(this, 'Santai', '🚶')">🚶 Santai</div>
-            <div class="role-chip" onclick="pickRole(this, 'Seniman', '🎨')">🎨 Seniman</div>
-            <div class="role-chip" onclick="pickRole(this, 'Fotografer', '📸')">📸 Foto</div>
-            <div class="role-chip" onclick="pickRole(this, 'Kuliner', '🍜')">🍜 Kuliner</div>
-            <div class="role-chip" onclick="pickRole(this, 'Tech', '💻')">💻 Tech</div>
-          </div>
-        </div>
-        <div class="form-group">
           <label>Warna Kulit</label>
-          <div class="color-row">
+          <div class="color-row" style="flex-wrap:wrap;gap:6px;">
             <div class="color-swatch signup-skin-swatch" style="background:#f5d0b5" onclick="pickSignupSkin(this, 0)"></div>
             <div class="color-swatch signup-skin-swatch" style="background:#f1c9a0" onclick="pickSignupSkin(this, 1)"></div>
             <div class="color-swatch signup-skin-swatch" style="background:#e0ac80" onclick="pickSignupSkin(this, 2)"></div>
@@ -653,7 +640,7 @@
         </div>
         <div class="form-group">
           <label>Gaya Rambut</label>
-          <div class="chip-grid" style="grid-template-columns:repeat(3,1fr);gap:6px;">
+          <div class="chip-grid" style="grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;">
             <div class="acc-chip hair-chip selected" onclick="pickSignupHair(this, 'short')">Pendek</div>
             <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'parted')">Belah Tengah</div>
             <div class="acc-chip hair-chip" onclick="pickSignupHair(this, 'spiky')">Spiky</div>
@@ -668,7 +655,7 @@
         </div>
         <div class="form-group">
           <label>Aksesoris Skena Bandung</label>
-          <div class="chip-grid" style="grid-template-columns:repeat(4,1fr);gap:6px;">
+          <div class="chip-grid" style="grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:6px;">
             <div class="acc-chip selected" onclick="pickAcc(this, 'none')">Polos</div>
             <div class="acc-chip" onclick="pickAcc(this, 'glasses')">🕶️ Kacamata</div>
             <div class="acc-chip" onclick="pickAcc(this, 'peci')">🎩 Peci</div>
@@ -871,7 +858,6 @@
               <g id="pv-hair-front"></g>
               <g id="pv-acc-layer"></g>
             </svg>
-            <span id="pv-role-badge" style="margin-top:6px; font-size:9.5px; font-weight:800; color:#fde047; background:rgba(15,23,42,0.85); border:1px solid rgba(250,204,21,0.45); padding:3px 9px; border-radius:999px;">☕ Barista</span>
           </div>
 
           <!-- Pilihan Kustomisasi -->
@@ -948,16 +934,6 @@
                 <button type="button" class="wd-pill" data-val="headphones">🎧 Audio</button>
                 <button type="button" class="wd-pill" data-val="ribbon">🎀 Pita</button>
                 <button type="button" class="wd-pill" data-val="cat">🐈 Oyen</button>
-              </div>
-            </div>
-
-            <div>
-              <div class="wd-lbl">PERAN</div>
-              <div style="display:flex; flex-wrap:wrap; gap:5px;" id="wd-role-row">
-                <button type="button" class="wd-pill active" data-role="Barista" data-emoji="☕">☕ Barista</button>
-                <button type="button" class="wd-pill" data-role="Indie" data-emoji="🎸">🎸 Indie</button>
-                <button type="button" class="wd-pill" data-role="Gowes" data-emoji="🚲">🚲 Gowes</button>
-                <button type="button" class="wd-pill" data-role="Santai" data-emoji="🚶">🚶 Santai</button>
               </div>
             </div>
           </div>
@@ -1299,8 +1275,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v30"></script>
-  <script defer src="js/multiplayer.js?v=20261119v33"></script>
+  <script defer src="./js/main.js?v=20261119v31"></script>
+  <script defer src="js/multiplayer.js?v=20261119v35"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
   <script defer src="js/map-beautify.js?v=20261119v20"></script>

@@ -2046,6 +2046,19 @@ let activeQuestSystem = null;
   // Peci hitam pas di kepala
   cyl(0.21, 0.23, 0.16, 16, 0, 0.15, 0, 0x0f172a, headW);
 
+  // Label nama mengambang khas Walikota (Navy & Emas) di atas Pak Walikota
+  const wkCv = document.createElement('canvas'); wkCv.width = 340; wkCv.height = 64;
+  const wkCtx = wkCv.getContext('2d');
+  wkCtx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+  wkCtx.beginPath(); wkCtx.roundRect(6, 6, 328, 52, 26); wkCtx.fill();
+  wkCtx.strokeStyle = '#facc15'; wkCtx.lineWidth = 4; wkCtx.stroke();
+  wkCtx.fillStyle = '#fde047'; wkCtx.font = '900 22px sans-serif'; wkCtx.textAlign = 'center'; wkCtx.textBaseline = 'middle';
+  wkCtx.fillText('🏛️ Pak Walikota • Bandung', 170, 33);
+  const wkSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(wkCv), transparent: true, depthTest: false }));
+  wkSpr.scale.set(2.6, 0.49, 1);
+  wkSpr.position.set(0, 2.28, 0);
+  WALKOT.add(wkSpr);
+
   const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', npcBadge: '🏛️ WALIKOTA BANDUNG', kecamatan: 'Bandung Wetan', wish: 'Wilujeng sumping! Keliling Gasibu, mancing di Danau Taman Lansia, atau kunjungi 30 Kecamatan!', upvotes: 42, x: -6.5, z: 1.4 };
   const walkotHitbox = mk(new THREE.BoxGeometry(1.6, 2.4, 1.6), new THREE.MeshBasicMaterial({ visible: false }), -6.5, 1.1, 1.4);
   walkotHitbox.userData = walkotData;

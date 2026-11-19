@@ -164,10 +164,12 @@
     let tag = onlineNameTags.get(key);
     if (!tag) {
       tag = document.createElement("div");
+      tag.className = "piraku-nametag";
       tag.style.cssText = "position:absolute;left:0;top:0;transform:translate(-50%,-100%);padding:2px 6px;border-radius:6px;font-size:9.5px;font-weight:800;letter-spacing:0.2px;white-space:nowrap;pointer-events:none;background:rgba(15,23,42,0.78);color:" + (isSelf ? "#fde047" : "#f8fafc") + ";border:1px solid " + (isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)") + ";";
       layer.appendChild(tag);
       onlineNameTags.set(key, tag);
     }
+    if (!tag.classList.contains("piraku-nametag")) tag.classList.add("piraku-nametag");
     const cleanHandle = String(label || "").trim().toLowerCase().replace(/^@/, "").split("•")[0].trim();
     let resolvedTierId = null;
     let resolvedTierBadge = "";
@@ -221,22 +223,25 @@
     if (tierStyle) {
       tag.style.background = tierStyle.bg;
       tag.style.borderColor = tierStyle.border;
+      tag.style.borderWidth = "1.8px";
       tag.style.color = tierStyle.text;
       tag.style.boxShadow = tierStyle.shadow;
-      tag.style.padding = "2px 7px";
-      tag.style.borderRadius = "8px";
+      tag.style.padding = "3px 12px";
+      tag.style.borderRadius = "999px";
       tag.style.textShadow = "0 1px 2px rgba(0,0,0,0.6)";
     } else if (isFounder) {
-      tag.style.background = "rgba(15, 23, 42, 0.90)";
+      tag.style.background = "rgba(15, 23, 42, 0.94)";
       tag.style.borderColor = "#facc15";
+      tag.style.borderWidth = "1.8px";
       tag.style.color = "#fde047";
-      tag.style.boxShadow = "0 2px 8px rgba(250,204,21,0.35)";
-      tag.style.padding = "2px 7px";
-      tag.style.borderRadius = "8px";
+      tag.style.boxShadow = "0 2px 10px rgba(250,204,21,0.4)";
+      tag.style.padding = "3px 12px";
+      tag.style.borderRadius = "999px";
     } else {
       tag.style.boxShadow = "none";
-      tag.style.padding = "2px 6px";
-      tag.style.borderRadius = "6px";
+      tag.style.borderWidth = "1px";
+      tag.style.padding = "2px 7px";
+      tag.style.borderRadius = "999px";
       tag.style.textShadow = "none";
       tag.style.background = "rgba(15,23,42,0.78)";
       tag.style.borderColor = isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.35)";
