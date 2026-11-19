@@ -152,8 +152,59 @@
     catch (_) { return fallback; }
   }
 
-  function getBag() { return loadJson("piraku_fish_bag" + getUserSuf(), []); }
-  function saveBag(bag) { localStorage.setItem("piraku_fish_bag" + getUserSuf(), JSON.stringify(bag.slice(0, 60))); }
+  let _cachedBagLen = null;
+  let _cachedItemLen = null;
+  function getBag() {
+    const arr = loadJson("piraku_fish_bag" + getUserSuf(), []);
+    _cachedBagLen = arr.length;
+    return arr;
+  }
+  function getItemBag() {
+    const arr = loadJson("piraku_item_bag" + getUserSuf(), []);
+    _cachedItemLen = arr.length;
+    return arr;
+  }
+  function saveItemBag(arr) {
+    const trimmed = arr.slice(0, 60);
+    _cachedItemLen = trimmed.length;
+    localStorage.setItem("piraku_item_bag" + getUserSuf(), JSON.stringify(trimmed));
+  }
+  function getBagLen() {
+    if (_cachedBagLen === null) getBag();
+    if (_cachedItemLen === null) getItemBag();
+    return (_cachedBagLen || 0) + (_cachedItemLen || 0);
+  }
+  function saveBag(bag) {
+    const trimmed = bag.slice(0, 60);
+    _cachedBagLen = trimmed.length;
+    localStorage.setItem("piraku_fish_bag" + getUserSuf(), JSON.stringify(trimmed));
+  }
+  window.addPirakuBagItem = function (item) {
+    if (!item) return;
+    const arr = getItemBag();
+    arr.unshift({
+      uid: Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+      id: item.id,
+      name: item.name,
+      icon: item.icon || "🍱",
+      boostSec: item.boostSec || 25,
+      desc: item.desc || ""
+    });
+    saveItemBag(arr);
+  };
+  window.usePirakuBagItem = function (idx) {
+    const arr = getItemBag();
+    const item = arr[idx];
+    if (!item) return;
+    arr.splice(idx, 1);
+    saveItemBag(arr);
+    window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + (item.boostSec || 25) * 1000;
+    if (typeof window.playSynthTone === "function") window.playSynthTone(660, "triangle", 0.16);
+    if (typeof window.showToast === "function") {
+      window.showToast(`${item.icon} Nyam! Makan ${item.name} dari tas — ngebut +${item.boostSec || 25}d!`);
+    }
+    window.openFishingHubModal();
+  };
   function getDex() { return loadJson("piraku_fish_dex" + getUserSuf(), {}); }
   function saveDex(dex) { localStorage.setItem("piraku_fish_dex" + getUserSuf(), JSON.stringify(dex)); }
   function getOwnedRods() {
@@ -377,6 +428,13 @@
       sPole.position.set(-10.2, 1.18, -3.6);
 
       lansiaPondGroup.add(dock, sign, sPole);
+      const koiMeshes = new Set(pondKoiList.map(k => k.mesh));
+      lansiaPondGroup.traverse(o => {
+        if (o !== lansiaPondGroup && !koiMeshes.has(o) && (!o.parent || !koiMeshes.has(o.parent))) {
+          o.updateMatrix();
+          o.matrixAutoUpdate = false;
+        }
+      });
       sc.add(lansiaPondGroup);
     }
     lansiaPondGroup.visible = !window.pirakuInDistrict;
@@ -1108,6 +1166,27 @@
           </div>
 
           <div>
+            <div style="font-size:11px;font-weight:900;color:#93c5fd;text-transform:uppercase;margin-bottom:6px;">🍱 Makanan &amp; Barang (${getItemBag().length})</div>
+            ${(() => {
+              const items = getItemBag();
+              if (items.length === 0) {
+                return `<div style="font-size:11.5px;color:#94a3b8;background:rgba(30,41,59,0.5);padding:9px;border-radius:10px;text-align:center;margin-bottom:10px;">Belum ada makanan/barang. Beli &amp; simpan jajanan di Kopdes!</div>`;
+              }
+              return `<div style="display:flex;flex-direction:column;gap:5px;margin-bottom:10px;">
+                ${items.slice(0, 12).map((it, idx) => `
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:rgba(30,41,59,0.75);padding:7px 10px;border-radius:10px;border-left:3px solid #22c55e;">
+                    <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;flex:1;min-width:0;">
+                      <span style="font-size:17px;">${it.icon}</span>
+                      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${it.name} <span style="color:#4ade80;font-weight:700;">(+${it.boostSec}d)</span></span>
+                    </span>
+                    <button onclick="usePirakuBagItem(${idx})" style="border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:4px 9px;border-radius:8px;font-size:10.5px;font-weight:900;cursor:pointer;white-space:nowrap;">🍽️ Makan</button>
+                  </div>
+                `).join("")}
+              </div>`;
+            })()}
+          </div>
+
+          <div>
             <div style="font-size:11px;font-weight:900;color:#93c5fd;text-transform:uppercase;margin-bottom:6px;">🎒 Tas Ikan (${bag.length})</div>
             ${bag.length === 0
               ? `<div style="font-size:11.5px;color:#94a3b8;background:rgba(30,41,59,0.5);padding:10px;border-radius:10px;text-align:center;">Belum ada ikan di tas. Pergi ke kolam & lempar joran!</div>`
@@ -1138,6 +1217,11 @@
   });
 
   let lastPondSig = "";
+  let _barEl = null;
+  let _worldPinEl = null;
+  let _pinVec = null;
+  let _lastPinX = -9999;
+  let _lastPinY = -9999;
   function tickFishing3D() {
     ensureTamanLansiaPondVisible();
     const pm = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
@@ -1188,61 +1272,79 @@
     }
 
     // Prompt mancing di KANAN BAWAH (bottom: 76px, right: 12px) agar bersih dari Obrolan & Analog kiri bawah!
-    let bar = document.getElementById("piraku-fishing-prompt");
-    if (!bar && document.body) {
-      bar = document.createElement("div");
-      bar.id = "piraku-fishing-prompt";
-      bar.style.cssText = "position:fixed;bottom:76px;right:12px;z-index:46;display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(15,23,42,0.94);backdrop-filter:blur(10px);border:1.5px solid #38bdf8;color:#f8fafc;font-size:11px;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,0.6);white-space:nowrap;";
-      document.body.appendChild(bar);
+    if (!_barEl && document.body) {
+      _barEl = document.getElementById("piraku-fishing-prompt");
+      if (!_barEl) {
+        _barEl = document.createElement("div");
+        _barEl.id = "piraku-fishing-prompt";
+        _barEl.style.cssText = "position:fixed;bottom:76px;right:12px;z-index:46;display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(15,23,42,0.94);backdrop-filter:blur(10px);border:1.5px solid #38bdf8;color:#f8fafc;font-size:11px;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,0.6);white-space:nowrap;";
+        document.body.appendChild(_barEl);
+      }
     }
 
     const distToPond = (pm && pm.position) ? Math.hypot(pm.position.x - pond.x, pm.position.z - pond.z) : 999;
     const nearPond = Boolean(pm && pm.position && fishState === "idle" && !wasInWater && distToPond <= pond.radius);
 
-    // Pin lokasi HTML proyeksi 3D "🎣 Mancing di sini" (tajam di jarak berapapun, desain biru-emas beda dari nickname, hilang saat di kolam)
-    let worldPin = document.getElementById("piraku-fishing-world-pin");
-    if (!worldPin && document.body) {
-      worldPin = document.createElement("div");
-      worldPin.id = "piraku-fishing-world-pin";
-      worldPin.style.cssText = "position:fixed;left:0;top:0;z-index:20;display:none;flex-direction:column;align-items:center;pointer-events:auto;cursor:pointer;transform:translate(-50%,-100%);";
-      worldPin.innerHTML = `<div style="background:linear-gradient(135deg,#0284c7,#1d4ed8);border:2px solid #fde047;color:#ffffff;font-size:12px;font-weight:900;padding:5px 12px;border-radius:999px;box-shadow:0 6px 18px rgba(2,132,199,0.55);white-space:nowrap;letter-spacing:0.2px;">🎣 Mancing di sini</div><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid #fde047;margin-top:-1px;"></div>`;
-      worldPin.onclick = () => { if (typeof window.guideToPirakuFishingSpot === "function") window.guideToPirakuFishingSpot(); };
-      document.body.appendChild(worldPin);
+    // Pin lokasi HTML proyeksi 3D "🎣 Mancing di sini" (GPU translate3d tanpa layout reflow)
+    if (!_worldPinEl && document.body) {
+      _worldPinEl = document.getElementById("piraku-fishing-world-pin");
+      if (!_worldPinEl) {
+        _worldPinEl = document.createElement("div");
+        _worldPinEl.id = "piraku-fishing-world-pin";
+        _worldPinEl.style.cssText = "position:fixed;left:0;top:0;z-index:20;display:none;flex-direction:column;align-items:center;pointer-events:auto;cursor:pointer;will-change:transform;";
+        _worldPinEl.innerHTML = `<div style="background:linear-gradient(135deg,#0284c7,#1d4ed8);border:2px solid #fde047;color:#ffffff;font-size:12px;font-weight:900;padding:5px 12px;border-radius:999px;box-shadow:0 6px 18px rgba(2,132,199,0.55);white-space:nowrap;letter-spacing:0.2px;">🎣 Mancing di sini</div><div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid #fde047;margin-top:-1px;"></div>`;
+        _worldPinEl.onclick = () => { if (typeof window.guideToPirakuFishingSpot === "function") window.guideToPirakuFishingSpot(); };
+        document.body.appendChild(_worldPinEl);
+      }
     }
     const atLakeArea = Boolean(pm && pm.position && (distToPond <= 13.5 || isPlayerOnPier(pm.position.x, pm.position.z) || isPlayerInLakeWater(pm.position.x, pm.position.z) || fishState !== "idle"));
-    if (worldPin) {
+    if (_worldPinEl) {
       if (!window.pirakuInDistrict && !atLakeArea && window.pirakuCamera && typeof THREE !== "undefined") {
-        const pv = new THREE.Vector3(32.5, 2.7 + Math.sin(now * 0.0035) * 0.16, 16.0).project(window.pirakuCamera);
-        const sx = (pv.x * 0.5 + 0.5) * window.innerWidth;
-        const sy = (-pv.y * 0.5 + 0.5) * window.innerHeight;
-        if (pv.z < 1 && sx > -80 && sx < window.innerWidth + 80 && sy > 20 && sy < window.innerHeight + 40) {
-          worldPin.style.left = sx.toFixed(1) + "px";
-          worldPin.style.top = sy.toFixed(1) + "px";
-          if (worldPin.style.display !== "flex") worldPin.style.display = "flex";
-        } else if (worldPin.style.display !== "none") {
-          worldPin.style.display = "none";
+        if (!_pinVec) _pinVec = new THREE.Vector3();
+        _pinVec.set(32.5, 2.7 + Math.sin(now * 0.0035) * 0.16, 16.0).project(window.pirakuCamera);
+        const sx = (_pinVec.x * 0.5 + 0.5) * window.innerWidth;
+        const sy = (-_pinVec.y * 0.5 + 0.5) * window.innerHeight;
+        if (_pinVec.z < 1 && sx > -80 && sx < window.innerWidth + 80 && sy > 20 && sy < window.innerHeight + 40) {
+          if (Math.abs(sx - _lastPinX) >= 0.5 || Math.abs(sy - _lastPinY) >= 0.5) {
+            _lastPinX = sx;
+            _lastPinY = sy;
+            _worldPinEl.style.transform = `translate3d(${sx.toFixed(1)}px,${sy.toFixed(1)}px,0) translate(-50%,-100%)`;
+          }
+          if (_worldPinEl.style.display !== "flex") _worldPinEl.style.display = "flex";
+        } else if (_worldPinEl.style.display !== "none") {
+          _worldPinEl.style.display = "none";
         }
-      } else if (worldPin.style.display !== "none") {
-        worldPin.style.display = "none";
+      } else if (_worldPinEl.style.display !== "none") {
+        _worldPinEl.style.display = "none";
       }
     }
     if (window.pirakuActiveMinimapTarget && window.pirakuActiveMinimapTarget.isFishingGuide && distToPond <= 13.5) {
       window.pirakuActiveMinimapTarget = null;
     }
 
-    if (bar && nearPond) {
-      const sig = pond.name + "_" + getBag().length;
+    if (_barEl && fishState === "idle") {
+      const bLen = getBagLen();
+      const sig = (nearPond ? "near_" : "far_") + pond.name + "_" + bLen;
       if (lastPondSig !== sig) {
         lastPondSig = sig;
-        bar.innerHTML = `<button onclick="castPirakuFishingRod()" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:6px 12px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🎣 Lempar Joran</button>` +
-          `<button onclick="openFishingHubModal()" style="border:none;background:#1e293b;color:#fde047;padding:6px 10px;border-radius:999px;font-weight:800;font-size:11px;cursor:pointer;border:1px solid #475569;white-space:nowrap;">🎒 Tas (${getBag().length})</button>`;
+        _barEl.innerHTML = (nearPond ? `<button onclick="castPirakuFishingRod()" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:6px 12px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🎣 Lempar Joran</button>` : "") +
+          `<button onclick="openFishingHubModal()" style="border:none;background:#1e293b;color:#fde047;padding:6px 11px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;border:1px solid #475569;white-space:nowrap;">🎒 Tas (${bLen})</button>`;
       }
-      if (bar.style.display !== "flex") bar.style.display = "flex";
-    } else if (bar && bar.style.display !== "none") {
-      bar.style.display = "none";
+      if (_barEl.style.display !== "flex") _barEl.style.display = "flex";
+    } else if (_barEl && _barEl.style.display !== "none") {
+      _barEl.style.display = "none";
     }
 
     if (pm) {
+      if (window.pirakuShownFish && (
+        fishState !== "idle" ||
+        wasInWater ||
+        window.isRidingTram ||
+        (pm.userData && pm.userData.a && pm.userData.a.vehicle) ||
+        (document.getElementById("piraku-games-modal") && document.getElementById("piraku-games-modal").style.display === "flex")
+      )) {
+        window.pirakuShownFish = null;
+      }
       window.syncShownFishOnMesh(pm, window.pirakuShownFish, now);
     }
 

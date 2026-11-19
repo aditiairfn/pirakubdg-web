@@ -3090,7 +3090,10 @@
                 <div style="font-size:11px;color:#94a3b8;">${s.desc}</div>
               </div>
             </div>
-            <button onclick="buyPirakuMartSnack('${s.id}')" style="border:none;background:linear-gradient(135deg,#f8fafc,#dbeafe);color:#1e3a8a;padding:7px 11px;border-radius:10px;font-weight:900;font-size:11.5px;cursor:pointer;white-space:nowrap;">🪙 ${s.cost}</button>
+            <div style="display:flex;gap:5px;flex-shrink:0;">
+              <button onclick="buyPirakuMartSnack('${s.id}', false)" style="border:none;background:linear-gradient(135deg,#f8fafc,#dbeafe);color:#1e3a8a;padding:6px 9px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🍽️ 🪙 ${s.cost}</button>
+              <button onclick="buyPirakuMartSnack('${s.id}', true)" style="border:none;background:#1e293b;color:#fde047;border:1px solid #475569;padding:6px 8px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;white-space:nowrap;">🎒 Simpan</button>
+            </div>
           </div>
         `).join("")}
       `;
@@ -3101,11 +3104,15 @@
     modal.style.display = "flex";
   };
 
-  window.buyPirakuMartSnack = function(snackId) {
+  window.buyPirakuMartSnack = function(snackId, storeInBag) {
     const item = PIRAKU_MART_SNACKS.find(s => s.id === snackId);
     if (!item || !window.PirakuEconomy) return;
     if (!window.PirakuEconomy.spendCoins(item.cost, "Jajan " + item.name + " di Kopdes Biru Putih")) return;
-    window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + item.boostSec * 1000;
+    if (storeInBag && typeof window.addPirakuBagItem === "function") {
+      window.addPirakuBagItem(item);
+    } else {
+      window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + item.boostSec * 1000;
+    }
     let contribMsg = "";
     if (activeMapId && activeMapId !== CENTRAL_HUB.id) {
       const curD = DISTRICTS.find(x => x.id === activeMapId);
@@ -3117,10 +3124,14 @@
         contribMsg = ` (+2 Kas Kec. ${curD.name})`;
       }
     }
-    const modal = document.getElementById("piraku-mart-modal");
-    if (modal) modal.style.display = "none";
+    if (!storeInBag) {
+      const modal = document.getElementById("piraku-mart-modal");
+      if (modal) modal.style.display = "none";
+    }
     if (typeof window.showToast === "function") {
-      window.showToast(`${item.icon} Nyam! Beli ${item.name} — ngebut +${item.boostSec}d${contribMsg}`);
+      window.showToast(storeInBag
+        ? `🎒 ${item.icon} ${item.name} disimpan ke Tas!${contribMsg}`
+        : `${item.icon} Nyam! Beli ${item.name} — ngebut +${item.boostSec}d${contribMsg}`);
     }
   };
 

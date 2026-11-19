@@ -4242,6 +4242,7 @@ let activeQuestSystem = null;
     const tmpSize = new THREE.Vector3();
     const tmpCenter = new THREE.Vector3();
     const localSize = new THREE.Vector3();
+    const tmpScale = new THREE.Vector3();
 
     const dynamicRoots = new Set();
     if (typeof citizensGroup !== "undefined" && citizensGroup) dynamicRoots.add(citizensGroup);
@@ -4266,7 +4267,7 @@ let activeQuestSystem = null;
         if (!obj.geometry.boundingBox) obj.geometry.computeBoundingBox();
         if (obj.geometry.boundingBox) {
           obj.geometry.boundingBox.getSize(localSize);
-          localSize.multiply(obj.getWorldScale(new THREE.Vector3()));
+          localSize.multiply(obj.getWorldScale(tmpScale));
           if (localSize.y < 1.1 || localSize.x < 0.65 || localSize.z < 0.65) return;
           if (localSize.x > 28 || localSize.z > 28) return;
         }
@@ -4323,7 +4324,7 @@ let activeQuestSystem = null;
   }
 
   function resolvePirakuBuildingCollision(pos, prevX, prevZ, radius = 0.48) {
-    if (pirakuBuildingColliders.length === 0 || performance.now() - pirakuLastColliderScan > 12000) {
+    if (pirakuBuildingColliders.length === 0 || performance.now() - pirakuLastColliderScan > 60000) {
       rebuildPirakuBuildingColliders();
     }
     // Jika sedang naik di atas dek tinggi Flyover Pasupati (y > 2.4), tidak bertabrakan dengan bangunan bawah
