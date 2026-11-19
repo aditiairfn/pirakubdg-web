@@ -2216,7 +2216,10 @@ let activeQuestSystem = null;
     if (performance.now() - touchStartTime < 300 && Math.hypot(e.clientX - touchStartPos.x, e.clientY - touchStartPos.y) < 8) {
       mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
+      const myIgLower = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
       const hits = raycaster.intersectObjects(clickableObjects).filter(h => {
+        const ud = h.object && h.object.userData;
+        if (ud && ((typeof myPlayerMesh !== 'undefined' && myPlayerMesh && ud.meshGroup === myPlayerMesh) || (myIgLower && (ud.ig || '').toLowerCase().replace(/^@/, '') === myIgLower))) return false;
         let p = h.object;
         while (p) { if (p.visible === false) return false; p = p.parent; }
         return true;
@@ -2235,7 +2238,34 @@ let activeQuestSystem = null;
           }
         }
       }
-      if (hits.length > 0) showCitizenSpeech(hits[0].object.userData); else hideCitizenSpeech();
+      if (hits.length > 0) {
+        showCitizenSpeech(hits[0].object.userData);
+      } else {
+        hideCitizenSpeech();
+        if (e.target === renderer.domElement && typeof myPlayerMesh !== 'undefined' && myPlayerMesh && !isRidingTram) {
+          const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+          const tapPt = new THREE.Vector3();
+          if (raycaster.ray.intersectPlane(groundPlane, tapPt)) {
+            const minX = window.pirakuInDistrict ? -52 : -132;
+            const maxX = window.pirakuInDistrict ? 52 : 61;
+            const minZ = window.pirakuInDistrict ? -52 : -62;
+            const maxZ = 52;
+            const tx = Math.max(minX, Math.min(maxX, tapPt.x));
+            const tz = Math.max(minZ, Math.min(maxZ, tapPt.z));
+            pirakuTapWalkTarget = { x: tx, z: tz };
+            if (!pirakuTapMarker) {
+              pirakuTapMarker = new THREE.Mesh(
+                new THREE.RingGeometry(0.32, 0.50, 24),
+                new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+              );
+              pirakuTapMarker.rotation.x = -Math.PI / 2;
+              scene.add(pirakuTapMarker);
+            }
+            pirakuTapMarker.position.set(tx, 0.09, tz);
+            pirakuTapMarker.visible = true;
+          }
+        }
+      }
     }
   });
 
@@ -3573,11 +3603,11 @@ let activeQuestSystem = null;
   };
 
   function applyBatterySaverState(isOn) {
+    window.pirakuPotatoMode = !!isOn;
     if (typeof renderer !== 'undefined' && renderer) {
-      renderer.setPixelRatio(isOn ? 0.75 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
+      renderer.setPixelRatio(isOn ? 0.75 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.15 : 1.35));
       renderer.setSize(window.innerWidth, window.innerHeight, false);
-      // Jangan ubah shadowMap.enabled karena memicu kompilasi ulang semua shader; cukup hentikan autoUpdate bayangan!
-      renderer.shadowMap.autoUpdate = !isOn;
+      renderer.shadowMap.autoUpdate = false;
       if (!isOn) renderer.shadowMap.needsUpdate = true;
     }
     const badge = document.getElementById('battery-saver-badge');
@@ -3585,6 +3615,12 @@ let activeQuestSystem = null;
       badge.innerText = isOn ? 'ON' : 'OFF';
       badge.style.background = isOn ? 'rgba(34,197,94,0.24)' : 'rgba(148,163,184,0.22)';
       badge.style.color = isOn ? '#4ade80' : '#cbd5e1';
+    }
+    const hudBtn = document.getElementById('btn-hud-battery');
+    if (hudBtn) {
+      hudBtn.innerHTML = isOn ? '<span>⚡ Hemat: ON</span>' : '<span>⚡ Hemat: OFF</span>';
+      hudBtn.style.borderColor = isOn ? 'rgba(74,222,128,0.75)' : '';
+      hudBtn.style.color = isOn ? '#4ade80' : '';
     }
   }
   window.toggleBatterySaverMode = function() {
@@ -4295,9 +4331,14 @@ let activeQuestSystem = null;
     initJumpButton();
   }
 
+  function isTypingInField(e) {
+    const t = (e && e.target) || document.activeElement;
+    return !!(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable));
+  }
+
   window.addEventListener("keydown", e => {
+    if (isTypingInField(e)) return;
     if (e.code === "Space" || e.key === " " || e.keyCode === 32) {
-      if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
       e.preventDefault();
       window.playerJump();
     }
@@ -4305,6 +4346,7 @@ let activeQuestSystem = null;
 
   const keys = { w: false, a: false, s: false, d: false };
   window.addEventListener('keydown', e => {
+    if (isTypingInField(e)) { keys.w = keys.a = keys.s = keys.d = false; return; }
     const k = (e.key || '').toLowerCase();
     if (keys.hasOwnProperty(k)) keys[k] = true;
   });

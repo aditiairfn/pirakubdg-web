@@ -1882,6 +1882,8 @@
   };
 
   window.addEventListener("keydown", (e) => {
+    const t = e.target || document.activeElement;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
     if (e.code !== "Space") return;
     if (fishState === "casting" && _finishPowerCastFn) { e.preventDefault(); _finishPowerCastFn(); }
     else if (fishState === "bite") { e.preventDefault(); window.strikePirakuFish(); }

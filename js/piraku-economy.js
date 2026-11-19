@@ -181,7 +181,13 @@
   }
   window.reloadPirakuEconomyForCurrentUser = pullAccountWalletFromCloud;
 
-  window.PirakuEconomy = {
+  const _coinGrantsTs = [];
+  function isFounderBypass(reason) {
+    const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    return ig === "yelclaw" && String(reason || "").includes("Admin Founder");
+  }
+
+  window.PirakuEconomy = Object.freeze({
     getCoins: () => state.coins,
     getState: () => state,
     getCatalog: () => CATALOG,
@@ -189,6 +195,19 @@
     addCoins(amount, reason) {
       const val = Math.round(Number(amount) || 0);
       if (!val) return state.coins;
+      if (val > 0 && !isFounderBypass(reason)) {
+        if (val > 2500) {
+          console.warn("[PirakuSecurity] Penambahan koin terlalu besar ditolak:", val);
+          return state.coins;
+        }
+        const now = Date.now();
+        while (_coinGrantsTs.length && now - _coinGrantsTs[0] > 3000) _coinGrantsTs.shift();
+        if (_coinGrantsTs.length >= 6) {
+          console.warn("[PirakuSecurity] Rate limit koin tercapai.");
+          return state.coins;
+        }
+        _coinGrantsTs.push(now);
+      }
       if (!state._hydrated && (localStorage.getItem("piraku_my_ig") || "").trim()) {
         pendingCoinDelta += val;
       }
@@ -223,7 +242,7 @@
     getTierObj() {
       return CATALOG.tier.find(t => t.id === state.tier) || CATALOG.tier[0];
     }
-  };
+  });
 
   function formatRem(ms) {
     const totalSec = Math.max(0, Math.ceil(ms / 1000));
