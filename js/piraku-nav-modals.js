@@ -35,6 +35,16 @@
           <button id="btn-close-info" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
 
+        <div style="padding:13px;border-radius:16px;background:linear-gradient(135deg,rgba(14,165,233,0.18),rgba(15,23,42,0.92));border:1.5px solid rgba(56,189,248,0.5);margin-bottom:11px;font-size:12px;color:#e2e8f0;line-height:1.5;">
+          <div style="font-size:13px;font-weight:900;color:#38bdf8;margin-bottom:6px;">🆕 Apa yang Baru di Versi Terbaru</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <div>🎣 <b>Danau Taman Lansia &amp; Mancing 3D</b> — Area danau baru di Timur Gedung Sate lengkap dengan dermaga kayu 8m, gazebo santai, air terjun, &amp; ikan koi.</div>
+            <div>🌊 <b>Fisika Air &amp; Dermaga</b> — Berdiri di atas dermaga untuk lempar joran; masuk ke air bikin karakter tenggelam &amp; jalan lebih lambat.</div>
+            <div>🏬 <b>Jual Ikan &amp; Beli Joran di Kopdes</b> — Jalan ke Kopdes kecamatan untuk jual hasil pancingan (item rusak tidak laku) dan upgrade joran/umpan.</div>
+            <div>🗺️ <b>Minimap &amp; Pin Lokasi Mancing</b> — Danau kini tampil di minimap, lengkap dengan pin <b>🎣 Mancing di sini</b> &amp; penunjuk arah dari footer <b>Game</b>.</div>
+          </div>
+        </div>
+
         <div style="padding:14px;border-radius:16px;background:rgba(15,23,42,0.82);border:1px solid rgba(148,163,184,0.22);margin-bottom:12px;font-size:12px;color:#cbd5e1;line-height:1.55;">
           <div style="font-size:13.5px;font-weight:800;color:#fde047;margin-bottom:6px;">✨ Dunia Simulasi Kota Bandung 3D Interaktif</div>
           <p style="margin:0 0 10px;">Jelajahi Bandung bersama warga lain secara realtime — mulai dari <b>Gedung Sate, Gasibu &amp; Monumen Perjuangan</b> hingga <b>30 Komplek Kecamatan</b> yang terus berkembang!</p>
