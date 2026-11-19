@@ -2525,5 +2525,5 @@
     b.querySelector("#pf-upd-close").onclick = dismiss;
   }
 
-  setTimeout(() => { showFishingUpdateBanner(); requestAnimationFrame(tickFishing3D); }, 800);
+  setTimeout(() => { requestAnimationFrame(tickFishing3D); }, 800);
 })();

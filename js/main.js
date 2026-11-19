@@ -3517,10 +3517,22 @@ let activeQuestSystem = null;
   };
 
   window.downloadKTPScreenshot = function() {
-    html2canvas(document.getElementById('ktp-card-export'), { scale: 3, backgroundColor: null, useCORS: true }).then(canvas => {
-      const a = document.createElement('a'); a.download = 'E-KTP_Bandung_' + (document.getElementById('ktp-ig').innerText.replace('@', '') || 'Warga') + '.png';
-      a.href = canvas.toDataURL('image/png'); a.click();
-    });
+    const runExport = () => {
+      html2canvas(document.getElementById('ktp-card-export'), { scale: 3, backgroundColor: null, useCORS: true }).then(canvas => {
+        const a = document.createElement('a'); a.download = 'E-KTP_Bandung_' + (document.getElementById('ktp-ig').innerText.replace('@', '') || 'Warga') + '.png';
+        a.href = canvas.toDataURL('image/png'); a.click();
+      });
+    };
+    if (typeof html2canvas === 'function') {
+      runExport();
+    } else {
+      showToast('Menyiapkan ekspor KTP...');
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      s.onload = runExport;
+      s.onerror = () => showToast('Gagal memuat modul ekspor KTP');
+      document.head.appendChild(s);
+    }
   };
 
   window.copyCitizenLink = function() {
