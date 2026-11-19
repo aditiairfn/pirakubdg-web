@@ -555,7 +555,7 @@ let activeQuestSystem = null;
   controls.maxDistance = 85; window.pirakuControls = controls;
   controls.target.set(0, 3, 5);
   if (typeof THREE !== 'undefined' && THREE.MOUSE) {
-    controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
   }
   renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
   if (window.innerWidth <= 900 && typeof THREE !== 'undefined' && THREE.TOUCH) {

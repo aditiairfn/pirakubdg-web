@@ -191,20 +191,32 @@
     }
 
     const TIER_STYLES = {
-      tier_7: { bg: "linear-gradient(120deg,rgba(69,10,10,0.96),rgba(185,28,28,0.96),rgba(180,83,9,0.96))", border: "#facc15", text: "#fef08a", shadow: "0 0 16px rgba(250,204,21,0.85), 0 0 24px rgba(239,68,68,0.45)" },
-      tier_6: { bg: "linear-gradient(120deg,rgba(46,16,101,0.95),rgba(126,34,206,0.95))", border: "#d8b4fe", text: "#fae8ff", shadow: "0 0 14px rgba(192,132,252,0.75)" },
-      tier_5: { bg: "linear-gradient(120deg,rgba(23,37,84,0.95),rgba(29,78,216,0.95))", border: "#60a5fa", text: "#fef08a", shadow: "0 0 14px rgba(59,130,246,0.72)" },
-      tier_4: { bg: "linear-gradient(120deg,rgba(6,24,44,0.95),rgba(14,116,144,0.95))", border: "#7dd3fc", text: "#e0f2fe", shadow: "0 0 12px rgba(56,189,248,0.68)" },
-      tier_3: { bg: "linear-gradient(135deg,rgba(41,21,3,0.95),rgba(146,64,14,0.95))", border: "#fbbf24", text: "#fef3c7", shadow: "0 0 10px rgba(251,191,36,0.52)" },
-      tier_2: { bg: "linear-gradient(135deg,rgba(30,27,75,0.94),rgba(55,48,163,0.94))", border: "#818cf8", text: "#e0e7ff", shadow: "0 0 8px rgba(129,140,248,0.45)" }
+      tier_7: { bg: "linear-gradient(120deg,rgba(69,10,10,0.96),rgba(185,28,28,0.96),rgba(180,83,9,0.96))", border: "#facc15", badgeCol: "#fde047", text: "#fb923c", shadow: "0 0 16px rgba(250,204,21,0.85), 0 0 24px rgba(239,68,68,0.45)" },
+      tier_6: { bg: "linear-gradient(120deg,rgba(46,16,101,0.95),rgba(126,34,206,0.95))", border: "#d8b4fe", badgeCol: "#f0abfc", text: "#c084fc", shadow: "0 0 14px rgba(192,132,252,0.75)" },
+      tier_5: { bg: "linear-gradient(120deg,rgba(23,37,84,0.95),rgba(29,78,216,0.95))", border: "#60a5fa", badgeCol: "#fde047", text: "#60a5fa", shadow: "0 0 14px rgba(59,130,246,0.72)" },
+      tier_4: { bg: "linear-gradient(120deg,rgba(6,24,44,0.95),rgba(14,116,144,0.95))", border: "#38bdf8", badgeCol: "#7dd3fc", text: "#38bdf8", shadow: "0 0 12px rgba(56,189,248,0.68)" },
+      tier_3: { bg: "linear-gradient(135deg,rgba(41,21,3,0.95),rgba(146,64,14,0.95))", border: "#fbbf24", badgeCol: "#fde047", text: "#fbbf24", shadow: "0 0 10px rgba(251,191,36,0.52)" },
+      tier_2: { bg: "linear-gradient(135deg,rgba(30,27,75,0.94),rgba(55,48,163,0.94))", border: "#818cf8", badgeCol: "#a5b4fc", text: "#818cf8", shadow: "0 0 8px rgba(129,140,248,0.45)" }
     };
     const tierStyle = resolvedTierId ? (TIER_STYLES[resolvedTierId] || null) : null;
     const isFounder = cleanHandle === "yelclaw";
     const isSpeaking = !!speakingPeers.get(key);
-    const tierSuffix = resolvedTierBadge && resolvedTierName ? (" • " + resolvedTierBadge + " " + resolvedTierName) : "";
-    const baseLabel = (isFounder ? ("🛡️ FOUNDER " + label) : label) + tierSuffix;
-    const displayLabel = isSpeaking ? ("🎙️ " + baseLabel) : baseLabel;
-    if (tag.textContent !== displayLabel) tag.textContent = displayLabel;
+    const topBadgeText = [
+      isSpeaking ? "🎙️" : "",
+      isFounder ? "🛡️ FOUNDER" : "",
+      (resolvedTierBadge && resolvedTierName) ? (resolvedTierBadge + " " + resolvedTierName) : ""
+    ].filter(Boolean).join(" ");
+    const handleText = (isSpeaking && !topBadgeText ? "🎙️ " : "") + label;
+    const escTag = s => String(s || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[m]));
+    const badgeColorCss = tierStyle ? `color:${tierStyle.badgeCol};` : (isFounder ? "color:#facc15;" : "");
+    const nextHtml = topBadgeText
+      ? `<div style="font-size:8.5px;font-weight:900;letter-spacing:0.4px;line-height:1.15;margin-bottom:1px;${badgeColorCss}">${escTag(topBadgeText)}</div><div style="font-size:10.5px;font-weight:900;line-height:1.15;">${escTag(handleText)}</div>`
+      : escTag(handleText);
+    if (tag.dataset.lastHtml !== nextHtml) {
+      tag.dataset.lastHtml = nextHtml;
+      tag.innerHTML = nextHtml;
+    }
+    tag.style.textAlign = "center";
 
     if (isSpeaking) {
       const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.018);
