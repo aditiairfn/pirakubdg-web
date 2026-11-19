@@ -3,18 +3,19 @@
   "use strict";
 
   const RODS = [
-    { id: "bamboo",    name: "Joran Bambu Cikapundung", cost: 0,    barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋" },
-    { id: "fiber",     name: "Joran Fiber Braga",       cost: 80,   barWidth: 40, luckBonus: 0.14, mutChance: 0.10, color: 0x0284c7, badge: "🎣" },
-    { id: "carbon",    name: "Joran Karbon Dago",       cost: 250,  barWidth: 46, luckBonus: 0.30, mutChance: 0.16, color: 0x1e293b, badge: "⚡" },
-    { id: "gold",      name: "Joran Emas Siliwangi",    cost: 700,  barWidth: 54, luckBonus: 0.52, mutChance: 0.26, color: 0xfacc15, badge: "👑" },
-    { id: "crystal",   name: "Joran Kristal Tangkuban", cost: 1600, barWidth: 60, luckBonus: 0.78, mutChance: 0.36, color: 0x38bdf8, badge: "💎" },
-    { id: "celestial", name: "Joran Naga Siliwangi",    cost: 3500, barWidth: 68, luckBonus: 1.15, mutChance: 0.50, color: 0xa855f7, badge: "🌌" }
+    { id: "bamboo",    name: "Joran Bambu Cikapundung", cost: 0,    barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋", tierNote: "Cocok ikan Common–Uncommon (Rare+ sangat langka)" },
+    { id: "fiber",     name: "Joran Fiber Braga",       cost: 150,  barWidth: 40, luckBonus: 0.18, mutChance: 0.10, color: 0x0284c7, badge: "🎣", tierNote: "Buka peluang Rare & Epic" },
+    { id: "carbon",    name: "Joran Karbon Dago",       cost: 450,  barWidth: 46, luckBonus: 0.38, mutChance: 0.18, color: 0x1e293b, badge: "⚡", tierNote: "Efek kilau biru • Peluang Epic & Mythic" },
+    { id: "gold",      name: "Joran Emas Siliwangi",    cost: 1200, barWidth: 54, luckBonus: 0.65, mutChance: 0.28, color: 0xfacc15, badge: "👑", tierNote: "Cahaya emas • Peluang Mythic & Secret tinggi" },
+    { id: "crystal",   name: "Joran Kristal Tangkuban", cost: 2800, barWidth: 60, luckBonus: 0.95, mutChance: 0.38, color: 0x38bdf8, badge: "💎", tierNote: "Cahaya kristal biru • Buru Secret & Cosmic!" },
+    { id: "celestial", name: "Joran Naga Siliwangi",    cost: 6000, barWidth: 68, luckBonus: 1.40, mutChance: 0.52, color: 0xa855f7, badge: "🌌", tierNote: "Aura kosmik • Peluang tertinggi Cosmic & Divine!" }
   ];
 
-  const BAITS = [
-    { id: "worm",  name: "Cacing Tanah", cost: 0,  qtyOnBuy: 0, luckBoost: 0.00, mutBoost: 0.00, icon: "🪱" },
-    { id: "pelet", name: "Pelet Sakti",  cost: 12, qtyOnBuy: 5, luckBoost: 0.25, mutBoost: 0.06, icon: "🟢" },
-    { id: "udang", name: "Udang Emas",   cost: 30, qtyOnBuy: 5, luckBoost: 0.55, mutBoost: 0.15, icon: "🦐" }
+  const BOBBERS = [
+    { id: "classic", name: "Umbul-umbul Merah Putih", cost: 0,    biteSpeed: 1.00, luckBoost: 0.00, mutBoost: 0.00, topCol: 0xef4444, botCol: 0xf8fafc, glowCol: null,     icon: "🔴", desc: "Pelampung standar" },
+    { id: "neon",    name: "Umbul-umbul Neon Biru",   cost: 200,  biteSpeed: 0.78, luckBoost: 0.16, mutBoost: 0.06, topCol: 0x38bdf8, botCol: 0x0f172a, glowCol: 0x38bdf8, icon: "💠", desc: "Nyambar +22% cepat • Luck +16%" },
+    { id: "emas",    name: "Umbul-umbul Emas Sakti",  cost: 650,  biteSpeed: 0.66, luckBoost: 0.36, mutBoost: 0.14, topCol: 0xfacc15, botCol: 0x78350f, glowCol: 0xfde047, icon: "🌟", desc: "Nyambar +34% cepat • Luck +36% • Mutasi +14%" },
+    { id: "kosmik",  name: "Umbul-umbul Kosmik",      cost: 1500, biteSpeed: 0.52, luckBoost: 0.65, mutBoost: 0.24, topCol: 0xc084fc, botCol: 0x3b0764, glowCol: 0xe879f9, icon: "🔮", desc: "Nyambar +48% cepat • Luck +65% • Mutasi +24%" }
   ];
 
   const FISH_CATALOG = [
@@ -68,8 +69,41 @@
     { id: "rajasamudra", name: "Raja Samudra Bandung",   rarity: "Divine",   col: "#fde047", accent: "#38bdf8", shape: "crown",   minKg: 50.0, maxKg: 150.0,baseCoin: 500, speed: 1.95, erratic: 1.25, weight: 0.001,icon: "🔱", meshCol: 0xfde047 }
   ];
 
+  const DISTRICT_EXCLUSIVE_FISH = {
+    sumur_bandung:    { id: "ex_sumur",    districtName: "Sumur Bandung",    name: "Koi Heritage Braga",         rarity: "Mythic", col: "#38bdf8", accent: "#fde047", shape: "crown",   minKg: 12, maxKg: 40,  baseCoin: 75,  speed: 1.52, erratic: 0.98, weight: 0.45, icon: "🎭", meshCol: 0x38bdf8 },
+    lengkong:         { id: "ex_lengkong", districtName: "Lengkong",         name: "Lele Pedas Burangrang",      rarity: "Mythic", col: "#f97316", accent: "#ef4444", shape: "whisker", minKg: 10, maxKg: 36,  baseCoin: 70,  speed: 1.50, erratic: 0.96, weight: 0.45, icon: "🍜", meshCol: 0xf97316 },
+    regol:            { id: "ex_regol",    districtName: "Regol",            name: "Ikan Suci Alun-Alun",        rarity: "Divine", col: "#fde047", accent: "#22c55e", shape: "crown",   minKg: 45, maxKg: 130, baseCoin: 480, speed: 1.92, erratic: 1.22, weight: 0.008,icon: "🕌", meshCol: 0xfde047 },
+    batununggal:      { id: "ex_batu",     districtName: "Batununggal",      name: "Naga Neon Laswi",            rarity: "Secret", col: "#a855f7", accent: "#38bdf8", shape: "crown",   minKg: 18, maxKg: 58,  baseCoin: 145, speed: 1.68, erratic: 1.08, weight: 0.08, icon: "🏢", meshCol: 0xa855f7 },
+    kiaracondong:     { id: "ex_kircon",   districtName: "Kiaracondong",     name: "Belut Express Kircon",       rarity: "Mythic", col: "#ec4899", accent: "#f8fafc", shape: "eel",     minKg: 14, maxKg: 44,  baseCoin: 80,  speed: 1.58, erratic: 1.02, weight: 0.45, icon: "🚆", meshCol: 0xec4899 },
+    coblong:          { id: "ex_coblong",  districtName: "Coblong",          name: "Axolotl Sarjana ITB",        rarity: "Secret", col: "#3b82f6", accent: "#fde047", shape: "axolotl", minKg: 8,  maxKg: 26,  baseCoin: 155, speed: 1.70, erratic: 1.08, weight: 0.08, icon: "🎓", meshCol: 0x3b82f6 },
+    cidadap:          { id: "ex_cidadap",  districtName: "Cidadap",          name: "Paus Kabut Punclut",         rarity: "Cosmic", col: "#16a34a", accent: "#e0f2fe", shape: "whale",   minKg: 32, maxKg: 95,  baseCoin: 260, speed: 1.82, erratic: 1.15, weight: 0.02, icon: "🌲", meshCol: 0x16a34a },
+    sukasari:         { id: "ex_sukasari", districtName: "Sukasari",         name: "Koi Isola Biru",             rarity: "Mythic", col: "#0ea5e9", accent: "#e0f2fe", shape: "koi",     minKg: 11, maxKg: 35,  baseCoin: 72,  speed: 1.48, erratic: 0.95, weight: 0.45, icon: "🏫", meshCol: 0x0ea5e9 },
+    sukajadi:         { id: "ex_sukajadi", districtName: "Sukajadi",         name: "Ikan Sultan PVJ",            rarity: "Secret", col: "#f43f5e", accent: "#fde047", shape: "crown",   minKg: 15, maxKg: 48,  baseCoin: 150, speed: 1.66, erratic: 1.06, weight: 0.08, icon: "🛍️", meshCol: 0xf43f5e },
+    cibeunying_kaler: { id: "ex_cibkal",   districtName: "Cibeunying Kaler", name: "Naga Pelukis Cigadung",      rarity: "Cosmic", col: "#eab308", accent: "#f472b6", shape: "crown",   minKg: 28, maxKg: 85,  baseCoin: 270, speed: 1.80, erratic: 1.14, weight: 0.02, icon: "🎨", meshCol: 0xeab308 },
+    cibeunying_kidul: { id: "ex_cibkid",   districtName: "Cibeunying Kidul", name: "Ikan Angklung Udjo",         rarity: "Mythic", col: "#14b8a6", accent: "#fde047", shape: "fancy",   minKg: 12, maxKg: 38,  baseCoin: 78,  speed: 1.54, erratic: 0.98, weight: 0.45, icon: "🎸", meshCol: 0x14b8a6 },
+    antapani:         { id: "ex_antapani", districtName: "Antapani",         name: "Ikan Pelangi Antapani",      rarity: "Secret", col: "#f59e0b", accent: "#38bdf8", shape: "fancy",   minKg: 14, maxKg: 42,  baseCoin: 140, speed: 1.65, erratic: 1.05, weight: 0.08, icon: "🌉", meshCol: 0xf59e0b },
+    arcamanik:        { id: "ex_arcamanik",districtName: "Arcamanik",        name: "Juara Emas Arcamanik",       rarity: "Mythic", col: "#22c55e", accent: "#fde047", shape: "crown",   minKg: 13, maxKg: 41,  baseCoin: 80,  speed: 1.56, erratic: 1.00, weight: 0.45, icon: "🏟️", meshCol: 0x22c55e },
+    mandalajati:      { id: "ex_mandala",  districtName: "Mandalajati",      name: "Paus Bintang Moko",          rarity: "Cosmic", col: "#10b981", accent: "#fde047", shape: "whale",   minKg: 30, maxKg: 92,  baseCoin: 280, speed: 1.84, erratic: 1.16, weight: 0.02, icon: "⛰️", meshCol: 0x10b981 },
+    ujungberung:      { id: "ex_ujber",    districtName: "Ujungberung",      name: "Naga Benjang Ujungberung",   rarity: "Secret", col: "#ef4444", accent: "#fde047", shape: "crown",   minKg: 16, maxKg: 52,  baseCoin: 155, speed: 1.70, erratic: 1.08, weight: 0.08, icon: "🥁", meshCol: 0xef4444 },
+    cinambo:          { id: "ex_cinambo",  districtName: "Cinambo",          name: "Robot Koi Cinambo",          rarity: "Mythic", col: "#64748b", accent: "#38bdf8", shape: "koi",     minKg: 14, maxKg: 46,  baseCoin: 76,  speed: 1.50, erratic: 0.96, weight: 0.45, icon: "🏭", meshCol: 0x64748b },
+    panyileukan:      { id: "ex_panyi",    districtName: "Panyileukan",      name: "Koi Gerbang Timur",          rarity: "Mythic", col: "#06b6d4", accent: "#f8fafc", shape: "koi",     minKg: 12, maxKg: 39,  baseCoin: 74,  speed: 1.49, erratic: 0.95, weight: 0.45, icon: "🏡", meshCol: 0x06b6d4 },
+    cibiru:           { id: "ex_cibiru",   districtName: "Cibiru",           name: "Ikan Cendekia Cibiru",       rarity: "Secret", col: "#8b5cf6", accent: "#e0e7ff", shape: "crown",   minKg: 15, maxKg: 45,  baseCoin: 148, speed: 1.68, erratic: 1.06, weight: 0.08, icon: "📚", meshCol: 0x8b5cf6 },
+    gedebage:         { id: "ex_gedebage", districtName: "Gedebage",         name: "Sang Al Jabbar Divine",      rarity: "Divine", col: "#facc15", accent: "#38bdf8", shape: "crown",   minKg: 55, maxKg: 160, baseCoin: 520, speed: 1.96, erratic: 1.25, weight: 0.008,icon: "⚽", meshCol: 0xfacc15 },
+    rancasari:        { id: "ex_ranca",    districtName: "Rancasari",        name: "Buntal Rawa Ciwastra",       rarity: "Mythic", col: "#22c55e", accent: "#fde047", shape: "puffer",  minKg: 11, maxKg: 36,  baseCoin: 72,  speed: 1.50, erratic: 0.98, weight: 0.45, icon: "🌿", meshCol: 0x22c55e },
+    buahbatu:         { id: "ex_bubat",    districtName: "Buahbatu",         name: "Koi Turbo Tol Buahbatu",     rarity: "Secret", col: "#3b82f6", accent: "#f43f5e", shape: "koi",     minKg: 16, maxKg: 50,  baseCoin: 150, speed: 1.72, erratic: 1.10, weight: 0.08, icon: "🚗", meshCol: 0x3b82f6 },
+    bandung_kidul:    { id: "ex_bkidul",   districtName: "Bandung Kidul",    name: "Naga Hijau Mengger",         rarity: "Mythic", col: "#14b8a6", accent: "#bbf7d0", shape: "crown",   minKg: 13, maxKg: 42,  baseCoin: 78,  speed: 1.54, erratic: 0.99, weight: 0.45, icon: "🏞️", meshCol: 0x14b8a6 },
+    cicendo:          { id: "ex_cicendo",  districtName: "Cicendo",          name: "Ikan Jet Husein",            rarity: "Cosmic", col: "#38bdf8", accent: "#f8fafc", shape: "whale",   minKg: 34, maxKg: 98,  baseCoin: 275, speed: 1.86, erratic: 1.16, weight: 0.02, icon: "✈️", meshCol: 0x38bdf8 },
+    andir:            { id: "ex_andir",    districtName: "Andir",            name: "Lampion Emas Cibadak",       rarity: "Secret", col: "#ef4444", accent: "#fde047", shape: "round",   minKg: 14, maxKg: 44,  baseCoin: 145, speed: 1.66, erratic: 1.05, weight: 0.08, icon: "🏮", meshCol: 0xef4444 },
+    astanaanyar:      { id: "ex_astana",   districtName: "Astanaanyar",      name: "Api Bandung Lautan Api",     rarity: "Divine", col: "#f97316", accent: "#fde047", shape: "crown",   minKg: 50, maxKg: 145, baseCoin: 500, speed: 1.94, erratic: 1.24, weight: 0.008,icon: "🔥", meshCol: 0xf97316 },
+    bojongloa_kaler:  { id: "ex_bojkal",   districtName: "Bojongloa Kaler",  name: "Koi Jamika Klasik",          rarity: "Mythic", col: "#eab308", accent: "#1e293b", shape: "koi",     minKg: 12, maxKg: 38,  baseCoin: 74,  speed: 1.50, erratic: 0.96, weight: 0.45, icon: "👞", meshCol: 0xeab308 },
+    bojongloa_kidul:  { id: "ex_bojkid",   districtName: "Bojongloa Kidul",  name: "Sepatu Emas Cibaduyut",      rarity: "Secret", col: "#fde047", accent: "#d97706", shape: "boot",    minKg: 10, maxKg: 30,  baseCoin: 165, speed: 1.68, erratic: 1.06, weight: 0.08, icon: "👠", meshCol: 0xfde047 },
+    babakan_ciparay:  { id: "ex_bacip",    districtName: "Babakan Ciparay",  name: "Paus Terminal Leuwipanjang", rarity: "Mythic", col: "#0ea5e9", accent: "#bae6fd", shape: "whale",   minKg: 18, maxKg: 54,  baseCoin: 85,  speed: 1.56, erratic: 1.00, weight: 0.45, icon: "🚌", meshCol: 0x0ea5e9 },
+    bandung_kulon:    { id: "ex_bkulon",   districtName: "Bandung Kulon",    name: "Naga Tol Pasirkoja",         rarity: "Cosmic", col: "#6366f1", accent: "#fde047", shape: "crown",   minKg: 32, maxKg: 94,  baseCoin: 265, speed: 1.82, erratic: 1.15, weight: 0.02, icon: "🛣️", meshCol: 0x6366f1 }
+  };
+  const ALL_FISH_CATALOG = FISH_CATALOG.concat(Object.values(DISTRICT_EXCLUSIVE_FISH));
+
   function renderFishArt(fishOrItem, size) {
-    const f = FISH_CATALOG.find(x => x.id === fishOrItem.id) || fishOrItem || {};
+    const f = ALL_FISH_CATALOG.find(x => x.id === fishOrItem.id) || fishOrItem || {};
     const sz = size || 44;
     const c = f.col || "#38bdf8";
     const ac = f.accent || "#0284c7";
@@ -216,14 +250,14 @@
   function setEquippedRodId(id) { localStorage.setItem("piraku_fish_rod_eq" + getUserSuf(), id); }
   function getEquippedRod() { return RODS.find(r => r.id === getEquippedRodId()) || RODS[0]; }
 
-  function getBaitCounts() { return loadJson("piraku_fish_baits" + getUserSuf(), { pelet: 0, udang: 0 }); }
-  function saveBaitCounts(obj) { localStorage.setItem("piraku_fish_baits" + getUserSuf(), JSON.stringify(obj)); }
-  function getEquippedBaitId() {
-    const id = localStorage.getItem("piraku_fish_bait_eq" + getUserSuf()) || "worm";
-    if (id !== "worm" && (getBaitCounts()[id] || 0) <= 0) return "worm";
-    return id;
+  function getOwnedBobbers() {
+    const arr = loadJson("piraku_fish_bobbers" + getUserSuf(), ["classic"]);
+    return Array.isArray(arr) && arr.length ? arr : ["classic"];
   }
-  function setEquippedBaitId(id) { localStorage.setItem("piraku_fish_bait_eq" + getUserSuf(), id); }
+  function saveOwnedBobbers(arr) { localStorage.setItem("piraku_fish_bobbers" + getUserSuf(), JSON.stringify(arr)); }
+  function getEquippedBobberId() { return localStorage.getItem("piraku_fish_bobber_eq" + getUserSuf()) || "classic"; }
+  function setEquippedBobberId(id) { localStorage.setItem("piraku_fish_bobber_eq" + getUserSuf(), id); }
+  function getEquippedBobber() { return BOBBERS.find(b => b.id === getEquippedBobberId()) || BOBBERS[0]; }
 
   function getActivePond() {
     if (window.pirakuInDistrict) {
@@ -548,15 +582,26 @@
       tipSection.add(r);
     });
 
-    // Aura cincin khusus Joran Kristal & Naga Siliwangi
-    if (isCelestial || isCrystal) {
+    // Efek cahaya & aura menyala khusus joran bagus (Karbon, Emas, Kristal, Naga Siliwangi)
+    if (rodId === "carbon" || isHighTier) {
+      const auraSphere = new THREE.Mesh(
+        new THREE.SphereGeometry(isHighTier ? 0.11 : 0.075, 10, 10),
+        new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: isHighTier ? 0.48 : 0.3 })
+      );
+      auraSphere.position.set(0, 0.96, 0);
+      tipSection.add(auraSphere);
+    }
+    if (isHighTier) {
       const halo = new THREE.Mesh(
-        new THREE.TorusGeometry(0.11, 0.012, 8, 18),
-        new THREE.MeshBasicMaterial({ color: isCelestial ? 0xfde047 : 0x7dd3fc })
+        new THREE.TorusGeometry(isCelestial ? 0.13 : 0.105, 0.014, 8, 18),
+        new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: 0.88 })
       );
       halo.rotation.x = Math.PI / 2;
       halo.position.set(0, 0.92, 0);
       tipSection.add(halo);
+      const rodLight = new THREE.PointLight(tipColor, isCelestial ? 1.5 : 1.05, 5.5);
+      rodLight.position.set(0, 0.96, 0);
+      tipSection.add(rodLight);
     }
 
     // Reel spinning lengkap: dudukan, bodi, spool metalik, bail arm, & engkol
@@ -580,13 +625,23 @@
     return rodGrp;
   }
 
-  function createBobberGroup(bx, wy, bz) {
+  function createBobberGroup(bx, wy, bz, bobberSpec) {
+    const spec = bobberSpec || BOBBERS[0];
     const bob = new THREE.Group();
-    const bTop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+    const bTop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: spec.topCol || 0xef4444 }));
     bTop.position.y = 0.06;
-    const bBot = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xf8fafc }));
+    const bBot = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: spec.botCol || 0xf8fafc }));
     bBot.position.y = -0.02;
     bob.add(bTop, bBot);
+    if (spec.glowCol) {
+      const aura = new THREE.Mesh(
+        new THREE.TorusGeometry(0.24, 0.022, 6, 16),
+        new THREE.MeshBasicMaterial({ color: spec.glowCol, transparent: true, opacity: 0.78 })
+      );
+      aura.rotation.x = Math.PI / 2;
+      aura.position.y = 0.03;
+      bob.add(aura);
+    }
     bob.position.set(bx, wy + 0.06, bz);
     return bob;
   }
@@ -665,7 +720,8 @@
     const bx = pond.x + (Math.random() - 0.5) * 3.0;
     const bz = pond.z + (Math.random() - 0.5) * 2.5;
 
-    const bob = createBobberGroup(bx, pond.waterY, bz);
+    const bobSpec = getEquippedBobber();
+    const bob = createBobberGroup(bx, pond.waterY, bz, bobSpec);
     sc.add(bob);
     bobberMesh3D = bob;
 
@@ -683,6 +739,7 @@
       col: rod.color,
       gold: rod.id === "gold",
       rodId: rod.id,
+      bobId: bobSpec.id,
       bx: Number(bx.toFixed(2)),
       bz: Number(bz.toFixed(2)),
       wy: Number(pond.waterY.toFixed(2))
@@ -707,17 +764,28 @@
 
   function rollFish() {
     const rod = getEquippedRod();
-    const baitId = getEquippedBaitId();
-    const bait = BAITS.find(b => b.id === baitId) || BAITS[0];
+    const bobber = getEquippedBobber();
     const isRain = window.pirakuCurrentEventId === "rain";
-    const totalLuck = rod.luckBonus + bait.luckBoost;
+    const totalLuck = rod.luckBonus + bobber.luckBoost;
+    const isFreeRod = rod.id === "bamboo";
+    const curMapId = window.pirakuActiveMapId || "bandung_wetan";
+    const exFish = (window.pirakuInDistrict && DISTRICT_EXCLUSIVE_FISH[curMapId]) ? DISTRICT_EXCLUSIVE_FISH[curMapId] : null;
+    const sourcePool = exFish ? FISH_CATALOG.concat([exFish]) : FISH_CATALOG;
 
-    const pool = FISH_CATALOG.map(f => {
+    const pool = sourcePool.map(f => {
       let w = f.weight;
-      if (f.rarity === "Rare" || f.rarity === "Epic" || f.rarity === "Mythic" || f.rarity === "Secret" || f.rarity === "Cosmic" || f.rarity === "Divine") {
-        w *= (1 + totalLuck * 2.4) * (isRain ? 2.0 : 1.0);
+      if (f.rarity === "Common") {
+        w *= Math.max(0.42, 1 - totalLuck * 0.25);
+      } else if (f.rarity === "Uncommon") {
+        w *= (1 + totalLuck * 0.45);
+      } else if (f.rarity === "Rare") {
+        w *= (isFreeRod ? 0.20 : 1 + totalLuck * 2.4) * (isRain ? 1.8 : 1.0);
+      } else if (f.rarity === "Epic") {
+        w *= (isFreeRod ? 0.03 : 1 + totalLuck * 3.0) * (isRain ? 2.0 : 1.0);
+      } else {
+        // Mythic, Secret, Cosmic, Divine: hampir mustahil pakai joran bambu gratisan, naik tajam di joran bagus!
+        w *= (isFreeRod ? 0.005 : 1 + totalLuck * 3.8) * (isRain ? 2.2 : 1.0);
       }
-      if ((f.rarity === "Mythic" || f.rarity === "Secret" || f.rarity === "Cosmic" || f.rarity === "Divine") && rod.id === "bamboo" && baitId === "worm") w *= 0.25;
       return { fish: f, w };
     });
     const total = pool.reduce((s, p) => s + p.w, 0);
@@ -727,17 +795,6 @@
       if (r <= 0) return p.fish;
     }
     return FISH_CATALOG[1];
-  }
-
-  function consumeOneBait() {
-    const eq = getEquippedBaitId();
-    if (eq === "worm") return;
-    const counts = getBaitCounts();
-    if ((counts[eq] || 0) > 0) {
-      counts[eq] -= 1;
-      saveBaitCounts(counts);
-      if (counts[eq] <= 0) setEquippedBaitId("worm");
-    }
   }
 
   function setMobileControlsHidden(hide) {
@@ -786,7 +843,7 @@
     spawn3DFishingVisuals(pond);
     if (typeof window.playSynthTone === "function") window.playSynthTone(520, "sine", 0.12);
 
-    const bait = BAITS.find(b => b.id === getEquippedBaitId()) || BAITS[0];
+    const bobber = getEquippedBobber();
     const ui = ensureFishingOverlay();
     ui.style.display = "flex";
     ui.innerHTML = `
@@ -794,11 +851,11 @@
         <span style="font-weight:900;font-size:12.5px;color:#7dd3fc;">🎣 Menunggu di ${pond.name}</span>
         ${catchCombo > 0 ? `<span style="background:#9a3412;color:#fde047;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:900;">🔥 Combo ${catchCombo}x</span>` : ""}
       </div>
-      <div style="font-size:11px;color:#94a3b8;">Umpan: ${bait.icon} <b>${bait.name}</b> • Perhatikan pelampung di air!</div>
+      <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Perhatikan air!</div>
       <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:5px 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
     `;
 
-    const delayMs = 1500 + Math.random() * 1900;
+    const delayMs = (1500 + Math.random() * 1900) * (bobber.biteSpeed || 1.0);
     waitTimer = setTimeout(() => {
       if (fishState !== "waiting") return;
       fishState = "bite";
@@ -826,7 +883,6 @@
     fishState = "reeling";
     if (window.pirakuFishingSyncState) window.pirakuFishingSyncState.state = "reeling";
     currentFishSpec = rollFish();
-    consumeOneBait();
     spawnJumpingFish3D(currentFishSpec);
 
     const rod = getEquippedRod();
@@ -953,13 +1009,13 @@
 
   function finishFishCatch(fish, rod) {
     catchCombo = Math.min(5, catchCombo + 1);
-    const bait = BAITS.find(b => b.id === getEquippedBaitId()) || BAITS[0];
+    const bobber = getEquippedBobber();
     cancelFishing();
 
     const streakMult = 1 + (catchCombo - 1) * 0.08;
     const kg = Number(((fish.minKg + Math.random() * (fish.maxKg - fish.minKg)) * streakMult).toFixed(1));
     let mutation = null;
-    if (Math.random() < (rod.mutChance + bait.mutBoost)) {
+    if (Math.random() < (rod.mutChance + (bobber.mutBoost || 0))) {
       mutation = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
     }
     const kgFactor = 1 + (kg / Math.max(2, fish.maxKg)) * 0.45;
@@ -1029,6 +1085,14 @@
     return modal;
   }
 
+  window.toggleLockFish = function (bagIdx) {
+    const bag = getBag();
+    if (!bag[bagIdx]) return;
+    bag[bagIdx].locked = !bag[bagIdx].locked;
+    saveBag(bag);
+    window.openFishingHubModal("bag");
+  };
+
   window.sellAllCaughtFish = function () {
     if (!isNearKopdes()) {
       if (typeof window.showToast === "function") window.showToast("🏪 Jalan kaki ke Kopdes Biru Putih dulu untuk menjual ikan!");
@@ -1036,10 +1100,16 @@
     }
     const bag = getBag();
     if (!bag.length) return;
-    const validFish = bag.filter(f => (Number(f.coins) || 0) > 0);
-    const trashCount = bag.length - validFish.length;
+    const lockedFish = bag.filter(f => f.locked);
+    const toSell = bag.filter(f => !f.locked);
+    if (!toSell.length) {
+      if (typeof window.showToast === "function") window.showToast("🔒 Semua ikan di tas sedang dikunci! Buka kunci dulu jika ingin dijual.");
+      return;
+    }
+    const validFish = toSell.filter(f => (Number(f.coins) || 0) > 0);
+    const trashCount = toSell.length - validFish.length;
     const totalCoins = validFish.reduce((s, f) => s + (Number(f.coins) || 0), 0);
-    saveBag([]);
+    saveBag(lockedFish);
     if (totalCoins > 0) {
       if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
         window.PirakuEconomy.addCoins(totalCoins, "Jual " + validFish.length + " Ikan di Kopdes");
@@ -1050,10 +1120,10 @@
     }
     if (typeof window.showToast === "function") {
       window.showToast(totalCoins > 0
-        ? `💰 Terjual ${validFish.length} ikan seharga 🪙 ${totalCoins}!${trashCount > 0 ? ` (${trashCount} sampah dibuang)` : ""}`
+        ? `💰 Terjual ${validFish.length} ikan seharga 🪙 ${totalCoins}!${trashCount > 0 ? ` (${trashCount} sampah dibuang)` : ""}${lockedFish.length > 0 ? ` • 🔒 ${lockedFish.length} disimpan` : ""}`
         : `🗑️ ${trashCount} barang rusak dibuang (tidak bernilai koin).`);
     }
-    window.openFishingHubModal();
+    window.openFishingHubModal("bag");
   };
 
   window.buyOrEquipFishingRod = function (rodId) {
@@ -1074,72 +1144,113 @@
     window.openFishingHubModal();
   };
 
-  window.buyOrEquipBait = function (baitId) {
-    const bait = BAITS.find(b => b.id === baitId);
-    if (!bait) return;
-    if (baitId === "worm") {
-      setEquippedBaitId("worm");
-      window.openFishingHubModal();
-      return;
-    }
-    const counts = getBaitCounts();
-    if ((counts[baitId] || 0) <= 0) {
+  window.buyOrEquipBobber = function (bobId) {
+    const bob = BOBBERS.find(b => b.id === bobId);
+    if (!bob) return;
+    const owned = getOwnedBobbers();
+    if (!owned.includes(bobId)) {
       if (!isNearKopdes()) {
-        if (typeof window.showToast === "function") window.showToast("🏪 Jalan kaki ke Kopdes Biru Putih untuk membeli umpan!");
+        if (typeof window.showToast === "function") window.showToast("🏪 Jalan kaki ke Kopdes Biru Putih untuk beli umbul-umbul!");
         return;
       }
-      if (window.PirakuEconomy && !window.PirakuEconomy.spendCoins(bait.cost, "Beli Umpan " + bait.name + " di Kopdes")) return;
-      counts[baitId] = (counts[baitId] || 0) + bait.qtyOnBuy;
-      saveBaitCounts(counts);
+      if (window.PirakuEconomy && !window.PirakuEconomy.spendCoins(bob.cost, "Beli " + bob.name + " di Kopdes")) return;
+      owned.push(bobId);
+      saveOwnedBobbers(owned);
     }
-    setEquippedBaitId(baitId);
-    if (typeof window.showToast === "function") window.showToast(`${bait.icon} Umpan ${bait.name} siap dipakai!`);
+    setEquippedBobberId(bobId);
+    if (typeof window.showToast === "function") window.showToast(`${bob.icon} ${bob.name} dipasang!`);
     window.openFishingHubModal();
   };
 
-  window.openFishingHubModal = function () {
+  let activeHubTab = "bag";
+  window.openFishingHubModal = function (tabName) {
+    if (tabName) activeHubTab = tabName;
     const modal = ensureFishingModal();
     const bag = getBag();
     const dex = getDex();
     const owned = getOwnedRods();
     const eqId = getEquippedRodId();
-    const baits = getBaitCounts();
-    const eqBait = getEquippedBaitId();
-    const totalVal = bag.reduce((s, f) => s + (Number(f.coins) || 0), 0);
+    const ownedBobbers = getOwnedBobbers();
+    const eqBobber = getEquippedBobberId();
+    const sellableBag = bag.filter(f => !f.locked);
+    const totalVal = sellableBag.reduce((s, f) => s + (Number(f.coins) || 0), 0);
     const caughtTypes = Object.keys(dex).length;
     const atKopdes = isNearKopdes();
+
+    const curMapId = window.pirakuActiveMapId || "bandung_wetan";
+    const exFish = (window.pirakuInDistrict && DISTRICT_EXCLUSIVE_FISH[curMapId]) ? DISTRICT_EXCLUSIVE_FISH[curMapId] : null;
 
     modal.style.display = "flex";
     modal.innerHTML = `
       <div style="width:100%;max-width:440px;max-height:86vh;display:flex;flex-direction:column;background:#0f172a;border:1.5px solid #38bdf8;border-radius:20px;overflow:hidden;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
-        <div style="padding:14px 16px;background:linear-gradient(135deg,#0284c7,#1e3a8a);display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:900;font-size:15px;">🎣 Mancing 3D Bandung</div>
-            <div style="font-size:11px;color:#e0f2fe;">Fishdex: ${caughtTypes}/${FISH_CATALOG.length} Jenis • ${window.pirakuCurrentEventId === "rain" ? "🌧️ Hujan 2x Rare!" : getActivePond().name}</div>
+        <div style="padding:12px 16px 10px;background:linear-gradient(135deg,#0284c7,#1e3a8a);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div>
+              <div style="font-weight:900;font-size:15px;">🎣 Tas &amp; Perlengkapan Mancing</div>
+              <div style="font-size:11px;color:#e0f2fe;">Fishdex: ${caughtTypes}/${ALL_FISH_CATALOG.length} Jenis • ${window.pirakuCurrentEventId === "rain" ? "🌧️ Hujan 2x Rare!" : getActivePond().name}</div>
+            </div>
+            <button onclick="document.getElementById('piraku-fishing-modal').style.display='none'" style="border:none;background:rgba(15,23,42,0.45);color:#fff;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:800;">✕</button>
           </div>
-          <button onclick="document.getElementById('piraku-fishing-modal').style.display='none'" style="border:none;background:rgba(15,23,42,0.45);color:#fff;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:800;">✕</button>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button onclick="openFishingHubModal('bag')" style="border:none;padding:7px;border-radius:10px;font-size:11.5px;font-weight:900;cursor:pointer;background:${activeHubTab === "bag" ? "#f8fafc" : "rgba(15,23,42,0.45)"};color:${activeHubTab === "bag" ? "#0f172a" : "#e0f2fe"};">🎒 Tas &amp; Toko</button>
+            <button onclick="openFishingHubModal('dex')" style="border:none;padding:7px;border-radius:10px;font-size:11.5px;font-weight:900;cursor:pointer;background:${activeHubTab === "dex" ? "#facc15" : "rgba(15,23,42,0.45)"};color:${activeHubTab === "dex" ? "#0f172a" : "#fde047"};">📖 Fishdex (${caughtTypes}/${ALL_FISH_CATALOG.length})</button>
+          </div>
         </div>
+        ${activeHubTab === "dex" ? `
+        <div style="padding:12px 14px;overflow-y:auto;">
+          <div style="font-size:11px;font-weight:900;color:#7dd3fc;margin-bottom:7px;">🏛️ PUSAT KOTA BANDUNG (${FISH_CATALOG.length} Jenis)</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
+            ${FISH_CATALOG.map(f => {
+              const d = dex[f.id];
+              const rs = RARITY_STYLE[f.rarity] || RARITY_STYLE.Common;
+              return `
+                <div style="background:rgba(30,41,59,${d ? "0.85" : "0.45"});border:1px solid ${d ? rs.border : "rgba(148,163,184,0.18)"};border-radius:12px;padding:9px;text-align:center;">
+                  <div style="margin-bottom:4px;${d ? "" : "filter:brightness(0) opacity(0.35);"}">${renderFishArt(f, 42)}</div>
+                  <div style="font-size:11.5px;font-weight:900;color:${d ? "#f8fafc" : "#64748b"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d ? f.name : "???"}</div>
+                  <span style="display:inline-block;margin-top:3px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;background:${rs.bg};color:${rs.fg};">${f.rarity.toUpperCase()}${rs.odds ? " • " + rs.odds : ""}</span>
+                  <div style="font-size:10px;color:${d ? "#fde047" : "#475569"};margin-top:3px;">${d ? `Rekor: ${d.bestKg} kg (${d.count}x)` : "Belum tertangkap"}</div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+          <div style="font-size:11px;font-weight:900;color:#fde047;margin-bottom:7px;">🏙️ IKAN UNIK 29 KECAMATAN (MYTHIC–DIVINE)</div>
+          <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;">
+            ${Object.values(DISTRICT_EXCLUSIVE_FISH).map(f => {
+              const d = dex[f.id];
+              const rs = RARITY_STYLE[f.rarity] || RARITY_STYLE.Mythic;
+              return `
+                <div style="background:rgba(30,41,59,${d ? "0.85" : "0.45"});border:1px solid ${d ? rs.border : "rgba(148,163,184,0.18)"};border-radius:12px;padding:9px;text-align:center;">
+                  <div style="font-size:9.5px;font-weight:900;color:#93c5fd;margin-bottom:2px;">📍 Kec. ${f.districtName}</div>
+                  <div style="margin-bottom:4px;${d ? "" : "filter:brightness(0) opacity(0.35);"}">${renderFishArt(f, 42)}</div>
+                  <div style="font-size:11px;font-weight:900;color:${d ? "#f8fafc" : "#64748b"};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d ? f.name : "???"}</div>
+                  <span style="display:inline-block;margin-top:3px;padding:2px 7px;border-radius:999px;font-size:9px;font-weight:900;background:${rs.bg};color:${rs.fg};">${f.rarity.toUpperCase()}</span>
+                  <div style="font-size:10px;color:${d ? "#fde047" : "#475569"};margin-top:3px;">${d ? `Rekor: ${d.bestKg} kg (${d.count}x)` : "Cari di kolam kec. ini!"}</div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>` : `
         <div style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+          ${exFish ? `<div style="padding:8px 10px;border-radius:10px;background:rgba(168,85,247,0.16);border:1px solid #c084fc;font-size:11px;color:#f5d0fe;">🌟 Ikan Unik <b>Kec. ${exFish.districtName}</b>: <b>${exFish.name}</b> [${exFish.rarity.toUpperCase()}] bisa didapat di kolam ini!</div>` : ""}
           <div style="padding:9px 11px;border-radius:11px;background:${atKopdes ? "rgba(34,197,94,0.16)" : "rgba(245,158,11,0.16)"};border:1px solid ${atKopdes ? "#22c55e" : "#f59e0b"};font-size:11.5px;color:${atKopdes ? "#86efac" : "#fde047"};line-height:1.4;">
             ${atKopdes
-              ? "✅ Kamu berada di <b>Kopdes Biru Putih</b> — siap jual ikan, beli umpan, &amp; upgrade joran!"
-              : "🏪 Untuk jual ikan, beli umpan, atau upgrade joran, silakan <b>jalan kaki ke Kopdes Biru Putih</b> (" + (window.pirakuInDistrict ? "seberang jalan komplek timur" : "di belakang Museum Geologi") + ")."}
+              ? "✅ Kamu berada di <b>Kopdes Biru Putih</b> — siap jual ikan, beli umbul-umbul, &amp; upgrade joran!"
+              : "🏪 Untuk jual ikan, beli umbul-umbul, atau upgrade joran, silakan <b>jalan kaki ke Kopdes Biru Putih</b> (" + (window.pirakuInDistrict ? "seberang jalan komplek timur" : "di belakang Museum Geologi") + ")."}
           </div>
 
-          ${bag.length ? `<button onclick="sellAllCaughtFish()" style="width:100%;border:none;background:${atKopdes ? "linear-gradient(135deg,#facc15,#f59e0b)" : "#334155"};color:${atKopdes ? "#0f172a" : "#cbd5e1"};padding:10px;border-radius:11px;font-weight:900;font-size:12px;cursor:pointer;">💰 ${atKopdes ? "Jual Semua " + bag.length + " Ikan (🪙 " + totalVal + ")" : "Jual " + bag.length + " Ikan di Kopdes (🪙 " + totalVal + ")"}</button>` : ""}
+          ${bag.length ? `<button onclick="sellAllCaughtFish()" style="width:100%;border:none;background:${atKopdes && sellableBag.length ? "linear-gradient(135deg,#facc15,#f59e0b)" : "#334155"};color:${atKopdes && sellableBag.length ? "#0f172a" : "#cbd5e1"};padding:10px;border-radius:11px;font-weight:900;font-size:12px;cursor:pointer;">💰 ${sellableBag.length === 0 ? "Semua " + bag.length + " Ikan Dikunci 🔒" : (atKopdes ? "Jual " + sellableBag.length + " Ikan (🪙 " + totalVal + ")" : "Jual " + sellableBag.length + " Ikan di Kopdes (🪙 " + totalVal + ")")}</button>` : ""}
 
           <div>
-            <div style="font-size:11px;font-weight:900;color:#93c5fd;text-transform:uppercase;margin-bottom:6px;">🪱 Umpan Mancing</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
-              ${BAITS.map(b => {
-                const cnt = b.id === "worm" ? "∞" : (baits[b.id] || 0);
-                const isEq = eqBait === b.id;
-                const needBuy = b.id !== "worm" && (baits[b.id] || 0) <= 0;
+            <div style="font-size:11px;font-weight:900;color:#93c5fd;text-transform:uppercase;margin-bottom:6px;">🎈 Umbul-umbul / Pelampung</div>
+            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+              ${BOBBERS.map(b => {
+                const isOwn = ownedBobbers.includes(b.id);
+                const isEq = eqBobber === b.id;
                 return `
-                  <button onclick="buyOrEquipBait('${b.id}')" style="text-align:left;border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.22)"};background:${isEq ? "rgba(56,189,248,0.18)" : "rgba(30,41,59,0.75)"};padding:7px 8px;border-radius:10px;color:#f8fafc;cursor:pointer;">
+                  <button onclick="buyOrEquipBobber('${b.id}')" style="text-align:left;border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.22)"};background:${isEq ? "rgba(56,189,248,0.18)" : "rgba(30,41,59,0.75)"};padding:8px 9px;border-radius:10px;color:#f8fafc;cursor:pointer;">
                     <div style="font-size:12px;font-weight:800;">${b.icon} ${b.name}</div>
-                    <div style="font-size:10px;color:#94a3b8;margin-top:2px;">Stok: ${cnt}</div>
-                    <div style="font-size:10px;font-weight:900;color:${isEq ? "#4ade80" : "#fde047"};margin-top:3px;">${isEq ? "Dipakai ✓" : (!needBuy ? "Pakai" : (atKopdes ? "Beli 🪙 " + b.cost : "🏪 Kopdes"))}</div>
+                    <div style="font-size:10px;color:#94a3b8;margin-top:2px;">${b.desc}</div>
+                    <div style="font-size:10px;font-weight:900;color:${isEq ? "#4ade80" : "#fde047"};margin-top:4px;">${isEq ? "Dipakai ✓" : (isOwn ? "Pasang" : (atKopdes ? "Beli 🪙 " + b.cost : "🏪 Kopdes (🪙" + b.cost + ")"))}</div>
                   </button>
                 `;
               }).join("")}
@@ -1153,10 +1264,11 @@
                 const isOwn = owned.includes(r.id);
                 const isEq = eqId === r.id;
                 return `
-                  <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(30,41,59,0.8);border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.2)"};padding:8px 10px;border-radius:11px;">
-                    <div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(30,41,59,0.8);border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.2)"};padding:8px 10px;border-radius:11px;">
+                    <div style="min-width:0;">
                       <div style="font-weight:800;font-size:12.5px;">${r.badge} ${r.name}</div>
-                      <div style="font-size:10.5px;color:#94a3b8;">Bar ${r.barWidth}% • Luck +${Math.round(r.luckBonus * 100)}% • Mutasi ${Math.round(r.mutChance * 100)}%</div>
+                      <div style="font-size:10px;color:#7dd3fc;">${r.tierNote || ""}</div>
+                      <div style="font-size:10px;color:#94a3b8;">Bar ${r.barWidth}% • Luck +${Math.round(r.luckBonus * 100)}% • Mutasi ${Math.round(r.mutChance * 100)}%</div>
                     </div>
                     <button onclick="buyOrEquipFishingRod('${r.id}')" style="border:none;background:${isEq ? "#22c55e" : isOwn ? "#334155" : (atKopdes ? "#facc15" : "#475569")};color:${isEq || (!isOwn && atKopdes) ? "#0f172a" : "#f8fafc"};padding:6px 10px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">${isEq ? "Dipakai ✓" : isOwn ? "Pakai" : (atKopdes ? "🪙 " + r.cost : "🏪 Kopdes (🪙" + r.cost + ")")}</button>
                   </div>
@@ -1197,12 +1309,13 @@
                     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:rgba(30,41,59,0.75);padding:7px 10px;border-radius:10px;border-left:3px solid ${rs.border};">
                       <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;flex:1;min-width:0;">${renderFishArt(f, 28)} <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.mutation ? f.mutation + " " : ""}${f.name} <span style="color:#94a3b8;font-weight:600;">(${f.kg} kg)</span></span></span>
                       <span style="font-size:11px;font-weight:900;color:#fde047;white-space:nowrap;">🪙 ${f.coins}</span>
+                      <button onclick="toggleLockFish(${idx})" title="${f.locked ? "Buka Kunci" : "Kunci agar tidak ikut terjual"}" style="border:none;background:${f.locked ? "#f59e0b" : "#334155"};color:${f.locked ? "#0f172a" : "#cbd5e1"};padding:4px 7px;border-radius:8px;font-size:10.5px;font-weight:900;cursor:pointer;">${f.locked ? "🔒" : "🔓"}</button>
                       <button onclick="toggleShowOffFish(${idx})" style="border:none;background:${isShown ? "#ef4444" : "#38bdf8"};color:${isShown ? "#fff" : "#0f172a"};padding:4px 8px;border-radius:8px;font-size:10.5px;font-weight:900;cursor:pointer;white-space:nowrap;">${isShown ? "Simpan" : "✨ Pamer"}</button>
                     </div>`;
                   }).join("")}
                 </div>`}
           </div>
-        </div>
+        </div>`}
       </div>
     `;
   };
@@ -1352,7 +1465,7 @@
   }
 
   function create3DFishModel(fishData) {
-    const f = FISH_CATALOG.find(x => x.id === fishData.id) || {};
+    const f = ALL_FISH_CATALOG.find(x => x.id === fishData.id) || {};
     const grp = new THREE.Group();
     const col = f.meshCol || 0x38bdf8;
     const mat = new THREE.MeshStandardMaterial({ color: col, roughness: 0.35, metalness: fishData.rarity === "Mythic" ? 0.55 : 0.2 });
@@ -1469,7 +1582,8 @@
       entry.remoteRod = createFishingRodGroup(f.col, !!f.gold, f.rodId);
       entry.mesh.add(entry.remoteRod);
       const wy = typeof f.wy === "number" ? f.wy : 0.08;
-      entry.remoteBobber = createBobberGroup(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z);
+      const rBobSpec = BOBBERS.find(b => b.id === f.bobId) || BOBBERS[0];
+      entry.remoteBobber = createBobberGroup(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z, rBobSpec);
       sc.add(entry.remoteBobber);
       entry.remoteRipple = createRippleMesh(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z);
       sc.add(entry.remoteRipple);
