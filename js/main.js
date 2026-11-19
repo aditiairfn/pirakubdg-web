@@ -4480,8 +4480,11 @@ let activeQuestSystem = null;
     } else if (isGrounded) {
       if (a.legL) a.legL.rotation.x *= 0.6;
       if (a.legR) a.legR.rotation.x *= 0.6;
-      if (a.armL) a.armL.rotation.x *= 0.6;
-      if (a.armR) a.armR.rotation.x *= 0.6;
+      if (!(window.pirakuFishingSyncState && window.pirakuFishingSyncState.state)) {
+        if (a.armL) a.armL.rotation.x *= 0.6;
+        if (a.armR) a.armR.rotation.x *= 0.6;
+        if (a.body) a.body.rotation.x *= 0.7;
+      }
     }
 
     const fishingFloorY = (typeof window.getPirakuFishingGroundY === "function") ? window.getPirakuFishingGroundY(myPlayerMesh.position.x, myPlayerMesh.position.z) : null;
@@ -4510,6 +4513,7 @@ let activeQuestSystem = null;
         isGrounded = true;
       }
     }
+    window.pirakuIsAirborne = !isGrounded;
 
     const curTarget = controls.target;
     const diffX = myPlayerMesh.position.x - curTarget.x;

@@ -328,7 +328,7 @@
       if (typeof window.hideStaticCitizenByIg === 'function' && payload.ig) {
         window.hideStaticCitizenByIg(payload.ig, true);
       }
-      mesh.position.set(payload.x || 0, 0.1, payload.z || 0);
+      mesh.position.set(payload.x || 0, typeof payload.y === "number" ? payload.y : 0.1, payload.z || 0);
       if (mesh.userData && mesh.userData.a) {
         mesh.userData.a.walk = false; // Dikendalikan langsung oleh posisi realtime!
         mesh.userData.a.isRemotePlayer = true;
@@ -336,8 +336,11 @@
       entry = {
         mesh,
         targetX: payload.x || 0,
+        targetY: typeof payload.y === "number" ? payload.y : 0.1,
         targetZ: payload.z || 0,
         targetRotY: payload.rotY || 0,
+        jump: !!payload.jump,
+        fishing: payload.fishing || null,
         ig: payload.ig || 'Wargi',
         color: payload.color,
         acc: payload.acc,
@@ -355,6 +358,9 @@
       window.hideStaticCitizenByIg(rem.ig, false);
     }
     const entry = remotePlayers.get(sessionId);
+    if (entry && typeof window.clearRemotePlayerFishing3D === 'function') {
+      window.clearRemotePlayerFishing3D(entry);
+    }
     if (entry && entry.mesh) {
       if (typeof citizensGroup !== 'undefined') citizensGroup.remove(entry.mesh);
       if (typeof scene !== 'undefined') (window.pirakuScene || scene).remove(entry.mesh);
@@ -569,16 +575,23 @@
     const activeMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     if (mpChannel && mpChannel.state === 'joined' && activeMesh && activeMesh.position && now - lastBroadcastTime >= SEND_INTERVAL_MS) {
       const px = Number(activeMesh.position.x.toFixed(3));
+      const py = Number(activeMesh.position.y.toFixed(3));
       const pz = Number(activeMesh.position.z.toFixed(3));
       const prot = Number((activeMesh.rotation ? activeMesh.rotation.y : 0).toFixed(3));
+      const isJump = Boolean(window.pirakuIsAirborne);
+      const fishObj = window.pirakuFishingSyncState || null;
+      const fishSig = fishObj ? `${fishObj.state}_${fishObj.bx}_${fishObj.bz}` : "";
       const moved = !mpChannel._lastSentPos ||
         Math.abs(px - mpChannel._lastSentPos.x) > 0.015 ||
+        Math.abs(py - mpChannel._lastSentPos.y) > 0.015 ||
         Math.abs(pz - mpChannel._lastSentPos.z) > 0.015 ||
         Math.abs(prot - mpChannel._lastSentPos.rot) > 0.03 ||
+        isJump !== mpChannel._lastSentPos.jump ||
+        fishSig !== mpChannel._lastSentPos.fishSig ||
         (now - (mpChannel._lastSentPos.ts || 0) >= 4000);
       if (moved) {
         lastBroadcastTime = now;
-        mpChannel._lastSentPos = { x: px, z: pz, rot: prot, ts: now };
+        mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, ts: now };
         const id = getMyIdentity();
         mpChannel.send({
           type: 'broadcast',
@@ -591,14 +604,18 @@
             acc: id.acc,
             role: id.role,
             x: px,
+            y: py,
             z: pz,
-            rotY: prot
+            rotY: prot,
+            jump: isJump,
+            fishing: fishObj
           }
         });
       }
     }
 
     // 2. Gerakkan karakter warga lain secara halus + atur volume suara berdasarkan jarak 3D
+    const perfNow = performance.now();
     remotePlayers.forEach((entry, sid) => {
       if (now - entry.lastSeen > 60000) {
         removeRemoteAvatar(sid);
@@ -606,33 +623,53 @@
       }
       if (!entry.mesh) return;
       const dx = entry.targetX - entry.mesh.position.x;
+      const dy = (typeof entry.targetY === "number" ? entry.targetY : 0.1) - entry.mesh.position.y;
       const dz = entry.targetZ - entry.mesh.position.z;
       const distSq = dx * dx + dz * dz;
 
       entry.mesh.position.x += dx * Math.min(1, dt * 11);
+      entry.mesh.position.y += dy * Math.min(1, dt * 15);
       entry.mesh.position.z += dz * Math.min(1, dt * 11);
       if (entry.mesh.rotation) {
         entry.mesh.rotation.y += (entry.targetRotY - entry.mesh.rotation.y) * Math.min(1, dt * 12);
       }
 
-      // Animasi ayunan tangan & kaki saat warga remote berjalan
+      // Animasi ayunan tangan & kaki saat warga remote berjalan, loncat, atau memancing
       const ud = entry.mesh.userData && entry.mesh.userData.a;
-      if (distSq > 0.00025) {
-        entry.walkPhase += dt * 15;
-        const swing = Math.sin(entry.walkPhase) * 0.65;
-        if (ud && ud.legL && ud.legR) {
-          if (ud.body) ud.body.position.y = Math.abs(swing) * 0.07;
-          ud.legL.rotation.x = swing;
-          ud.legR.rotation.x = -swing;
-          if (ud.armL) ud.armL.rotation.x = -swing * 0.75;
-          if (ud.armR) ud.armR.rotation.x = swing * 0.75;
+      if (entry.fishing && entry.fishing.state && entry.fishing.state !== "idle") {
+        if (typeof window.syncRemotePlayerFishing3D === "function") {
+          window.syncRemotePlayerFishing3D(entry, perfNow);
         }
-      } else if (ud && ud.legL && ud.legR) {
-        if (ud.body) ud.body.position.y *= 0.8;
-        ud.legL.rotation.x *= 0.8;
-        ud.legR.rotation.x *= 0.8;
-        if (ud.armL) ud.armL.rotation.x *= 0.8;
-        if (ud.armR) ud.armR.rotation.x *= 0.8;
+        if (ud && ud.legL && ud.legR) {
+          ud.legL.rotation.x *= 0.7;
+          ud.legR.rotation.x *= 0.7;
+        }
+      } else {
+        if (typeof window.clearRemotePlayerFishing3D === "function") {
+          window.clearRemotePlayerFishing3D(entry);
+        }
+        if (entry.jump && ud && ud.legL && ud.legR) {
+          ud.legL.rotation.x = -0.55;
+          ud.legR.rotation.x = 0.45;
+          if (ud.armL) ud.armL.rotation.x = -0.6;
+          if (ud.armR) ud.armR.rotation.x = -0.6;
+        } else if (distSq > 0.00025) {
+          entry.walkPhase += dt * 15;
+          const swing = Math.sin(entry.walkPhase) * 0.65;
+          if (ud && ud.legL && ud.legR) {
+            if (ud.body) ud.body.position.y = Math.abs(swing) * 0.07;
+            ud.legL.rotation.x = swing;
+            ud.legR.rotation.x = -swing;
+            if (ud.armL) ud.armL.rotation.x = -swing * 0.75;
+            if (ud.armR) ud.armR.rotation.x = swing * 0.75;
+          }
+        } else if (ud && ud.legL && ud.legR) {
+          if (ud.body) ud.body.position.y *= 0.8;
+          ud.legL.rotation.x *= 0.8;
+          ud.legR.rotation.x *= 0.8;
+          if (ud.armL) ud.armL.rotation.x *= 0.8;
+          if (ud.armR) ud.armR.rotation.x *= 0.8;
+        }
       }
 
       // Proximity audio volume (makin dekat karakter, suara makin jelas)
@@ -906,8 +943,11 @@
         const entry = getOrCreateRemoteAvatar(payload);
         if (entry) {
           entry.targetX = payload.x;
+          entry.targetY = typeof payload.y === "number" ? payload.y : 0.1;
           entry.targetZ = payload.z;
           entry.targetRotY = payload.rotY;
+          entry.jump = !!payload.jump;
+          entry.fishing = payload.fishing || null;
           entry.lastSeen = Date.now();
           if (isMicEnabled && payload.sessionId && !peerConnections.has(payload.sessionId)) {
             createPeerConnection(payload.sessionId, true);

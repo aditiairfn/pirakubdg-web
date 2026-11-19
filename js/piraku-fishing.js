@@ -316,6 +316,88 @@
     rodMesh3D = bobberMesh3D = rippleMesh3D = jumpFishMesh3D = lineMesh3D = null;
   }
 
+  function createFishingRodGroup(rodColor, isGold) {
+    const rodGrp = new THREE.Group();
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.022, 0.048, 2.35, 8),
+      new THREE.MeshStandardMaterial({ color: rodColor || 0xa16207, metalness: isGold ? 0.72 : 0.25, roughness: 0.45 })
+    );
+    pole.position.set(0, 1.0, 0.62);
+    pole.rotation.x = 0.78;
+    const reel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 0.1, 8),
+      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.7 })
+    );
+    reel.rotation.z = Math.PI / 2;
+    reel.position.set(0, 0.35, 0.14);
+    rodGrp.add(pole, reel);
+    rodGrp.position.set(0.32, 0.85, 0.2);
+    return rodGrp;
+  }
+
+  function createBobberGroup(bx, wy, bz) {
+    const bob = new THREE.Group();
+    const bTop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+    bTop.position.y = 0.06;
+    const bBot = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xf8fafc }));
+    bBot.position.y = -0.02;
+    bob.add(bTop, bBot);
+    bob.position.set(bx, wy + 0.06, bz);
+    return bob;
+  }
+
+  function createRippleMesh(bx, wy, bz) {
+    const rip = new THREE.Mesh(
+      new THREE.RingGeometry(0.28, 0.42, 20),
+      new THREE.MeshBasicMaterial({ color: 0xe0f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
+    );
+    rip.rotation.x = -Math.PI / 2;
+    rip.position.set(bx, wy + 0.02, bz);
+    return rip;
+  }
+
+  function updateFishingLine(lineObj, rodGrp, bobObj) {
+    if (!lineObj || !rodGrp || !bobObj) return;
+    rodGrp.updateMatrixWorld(true);
+    const tip = new THREE.Vector3(0, 1.82, 1.44).applyMatrix4(rodGrp.matrixWorld);
+    const posAttr = lineObj.geometry && lineObj.geometry.attributes && lineObj.geometry.attributes.position;
+    if (posAttr) {
+      posAttr.setXYZ(0, tip.x, tip.y, tip.z);
+      posAttr.setXYZ(1, bobObj.position.x, bobObj.position.y + 0.12, bobObj.position.z);
+      posAttr.needsUpdate = true;
+    }
+  }
+
+  function animateFishingPose(ud, rodGrp, state, now, castStart) {
+    if (!ud || !state || state === "idle") return;
+    if (state === "waiting") {
+      const elapsed = now - (castStart || now);
+      if (elapsed < 450) {
+        const p = Math.max(0, Math.min(1, elapsed / 450));
+        if (rodGrp) rodGrp.rotation.x = -0.58 * (1 - p);
+        if (ud.armR) ud.armR.rotation.x = -1.55 + p * 0.65;
+      } else {
+        const bob = Math.sin(now * 0.004);
+        if (rodGrp) rodGrp.rotation.x = bob * 0.04;
+        if (ud.armR) ud.armR.rotation.x = -0.9 + bob * 0.05;
+        if (ud.armL) ud.armL.rotation.x = -0.25;
+      }
+      if (ud.body) ud.body.rotation.x = 0;
+    } else if (state === "bite") {
+      const jerk = Math.sin(now * 0.028);
+      if (rodGrp) rodGrp.rotation.x = jerk * 0.22;
+      if (ud.armR) ud.armR.rotation.x = -1.05 + jerk * 0.28;
+      if (ud.armL) ud.armL.rotation.x = -0.45 - jerk * 0.12;
+      if (ud.body) ud.body.rotation.x = 0.06;
+    } else if (state === "reeling") {
+      const tug = Math.sin(now * 0.018);
+      if (rodGrp) rodGrp.rotation.x = -0.22 + tug * 0.16;
+      if (ud.armR) ud.armR.rotation.x = -1.15 + tug * 0.25;
+      if (ud.armL) ud.armL.rotation.x = -0.75 - tug * 0.2;
+      if (ud.body) ud.body.rotation.x = -0.14;
+    }
+  }
+
   function spawn3DFishingVisuals(pond) {
     clear3DFishingVisuals();
     const sc = window.pirakuScene;
@@ -323,12 +405,7 @@
     if (!sc || !pm || typeof THREE === "undefined") return;
 
     const rod = getEquippedRod();
-    const rodGrp = new THREE.Group();
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.048, 2.2, 8), new THREE.MeshStandardMaterial({ color: rod.color, metalness: rod.id === "gold" ? 0.72 : 0.25 }));
-    pole.position.set(0, 0.95, 0.55);
-    pole.rotation.x = 0.78;
-    rodGrp.add(pole);
-    rodGrp.position.set(0.32, 0.85, 0.2);
+    const rodGrp = createFishingRodGroup(rod.color, rod.id === "gold");
     pm.add(rodGrp);
     rodMesh3D = rodGrp;
     castAnimStart = performance.now();
@@ -338,29 +415,27 @@
     const bx = pond.x + (Math.random() - 0.5) * 3.0;
     const bz = pond.z + (Math.random() - 0.5) * 2.5;
 
-    const bob = new THREE.Group();
-    const bTop = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-    bTop.position.y = 0.06;
-    const bBot = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8), new THREE.MeshBasicMaterial({ color: 0xf8fafc }));
-    bBot.position.y = -0.02;
-    bob.add(bTop, bBot);
-    bob.position.set(bx, pond.waterY + 0.06, bz);
+    const bob = createBobberGroup(bx, pond.waterY, bz);
     sc.add(bob);
     bobberMesh3D = bob;
 
-    const rip = new THREE.Mesh(
-      new THREE.RingGeometry(0.28, 0.42, 20),
-      new THREE.MeshBasicMaterial({ color: 0xe0f2fe, side: THREE.DoubleSide, transparent: true, opacity: 0.75 })
-    );
-    rip.rotation.x = -Math.PI / 2;
-    rip.position.set(bx, pond.waterY + 0.02, bz);
+    const rip = createRippleMesh(bx, pond.waterY, bz);
     sc.add(rip);
     rippleMesh3D = rip;
 
-    const tipPos = new THREE.Vector3(0.32, 2.45, 1.45).applyMatrix4(pm.matrixWorld);
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([tipPos, bob.position.clone()]);
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), bob.position.clone()]);
     lineMesh3D = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xe2e8f0 }));
     sc.add(lineMesh3D);
+    updateFishingLine(lineMesh3D, rodMesh3D, bobberMesh3D);
+
+    window.pirakuFishingSyncState = {
+      state: "waiting",
+      col: rod.color,
+      gold: rod.id === "gold",
+      bx: Number(bx.toFixed(2)),
+      bz: Number(bz.toFixed(2)),
+      wy: Number(pond.waterY.toFixed(2))
+    };
   }
 
   function spawnJumpingFish3D(fishSpec) {
@@ -427,6 +502,7 @@
     clearTimeout(biteTimeout);
     cancelAnimationFrame(reelRaf);
     fishState = "idle";
+    window.pirakuFishingSyncState = null;
     currentFishSpec = null;
     isHoldingReel = false;
     setMobileControlsHidden(false);
@@ -475,6 +551,7 @@
     waitTimer = setTimeout(() => {
       if (fishState !== "waiting") return;
       fishState = "bite";
+      if (window.pirakuFishingSyncState) window.pirakuFishingSyncState.state = "bite";
       if (typeof window.playSynthTone === "function") window.playSynthTone(880, "triangle", 0.24);
       ui.innerHTML = `
         <div style="font-weight:900;font-size:16px;color:#facc15;">❗ IKAN MENYAMBAR!</div>
@@ -496,6 +573,7 @@
     if (fishState !== "bite") return;
     clearTimeout(biteTimeout);
     fishState = "reeling";
+    if (window.pirakuFishingSyncState) window.pirakuFishingSyncState.state = "reeling";
     currentFishSpec = rollFish();
     consumeOneBait();
     spawnJumpingFish3D(currentFishSpec);
@@ -897,18 +975,20 @@
       }
     }
 
-    if (rodMesh3D && fishState === "waiting" && now - castAnimStart < 450) {
-      const p = (now - castAnimStart) / 450;
-      rodMesh3D.rotation.x = -0.6 * (1 - p);
+    if (fishState !== "idle" && pm && pm.userData && pm.userData.a) {
+      animateFishingPose(pm.userData.a, rodMesh3D, fishState, now, castAnimStart);
     }
-    if (rippleMesh3D && (fishState === "waiting" || fishState === "bite")) {
-      const rp = ((now * 0.0016) % 1);
-      rippleMesh3D.scale.setScalar(1 + rp * (fishState === "bite" ? 3.2 : 1.9));
+    if (rippleMesh3D && fishState !== "idle") {
+      const rp = ((now * (fishState === "reeling" ? 0.0024 : 0.0016)) % 1);
+      rippleMesh3D.scale.setScalar(1 + rp * (fishState === "waiting" ? 1.9 : 3.2));
       rippleMesh3D.material.opacity = (1 - rp) * 0.75;
     }
-    if (bobberMesh3D && (fishState === "waiting" || fishState === "bite")) {
+    if (bobberMesh3D && fishState !== "idle") {
       const t = now * 0.006;
-      bobberMesh3D.position.y = pond.waterY + (fishState === "bite" ? Math.sin(t * 4.5) * 0.14 : Math.sin(t) * 0.03);
+      bobberMesh3D.position.y = pond.waterY + (fishState === "waiting" ? Math.sin(t) * 0.03 : Math.sin(t * 4.5) * 0.14);
+    }
+    if (lineMesh3D && rodMesh3D && bobberMesh3D && fishState !== "idle") {
+      updateFishingLine(lineMesh3D, rodMesh3D, bobberMesh3D);
     }
 
     // Prompt mancing di KANAN BAWAH (bottom: 76px, right: 12px) agar bersih dari Obrolan & Analog kiri bawah!
@@ -968,6 +1048,59 @@
 
     requestAnimationFrame(tickFishing3D);
   }
+
+  window.clearRemotePlayerFishing3D = function (entry) {
+    if (!entry) return;
+    const sc = window.pirakuScene;
+    if (entry.remoteRod && entry.remoteRod.parent) entry.remoteRod.parent.remove(entry.remoteRod);
+    if (entry.remoteBobber && sc) sc.remove(entry.remoteBobber);
+    if (entry.remoteRipple && sc) sc.remove(entry.remoteRipple);
+    if (entry.remoteLine && sc) sc.remove(entry.remoteLine);
+    entry.remoteRod = entry.remoteBobber = entry.remoteRipple = entry.remoteLine = null;
+    entry.remoteFishSig = "";
+    const ud = entry.mesh && entry.mesh.userData && entry.mesh.userData.a;
+    if (ud && ud.body) ud.body.rotation.x *= 0.8;
+  };
+
+  window.syncRemotePlayerFishing3D = function (entry, now) {
+    const sc = window.pirakuScene;
+    const f = entry && entry.fishing;
+    if (!sc || !entry || !entry.mesh || !f || !f.state || f.state === "idle" || typeof THREE === "undefined") {
+      window.clearRemotePlayerFishing3D(entry);
+      return;
+    }
+    const sig = `${f.col || 0}_${f.bx || 0}_${f.bz || 0}`;
+    if (!entry.remoteRod || entry.remoteFishSig !== sig) {
+      window.clearRemotePlayerFishing3D(entry);
+      entry.remoteFishSig = sig;
+      entry.remoteFishStart = now;
+      entry.remoteRod = createFishingRodGroup(f.col, !!f.gold);
+      entry.mesh.add(entry.remoteRod);
+      const wy = typeof f.wy === "number" ? f.wy : 0.08;
+      entry.remoteBobber = createBobberGroup(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z);
+      sc.add(entry.remoteBobber);
+      entry.remoteRipple = createRippleMesh(f.bx || entry.mesh.position.x, wy, f.bz || entry.mesh.position.z);
+      sc.add(entry.remoteRipple);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), entry.remoteBobber.position.clone()]);
+      entry.remoteLine = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xe2e8f0 }));
+      sc.add(entry.remoteLine);
+    }
+    const ud = entry.mesh.userData && entry.mesh.userData.a;
+    animateFishingPose(ud, entry.remoteRod, f.state, now, entry.remoteFishStart || now);
+    const wy = typeof f.wy === "number" ? f.wy : 0.08;
+    if (entry.remoteBobber) {
+      const t = now * 0.006;
+      entry.remoteBobber.position.y = wy + (f.state === "waiting" ? Math.sin(t) * 0.03 : Math.sin(t * 4.5) * 0.14);
+    }
+    if (entry.remoteRipple) {
+      const rp = ((now * (f.state === "reeling" ? 0.0024 : 0.0016)) % 1);
+      entry.remoteRipple.scale.setScalar(1 + rp * (f.state === "waiting" ? 1.9 : 3.2));
+      entry.remoteRipple.material.opacity = (1 - rp) * 0.75;
+    }
+    if (entry.remoteLine && entry.remoteRod && entry.remoteBobber) {
+      updateFishingLine(entry.remoteLine, entry.remoteRod, entry.remoteBobber);
+    }
+  };
 
   window.guideToPirakuFishingSpot = function () {
     if (window.pirakuInDistrict) {
