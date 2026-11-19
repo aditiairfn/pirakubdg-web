@@ -362,8 +362,10 @@
       window.clearRemotePlayerFishing3D(entry);
     }
     if (entry && entry.mesh) {
-      if (typeof citizensGroup !== 'undefined') citizensGroup.remove(entry.mesh);
-      if (typeof scene !== 'undefined') (window.pirakuScene || scene).remove(entry.mesh);
+      if (entry.mesh.parent) entry.mesh.parent.remove(entry.mesh);
+      if (typeof citizensGroup !== 'undefined' && citizensGroup) citizensGroup.remove(entry.mesh);
+      const sc = window.pirakuScene || (typeof scene !== 'undefined' ? scene : null);
+      if (sc) sc.remove(entry.mesh);
     }
     remotePlayers.delete(sessionId);
     const oldTag = onlineNameTags.get(sessionId); if (oldTag) { oldTag.remove(); onlineNameTags.delete(sessionId); }
@@ -625,7 +627,7 @@
     // 2. Gerakkan karakter warga lain secara halus + atur volume suara berdasarkan jarak 3D
     const perfNow = performance.now();
     remotePlayers.forEach((entry, sid) => {
-      if (now - entry.lastSeen > 60000) {
+      if (now - entry.lastSeen > 40000) {
         removeRemoteAvatar(sid);
         return;
       }
@@ -953,6 +955,19 @@
         remotePlayers.forEach((_, sid) => {
           if (!state[sid]) removeRemoteAvatar(sid);
         });
+      })
+      .on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+        if (key && key !== mySessionId) removeRemoteAvatar(key);
+        if (Array.isArray(leftPresences)) {
+          leftPresences.forEach(lp => {
+            if (lp && lp.sessionId && lp.sessionId !== mySessionId) removeRemoteAvatar(lp.sessionId);
+          });
+        }
+      })
+      .on('broadcast', { event: 'leave' }, ({ payload }) => {
+        if (payload && payload.sessionId && payload.sessionId !== mySessionId) {
+          removeRemoteAvatar(payload.sessionId);
+        }
       })
       .on('broadcast', { event: 'pos' }, ({ payload }) => {
         const entry = getOrCreateRemoteAvatar(payload);
@@ -1389,4 +1404,14 @@ if (typeof window.toggleMyMic === "function" && !window.__micAutoReconnectPatche
     if (!myPos || !targetPos) return true; // Izinkan dulu jika posisi belum ter-sync awal
     return getDistance3D(myPos, targetPos) <= MAX_VOICE_RADIUS;
   };
+
+  function sendLeaveSignal() {
+    try {
+      if (mpChannel && mpChannel.state === 'joined') {
+        mpChannel.send({ type: 'broadcast', event: 'leave', payload: { sessionId: mySessionId } });
+      }
+    } catch (_) {}
+  }
+  window.addEventListener("pagehide", sendLeaveSignal);
+  window.addEventListener("beforeunload", sendLeaveSignal);
 })();
