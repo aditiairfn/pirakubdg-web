@@ -528,10 +528,12 @@ let activeQuestSystem = null;
   // Renderer & Scene
   const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth > 820, powerPreference: "high-performance" }); window.pirakuRenderer = renderer;
   const isPirakuMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPirakuMobile ? 1.35 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPirakuMobile ? 1.15 : 1.35));
   renderer.setSize(W, H);
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = isPirakuMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  renderer.shadowMap.needsUpdate = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.18;
   container.appendChild(renderer.domElement);
@@ -566,7 +568,7 @@ let activeQuestSystem = null;
   const sun = new THREE.DirectionalLight(0xfff0d6, 1.45);        // matahari pagi, hangat tapi tidak oranye
   sun.position.set(-70, 55, 38);                                  // sudut matahari rendah → bayangan panjang khas pagi
   sun.castShadow = true;
-  sun.shadow.mapSize.set(isPirakuMobile ? 1024 : 2048, isPirakuMobile ? 1024 : 2048);
+  sun.shadow.mapSize.set(isPirakuMobile ? 1024 : 1536, isPirakuMobile ? 1024 : 1536);
   sun.shadow.bias = -0.0004;
   sun.shadow.radius = isPirakuMobile ? 1.5 : 4;                                          // bayangan lembut (PCFSoft)
   Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 1, far: 300 });
@@ -4753,6 +4755,9 @@ let activeQuestSystem = null;
     }
     if (controls) {
       controls.update();
+    }
+    if (!window.pirakuPotatoMode && Math.round(clockTime * 60) % 3 === 0) {
+      renderer.shadowMap.needsUpdate = true;
     }
     cam.updateMatrixWorld();
     if (myPlayerMesh) updateDistrictTriggers(myPlayerMesh.position);

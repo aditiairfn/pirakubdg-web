@@ -985,10 +985,6 @@
         orbitGroup.add(orb);
       }
       tipSection.add(orbitGroup);
-
-      const rodLight = new THREE.PointLight(tipColor, isCelestial ? 1.8 : 1.25, 6.5);
-      rodLight.position.set(0, 0.96, 0);
-      tipSection.add(rodLight);
     }
     rodGrp.userData.animRings = animRings;
     rodGrp.userData.orbitGroup = orbitGroup;

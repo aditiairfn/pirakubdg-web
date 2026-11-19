@@ -829,10 +829,14 @@
     }
   }
 
+  let _lastRadarTs = 0;
   function loop(now) {
     const sc = window.pirakuScene || (typeof scene !== "undefined" ? scene : null);
     if (sc && !initialized) buildCityEnhancements(sc);
-    updateRadarAndAtmosphere((now || 0) * 0.001);
+    if (!document.hidden && (now - _lastRadarTs >= 66)) {
+      _lastRadarTs = now;
+      updateRadarAndAtmosphere((now || 0) * 0.001);
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
