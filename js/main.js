@@ -2008,12 +2008,96 @@ let activeQuestSystem = null;
   // Peci hitam pas di kepala
   cyl(0.21, 0.23, 0.16, 16, 0, 0.15, 0, 0x0f172a, headW);
 
-  const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', kecamatan: 'Sumur Bandung', wish: 'Wilujeng sumping! Sok atuh keliling Gasibu & tata kotana!', upvotes: 42, x: -6.5, z: 1.4 };
-  const walkotHitbox = mk(new THREE.BoxGeometry(1.4, 2.2, 1.4), new THREE.MeshBasicMaterial({ visible: false }), -6.5, 1.1, 1.4);
+  const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', npcBadge: '🏛️ WALIKOTA BANDUNG', kecamatan: 'Bandung Wetan', wish: 'Wilujeng sumping! Keliling Gasibu, mancing di Danau Taman Lansia, atau kunjungi 30 Kecamatan!', upvotes: 42, x: -6.5, z: 1.4 };
+  const walkotHitbox = mk(new THREE.BoxGeometry(1.6, 2.4, 1.6), new THREE.MeshBasicMaterial({ visible: false }), -6.5, 1.1, 1.4);
   walkotHitbox.userData = walkotData;
   walkotHitbox.userData.meshGroup = WALKOT;
   clickableObjects.push(walkotHitbox);
+  window.pirakuClickableObjects = clickableObjects;
   registeredCitizensList.push(walkotData);
+
+  // ================= KDM (KANG DEDI MULYADI - GUBERNUR JABAR) KELILING GEDUNG SATE =================
+  const KDM = new THREE.Group();
+  KDM.position.set(-19.2, 0.14, 6.6);
+  KDM.scale.setScalar(1.16);
+  scene.add(KDM);
+
+  const kdmWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.72 });
+  const kdmPangsiMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.78 });
+  const kdmSkinMat = new THREE.MeshStandardMaterial({ color: 0xe6b184, roughness: 0.7 });
+  const kdmLegL = new THREE.Group(); kdmLegL.position.set(-0.1, 0.44, 0); KDM.add(kdmLegL);
+  const kdmLegR = new THREE.Group(); kdmLegR.position.set(0.1, 0.44, 0); KDM.add(kdmLegR);
+  [kdmLegL, kdmLegR].forEach(lg => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.068, 0.42, 8), kdmPangsiMat);
+    p.position.y = -0.21;
+    const sh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.2), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+    sh.position.set(0, -0.41, 0.03);
+    lg.add(p, sh);
+  });
+
+  const kdmBody = new THREE.Group(); kdmBody.position.set(0, 0.44, 0); KDM.add(kdmBody);
+  const kdmTorso = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.24, 0.56, 12), kdmWhiteMat);
+  kdmTorso.position.y = 0.28;
+  const kdmCollar = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.36, 0.05), new THREE.MeshStandardMaterial({ color: 0xe2e8f0 }));
+  kdmCollar.position.set(0, 0.34, 0.2);
+  kdmBody.add(kdmTorso, kdmCollar);
+
+  const kdmArmL = new THREE.Group(); kdmArmL.position.set(-0.27, 0.48, 0); kdmBody.add(kdmArmL);
+  const kdmArmR = new THREE.Group(); kdmArmR.position.set(0.27, 0.48, 0); kdmBody.add(kdmArmR);
+  [kdmArmL, kdmArmR].forEach(ar => {
+    const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.052, 0.42, 8), kdmWhiteMat);
+    sl.position.y = -0.2;
+    const hd = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), kdmSkinMat);
+    hd.position.y = -0.43;
+    ar.add(sl, hd);
+  });
+
+  // Kepala, rambut gelap, & Iket Kepala Putih khas Sunda dengan simpul depan
+  const kdmHead = new THREE.Group(); kdmHead.position.set(0, 0.78, 0); kdmBody.add(kdmHead);
+  kdmHead.add(new THREE.Mesh(new THREE.SphereGeometry(0.235, 14, 12), kdmSkinMat));
+  const kdmHair = new THREE.Mesh(new THREE.SphereGeometry(0.23, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.48), new THREE.MeshStandardMaterial({ color: 0x0f172a }));
+  kdmHair.position.y = 0.03;
+  const kdmIket = new THREE.Mesh(new THREE.CylinderGeometry(0.255, 0.25, 0.13, 16), kdmWhiteMat);
+  kdmIket.position.y = 0.095;
+  const kdmIketKnot = new THREE.Mesh(new THREE.SphereGeometry(0.068, 8, 8), kdmWhiteMat);
+  kdmIketKnot.scale.set(1.2, 0.9, 0.8);
+  kdmIketKnot.position.set(0, 0.11, 0.245);
+  kdmHead.add(kdmHair, kdmIket, kdmIketKnot);
+
+  // Label nama mengambang khas Gubernur (Navy & Emas) di atas Kang Dedi (KDM)
+  const kdmCv = document.createElement('canvas'); kdmCv.width = 340; kdmCv.height = 64;
+  const kdmCtx = kdmCv.getContext('2d');
+  kdmCtx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+  kdmCtx.beginPath(); kdmCtx.roundRect(6, 6, 328, 52, 26); kdmCtx.fill();
+  kdmCtx.strokeStyle = '#facc15'; kdmCtx.lineWidth = 4; kdmCtx.stroke();
+  kdmCtx.fillStyle = '#fde047'; kdmCtx.font = '900 22px sans-serif'; kdmCtx.textAlign = 'center'; kdmCtx.textBaseline = 'middle';
+  kdmCtx.fillText('🏛️ KDM • Gubernur Jabar', 170, 33);
+  const kdmSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(kdmCv), transparent: true, depthTest: false }));
+  kdmSpr.scale.set(2.6, 0.49, 1);
+  kdmSpr.position.set(0, 2.28, 0);
+  KDM.add(kdmSpr);
+
+  const kdmData = {
+    id: -1,
+    name: 'Kang Dedi Mulyadi (KDM)',
+    ig: 'Kang Dedi Mulyadi (KDM)',
+    role: 'GUBERNUR',
+    npcBadge: '🏛️ GUBERNUR JABAR',
+    kecamatan: 'Jawa Barat',
+    wish: 'Sampurasun wargi! Jaga walungan & lingkungan Bandung, hayu urang sauyunan ngawangun Jabar!',
+    upvotes: 99,
+    x: -19.2,
+    z: 6.6,
+    meshGroup: KDM
+  };
+  const kdmHitbox = new THREE.Mesh(new THREE.BoxGeometry(1.5, 2.3, 1.5), new THREE.MeshBasicMaterial({ visible: false }));
+  kdmHitbox.position.set(0, 1.1, 0);
+  kdmHitbox.userData = kdmData;
+  KDM.add(kdmHitbox);
+  clickableObjects.push(kdmHitbox);
+
+  const kdmWaypoints = [[-19.2, 6.6], [19.2, 6.6], [19.2, 21.0], [-19.2, 21.0]];
+  let kdmWpIdx = 1;
 
   let totalWarga = 1;
 
@@ -2130,7 +2214,11 @@ let activeQuestSystem = null;
     if (performance.now() - touchStartTime < 300 && Math.hypot(e.clientX - touchStartPos.x, e.clientY - touchStartPos.y) < 8) {
       mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
       raycaster.setFromCamera(mouse, cam);
-      const hits = raycaster.intersectObjects(clickableObjects);
+      const hits = raycaster.intersectObjects(clickableObjects).filter(h => {
+        let p = h.object;
+        while (p) { if (p.visible === false) return false; p = p.parent; }
+        return true;
+      });
       if (window.pirakuInDistrict) {
         const distGrp = scene.getObjectByName("piraku-komplek-district-map");
         if (distGrp) {
@@ -2207,7 +2295,88 @@ let activeQuestSystem = null;
   };
 
   const bubbleEl = document.getElementById('citizen-bubble'), tempV = new THREE.Vector3();
+  function getNpcLines(data) {
+    const r = data.role || '';
+    const b = data.npcBadge || '';
+    if (r === 'GUBERNUR') {
+      return [
+        data.wish,
+        'Urang kudu miara walungan Cikapundung jeung taman kota, ulah miceun runtah sambarangan nya!',
+        'Coba mancing di Danau Taman Lansia atawa di 29 kecamatan—cenah aya ikan Divine 1/100.000 nu langka pisan!',
+        'Silih asah, silih asih, silih asuh! Hayu babarengan ngawangun Jawa Barat nu bersih tur asri.'
+      ];
+    }
+    if (r === 'WALKOT') {
+      return [
+        data.wish,
+        'Jangan lupa daftar E-KTP warga Bandung dan pilih Camat favoritmu di menu Pemilu!',
+        'Di setiap kecamatan ada Kopdes Biru Putih buat jual hasil pancingan, beli umbul-umbul, dan upgrade joran.',
+        'Kumpulkan koin dari narik Ojol 3D, Balap Gasibu, atau mancing buat bangun rumah hingga Villa Sultan!'
+      ];
+    }
+    if (b.includes('PEMANCING')) {
+      return [
+        data.wish,
+        'Tips: Pas lempar joran, hentikan bar di zona kuning (75%+) biar dapat ✨ PERFECT CAST (+25% Luck)!',
+        'Jangan lupa kunci (🔒) ikan langkamu di Tas sebelum klik Jual Semua di Kopdes!',
+        'Kalau pakai Joran Naga Siliwangi + Umbul-umbul Kosmik pas hujan, peluang dapat Cosmic & Divine naik drastis!'
+      ];
+    }
+    return [
+      data.wish,
+      'Jajanan Bandung dari Kopdes bisa langsung dimakan atau disimpan ke 🎒 Tas buat ngebut kapan saja!',
+      'Kalau capek mancing di dermaga, mampir jajan Cireng atau Bandrek hangat biar jalan makin kencang!'
+    ];
+  }
+
+  function openNpcDialogueCard(data) {
+    if (bubbleEl) bubbleEl.style.display = 'none';
+    activeCitizenTarget = null;
+    let card = document.getElementById('piraku-npc-dialogue');
+    if (!card && document.body) {
+      card = document.createElement('div');
+      card.id = 'piraku-npc-dialogue';
+      card.style.cssText = 'position:fixed;bottom:84px;left:50%;transform:translateX(-50%);z-index:99990;width:min(380px,calc(100vw - 24px));background:linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,41,59,0.97));border:2px solid #facc15;border-radius:18px;padding:14px 16px;color:#f8fafc;box-shadow:0 18px 45px rgba(0,0,0,0.78);display:none;';
+      document.body.appendChild(card);
+    }
+    if (!card) return;
+    const lines = getNpcLines(data);
+    let lineIdx = 0;
+    const badgeText = data.npcBadge || '🏛️ NPC KOTA';
+    const renderLine = () => {
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span style="padding:3px 9px;border-radius:999px;font-size:10px;font-weight:900;background:linear-gradient(135deg,#ffcf4a,#f59e0b);color:#0f172a;white-space:nowrap;">${badgeText}</span>
+            <span style="font-weight:900;font-size:13.5px;color:#f8fafc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${data.ig || data.name}</span>
+          </div>
+          <button id="npc-dlg-close" style="border:none;background:rgba(148,163,184,0.2);color:#cbd5e1;width:26px;height:26px;border-radius:999px;font-weight:900;cursor:pointer;">✕</button>
+        </div>
+        <div style="background:rgba(2,6,23,0.55);border:1px solid rgba(148,163,184,0.22);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:#e2e8f0;margin-bottom:10px;">“${lines[lineIdx]}”</div>
+        <div style="display:flex;gap:8px;">
+          <button id="npc-dlg-next" style="flex:1;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">💬 Ngobrol Lagi (${lineIdx + 1}/${lines.length})</button>
+          <button id="npc-dlg-bye" style="border:none;background:#1e293b;color:#fde047;border:1px solid #475569;padding:8px 12px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;">👋 Pamit</button>
+        </div>
+      `;
+      card.querySelector('#npc-dlg-close').onclick = () => { card.style.display = 'none'; };
+      card.querySelector('#npc-dlg-bye').onclick = () => { card.style.display = 'none'; };
+      card.querySelector('#npc-dlg-next').onclick = () => {
+        lineIdx = (lineIdx + 1) % lines.length;
+        if (typeof window.playSynthTone === 'function') window.playSynthTone(620, 'sine', 0.08);
+        renderLine();
+      };
+    };
+    renderLine();
+    card.style.display = 'block';
+  }
+
   function showCitizenSpeech(data, focusCam = false) {
+    if (data && (data.npcBadge || data.role === 'WALKOT' || data.role === 'GUBERNUR')) {
+      openNpcDialogueCard(data);
+      return;
+    }
+    const npcCard = document.getElementById('piraku-npc-dialogue');
+    if (npcCard) npcCard.style.display = 'none';
     activeCitizenTarget = data;
     document.getElementById('b-ig').innerText = data.ig;
     const cLvl = typeof window.computePirakuLevelFromTotalXp === 'function'
@@ -2215,9 +2384,15 @@ let activeQuestSystem = null;
       : (parseInt(data.level, 10) || 1);
     const roleEl = document.getElementById('b-role');
     if (roleEl) {
-      roleEl.innerText = 'LVL ' + cLvl;
-      roleEl.style.background = cLvl >= 99 ? 'linear-gradient(135deg,#ffcf4a,#f59e0b)' : 'rgba(255,207,74,0.2)';
-      roleEl.style.color = cLvl >= 99 ? '#0e2f2a' : '#ffcf4a';
+      if (data.npcBadge || data.role === 'WALKOT') {
+        roleEl.innerText = data.npcBadge || '🏛️ WALIKOTA';
+        roleEl.style.background = 'linear-gradient(135deg,#ffcf4a,#f59e0b)';
+        roleEl.style.color = '#0e2f2a';
+      } else {
+        roleEl.innerText = 'LVL ' + cLvl;
+        roleEl.style.background = cLvl >= 99 ? 'linear-gradient(135deg,#ffcf4a,#f59e0b)' : 'rgba(255,207,74,0.2)';
+        roleEl.style.color = cLvl >= 99 ? '#0e2f2a' : '#ffcf4a';
+      }
     }
     document.getElementById('b-kec').innerText = 'Kec. ' + (data.kecamatan || 'Bandung Wetan');
     document.getElementById('b-wish').innerText = '“' + data.wish + '”';
@@ -2232,7 +2407,12 @@ let activeQuestSystem = null;
     }
   }
 
-  function hideCitizenSpeech() { activeCitizenTarget = null; if (bubbleEl) bubbleEl.style.display = 'none'; }
+  function hideCitizenSpeech() {
+    activeCitizenTarget = null;
+    if (bubbleEl) bubbleEl.style.display = 'none';
+    const npcCard = document.getElementById('piraku-npc-dialogue');
+    if (npcCard) npcCard.style.display = 'none';
+  }
   function updateBubblePos() {
     if (!activeCitizenTarget || !bubbleEl) return;
     tempV.set(activeCitizenTarget.x, 2.3, activeCitizenTarget.z).project(cam);
@@ -4547,6 +4727,30 @@ let activeQuestSystem = null;
     updV(clockTime, curMode === 'reborn');
 
     updatePlayerMovement(0.016);
+    if (typeof KDM !== "undefined" && KDM) {
+      KDM.visible = !window.pirakuInDistrict;
+      if (KDM.visible) {
+        const tgt = kdmWaypoints[kdmWpIdx];
+        const dxK = tgt[0] - KDM.position.x;
+        const dzK = tgt[1] - KDM.position.z;
+        const distK = Math.hypot(dxK, dzK);
+        if (distK < 0.35) {
+          kdmWpIdx = (kdmWpIdx + 1) % kdmWaypoints.length;
+        } else {
+          const stepK = 1.65 * 0.016;
+          KDM.position.x += (dxK / distK) * stepK;
+          KDM.position.z += (dzK / distK) * stepK;
+          KDM.rotation.y = Math.atan2(dxK, dzK);
+          const sw = Math.sin(clockTime * 7.5);
+          kdmLegL.rotation.x = sw * 0.55;
+          kdmLegR.rotation.x = -sw * 0.55;
+          kdmArmL.rotation.x = -sw * 0.45;
+          kdmArmR.rotation.x = sw * 0.45;
+        }
+        kdmData.x = KDM.position.x;
+        kdmData.z = KDM.position.z;
+      }
+    }
     if (controls) {
       controls.update();
     }

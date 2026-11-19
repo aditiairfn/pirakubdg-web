@@ -2114,6 +2114,15 @@
       ctx.fillStyle = "#22c55e"; ctx.fill();
       ctx.strokeStyle = "#facc15"; ctx.lineWidth = 2; ctx.stroke();
 
+      // Kolam Mancing Kecamatan (Tenggara x:42.5, z:10.5)
+      ctx.fillStyle = "rgba(2, 132, 199, 0.88)";
+      ctx.beginPath(); ctx.arc(toM(42.5), toM(10.5), 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.fillStyle = "#bae6fd";
+      ctx.font = "bold 8px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("🎣", toM(42.5), toM(10.5) + 3);
+
       // Beacon Kavling Milik Sendiri (berdenyut)
       if (myDistrictKavlingInfo) {
         const kx = toM(myDistrictKavlingInfo.x);

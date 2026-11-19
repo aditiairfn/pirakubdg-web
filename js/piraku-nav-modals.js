@@ -38,10 +38,10 @@
         <div style="padding:13px;border-radius:16px;background:linear-gradient(135deg,rgba(14,165,233,0.18),rgba(15,23,42,0.92));border:1.5px solid rgba(56,189,248,0.5);margin-bottom:11px;font-size:12px;color:#e2e8f0;line-height:1.5;">
           <div style="font-size:13px;font-weight:900;color:#38bdf8;margin-bottom:6px;">🆕 Apa yang Baru di Versi Terbaru</div>
           <div style="display:flex;flex-direction:column;gap:5px;">
-            <div>🎣 <b>40 Jenis Ikan &amp; Joran Baru</b> — Tangkap ikan lucu hingga <b>Divine (1/100.000)</b>, upgrade ke <b>Joran Kristal &amp; Naga Siliwangi</b>, lalu klik <b>✨ Pamer</b> ke warga!</div>
-            <div>🌊 <b>Danau Taman Lansia &amp; Fisika Air</b> — Berdiri di atas dermaga 8m untuk memancing; masuk ke air bikin karakter tenggelam &amp; jalan lambat.</div>
-            <div>🏬 <b>Jual Ikan &amp; Beli Joran di Kopdes</b> — Jalan ke Kopdes kecamatan untuk jual hasil pancingan (item rusak tidak laku) dan upgrade joran/umpan.</div>
-            <div>🗺️ <b>Minimap &amp; Pin Lokasi Mancing</b> — Danau kini tampil di minimap, lengkap dengan pin <b>🎣 Mancing di sini</b> &amp; penunjuk arah dari footer <b>Game</b>.</div>
+            <div>🎣 <b>Mancing 3D ala Fish It (69 Jenis Ikan)</b> — Power Cast, cipratan air, <b>40 ikan kota + 29 ikan unik tiap kecamatan</b> (hingga <b>Divine 1/100.000</b>), Fishdex, kunci &amp; sortir Tas!</div>
+            <div>✨ <b>Joran Bercahaya &amp; Pamer ke Warga</b> — Upgrade <b>Umbul-umbul</b> &amp; <b>Joran Kristal / Naga Siliwangi</b> bercincin gyro, bisa dipegang &amp; dipamerkan di mana saja bersama ikan 3D.</div>
+            <div>🏛️ <b>NPC KDM (Gubernur Jabar) &amp; Obrolan NPC</b> — Temui <b>Kang Dedi Mulyadi</b> keliling Gedung Sate, plus NPC pemancing &amp; pedagang gerobak yang bisa diajak ngobrol!</div>
+            <div>🏬 <b>Tas Terpadu &amp; Kopdes</b> — Jual ikan satuan/semua &amp; upgrade perlengkapan di Kopdes, serta simpan jajanan Kopdes ke <b>🎒 Tas</b> untuk dimakan kapan saja.</div>
           </div>
         </div>
 

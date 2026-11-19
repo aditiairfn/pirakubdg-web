@@ -583,6 +583,8 @@
       const fishSig = fishObj ? `${fishObj.state}_${fishObj.bx}_${fishObj.bz}` : "";
       const showFishObj = window.pirakuShownFish || null;
       const showFishSig = showFishObj ? `${showFishObj.id}_${showFishObj.kg}_${showFishObj.mut || ""}` : "";
+      const rodCarryObj = window.pirakuCarriedRodState || null;
+      const rodCarrySig = rodCarryObj ? `${rodCarryObj.id}_${rodCarryObj.hold ? 1 : 0}` : "";
       const moved = !mpChannel._lastSentPos ||
         Math.abs(px - mpChannel._lastSentPos.x) > 0.015 ||
         Math.abs(py - mpChannel._lastSentPos.y) > 0.015 ||
@@ -591,10 +593,11 @@
         isJump !== mpChannel._lastSentPos.jump ||
         fishSig !== mpChannel._lastSentPos.fishSig ||
         showFishSig !== mpChannel._lastSentPos.showFishSig ||
+        rodCarrySig !== mpChannel._lastSentPos.rodCarrySig ||
         (now - (mpChannel._lastSentPos.ts || 0) >= 4000);
       if (moved) {
         lastBroadcastTime = now;
-        mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, ts: now };
+        mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, ts: now };
         const id = getMyIdentity();
         mpChannel.send({
           type: 'broadcast',
@@ -612,7 +615,8 @@
             rotY: prot,
             jump: isJump,
             fishing: fishObj,
-            showFish: showFishObj
+            showFish: showFishObj,
+            rodCarry: rodCarryObj
           }
         });
       }
@@ -678,6 +682,9 @@
 
       if (typeof window.syncShownFishOnMesh === "function") {
         window.syncShownFishOnMesh(entry.mesh, entry.showFish, perfNow);
+      }
+      if (typeof window.syncEquippedRodVisual === "function") {
+        window.syncEquippedRodVisual(entry.mesh, entry.rodCarry && entry.rodCarry.id, !!(entry.rodCarry && entry.rodCarry.hold), !!(entry.fishing && entry.fishing.state && entry.fishing.state !== "idle"), perfNow);
       }
 
       // Proximity audio volume (makin dekat karakter, suara makin jelas)
@@ -957,6 +964,7 @@
           entry.jump = !!payload.jump;
           entry.fishing = payload.fishing || null;
           entry.showFish = payload.showFish || null;
+          entry.rodCarry = payload.rodCarry || null;
           entry.lastSeen = Date.now();
           if (isMicEnabled && payload.sessionId && !peerConnections.has(payload.sessionId)) {
             createPeerConnection(payload.sessionId, true);
