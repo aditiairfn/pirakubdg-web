@@ -49,6 +49,9 @@ export default {
 export class PirakuRoomDO extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
+    if (typeof WebSocketRequestResponsePair !== "undefined" && typeof this.ctx.setWebSocketAutoResponse === "function") {
+      this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('{"type":"ping"}', '{"type":"pong"}'));
+    }
   }
 
   async fetch(request) {
@@ -86,6 +89,7 @@ export class PirakuRoomDO extends DurableObject {
     const msg = JSON.stringify({ type: "presence_sync", state: this.buildPresenceState(excludeWs) });
     for (const ws of this.ctx.getWebSockets()) {
       if (excludeWs && ws === excludeWs) continue;
+      if (ws.readyState !== undefined && ws.readyState !== 1) continue;
       try {
         ws.send(msg);
       } catch (_) {}
@@ -129,6 +133,7 @@ export class PirakuRoomDO extends DurableObject {
       if (targetSid) {
         for (const peer of this.ctx.getWebSockets()) {
           if (peer === ws) continue;
+          if (peer.readyState !== undefined && peer.readyState !== 1) continue;
           const peerAtt = peer.deserializeAttachment();
           if (peerAtt && peerAtt.sessionId === targetSid) {
             try { peer.send(out); } catch (_) {}
@@ -139,6 +144,7 @@ export class PirakuRoomDO extends DurableObject {
 
       for (const peer of this.ctx.getWebSockets()) {
         if (peer === ws) continue;
+        if (peer.readyState !== undefined && peer.readyState !== 1) continue;
         try {
           peer.send(out);
         } catch (_) {}
@@ -147,14 +153,22 @@ export class PirakuRoomDO extends DurableObject {
   }
 
   async webSocketClose(ws) {
-    try { ws.serializeAttachment(null); } catch (_) {}
-    try { ws.close(); } catch (_) {}
-    this.broadcastPresenceSync(ws);
+    let hadPresence = false;
+    try {
+      const att = ws.deserializeAttachment();
+      hadPresence = Boolean(att && att.presence);
+      ws.serializeAttachment(null);
+    } catch (_) {}
+    if (hadPresence) this.broadcastPresenceSync(ws);
   }
 
   async webSocketError(ws) {
-    try { ws.serializeAttachment(null); } catch (_) {}
-    try { ws.close(); } catch (_) {}
-    this.broadcastPresenceSync(ws);
+    let hadPresence = false;
+    try {
+      const att = ws.deserializeAttachment();
+      hadPresence = Boolean(att && att.presence);
+      ws.serializeAttachment(null);
+    } catch (_) {}
+    if (hadPresence) this.broadcastPresenceSync(ws);
   }
 }

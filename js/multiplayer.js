@@ -10,7 +10,7 @@
   function useCloudflareRealtime() {
     return /^https?:\/\/|^wss?:\/\//i.test(getCfRealtimeBaseUrl());
   }
-  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 140 : 650;
+  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 320 : 650;
   let currentWorldRoomId = 'bandung_wetan';
   function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
@@ -677,16 +677,16 @@
       const idNow = getMyIdentity();
       const shopSig = `${idNow.shopOutfit || ""}|${idNow.shopVehicle || ""}|${idNow.tierId || ""}`;
       const moved = !mpChannel._lastSentPos ||
-        Math.abs(px - mpChannel._lastSentPos.x) > 0.22 ||
-        Math.abs(py - mpChannel._lastSentPos.y) > 0.12 ||
-        Math.abs(pz - mpChannel._lastSentPos.z) > 0.22 ||
-        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.15 ||
+        Math.abs(px - mpChannel._lastSentPos.x) > 0.30 ||
+        Math.abs(py - mpChannel._lastSentPos.y) > 0.14 ||
+        Math.abs(pz - mpChannel._lastSentPos.z) > 0.30 ||
+        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.18 ||
         isJump !== mpChannel._lastSentPos.jump ||
         fishSig !== mpChannel._lastSentPos.fishSig ||
         showFishSig !== mpChannel._lastSentPos.showFishSig ||
         rodCarrySig !== mpChannel._lastSentPos.rodCarrySig ||
         shopSig !== mpChannel._lastSentPos.shopSig ||
-        (now - (mpChannel._lastSentPos.ts || 0) >= 25000);
+        (now - (mpChannel._lastSentPos.ts || 0) >= 40000);
       if (moved) {
         lastBroadcastTime = now;
         mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, shopSig, ts: now };
@@ -867,6 +867,7 @@
     let pingTimer = null;
     let subscribeCb = null;
     let pendingTrack = null;
+    let failCount = 0;
 
     const channelObj = {
       state: "closed",
@@ -932,6 +933,7 @@
       }
 
       ws.addEventListener("open", () => {
+        failCount = 0;
         channelObj.state = "joined";
         if (pendingTrack) {
           try { ws.send(JSON.stringify({ type: "track", payload: pendingTrack })); } catch (_) {}
@@ -941,7 +943,7 @@
           if (ws && ws.readyState === WebSocket.OPEN) {
             try { ws.send('{"type":"ping"}'); } catch (_) {}
           }
-        }, 25000);
+        }, 45000);
         if (typeof subscribeCb === "function") {
           try { subscribeCb("SUBSCRIBED"); } catch (_) {}
         }
@@ -967,7 +969,15 @@
       ws.addEventListener("close", () => {
         channelObj.state = "closed";
         if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
-        if (!closedByClient) scheduleReconnect();
+        if (!closedByClient) {
+          failCount++;
+          // Jangan fallback ke Supabase Realtime agar kuota Supabase aman; perlambat reconnect jika limit Cloudflare tercapai
+          if (failCount >= 5) {
+            setTimeout(() => scheduleReconnect(), 20000);
+            return;
+          }
+          scheduleReconnect();
+        }
       });
 
       ws.addEventListener("error", () => {
