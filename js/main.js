@@ -2896,8 +2896,10 @@ let activeQuestSystem = null;
     stream.appendChild(wrap);
     stream.scrollTop = stream.scrollHeight;
 
-    const overheadMsg = parsed.replyTo ? `↩️ ${parsed.replyTo}: ${parsed.body}` : parsed.body;
-    showOverheadBubbleOnAvatar(sender, overheadMsg);
+    if (!isHistory) {
+      const overheadMsg = parsed.replyTo ? `↩️ ${parsed.replyTo}: ${parsed.body}` : parsed.body;
+      showOverheadBubbleOnAvatar(sender, overheadMsg);
+    }
   }
 
   async function loadRecentChats() {
