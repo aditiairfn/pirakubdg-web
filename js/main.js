@@ -4053,7 +4053,7 @@ let activeQuestSystem = null;
     }
     const hudBtn = document.getElementById('btn-hud-battery');
     if (hudBtn) {
-      hudBtn.innerHTML = isOn ? '<span>⚡ Hemat: ON</span>' : '<span>⚡ Hemat: OFF</span>';
+      hudBtn.innerHTML = isOn ? '<span>⚡ Anti Lag: ON</span>' : '<span>⚡ Anti Lag: OFF</span>';
       hudBtn.style.borderColor = isOn ? 'rgba(74,222,128,0.75)' : '';
       hudBtn.style.color = isOn ? '#4ade80' : '';
     }
@@ -4062,7 +4062,7 @@ let activeQuestSystem = null;
     const next = localStorage.getItem('piraku_low_power') !== '1';
     localStorage.setItem('piraku_low_power', next ? '1' : '0');
     applyBatterySaverState(next);
-    showToast(next ? '⚡ Mode Hemat Baterai aktif (grafis ringan)' : '✨ Mode Grafis Normal aktif');
+    showToast(next ? '⚡ Mode Anti Lag aktif (grafis ringan)' : '✨ Mode Grafis Normal aktif');
   };
   setTimeout(() => { applyBatterySaverState(localStorage.getItem('piraku_low_power') === '1'); }, 300);
 
@@ -4137,7 +4137,7 @@ let activeQuestSystem = null;
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
             <b style="color:#fda4af;">💬 Sosial, Audio &amp; Menu Cepat (⋯)</b><br>
             • Ketuk karakter warga lain untuk <b>👋 Lambai</b> atau <b>❤️ Setuju</b>, pakai <b>Obrolan</b> untuk chat realtime, dan tombol <b>Mic</b> untuk Voice Chat jarak dekat.<br>
-            • Menu <b>⋯</b> di kanan atas berisi: <b>🔍 Cari Warga</b>, <b>🏆 Peringkat</b>, <b>🙈 Mode Layar Bersih</b>, &amp; <b>📣 Lapor Bug/Saran</b>. Di kanan layar tersedia tombol <b>⚡ Hemat Baterai</b> &amp; <b>🎥 Reset Cam</b>.
+            • Menu <b>⋯</b> di kanan atas berisi: <b>🔍 Cari Warga</b>, <b>🏆 Peringkat</b>, <b>🙈 Mode Layar Bersih</b>, &amp; <b>📣 Lapor Bug/Saran</b>. Di kanan layar tersedia tombol <b>⚡ Anti Lag</b> &amp; <b>🎥 Reset Cam</b>.
           </div>
         </div>
       </div>`;

@@ -384,7 +384,7 @@
         <div class="hud-dropdown-menu" id="hud-dropdown">
           <button class="menu-item-btn" onclick="openSearchWargaModal(); closeHudMenu();"><span>🔍</span> Cari Warga</button>
           <button class="menu-item-btn" onclick="openLeaderboardModal(); closeHudMenu();"><span>🏆</span> Peringkat Warga</button>
-          <button class="menu-item-btn" id="btn-menu-battery" onclick="toggleBatterySaverMode(); closeHudMenu();" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span>⚡</span> Mode Hemat Baterai</span><span id="battery-saver-badge" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(148,163,184,0.22);color:#cbd5e1;">OFF</span></button>
+          <button class="menu-item-btn" id="btn-menu-battery" onclick="toggleBatterySaverMode(); closeHudMenu();" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span>⚡</span> Mode Anti Lag</span><span id="battery-saver-badge" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(148,163,184,0.22);color:#cbd5e1;">OFF</span></button>
           <button class="menu-item-btn" onclick="toggleCleanHudMode(); closeHudMenu();"><span>🙈</span> Mode Layar Bersih</button>
           <button class="menu-item-btn" onclick="openGuideModal(); closeHudMenu();"><span>❓</span> Panduan &amp; Kontrol</button>
           <button class="menu-item-btn" onclick="openFeedbackModal(); closeHudMenu();"><span>📣</span> Kirim Masukan / Lapor Bug</button>
@@ -1197,7 +1197,7 @@
       </div>
     </div>
     <button class="hud-pill-btn" id="btn-voice-mic" onclick="toggleVoiceChat()" title="Aktifkan obrolan suara jarak dekat" style="display:inline-flex;align-items:center;gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"/><path d="M18.89 13.23A7.12 7.12 0 0 0 19 12v-2"/><path d="M5 10v2a7 7 0 0 0 12 5"/><path d="M15 9.34V5a3 3 0 0 0-5.68-1.33"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12"/><line x1="12" y1="19" x2="12" y2="22"/></svg><span>Mic Off</span></button>
-    <button class="hud-pill-btn" id="btn-hud-battery" onclick="toggleBatterySaverMode()" title="Mode Hemat Baterai / Grafis Ringan" style="display:inline-flex;align-items:center;gap:5px;"><span>⚡ Hemat: OFF</span></button>
+    <button class="hud-pill-btn" id="btn-hud-battery" onclick="toggleBatterySaverMode()" title="Mode Anti Lag / Grafis Ringan" style="display:inline-flex;align-items:center;gap:5px;"><span>⚡ Anti Lag: OFF</span></button>
     <button class="hud-pill-btn" id="btn-reset-cam" onclick="window.resetPirakuCamera && window.resetPirakuCamera()" title="Reset sudut kamera ke belakang karakter (Tombol R)" style="display:inline-flex;align-items:center;gap:5px;"><span>🎥 Reset Cam</span></button>
   </div>
 
@@ -1288,7 +1288,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v51"></script>
+  <script defer src="./js/main.js?v=20261119v52"></script>
   <script defer src="js/multiplayer.js?v=20261119v42"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
