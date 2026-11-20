@@ -2350,6 +2350,7 @@ let activeQuestSystem = null;
         // Sesi lama di browser ini sudah tidak ada di database (misal pasca-reset) -> bersihkan otomatis
         ["piraku_my_ig", "piraku_my_level", "piraku_my_xp", "piraku_my_kec", "piraku_ktp_kecamatan", "piraku_my_color", "piraku_my_acc", "piraku_my_inventory"].forEach(k => localStorage.removeItem(k));
         if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+      if (typeof window.refreshPirakuFishingForCurrentUser === "function") window.refreshPirakuFishingForCurrentUser();
         if (typeof window.updateAutoDetectButton === "function") window.updateAutoDetectButton();
       }
     }
@@ -3087,6 +3088,7 @@ let activeQuestSystem = null;
           window.pirakuDistrictHasHouse = true;
         }
         if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+      if (typeof window.refreshPirakuFishingForCurrentUser === "function") window.refreshPirakuFishingForCurrentUser();
 
         let foundMesh = animC.find(a => String(a.userData?.a?.c?.ig || '').toLowerCase() === String(user.ig || '').toLowerCase());
         if (!foundMesh) {
@@ -3198,6 +3200,7 @@ let activeQuestSystem = null;
         localStorage.setItem('piraku_my_xp', 0);
         localStorage.setItem('piraku_my_kec', newCit.kecamatan);
         if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+      if (typeof window.refreshPirakuFishingForCurrentUser === "function") window.refreshPirakuFishingForCurrentUser();
         window.updateAutoDetectButton();
 
         btn.disabled = false; btn.innerText = 'Daftar Jadi Warga Resmi 📜';
@@ -3520,6 +3523,7 @@ let activeQuestSystem = null;
       localStorage.removeItem('piraku_my_acc');
       localStorage.removeItem('piraku_my_inventory');
       if (typeof window.reloadPirakuEconomyForCurrentUser === "function") window.reloadPirakuEconomyForCurrentUser();
+      if (typeof window.refreshPirakuFishingForCurrentUser === "function") window.refreshPirakuFishingForCurrentUser();
       window.pirakuDistrictHasHouse = false;
       myPlayerMesh = null;
       isControlledByPlayer = false;
@@ -4699,20 +4703,38 @@ let activeQuestSystem = null;
   const joystickKnob = document.getElementById('joystick-knob');
   let joyVector = { x: 0, y: 0 };
   let joyActive = false;
-          if (typeof controls !== "undefined" && controls) {
-            const wasDamping = controls.enableDamping;
-            controls.enableDamping = false;
-            controls.enableZoom = true;
-            controls.enabled = true;
-            controls.update();
-            controls.enableDamping = wasDamping;
-          }
   let joyCenter = { x: 0, y: 0 };
 
   if (joystickZone) {
     let activeJoyTouchId = null;
+    let activeCamTouchId = null;
+    let camLastX = 0;
+    let camLastY = 0;
+    const camOrbitOffset = new THREE.Vector3();
+    const camOrbitSpherical = new THREE.Spherical();
     joystickZone.style.touchAction = 'none';
     joystickZone.addEventListener('pointerdown', e => e.stopPropagation());
+
+    function isCanvasTouchTarget(target) {
+      if (!target || typeof target.closest !== 'function') return false;
+      if (target === renderer.domElement || target.id === 'webgl-canvas') return true;
+      return !target.closest('button, input, textarea, select, a, #joystick-zone, #minimap-box, #hud-chat-box, .modal-card, .modal-overlay');
+    }
+
+    function rotateCameraByDelta(dx, dy) {
+      if (typeof controls === 'undefined' || !controls || typeof cam === 'undefined' || !cam) return;
+      camOrbitOffset.copy(cam.position).sub(controls.target);
+      camOrbitSpherical.setFromVector3(camOrbitOffset);
+      const speed = (controls.rotateSpeed || 0.85) * 0.007;
+      camOrbitSpherical.theta -= dx * speed;
+      camOrbitSpherical.phi -= dy * speed;
+      const maxPhi = controls.maxPolarAngle || (Math.PI / 2.08);
+      camOrbitSpherical.phi = Math.max(0.15, Math.min(maxPhi, camOrbitSpherical.phi));
+      camOrbitSpherical.makeSafe();
+      camOrbitOffset.setFromSpherical(camOrbitSpherical);
+      cam.position.copy(controls.target).add(camOrbitOffset);
+      cam.lookAt(controls.target);
+    }
 
     function handleJoyMoveClient(clientX, clientY) {
       let dx = clientX - joyCenter.x;
@@ -4735,30 +4757,67 @@ let activeQuestSystem = null;
       const t = e.changedTouches[0];
       activeJoyTouchId = t.identifier;
       joyActive = true;
-      if (typeof controls !== "undefined" && controls) controls.enableZoom = false;
+      if (typeof controls !== 'undefined' && controls) {
+        controls.enableZoom = false;
+        controls.enabled = false;
+      }
+      // Jika jari lain sudah menyentuh layar sebelumnya, langsung lanjutkan sebagai putar kamera
+      if (activeCamTouchId === null && e.touches) {
+        for (let i = 0; i < e.touches.length; i++) {
+          const other = e.touches[i];
+          if (other.identifier !== activeJoyTouchId && isCanvasTouchTarget(other.target)) {
+            activeCamTouchId = other.identifier;
+            camLastX = other.clientX;
+            camLastY = other.clientY;
+            break;
+          }
+        }
+      }
       const rect = joystickZone.getBoundingClientRect();
       joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       handleJoyMoveClient(t.clientX, t.clientY);
     }, { passive: false });
 
-    window.addEventListener('touchmove', e => {
-      if (!joyActive || activeJoyTouchId === null) return;
+    // Tangkap sentuhan jari kedua di area layar mana pun di luar UI saat analog sedang ditahan
+    window.addEventListener('touchstart', e => {
+      if (!joyActive || activeCamTouchId !== null) return;
       for (let i = 0; i < e.changedTouches.length; i++) {
         const t = e.changedTouches[i];
-        if (t.identifier === activeJoyTouchId) {
-          handleJoyMoveClient(t.clientX, t.clientY);
+        if (t.identifier !== activeJoyTouchId && isCanvasTouchTarget(t.target)) {
+          activeCamTouchId = t.identifier;
+          camLastX = t.clientX;
+          camLastY = t.clientY;
           break;
         }
       }
     }, { passive: true });
 
-    function endJoyTouch(e) {
-      if (!joyActive) return;
+    window.addEventListener('touchmove', e => {
+      if (!joyActive && activeCamTouchId === null) return;
       for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === activeJoyTouchId) {
+        const t = e.changedTouches[i];
+        if (joyActive && activeJoyTouchId !== null && t.identifier === activeJoyTouchId) {
+          handleJoyMoveClient(t.clientX, t.clientY);
+        } else if (activeCamTouchId !== null && t.identifier === activeCamTouchId) {
+          const dx = t.clientX - camLastX;
+          const dy = t.clientY - camLastY;
+          camLastX = t.clientX;
+          camLastY = t.clientY;
+          rotateCameraByDelta(dx, dy);
+        }
+      }
+    }, { passive: true });
+
+    function endJoyTouch(e) {
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const id = e.changedTouches[i].identifier;
+        if (activeCamTouchId !== null && id === activeCamTouchId) {
+          activeCamTouchId = null;
+        }
+        if (joyActive && id === activeJoyTouchId) {
           activeJoyTouchId = null;
           joyActive = false;
-          if (typeof controls !== "undefined" && controls) {
+          if (typeof controls !== 'undefined' && controls) {
             const wasDamping = controls.enableDamping;
             controls.enableDamping = false;
             controls.enableZoom = true;
@@ -4768,7 +4827,6 @@ let activeQuestSystem = null;
           }
           if (joystickKnob) joystickKnob.style.transform = 'translate(0, 0)';
           joyVector = { x: 0, y: 0 };
-          break;
         }
       }
     }

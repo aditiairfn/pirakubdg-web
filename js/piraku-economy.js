@@ -98,6 +98,8 @@
       if (maxK > 0) localStorage.setItem("piraku_house_keys" + suf, String(Math.min(3, maxK)));
     }
 
+    let latestFishTag = null;
+    let latestFishData = null;
     ownedArr.forEach(tag => {
       const s = String(tag || "");
       if (s.startsWith("daily_streak_")) {
@@ -114,7 +116,41 @@
           localStorage.setItem("piraku_angkot_hits_" + today + suf, "3");
         }
       }
+      if (s.startsWith("fish_sync_v1:")) {
+        try {
+          const parsed = JSON.parse(s.slice("fish_sync_v1:".length));
+          if (parsed && (!latestFishData || Number(parsed.ts || 0) >= Number(latestFishData.ts || 0))) {
+            latestFishData = parsed;
+            latestFishTag = s;
+          }
+        } catch (_) {}
+      }
     });
+
+    if (latestFishData) {
+      const localFishTs = parseInt(localStorage.getItem("piraku_fish_sync_ts" + suf) || "0", 10) || 0;
+      const cloudFishTs = Number(latestFishData.ts || 0);
+      const hasLocalBag = localStorage.getItem("piraku_fish_bag" + suf) !== null;
+      if (!hasLocalBag || cloudFishTs >= localFishTs) {
+        if (Array.isArray(latestFishData.bag)) localStorage.setItem("piraku_fish_bag" + suf, JSON.stringify(latestFishData.bag.slice(0, 60)));
+        if (Array.isArray(latestFishData.itemBag)) localStorage.setItem("piraku_item_bag" + suf, JSON.stringify(latestFishData.itemBag.slice(0, 60)));
+        if (latestFishData.dex && typeof latestFishData.dex === "object") localStorage.setItem("piraku_fish_dex" + suf, JSON.stringify(latestFishData.dex));
+        if (Array.isArray(latestFishData.rods) && latestFishData.rods.length) localStorage.setItem("piraku_fish_rods" + suf, JSON.stringify(latestFishData.rods));
+        if (latestFishData.rodEq) localStorage.setItem("piraku_fish_rod_eq" + suf, String(latestFishData.rodEq));
+        if (Array.isArray(latestFishData.bobbers) && latestFishData.bobbers.length) localStorage.setItem("piraku_fish_bobbers" + suf, JSON.stringify(latestFishData.bobbers));
+        if (latestFishData.bobberEq) localStorage.setItem("piraku_fish_bobber_eq" + suf, String(latestFishData.bobberEq));
+        if (latestFishData.best) localStorage.setItem("piraku_fish_best" + suf, JSON.stringify(latestFishData.best));
+        if (cloudFishTs > 0) localStorage.setItem("piraku_fish_sync_ts" + suf, String(cloudFishTs));
+      } else if (typeof window.syncPirakuFishingToCloud === "function") {
+        setTimeout(() => window.syncPirakuFishingToCloud(), 250);
+      }
+    } else if (localStorage.getItem("piraku_fish_bag" + suf) !== null && typeof window.syncPirakuFishingToCloud === "function") {
+      setTimeout(() => window.syncPirakuFishingToCloud(), 250);
+    }
+
+    if (typeof window.refreshPirakuFishingForCurrentUser === "function") {
+      window.refreshPirakuFishingForCurrentUser();
+    }
 
     if (houseChanged && window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
       window.refreshActiveDistrictHouses();
@@ -168,12 +204,26 @@
 
         const d = new Date();
         const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        let bestFishTag = null;
+        let bestFishTs = -1;
         const mergedOwned = Array.from(new Set([...(Array.isArray(state.owned) ? state.owned : []), ...(Array.isArray(cloud.owned) ? cloud.owned : [])]))
           .filter(tag => {
             const s = String(tag || "");
             if (s.startsWith("claimed_") && !s.endsWith(today)) return false;
+            if (s.startsWith("fish_sync_v1:")) {
+              try {
+                const p = JSON.parse(s.slice("fish_sync_v1:".length));
+                const ts = Number((p && p.ts) || 0);
+                if (ts >= bestFishTs) {
+                  bestFishTs = ts;
+                  bestFishTag = s;
+                }
+              } catch (_) {}
+              return false;
+            }
             return true;
           });
+        if (bestFishTag) mergedOwned.push(bestFishTag);
         state.owned = mergedOwned;
         const tRank = { tier_7: 7, tier_6: 6, tier_5: 5, tier_4: 4, tier_3: 3, tier_2: 2, tier_1: 1 };
         const localTier = state.tier || "tier_1";

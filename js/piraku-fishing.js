@@ -188,6 +188,49 @@
 
   let _cachedBagLen = null;
   let _cachedItemLen = null;
+  let _fishCloudSyncTimer = null;
+
+  function markLocalFishTs() {
+    try { localStorage.setItem("piraku_fish_sync_ts" + getUserSuf(), String(Date.now())); } catch (_) {}
+  }
+
+  function syncFishingToCloud() {
+    const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
+    if (!ig) return;
+    clearTimeout(_fishCloudSyncTimer);
+    _fishCloudSyncTimer = setTimeout(() => {
+      if (!window.PirakuEconomy || typeof window.PirakuEconomy.getState !== "function") return;
+      const ecoState = window.PirakuEconomy.getState();
+      if (!ecoState || !ecoState._hydrated || !Array.isArray(ecoState.owned)) return;
+      const payload = {
+        ts: Date.now(),
+        bag: getBag(),
+        itemBag: getItemBag(),
+        dex: getDex(),
+        rods: getOwnedRods(),
+        rodEq: getEquippedRodId(),
+        bobbers: getOwnedBobbers(),
+        bobberEq: getEquippedBobberId(),
+        best: loadJson("piraku_fish_best" + getUserSuf(), null)
+      };
+      ecoState.owned = ecoState.owned.filter(tag => !String(tag || "").startsWith("fish_sync_v1:"));
+      ecoState.owned.push("fish_sync_v1:" + JSON.stringify(payload));
+      if (typeof window.PirakuEconomy.saveNow === "function") window.PirakuEconomy.saveNow();
+    }, 150);
+  }
+
+  window.refreshPirakuFishingForCurrentUser = function () {
+    _cachedBagLen = null;
+    _cachedItemLen = null;
+    getBag();
+    getItemBag();
+    const modal = document.getElementById("piraku-fishing-modal");
+    if (modal && modal.style.display === "flex" && typeof window.openFishingHubModal === "function") {
+      window.openFishingHubModal();
+    }
+  };
+  window.syncPirakuFishingToCloud = syncFishingToCloud;
+
   function getBag() {
     const arr = loadJson("piraku_fish_bag" + getUserSuf(), []);
     _cachedBagLen = arr.length;
@@ -202,6 +245,8 @@
     const trimmed = arr.slice(0, 60);
     _cachedItemLen = trimmed.length;
     localStorage.setItem("piraku_item_bag" + getUserSuf(), JSON.stringify(trimmed));
+    markLocalFishTs();
+    syncFishingToCloud();
   }
   function getBagLen() {
     if (_cachedBagLen === null) getBag();
@@ -212,6 +257,8 @@
     const trimmed = bag.slice(0, 60);
     _cachedBagLen = trimmed.length;
     localStorage.setItem("piraku_fish_bag" + getUserSuf(), JSON.stringify(trimmed));
+    markLocalFishTs();
+    syncFishingToCloud();
   }
   window.addPirakuBagItem = function (item) {
     if (!item) return;
@@ -240,23 +287,43 @@
     window.openFishingHubModal();
   };
   function getDex() { return loadJson("piraku_fish_dex" + getUserSuf(), {}); }
-  function saveDex(dex) { localStorage.setItem("piraku_fish_dex" + getUserSuf(), JSON.stringify(dex)); }
+  function saveDex(dex) {
+    localStorage.setItem("piraku_fish_dex" + getUserSuf(), JSON.stringify(dex));
+    markLocalFishTs();
+    syncFishingToCloud();
+  }
   function getOwnedRods() {
     const arr = loadJson("piraku_fish_rods" + getUserSuf(), ["bamboo"]);
     return Array.isArray(arr) && arr.length ? arr : ["bamboo"];
   }
-  function saveOwnedRods(arr) { localStorage.setItem("piraku_fish_rods" + getUserSuf(), JSON.stringify(arr)); }
+  function saveOwnedRods(arr) {
+    localStorage.setItem("piraku_fish_rods" + getUserSuf(), JSON.stringify(arr));
+    markLocalFishTs();
+    syncFishingToCloud();
+  }
   function getEquippedRodId() { return localStorage.getItem("piraku_fish_rod_eq" + getUserSuf()) || "bamboo"; }
-  function setEquippedRodId(id) { localStorage.setItem("piraku_fish_rod_eq" + getUserSuf(), id); }
+  function setEquippedRodId(id) {
+    localStorage.setItem("piraku_fish_rod_eq" + getUserSuf(), id);
+    markLocalFishTs();
+    syncFishingToCloud();
+  }
   function getEquippedRod() { return RODS.find(r => r.id === getEquippedRodId()) || RODS[0]; }
 
   function getOwnedBobbers() {
     const arr = loadJson("piraku_fish_bobbers" + getUserSuf(), ["classic"]);
     return Array.isArray(arr) && arr.length ? arr : ["classic"];
   }
-  function saveOwnedBobbers(arr) { localStorage.setItem("piraku_fish_bobbers" + getUserSuf(), JSON.stringify(arr)); }
+  function saveOwnedBobbers(arr) {
+    localStorage.setItem("piraku_fish_bobbers" + getUserSuf(), JSON.stringify(arr));
+    markLocalFishTs();
+    syncFishingToCloud();
+  }
   function getEquippedBobberId() { return localStorage.getItem("piraku_fish_bobber_eq" + getUserSuf()) || "classic"; }
-  function setEquippedBobberId(id) { localStorage.setItem("piraku_fish_bobber_eq" + getUserSuf(), id); }
+  function setEquippedBobberId(id) {
+    localStorage.setItem("piraku_fish_bobber_eq" + getUserSuf(), id);
+    markLocalFishTs();
+    syncFishingToCloud();
+  }
   function getEquippedBobber() { return BOBBERS.find(b => b.id === getEquippedBobberId()) || BOBBERS[0]; }
 
   function getActivePond() {
@@ -1288,29 +1355,30 @@
       cancelAnimationFrame(castBarRaf);
       _finishPowerCastFn = null;
       const isPerfectCast = castPct >= 75;
-      castLuckBonus = isPerfectCast ? 0.25 : 0;
+      const isGoodCast = !isPerfectCast && castPct >= 50;
+      castLuckBonus = isPerfectCast ? 0.30 : (isGoodCast ? 0.10 : 0);
       fishState = "waiting";
       spawn3DFishingVisuals(pond);
-      if (typeof window.playSynthTone === "function") window.playSynthTone(isPerfectCast ? 720 : 520, "sine", 0.14);
+      if (typeof window.playSynthTone === "function") window.playSynthTone(isPerfectCast ? 760 : 520, "sine", 0.14);
 
-      ui.innerHTML = `
-        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
-          <span style="font-weight:900;font-size:12.5px;color:#7dd3fc;">${isPerfectCast ? "✨ PERFECT CAST! (+25% Luck)" : "🎣 Menunggu di " + pond.name}</span>
-          ${catchCombo > 0 ? `<span style="background:#9a3412;color:#fde047;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:900;">🔥 Combo ${catchCombo}x</span>` : ""}
-        </div>
-        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Perhatikan air!</div>
-        <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:5px 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
-      `;
+      const baseDelayMs = (1900 + Math.random() * 2100) * (bobber.biteSpeed || 1.0) * (isPerfectCast ? 0.78 : 1.0);
+      let waitRemainingMs = baseDelayMs;
+      let waitLastTs = performance.now();
+      let shakeCount = 0;
 
-      const delayMs = (1900 + Math.random() * 2100) * (bobber.biteSpeed || 1.0);
-      waitTimer = setTimeout(() => {
+      function triggerBite() {
         if (fishState !== "waiting") return;
+        clearTimeout(waitTimer);
         fishState = "bite";
         if (window.pirakuFishingSyncState) window.pirakuFishingSyncState.state = "bite";
         if (typeof window.playSynthTone === "function") window.playSynthTone(880, "triangle", 0.24);
+        if (navigator && typeof navigator.vibrate === "function") {
+          try { navigator.vibrate([45, 30, 70]); } catch (_) {}
+        }
         ui.innerHTML = `
-          <div style="font-weight:900;font-size:16px;color:#facc15;">❗ IKAN MENYAMBAR!</div>
-          <button onclick="strikePirakuFish()" style="width:100%;border:none;background:linear-gradient(135deg,#facc15,#f97316);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;">⚡ TARIK SEKARANG! (SPACE)</button>
+          <div style="font-weight:900;font-size:17px;color:#facc15;text-shadow:0 0 12px rgba(250,204,21,0.55);">❗ IKAN MENYAMBAR!</div>
+          <div style="font-size:11px;color:#fde68a;">Ketuk layar di mana saja atau tekan SPACE!</div>
+          <button onclick="strikePirakuFish()" style="width:100%;border:none;background:linear-gradient(135deg,#facc15,#f97316);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 6px 20px rgba(250,204,21,0.35);">⚡ TARIK SEKARANG! (SPACE)</button>
         `;
         biteTimeout = setTimeout(() => {
           if (fishState === "bite") {
@@ -1319,7 +1387,37 @@
             if (typeof window.showToast === "function") window.showToast("💨 Telat tarik! Ikannya lepas...");
           }
         }, 4200);
-      }, delayMs);
+      }
+
+      ui.innerHTML = `
+        <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
+          <span style="font-weight:900;font-size:12.5px;color:#7dd3fc;">${isPerfectCast ? "✨ PERFECT CAST! (+30% Luck)" : isGoodCast ? "👍 GOOD CAST! (+10% Luck)" : "🎣 Menunggu di " + pond.name}</span>
+          ${catchCombo > 0 ? `<span style="background:#9a3412;color:#fde047;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:900;">🔥 Combo ${catchCombo}x</span>` : ""}
+        </div>
+        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Kocok joran agar cepat disambar!</div>
+        <div style="display:flex;gap:8px;width:100%;">
+          <button id="pf-shake-btn" style="flex:1;border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;">🫨 Kocok Joran (Cepat Nyambar)</button>
+          <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
+        </div>
+      `;
+
+      const shakeBtn = document.getElementById("pf-shake-btn");
+      if (shakeBtn) {
+        shakeBtn.onclick = () => {
+          if (fishState !== "waiting") return;
+          shakeCount++;
+          const nowTs = performance.now();
+          waitRemainingMs = Math.max(120, waitRemainingMs - (nowTs - waitLastTs) - 380);
+          waitLastTs = nowTs;
+          clearTimeout(waitTimer);
+          waitTimer = setTimeout(triggerBite, waitRemainingMs);
+          if (rodMesh3D) rodMesh3D.rotation.x = (shakeCount % 2 === 0 ? 0.24 : -0.18);
+          if (typeof window.playSynthTone === "function") window.playSynthTone(440 + Math.min(240, shakeCount * 35), "sine", 0.05);
+          shakeBtn.textContent = `🫨 Kocok Lagi! (${shakeCount}x)`;
+        };
+      }
+
+      waitTimer = setTimeout(triggerBite, waitRemainingMs);
     };
 
     const castBtn = document.getElementById("pf-cast-btn");
@@ -1343,11 +1441,11 @@
     fishChangeAt = 0;
     barPos = 50;
     let barVel = 0;
-    catchProgress = 25;
+    catchProgress = 30;
     isHoldingReel = false;
     lastReelTs = performance.now();
 
-    const isStrongPull = currentFishSpec.rarity === "Rare" || currentFishSpec.rarity === "Epic" || currentFishSpec.rarity === "Mythic";
+    const isStrongPull = ["Rare", "Epic", "Mythic", "Secret", "Cosmic", "Divine"].includes(currentFishSpec.rarity);
     const ui = ensureFishingOverlay();
     ui.onpointerdown = (e) => {
       if (e.target && e.target.closest("button") && e.target.closest("button").textContent === "✕") return;
@@ -1358,18 +1456,20 @@
     ui.onpointerleave = () => { isHoldingReel = false; };
     ui.innerHTML = `
       <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
-        <span id="pf-status" style="font-weight:900;font-size:12.5px;color:${isStrongPull ? "#f97316" : "#4ade80"};">${isStrongPull ? "⚡ TARIKAN KUAT! JANGAN LEPAS!" : "✓ ZONA TEPAT!"}</span>
-        <span id="pf-pct" style="font-size:11.5px;font-weight:900;color:#7dd3fc;">32%</span>
+        <span id="pf-status" style="font-weight:900;font-size:12.5px;color:${isStrongPull ? "#f97316" : "#4ade80"};">${isStrongPull ? "⚡ TARIKAN KUAT! TAHAN LAYAR!" : "✓ ZONA TEPAT!"}</span>
+        <span id="pf-pct" style="font-size:11.5px;font-weight:900;color:#7dd3fc;">30%</span>
       </div>
-      <div id="pf-track" style="position:relative;width:100%;height:38px;background:linear-gradient(180deg,#020617,#0f172a);border:2px solid ${isStrongPull ? "#f97316" : "#38bdf8"};border-radius:14px;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);">
-        <div id="pf-bar" style="position:absolute;top:3px;bottom:3px;width:${rod.barWidth}%;left:${50 - rod.barWidth / 2}%;background:rgba(34,197,94,0.42);border:2px solid #4ade80;border-radius:10px;box-shadow:0 0 14px rgba(74,222,128,0.45);transition:background 0.1s, border-color 0.1s;"></div>
+      <div id="pf-track" style="position:relative;width:100%;height:40px;background:linear-gradient(180deg,#020617,#0f172a);border:2px solid ${isStrongPull ? "#f97316" : "#38bdf8"};border-radius:14px;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);transition:transform 0.06s, border-color 0.12s;">
+        <div id="pf-bar" style="position:absolute;top:3px;bottom:3px;width:${rod.barWidth}%;left:${50 - rod.barWidth / 2}%;background:rgba(34,197,94,0.42);border:2px solid #4ade80;border-radius:10px;box-shadow:0 0 14px rgba(74,222,128,0.45);transition:background 0.1s, border-color 0.1s;">
+          <div style="position:absolute;top:2px;bottom:2px;left:35%;right:35%;background:rgba(250,204,21,0.45);border-radius:6px;"></div>
+        </div>
         <div id="pf-fish" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">🐟</div>
       </div>
       <div style="width:100%;height:10px;background:#1e293b;border-radius:99px;overflow:hidden;">
-        <div id="pf-prog" style="width:32%;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e,#facc15);"></div>
+        <div id="pf-prog" style="width:30%;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e,#facc15);"></div>
       </div>
       <div style="display:flex;gap:8px;width:100%;">
-        <button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13.5px;cursor:pointer;touch-action:none;">✊ TAHAN / SPACE (GESER KANAN)</button>
+        <button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;touch-action:none;">✊ TAHAN LAYAR / SPACE (GESER KANAN)</button>
         <button onclick="cancelPirakuFishing()" style="border:none;background:#1e293b;color:#94a3b8;padding:0 12px;border-radius:12px;font-weight:800;cursor:pointer;">✕</button>
       </div>
     `;
@@ -1382,41 +1482,48 @@
     }
 
     let lastTickSound = 0;
+    let dashWarnUntil = 0;
     function stepReel(now) {
       if (fishState !== "reeling") return;
       const dt = Math.min(0.06, Math.max(0.008, (now - lastReelTs) / 1000));
       lastReelTs = now;
 
       if (now >= fishChangeAt) {
-        fishTarget = 12 + Math.random() * 76;
-        fishChangeAt = now + (900 + Math.random() * (1100 - Math.min(600, currentFishSpec.erratic * 420)));
+        const doDash = isStrongPull && Math.random() < 0.35;
+        fishTarget = doDash
+          ? (fishPos < 50 ? 68 + Math.random() * 22 : 10 + Math.random() * 22)
+          : (12 + Math.random() * 76);
+        if (doDash) dashWarnUntil = now + 520;
+        fishChangeAt = now + (850 + Math.random() * (1100 - Math.min(600, currentFishSpec.erratic * 420)));
       }
       prevFishPos = fishPos;
+      const dashMult = now < dashWarnUntil ? 1.32 : 1.0;
       const fDiff = fishTarget - fishPos;
-      fishPos += Math.sign(fDiff) * Math.min(Math.abs(fDiff), currentFishSpec.speed * 26 * dt);
+      fishPos += Math.sign(fDiff) * Math.min(Math.abs(fDiff), currentFishSpec.speed * 26 * dashMult * dt);
       fishPos = Math.max(8, Math.min(92, fishPos));
 
-      // Fisika bar halus ala Roblox Fish It (momentum lembut, tidak terlalu cepat!)
-      barVel += (isHoldingReel ? 210 : -175) * dt;
+      // Fisika bar halus ala Roblox Fish It (akselerasi responsif + pantulan lembut di dinding)
+      barVel += (isHoldingReel ? 230 : -190) * dt;
       barVel *= Math.pow(0.06, dt);
-      barVel = Math.max(-64, Math.min(64, barVel));
+      barVel = Math.max(-68, Math.min(68, barVel));
       barPos += barVel * dt;
       const halfBar = rod.barWidth / 2;
-      if (barPos <= halfBar) { barPos = halfBar; if (barVel < 0) barVel = 0; }
-      if (barPos >= 100 - halfBar) { barPos = 100 - halfBar; if (barVel > 0) barVel = 0; }
+      if (barPos <= halfBar) { barPos = halfBar; if (barVel < 0) barVel = -barVel * 0.25; }
+      if (barPos >= 100 - halfBar) { barPos = 100 - halfBar; if (barVel > 0) barVel = -barVel * 0.25; }
 
       const distToCenter = Math.abs(fishPos - barPos);
       const inside = distToCenter <= halfBar + 3.5;
-      const isPerfect = distToCenter <= halfBar * 0.45;
-      catchProgress += (isPerfect ? 24 : inside ? 17 : -8) * dt;
+      const isPerfect = distToCenter <= halfBar * 0.38;
+      catchProgress += (isPerfect ? 28 : inside ? 17.5 : -7.5) * dt;
       catchProgress = Math.max(0, Math.min(100, catchProgress));
 
-      if (inside && now - lastTickSound > 160 && typeof window.playSynthTone === "function") {
+      if (inside && now - lastTickSound > 150 && typeof window.playSynthTone === "function") {
         lastTickSound = now;
-        window.playSynthTone(420 + catchProgress * 4.5, "sine", 0.04);
+        window.playSynthTone((isPerfect ? 520 : 420) + catchProgress * 4.5, "sine", 0.04);
       }
 
       const barEl = document.getElementById("pf-bar");
+      const trackEl = document.getElementById("pf-track");
       const fishEl = document.getElementById("pf-fish");
       const progEl = document.getElementById("pf-prog");
       const pctEl = document.getElementById("pf-pct");
@@ -1426,6 +1533,11 @@
         barEl.style.borderColor = isPerfect ? "#facc15" : inside ? "#4ade80" : "#ef4444";
         barEl.style.background = isPerfect ? "rgba(250,204,21,0.48)" : inside ? "rgba(34,197,94,0.46)" : "rgba(239,68,68,0.28)";
       }
+      if (trackEl) {
+        trackEl.style.borderColor = catchProgress >= 80 ? "#facc15" : catchProgress <= 20 ? "#ef4444" : (isStrongPull ? "#f97316" : "#38bdf8");
+        const jiggle = now < dashWarnUntil ? ((Math.sin(now * 0.09) * 2.5).toFixed(1)) : "0";
+        trackEl.style.transform = `translateX(${jiggle}px)`;
+      }
       if (fishEl) {
         fishEl.style.left = fishPos.toFixed(1) + "%";
         const dirScale = fishPos >= prevFishPos ? -1 : 1;
@@ -1434,8 +1546,13 @@
       if (progEl) progEl.style.width = catchProgress.toFixed(1) + "%";
       if (pctEl) pctEl.textContent = Math.round(catchProgress) + "%";
       if (statusEl) {
-        statusEl.textContent = isPerfect ? "⚡ PERFECT! CEPAT!" : inside ? "✓ ZONA TEPAT!" : "⚠️ KEJAR IKANNYA!";
-        statusEl.style.color = isPerfect ? "#fde047" : inside ? "#4ade80" : "#f87171";
+        if (now < dashWarnUntil && !inside) {
+          statusEl.textContent = "🔥 IKAN MERONTA! KEJAR!";
+          statusEl.style.color = "#fb923c";
+        } else {
+          statusEl.textContent = isPerfect ? "⚡ PERFECT REEL! (+CEPAT)" : inside ? "✓ ZONA TEPAT!" : "⚠️ KEJAR IKANNYA!";
+          statusEl.style.color = isPerfect ? "#fde047" : inside ? "#4ade80" : "#f87171";
+        }
       }
 
       if (jumpFishMesh3D && bobberMesh3D) {
@@ -1497,6 +1614,8 @@
     const prevBest = loadJson("piraku_fish_best" + getUserSuf(), null);
     if (!prevBest || kg > (prevBest.kg || 0)) {
       localStorage.setItem("piraku_fish_best" + getUserSuf(), JSON.stringify({ name: fish.name, kg, rarity: fish.rarity }));
+      markLocalFishTs();
+      syncFishingToCloud();
     }
     if (["Mythic", "Secret", "Cosmic", "Divine"].includes(fish.rarity)) {
       spawnRareCatchVFX(fish.meshCol || 0xfde047);
@@ -1926,6 +2045,23 @@
   });
   window.addEventListener("keyup", (e) => {
     if (e.code === "Space" && fishState === "reeling") isHoldingReel = false;
+  });
+
+  window.addEventListener("pointerdown", (e) => {
+    const t = e.target;
+    if (t && t.closest && t.closest("input, textarea, select, [contenteditable]")) return;
+    if (t && t.closest && t.closest("button") && (t.closest("button").textContent || "").trim() === "✕") return;
+    if (fishState === "bite") {
+      window.strikePirakuFish();
+    } else if (fishState === "reeling") {
+      isHoldingReel = true;
+    }
+  });
+  window.addEventListener("pointerup", () => {
+    if (fishState === "reeling") isHoldingReel = false;
+  });
+  window.addEventListener("pointercancel", () => {
+    if (fishState === "reeling") isHoldingReel = false;
   });
 
   let lastPondSig = "";
