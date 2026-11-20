@@ -300,13 +300,17 @@
     const dist = getActiveDistrictInfo();
     modal.style.display = "flex";
     modal.innerHTML = [
-      '<div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:#0e2f2a;border:1.5px solid rgba(255,255,255,0.2);border-radius:22px;padding:18px;color:#fff;font-family:\'Bricolage Grotesque\',sans-serif;">',
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">',
+      '<div style="width:100%;max-width:440px;max-height:85vh;overflow-y:auto;background:linear-gradient(160deg,#0f172a,#162033);border:1.5px solid rgba(250,204,21,0.45);border-radius:22px;padding:18px;color:#f8fafc;font-family:\'Bricolage Grotesque\',sans-serif;box-shadow:0 24px 60px rgba(0,0,0,0.78);">',
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;border-bottom:1px solid rgba(148,163,184,0.18);padding-bottom:10px;">',
           '<div>',
-            '<div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:1px;text-transform:uppercase;">👥 DIREKTORI TETANGGA WILAYAH</div>',
-            '<h3 style="margin:2px 0 0;font-size:18px;font-weight:800;">Warga Kec. ' + dist.name + '</h3>',
+            '<div style="font-size:10px;font-weight:800;color:#facc15;letter-spacing:0.8px;text-transform:uppercase;">👥 DIREKTORI WARGA WILAYAH</div>',
+            '<h3 style="margin:2px 0 0;font-size:17px;font-weight:900;">Warga Kec. ' + dist.name + '</h3>',
           '</div>',
-          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:30px;height:30px;border-radius:50%;font-weight:800;cursor:pointer;">✕</button>',
+          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\'" style="background:rgba(148,163,184,0.16);border:none;color:#f8fafc;width:30px;height:30px;border-radius:9px;font-weight:800;cursor:pointer;">✕</button>',
+        '</div>',
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">',
+          '<button type="button" style="padding:7px 6px;border-radius:10px;border:none;font-size:11px;font-weight:900;background:#facc15;color:#0f172a;cursor:default;">👥 Warga Kec. ' + dist.name + '</button>',
+          '<button type="button" onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\';if(typeof openLeaderboardModal===\'function\')openLeaderboardModal();" style="padding:7px 6px;border-radius:10px;border:1px solid rgba(250,204,21,0.4);font-size:11px;font-weight:800;background:#1e293b;color:#fde047;cursor:pointer;">🏆 Peringkat Kota ▸</button>',
         '</div>',
         '<div id="district-warga-list" style="display:flex;flex-direction:column;gap:8px;">',
           '<div style="text-align:center;padding:16px;color:#94a3b8;font-size:12px;">Memuat data warga ' + dist.name + '...</div>',
@@ -331,12 +335,22 @@
 
     listEl.innerHTML = rows.map(function (w, i) {
       const lInfo = window.computePirakuLevelFromTotalXp(w.xp || 0);
-      return '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,0.07);padding:10px 12px;border-radius:13px;">' +
-        '<div>' +
-          '<div style="font-weight:800;font-size:12.5px;color:#fff;">#' + (i + 1) + ' ' + w.ig + ' <span style="background:#ffcf4a;color:#0e2f2a;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:800;">LVL ' + lInfo.level + '</span></div>' +
-          '<div style="font-size:11px;color:#cbd5e1;margin-top:2px;">“' + (w.wish || "Wargi Bandung") + '”</div>' +
+      const clean = String(w.ig || "").trim().toLowerCase().replace(/^@/, "");
+      const remTier = (window.pirakuRemoteTiers || {})[clean];
+      const lvlTitle = window.getPirakuCitizenTitle(lInfo.level);
+      const tierLabel = (remTier && remTier.tierId && remTier.tierId !== "tier_1")
+        ? ((remTier.tierBadge || "") + " " + (remTier.tierName || ""))
+        : ("🎖️ " + lvlTitle);
+      const hasHouse = Boolean(w.has_house || (window.pirakuRemoteHouses && window.pirakuRemoteHouses[clean]));
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(30,41,59,0.85);border:1px solid rgba(148,163,184,0.2);padding:10px 12px;border-radius:13px;">' +
+        '<div style="min-width:0;">' +
+          '<div style="font-weight:800;font-size:12.5px;color:#f8fafc;display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span>#' + (i + 1) + ' ' + w.ig + '</span><span style="background:#facc15;color:#0f172a;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:900;">LVL ' + lInfo.level + '</span></div>' +
+          '<div style="font-size:10.5px;color:#fde047;margin-top:3px;font-weight:700;">' + tierLabel + ' • <span style="color:#94a3b8;font-weight:600;">' + (hasHouse ? '🏠 Rumah' : '🏢 Apartemen') + ' • ' + (w.xp || 0).toLocaleString("id-ID") + ' XP</span></div>' +
         '</div>' +
-        '<div style="text-align:right;font-size:11px;font-weight:800;color:#4ade80;">❤️ ' + (w.upvotes || 0) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">' +
+          '<span style="font-size:11px;font-weight:800;color:#4ade80;">❤️ ' + (w.upvotes || 0) + '</span>' +
+          '<button onclick="document.getElementById(\'piraku-civic-modal\').style.display=\'none\';if(typeof window.focusOnlineCitizenByIg===\'function\')window.focusOnlineCitizenByIg(\'' + String(w.ig || "").replace(/\'/g, "") + '\');" style="border:none;background:rgba(56,189,248,0.2);color:#38bdf8;padding:5px 8px;border-radius:8px;font-size:10px;font-weight:800;cursor:pointer;">📍 Lacak</button>' +
+        '</div>' +
       '</div>';
     }).join('');
   };

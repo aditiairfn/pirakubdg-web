@@ -1132,39 +1132,111 @@ let activeQuestSystem = null;
     });
   }
 
-  // Billboard LED 3D// Billboard LED 3D// Billboard LED 3D
+  // Billboard LED 3D (HD 1024x512 + Word-Wrap + Logo @pirakubdg)
   const billboardCanvas = document.createElement('canvas');
-  billboardCanvas.width = 512; billboardCanvas.height = 256;
+  billboardCanvas.width = 1024; billboardCanvas.height = 512;
   const bCtx = billboardCanvas.getContext('2d');
   const billboardTex = new THREE.CanvasTexture(billboardCanvas);
+  let lastBillboardState = { title: 'BANDUNG JUARA 2026', sub: 'Plaza Hijau Gedung Sate & Ruang Kreatif Warga Bandung!', isPaidAd: false };
+  const pirakuBillboardLogo = new Image();
+  pirakuBillboardLogo.onload = () => {
+    drawBillboardScreen(lastBillboardState.title, lastBillboardState.sub, lastBillboardState.isPaidAd);
+  };
+  pirakuBillboardLogo.src = 'assets/piraku-brand-logo.webp';
+
+  function wrapBillboardLines(ctx, text, maxWidth, maxLines) {
+    const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = '';
+    for (let i = 0; i < words.length; i++) {
+      const test = cur ? (cur + ' ' + words[i]) : words[i];
+      if (ctx.measureText(test).width <= maxWidth) {
+        cur = test;
+      } else {
+        if (cur) lines.push(cur);
+        cur = words[i];
+        if (lines.length >= maxLines) break;
+      }
+    }
+    if (cur && lines.length < maxLines) lines.push(cur);
+    return lines.slice(0, maxLines);
+  }
 
   function drawBillboardScreen(title, sub, isPaidAd) {
-    bCtx.fillStyle = '#0f172a';
-    bCtx.fillRect(0, 0, 512, 256);
-    bCtx.fillStyle = isPaidAd ? '#d97706' : '#2450e6';
-    bCtx.fillRect(0, 0, 512, 46);
+    lastBillboardState = { title, sub, isPaidAd: !!isPaidAd };
+    const Wb = 1024, Hb = 512;
+    const bgGrad = bCtx.createLinearGradient(0, 0, Wb, Hb);
+    bgGrad.addColorStop(0, '#020617');
+    bgGrad.addColorStop(0.5, '#0f172a');
+    bgGrad.addColorStop(1, isPaidAd ? '#291503' : '#082f49');
+    bCtx.fillStyle = bgGrad;
+    bCtx.fillRect(0, 0, Wb, Hb);
+
+    // Garis grid LED halus
+    bCtx.strokeStyle = 'rgba(56, 189, 248, 0.06)';
+    bCtx.lineWidth = 2;
+    for (let gx = 0; gx <= Wb; gx += 32) {
+      bCtx.beginPath(); bCtx.moveTo(gx, 0); bCtx.lineTo(gx, Hb); bCtx.stroke();
+    }
+    for (let gy = 0; gy <= Hb; gy += 32) {
+      bCtx.beginPath(); bCtx.moveTo(0, gy); bCtx.lineTo(Wb, gy); bCtx.stroke();
+    }
+
+    // Bingkai luar LED bercahaya
+    bCtx.strokeStyle = isPaidAd ? '#facc15' : '#38bdf8';
+    bCtx.lineWidth = 10;
+    bCtx.strokeRect(10, 10, Wb - 20, Hb - 20);
+
+    // Header Bar
+    const hdrGrad = bCtx.createLinearGradient(0, 0, Wb, 0);
+    if (isPaidAd) {
+      hdrGrad.addColorStop(0, '#b45309'); hdrGrad.addColorStop(1, '#f59e0b');
+    } else {
+      hdrGrad.addColorStop(0, '#1e3a8a'); hdrGrad.addColorStop(1, '#0284c7');
+    }
+    bCtx.fillStyle = hdrGrad;
+    bCtx.fillRect(15, 15, Wb - 30, 78);
+
     bCtx.fillStyle = '#ffffff';
-    bCtx.font = '800 22px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(isPaidAd ? '📺 IKLAN LAYAR LED GASIBU 3D' : 'WARGA BANDUNG LIVE NEWS', 20, 31);
+    bCtx.font = '900 32px "Bricolage Grotesque", sans-serif';
+    bCtx.textBaseline = 'middle';
+    bCtx.fillText(isPaidAd ? '📺 LAYAR LED EKSKLUSIF GASIBU' : '🏛️ INFO KOTA BANDUNG • GASIBU', 40, 54);
 
-    bCtx.fillStyle = '#ffcf4a';
-    bCtx.font = '800 28px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(String(title || '').slice(0, 26), 20, 98);
+    if (pirakuBillboardLogo.complete && pirakuBillboardLogo.naturalWidth > 0) {
+      bCtx.fillStyle = 'rgba(255,255,255,0.95)';
+      bCtx.beginPath(); bCtx.roundRect(Wb - 216, 22, 184, 64, 14); bCtx.fill();
+      bCtx.drawImage(pirakuBillboardLogo, Wb - 208, 26, 168, 56);
+    }
 
-    const cleanSub = String(sub || '');
-    const line1 = cleanSub.slice(0, 30);
-    const line2 = cleanSub.slice(30, 60);
+    // Judul utama (auto-fit width)
+    bCtx.fillStyle = '#fde047';
+    let titleSize = 48;
+    const rawTitle = String(title || '').trim();
+    do {
+      bCtx.font = `900 ${titleSize}px "Bricolage Grotesque", sans-serif`;
+      if (bCtx.measureText(rawTitle).width <= Wb - 88 || titleSize <= 28) break;
+      titleSize -= 4;
+    } while (titleSize > 28);
+    bCtx.fillText(rawTitle, 44, 154);
+
+    // Isi pesan dengan word-wrap rapi (anti kepotong)
     bCtx.fillStyle = '#f8fafc';
-    bCtx.font = '700 22px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(line1, 20, 146);
-    if (line2) bCtx.fillText(line2, 20, 178);
+    bCtx.font = '700 36px "Bricolage Grotesque", sans-serif';
+    const lines = wrapBillboardLines(bCtx, sub, Wb - 88, 3);
+    lines.forEach((ln, idx) => {
+      bCtx.fillText(ln, 44, 232 + idx * 52);
+    });
 
-    bCtx.fillStyle = '#4ade80';
-    bCtx.font = '700 17px "Bricolage Grotesque", sans-serif';
-    bCtx.fillText(isPaidAd ? '● TAYANG EKSKLUSIF DI GASIBU' : '● REALTIME SIMULASI @pirakubdg', 20, 228);
+    // Footer Bar
+    bCtx.fillStyle = 'rgba(2, 6, 23, 0.72)';
+    bCtx.fillRect(15, Hb - 72, Wb - 30, 57);
+    bCtx.fillStyle = isPaidAd ? '#fde047' : '#4ade80';
+    bCtx.font = '800 26px "Bricolage Grotesque", sans-serif';
+    bCtx.fillText(isPaidAd ? '● TAYANG EKSKLUSIF DI GASIBU • SEWA LED DI TOKO' : '● SIMULASI TATA KOTA @pirakubdg • SEWA LED DI TOKO 🪙 200', 40, Hb - 43);
+
     billboardTex.needsUpdate = true;
   }
-  drawBillboardScreen('BANDUNG REBORN 2026', 'Plaza Hijau & Ruang Warga Bandung!');
+  drawBillboardScreen('BANDUNG JUARA 2026', 'Plaza Hijau Gedung Sate & Ruang Kreatif Warga Bandung!', false);
 
   window.setGasibuBillboardBroadcast = function(sender, text, isPaidAd) {
     if (isPaidAd) {
@@ -1194,9 +1266,13 @@ let activeQuestSystem = null;
   billboardGroup.position.set(-16, 0, -18);
   billboardGroup.rotation.y = 0.5;
   scene.add(billboardGroup);
-  cyl(0.25, 0.25, 6, 8, 0, 0, 0, 0x1e293b, billboardGroup);
+  // Dua tiang kokoh berhenti di bawah kabinet (y = 4.55) agar tidak menembus layar depan maupun belakang
+  cyl(0.22, 0.26, 4.55, 10, -2.6, 0, 0, 0x1e293b, billboardGroup);
+  cyl(0.22, 0.26, 4.55, 10, 2.6, 0, 0, 0x1e293b, billboardGroup);
   box(9.2, 4.8, 0.4, 0, 4.5, 0, 0x0f172a, billboardGroup);
   mk(new THREE.PlaneGeometry(8.8, 4.4), new THREE.MeshBasicMaterial({ map: billboardTex }), 0, 6.9, 0.22, billboardGroup, false, false);
+  const backLedPlane = mk(new THREE.PlaneGeometry(8.8, 4.4), new THREE.MeshBasicMaterial({ map: billboardTex }), 0, 6.9, -0.22, billboardGroup, false, false);
+  backLedPlane.rotation.y = Math.PI;
 
   // Kavling Perumahan Warga
   
@@ -1949,6 +2025,7 @@ let activeQuestSystem = null;
           if (typeof controls !== "undefined" && controls) {
             const wasDamping = controls.enableDamping;
             controls.enableDamping = false;
+            controls.enableZoom = true;
             controls.enabled = true;
             controls.update();
             controls.enableDamping = wasDamping;
@@ -1959,6 +2036,7 @@ let activeQuestSystem = null;
           if (typeof controls !== "undefined" && controls) {
             const wasDamping = controls.enableDamping;
             controls.enableDamping = false;
+            controls.enableZoom = true;
             controls.enabled = true;
             controls.update();
             controls.enableDamping = wasDamping;
@@ -2332,29 +2410,8 @@ let activeQuestSystem = null;
         showCitizenSpeech(hits[0].object.userData);
       } else {
         hideCitizenSpeech();
-        if (typeof myPlayerMesh !== 'undefined' && myPlayerMesh && !isRidingTram) {
-          const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-          const tapPt = new THREE.Vector3();
-          if (raycaster.ray.intersectPlane(groundPlane, tapPt)) {
-            const minX = window.pirakuInDistrict ? -52 : -132;
-            const maxX = window.pirakuInDistrict ? 52 : 61;
-            const minZ = window.pirakuInDistrict ? -52 : -62;
-            const maxZ = 52;
-            const tx = Math.max(minX, Math.min(maxX, tapPt.x));
-            const tz = Math.max(minZ, Math.min(maxZ, tapPt.z));
-            pirakuTapWalkTarget = { x: tx, z: tz };
-            if (!pirakuTapMarker) {
-              pirakuTapMarker = new THREE.Mesh(
-                new THREE.RingGeometry(0.32, 0.50, 24),
-                new THREE.MeshBasicMaterial({ color: 0x38bdf8, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
-              );
-              pirakuTapMarker.rotation.x = -Math.PI / 2;
-              scene.add(pirakuTapMarker);
-            }
-            pirakuTapMarker.position.set(tx, 0.09, tz);
-            pirakuTapMarker.visible = true;
-          }
-        }
+        pirakuTapWalkTarget = null;
+        if (pirakuTapMarker) pirakuTapMarker.visible = false;
       }
     }
   });
@@ -2720,9 +2777,6 @@ let activeQuestSystem = null;
     stream.scrollTop = stream.scrollHeight;
 
     showOverheadBubbleOnAvatar(sender, rawText);
-    if (typeof window.setGasibuBillboardBroadcast === 'function') {
-      window.setGasibuBillboardBroadcast(sender, rawText.substring(0, 30), false);
-    }
   }
 
   async function loadRecentChats() {
@@ -3498,6 +3552,11 @@ let activeQuestSystem = null;
       setTimeout(() => modal.querySelector('.modal-card').style.transform = 'translateY(0)', 10);
     }
     renderLeaderboard();
+    if (typeof window.refreshPirakuRemoteTiers === 'function') {
+      Promise.resolve(window.refreshPirakuRemoteTiers()).then(() => {
+        if (modal && modal.style.display === 'flex') renderLeaderboard();
+      }).catch(() => {});
+    }
   };
   window.closeLeaderboardModal = function() {
     const modal = document.getElementById('leaderboard-modal'); 
@@ -3522,12 +3581,42 @@ let activeQuestSystem = null;
   function renderLeaderboard() {
     const containerEl = document.getElementById('leaderboard-items');
     if (!containerEl) return;
+
+    if (activeLeaderboardTab === 'camat') {
+      const camatRows = (typeof window.getPirakuCamatLeaderboard === 'function')
+        ? window.getPirakuCamatLeaderboard()
+        : [];
+      if (!camatRows.length) {
+        containerEl.innerHTML = '<div style="text-align:center;font-size:11.5px;color:#94a3b8;padding:20px;">Data Camat & Kecamatan sedang dimuat...</div>';
+        return;
+      }
+      containerEl.innerHTML = camatRows.map((d, idx) => `
+        <div class="leader-item" onclick="closeLeaderboardModal();if(typeof window.enterDistrictMap==='function')window.enterDistrictMap('${esc(d.id)}');" style="background:rgba(30,41,59,0.85);border:1px solid rgba(148,163,184,0.2);color:#f8fafc;">
+          <div class="leader-rank">${['🥇','🥈','🥉'][idx] || '#' + (idx + 1)}</div>
+          <div class="leader-info">
+            <div class="leader-user" style="color:#f8fafc;">🏛️ Kec. ${esc(d.name)}</div>
+            <div style="font-size:10.5px;color:#fde047;font-weight:700;">Camat: ${d.camatIg ? esc(d.camatIg) : '<span style="color:#94a3b8;font-weight:600;">Belum terpilih</span>'}</div>
+            <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Lv.${d.level} (${esc(d.title)}) • 🏠 ${d.builtHouses}/36 • 👥 ${d.totalCitizens} warga</div>
+          </div>
+          <div class="leader-votes" style="color:#38bdf8;font-weight:900;font-size:11px;white-space:nowrap;">🪙 ${Number(d.coins || 0).toLocaleString('id-ID')}</div>
+        </div>
+      `).join('');
+      return;
+    }
+
     const tierOrder = { tier_7: 7, tier_6: 6, tier_5: 5, tier_4: 4, tier_3: 3, tier_2: 2, tier_1: 1 };
     const myIgClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
     const myEcoTier = (window.PirakuEconomy && typeof window.PirakuEconomy.getTierObj === 'function') ? window.PirakuEconomy.getTierObj() : null;
 
-    const list = registeredCitizensList.map(c => {
-      const clean = String(c?.ig || '').trim().toLowerCase().replace(/^@/, '');
+    const myEcoCoins = (window.PirakuEconomy && typeof window.PirakuEconomy.getCoins === 'function') ? window.PirakuEconomy.getCoins() : null;
+
+    const seen = new Set();
+    const list = [];
+    registeredCitizensList.forEach(c => {
+      if (!c || !c.ig || c.role === 'WALKOT' || c.role === 'GUBERNUR') return;
+      const clean = String(c.ig || '').trim().toLowerCase().replace(/^@/, '');
+      if (!clean || seen.has(clean)) return;
+      seen.add(clean);
       const remTier = (window.pirakuRemoteTiers || {})[clean];
       const lvl = (typeof window.computePirakuLevelFromTotalXp === 'function')
         ? window.computePirakuLevelFromTotalXp(c.xp || 0).level
@@ -3540,14 +3629,17 @@ let activeQuestSystem = null;
         : (remTier && remTier.tierId && remTier.tierId !== 'tier_1'
           ? remTier
           : { tierId: 'tier_1', tierName: lvlTitle, tierBadge: '🎖️' });
-      return { ...c, clean, lvl, tierId: tObj.tierId || 'tier_1', tierName: tObj.tierName || lvlTitle, tierBadge: tObj.tierBadge || '🎖️' };
+      const coins = (clean && clean === myIgClean && myEcoCoins !== null)
+        ? myEcoCoins
+        : (Number((window.pirakuRemoteCoins || {})[clean]) || 0);
+      list.push({ ...c, clean, lvl, coins, tierId: tObj.tierId || 'tier_1', tierName: tObj.tierName || lvlTitle, tierBadge: tObj.tierBadge || '🎖️' });
     });
 
     let sorted;
     if (activeLeaderboardTab === 'votes') {
       sorted = list.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0) || (b.xp || 0) - (a.xp || 0)).slice(0, 10);
     } else if (activeLeaderboardTab === 'sultan') {
-      sorted = list.sort((a, b) => (tierOrder[b.tierId] || 1) - (tierOrder[a.tierId] || 1) || (b.xp || 0) - (a.xp || 0)).slice(0, 10);
+      sorted = list.sort((a, b) => (tierOrder[b.tierId] || 1) - (tierOrder[a.tierId] || 1) || (b.coins || 0) - (a.coins || 0) || (b.xp || 0) - (a.xp || 0)).slice(0, 10);
     } else {
       sorted = list.sort((a, b) => (b.xp || 0) - (a.xp || 0) || (b.lvl || 1) - (a.lvl || 1)).slice(0, 10);
     }
@@ -3558,12 +3650,15 @@ let activeQuestSystem = null;
         : activeLeaderboardTab === 'sultan'
           ? `${c.tierBadge} ${c.tierName || 'Warga'}`
           : `⭐ Lv.${c.lvl}`;
+      const subText = activeLeaderboardTab === 'sultan'
+        ? `Kec. ${esc(c.kecamatan || 'Bandung')} • 🪙 ${(c.coins || 0).toLocaleString('id-ID')}`
+        : `Kec. ${esc(c.kecamatan || 'Bandung')} • ${(c.xp || 0).toLocaleString('id-ID')} XP`;
       return `
         <div class="leader-item" onclick="teleportToCitizen('${esc(c.ig)}')" style="background:rgba(30,41,59,0.85);border:1px solid rgba(148,163,184,0.2);color:#f8fafc;">
           <div class="leader-rank">${['🥇','🥈','🥉'][idx] || '#' + (idx + 1)}</div>
           <div class="leader-info">
             <div class="leader-user" style="color:#f8fafc;">${esc(c.ig)}</div>
-            <div style="font-size:10.5px;color:#94a3b8;">Kec. ${esc(c.kecamatan || 'Bandung')} • ${(c.xp || 0).toLocaleString('id-ID')} XP</div>
+            <div style="font-size:10.5px;color:#94a3b8;">${subText}</div>
           </div>
           <div class="leader-votes" style="color:#fde047;font-weight:900;font-size:11.5px;white-space:nowrap;">${statText}</div>
         </div>
@@ -3869,9 +3964,9 @@ let activeQuestSystem = null;
         <div style="display:flex;flex-direction:column;gap:9px;font-size:11.8px;line-height:1.48;color:#cbd5e1;">
           <div style="padding:10px 12px;border-radius:12px;background:rgba(15,23,42,0.75);border:1px solid #334155;">
             <b style="color:#7dd3fc;">🕹️ Kontrol Gerak &amp; Kamera</b><br>
-            • <b>Jalan (2 Cara)</b>: Geser <b>Joystick</b> (HP) / tekan <b>W A S D</b> (PC), <b>ATAU</b> cukup <b>Tap / Klik langsung ke tanah</b> agar karakter otomatis berjalan ke sana.<br>
+            • <b>Jalan</b>: Geser <b>Joystick</b> di kiri bawah (HP) atau tekan <b>W A S D</b> (PC).<br>
             • <b>Lompat</b>: Tekan tombol <b>🦘</b> di kanan bawah (HP) atau <b>Space</b> (PC).<br>
-            • <b>Kamera di HP</b>: Geser layar dengan jari kanan sambil jalan pakai joystick kiri (multi-touch), cubit 2 jari untuk zoom.<br>
+            • <b>Kamera di HP</b>: Geser layar dengan jari kanan sambil jalan pakai joystick kiri (saat pakai analog, zoom otomatis dikunci agar kamera tidak ikut nge-zoom); cubit 2 jari saat diam untuk zoom.<br>
             • <b>Kamera di PC</b>: Drag <b>Klik Kanan</b> (atau Klik Kiri) untuk putar kamera, <b>Scroll</b> untuk zoom, atau tekan <b>Q / E</b> &amp; <b>Panah Kiri/Kanan</b> untuk putar halus sambil jalan.<br>
             • <b>Reset Kamera</b>: Tekan <b>R</b> (PC) atau klik <b>🎥 Reset Cam</b> di kanan layar untuk meluruskan kamera ke belakang karakter.
           </div>
@@ -4603,6 +4698,7 @@ let activeQuestSystem = null;
           if (typeof controls !== "undefined" && controls) {
             const wasDamping = controls.enableDamping;
             controls.enableDamping = false;
+            controls.enableZoom = true;
             controls.enabled = true;
             controls.update();
             controls.enableDamping = wasDamping;
@@ -4635,6 +4731,7 @@ let activeQuestSystem = null;
       const t = e.changedTouches[0];
       activeJoyTouchId = t.identifier;
       joyActive = true;
+      if (typeof controls !== "undefined" && controls) controls.enableZoom = false;
       const rect = joystickZone.getBoundingClientRect();
       joyCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
       handleJoyMoveClient(t.clientX, t.clientY);
@@ -4660,6 +4757,7 @@ let activeQuestSystem = null;
           if (typeof controls !== "undefined" && controls) {
             const wasDamping = controls.enableDamping;
             controls.enableDamping = false;
+            controls.enableZoom = true;
             controls.enabled = true;
             controls.update();
             controls.enableDamping = wasDamping;

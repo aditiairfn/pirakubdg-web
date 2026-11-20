@@ -95,6 +95,17 @@
         <div style="font-size:11.5px;color:#cbd5e1;margin-bottom:12px;line-height:1.45;">Ikuti perkembangan episode 3D tata kota Bandung, behind the scenes, dan pengumuman event warga di kanal resmi <b>@pirakubdg</b>:</div>
 
         <div style="display:flex;flex-direction:column;gap:9px;">
+          <button type="button" onclick="document.getElementById('piraku-account-modal').style.display='none';if(typeof openLeaderboardModal==='function')openLeaderboardModal();" style="text-align:left;border:1.5px solid rgba(250,204,21,0.65);display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,rgba(250,204,21,0.18),rgba(56,189,248,0.14));color:#fff;font-weight:800;cursor:pointer;box-shadow:0 8px 20px rgba(250,204,21,0.18);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="font-size:22px;">🏆</span>
+              <div>
+                <div style="font-size:14px;color:#fde047;">Leaderboard Warga</div>
+                <div style="font-size:11px;color:#cbd5e1;font-weight:600;">Top Level • Dukungan • Top Sultan Bandung</div>
+              </div>
+            </div>
+            <span style="font-size:13px;color:#fde047;">Buka ▸</span>
+          </button>
+
           <a href="https://www.instagram.com/pirakubdg" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045);color:#fff;font-weight:800;box-shadow:0 8px 20px rgba(253,29,29,0.28);">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:22px;">📸</span>

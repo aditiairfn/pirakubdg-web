@@ -175,7 +175,11 @@
             return true;
           });
         state.owned = mergedOwned;
-        state.tier = cloud.tier || state.tier;
+        const tRank = { tier_7: 7, tier_6: 6, tier_5: 5, tier_4: 4, tier_3: 3, tier_2: 2, tier_1: 1 };
+        const localTier = state.tier || "tier_1";
+        const cloudTier = cloud.tier || "tier_1";
+        const localHigherTier = (tRank[localTier] || 1) > (tRank[cloudTier] || 1);
+        state.tier = localHigherTier ? localTier : cloudTier;
         state.equippedOutfit = cloud.equippedOutfit || state.equippedOutfit;
         state.equippedVehicle = cloud.equippedVehicle || state.equippedVehicle;
         state.rentalExpiresAt = cloud.rentalExpiresAt || state.rentalExpiresAt;
@@ -183,7 +187,7 @@
         state.updatedAt = Math.max(localTs, cloudTs, Date.now());
         state._hydrated = true;
         unpackCloudTagsToLocalStorage(mergedOwned);
-        saveState(preferLocalCoins ? false : true);
+        saveState((preferLocalCoins || localHigherTier) ? false : true);
         const modal = document.getElementById("piraku-economy-modal");
         if (modal && modal.style.display === "flex") renderEconomyModal();
       } else if (cloud.status === "empty") {

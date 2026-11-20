@@ -169,6 +169,33 @@
     return { cur, next };
   }
 
+  window.getPirakuCamatLeaderboard = function() {
+    const camatMap = window.weeklyCamatByKec || {};
+    return DISTRICTS.filter(d => !d.isMainMap).map(d => {
+      const kecLow = String(d.name || "").trim().toLowerCase();
+      const idLow = String(d.id || "").trim().toLowerCase();
+      const camatIg = camatMap[kecLow] || camatMap[idLow] || null;
+      const coins = getCoinsFor(d);
+      const { cur } = getLevelInfo(coins);
+      const stats = getRealDistrictHouseStats(d);
+      return {
+        id: d.id,
+        name: d.name,
+        camatIg,
+        level: cur.lv,
+        title: cur.title,
+        coins,
+        builtHouses: stats.builtHouses || 0,
+        totalCitizens: stats.totalCitizens || 0
+      };
+    }).sort((a, b) =>
+      (b.level - a.level) ||
+      (b.builtHouses - a.builtHouses) ||
+      (b.coins - a.coins) ||
+      (b.totalCitizens - a.totalCitizens)
+    );
+  };
+
   const STORAGE_KEY = "piraku_districts_v2";
   try { localStorage.removeItem("piraku_districts_v1"); } catch (e) {}
   let localInvest = {};
@@ -377,37 +404,78 @@
     canopyTrim.position.set(-1.7, 2.36, 2.71);
     kopdes.add(frontCanopy, canopyTrim);
 
-    // Dinding Logo Abu-abu tengah-kanan
+    // Dinding Logo Tengah-Kanan + Logo Kopdes Biru Putih (gaya siluet atap rumah + bendera)
     const logoWall = new THREE.Mesh(new THREE.BoxGeometry(1.85, 2.55, 3.6), kdGrey);
     logoWall.position.set(2.02, 1.5, -0.2);
 
     const cv = document.createElement("canvas");
     cv.width = 512; cv.height = 280;
     const ctx = cv.getContext("2d");
-    ctx.fillStyle = "#475569";
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, 512, 280);
-    ctx.strokeStyle = "#f8fafc";
+    ctx.strokeStyle = "#1d4ed8";
     ctx.lineWidth = 10;
     ctx.strokeRect(8, 8, 496, 264);
+
+    // Siluet atap rumah & garis dasar biru ala logo referensi
+    ctx.strokeStyle = "#1d4ed8";
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.lineWidth = 16;
+    ctx.beginPath();
+    ctx.moveTo(46, 152);
+    ctx.lineTo(175, 90);
+    ctx.lineTo(175, 196);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(76, 142);
+    ctx.lineTo(76, 226);
+    ctx.lineTo(446, 226);
+    ctx.stroke();
+
+    // Jendela 4 kotak di bawah atap
+    ctx.fillStyle = "#cbd5e1";
+    [[118, 145], [138, 145], [118, 165], [138, 165]].forEach(([wx, wy]) => {
+      ctx.fillRect(wx, wy, 15, 15);
+    });
+
+    // Tiang & Bendera Biru Putih di puncak atap
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(175, 90);
+    ctx.lineTo(175, 34);
+    ctx.stroke();
     ctx.fillStyle = "#1d4ed8";
-    ctx.fillRect(28, 28, 456, 86);
-    ctx.fillStyle = "#f8fafc";
-    ctx.font = "900 44px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("KOPDES", 256, 72);
-    ctx.fillStyle = "#93c5fd";
-    ctx.font = "900 42px sans-serif";
-    ctx.fillText("BIRU PUTIH", 256, 175);
+    ctx.fillRect(122, 36, 51, 16);
     ctx.fillStyle = "#e2e8f0";
-    ctx.font = "700 24px sans-serif";
-    ctx.fillText("KOPERASI KELURAHAN", 256, 232);
+    ctx.fillRect(122, 52, 51, 16);
+
+    // Teks KOP / DES (Biru) + BIRU PUTIH (Navy)
+    ctx.fillStyle = "#1d4ed8";
+    ctx.font = "900 70px sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText("KOP", 205, 82);
+    ctx.fillText("DES", 205, 144);
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "800 30px sans-serif";
+    ctx.fillText("BIRU PUTIH", 208, 194);
+
     const signTex = new THREE.CanvasTexture(cv);
     const signMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.65, 0.95),
+      new THREE.PlaneGeometry(1.68, 0.96),
       new THREE.MeshBasicMaterial({ map: signTex })
     );
     signMesh.position.set(2.02, 1.65, 1.62);
+
+    // Papan Nama Atap Kopdes Biru Putih yang terlihat dari jauh
+    const roofSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.8, 1.2),
+      new THREE.MeshBasicMaterial({ map: signTex, side: THREE.DoubleSide })
+    );
+    roofSign.position.set(-1.3, 3.85, 1.75);
+    kopdes.add(roofSign);
 
     // Garasi / Loading Bay kanan + mobil MPV detail (roda, bumper, kaca)
     const garageBack = new THREE.Mesh(new THREE.BoxGeometry(1.65, 2.55, 0.25), kdNavy);

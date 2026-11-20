@@ -30,6 +30,7 @@
 
   // ================= 1. SINKRONISASI DOMPET & BILLBOARD KE SUPABASE =================
   window.pirakuRemoteTiers = window.pirakuRemoteTiers || {};
+  window.pirakuRemoteCoins = window.pirakuRemoteCoins || {};
   window.pirakuRemoteOutfits = window.pirakuRemoteOutfits || {};
   window.pirakuRemoteVehicles = window.pirakuRemoteVehicles || {};
   window.pirakuRemoteHouses = window.pirakuRemoteHouses || {};
@@ -47,12 +48,16 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
-      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at, owned_items");
+      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, coins, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at, owned_items");
       if (!error && Array.isArray(data)) {
         let houseChanged = false;
         data.forEach(r => {
           const k1 = String(r.citizen_key || "").toLowerCase().replace(/^@/, "").trim();
           const k2 = String(r.display_name || "").toLowerCase().replace(/^@/, "").trim();
+          if (typeof r.coins === "number") {
+            if (k1) window.pirakuRemoteCoins[k1] = r.coins;
+            if (k2) window.pirakuRemoteCoins[k2] = r.coins;
+          }
           if (r.equipped_outfit) {
             if (k1) window.pirakuRemoteOutfits[k1] = r.equipped_outfit;
             if (k2) window.pirakuRemoteOutfits[k2] = r.equipped_outfit;
@@ -78,10 +83,21 @@
             }
           }
 
-          const meta = TIER_META[r.tier_id];
+          const tierRank = { tier_7: 7, tier_6: 6, tier_5: 5, tier_4: 4, tier_3: 3, tier_2: 2, tier_1: 1 };
+          let bestTierId = r.tier_id || "tier_1";
+          ["tier_7", "tier_6", "tier_5", "tier_4", "tier_3", "tier_2"].forEach(tid => {
+            if (ownedArr.includes(tid) && (tierRank[tid] || 1) > (tierRank[bestTierId] || 1)) {
+              bestTierId = tid;
+            }
+          });
+          const meta = TIER_META[bestTierId];
           if (!meta) return;
-          if (k1) window.pirakuRemoteTiers[k1] = meta;
-          if (k2) window.pirakuRemoteTiers[k2] = meta;
+          if (k1 && (!window.pirakuRemoteTiers[k1] || (tierRank[bestTierId] || 1) > (tierRank[window.pirakuRemoteTiers[k1].tierId] || 1))) {
+            window.pirakuRemoteTiers[k1] = meta;
+          }
+          if (k2 && (!window.pirakuRemoteTiers[k2] || (tierRank[bestTierId] || 1) > (tierRank[window.pirakuRemoteTiers[k2].tierId] || 1))) {
+            window.pirakuRemoteTiers[k2] = meta;
+          }
         });
         if (houseChanged && window.pirakuInDistrict && typeof window.refreshActiveDistrictHouses === "function") {
           window.refreshActiveDistrictHouses();

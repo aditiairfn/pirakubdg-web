@@ -1830,15 +1830,23 @@
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
               <div style="font-size:11px;font-weight:900;color:#93c5fd;text-transform:uppercase;">🎒 Tas Ikan (${bag.length})</div>
-              ${bag.length > 1 ? `<div style="display:flex;gap:4px;">
+              ${bag.length > 0 ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">
                 ${[
+                  { id: "all",    label: "Semua" },
+                  { id: "locked", label: "🔒 Terkunci" },
+                  { id: "rare",   label: "✨ Mythic+" }
+                ].map(flt => {
+                  const act = (window._pirakuBagFilter || "all") === flt.id;
+                  return `<button onclick="window._pirakuBagFilter='${flt.id}';openFishingHubModal();" style="border:1px solid ${act ? "#facc15" : "rgba(148,163,184,0.28)"};background:${act ? "rgba(250,204,21,0.22)" : "#1e293b"};color:${act ? "#fde047" : "#94a3b8"};padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;cursor:pointer;">${flt.label}</button>`;
+                }).join("")}
+                ${bag.length > 1 ? [
                   { id: "newest", label: "🕒 Terbaru" },
                   { id: "rarity", label: "🌟 Terlangka" },
                   { id: "type",   label: "🐟 Jenis" }
                 ].map(s => {
                   const act = (window._pirakuBagSort || "newest") === s.id;
                   return `<button onclick="setPirakuBagSort('${s.id}')" style="border:1px solid ${act ? "#38bdf8" : "rgba(148,163,184,0.28)"};background:${act ? "rgba(56,189,248,0.22)" : "#1e293b"};color:${act ? "#7dd3fc" : "#94a3b8"};padding:3px 7px;border-radius:999px;font-size:10px;font-weight:800;cursor:pointer;">${s.label}</button>`;
-                }).join("")}
+                }).join("") : ""}
               </div>` : ""}
             </div>
             ${bag.length === 0
@@ -1847,12 +1855,16 @@
                   ${(() => {
                     const rankMap = { Divine: 8, Cosmic: 7, Secret: 6, Mythic: 5, Epic: 4, Rare: 3, Uncommon: 2, Common: 1 };
                     const sortMode = window._pirakuBagSort || "newest";
-                    const indexed = bag.map((f, origIdx) => ({ f, origIdx }));
+                    const filterMode = window._pirakuBagFilter || "all";
+                    let indexed = bag.map((f, origIdx) => ({ f, origIdx }));
+                    if (filterMode === "locked") indexed = indexed.filter(x => x.f.locked);
+                    else if (filterMode === "rare") indexed = indexed.filter(x => (rankMap[x.f.rarity] || 0) >= 5);
                     if (sortMode === "rarity") {
                       indexed.sort((a, b) => (rankMap[b.f.rarity] || 0) - (rankMap[a.f.rarity] || 0) || (b.f.coins || 0) - (a.f.coins || 0) || a.origIdx - b.origIdx);
                     } else if (sortMode === "type") {
                       indexed.sort((a, b) => String(a.f.name).localeCompare(String(b.f.name)) || (rankMap[b.f.rarity] || 0) - (rankMap[a.f.rarity] || 0));
                     }
+                    if (indexed.length === 0) return `<div style="font-size:11px;color:#94a3b8;padding:10px;text-align:center;">Tidak ada ikan yang cocok dengan filter ini.</div>`;
                     return indexed.slice(0, 60).map(({ f, origIdx }) => {
                       const rs = RARITY_STYLE[f.rarity] || RARITY_STYLE.Common;
                       const isShown = window.pirakuShownFish && window.pirakuShownFish.id === f.id && window.pirakuShownFish.kg === f.kg;

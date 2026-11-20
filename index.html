@@ -377,7 +377,7 @@
 
   <div class="top-hud">
     <div class="brand-row">
-      <div class="brand-tag"><img src="assets/piraku-brand-logo.webp" width="160" height="53" decoding="async" alt="@pirakubdg" class="brand-logo"> <span id="warga-counter">MEMUAT...</span></div>
+      <div class="brand-tag"><img src="assets/piraku-brand-logo.webp" width="160" height="53" decoding="async" alt="@pirakubdg" class="brand-logo"> <span id="warga-counter" onclick="if(typeof openLeaderboardModal==='function')openLeaderboardModal();" title="Lihat Leaderboard Warga" style="cursor:pointer;pointer-events:auto;">MEMUAT...</span></div>
       <div class="top-actions">
         <button class="btn-join" id="btn-citizen-status" onclick="handleCitizenButtonClick()"><span>+</span> Masuk / Daftar</button>
         <button class="btn-menu-toggle" id="btn-main-menu" onclick="toggleHudMenu(event)" title="Menu Kota" aria-label="Menu Kota">⋯</button>
@@ -515,10 +515,11 @@
         </div>
         <button class="btn-close" onclick="closeLeaderboardModal()" style="background:rgba(148,163,184,0.16);color:#f8fafc;">✕</button>
       </div>
-      <div id="leaderboard-tabs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
-        <button type="button" data-lb-tab="level" onclick="setLeaderboardTab('level')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:900;cursor:pointer;background:#facc15;color:#0f172a;">⭐ Top Level</button>
-        <button type="button" data-lb-tab="votes" onclick="setLeaderboardTab('votes')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">❤️ Dukungan</button>
-        <button type="button" data-lb-tab="sultan" onclick="setLeaderboardTab('sultan')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">👑 Top Sultan</button>
+      <div id="leaderboard-tabs" style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:10px;">
+        <button type="button" data-lb-tab="level" onclick="setLeaderboardTab('level')" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:900;cursor:pointer;background:#facc15;color:#0f172a;">⭐ Level</button>
+        <button type="button" data-lb-tab="votes" onclick="setLeaderboardTab('votes')" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">❤️ Dukungan</button>
+        <button type="button" data-lb-tab="sultan" onclick="setLeaderboardTab('sultan')" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">👑 Sultan</button>
+        <button type="button" data-lb-tab="camat" onclick="setLeaderboardTab('camat')" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">🏛️ Camat</button>
       </div>
       <div class="leaderboard-list" id="leaderboard-items" style="max-height:52dvh;overflow-y:auto;">
         <div style="text-align:center;font-size:11px;color:#94a3b8;padding:20px;">Memuat peringkat...</div>
@@ -1282,8 +1283,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v39"></script>
-  <script defer src="js/multiplayer.js?v=20261119v41"></script>
+  <script defer src="./js/main.js?v=20261119v47"></script>
+  <script defer src="js/multiplayer.js?v=20261119v42"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
   <script defer src="js/map-beautify.js?v=20261119v20"></script>
@@ -1426,13 +1427,13 @@
     })();
   </script>
 
-  <script defer src="js/piraku-economy.js?v=20261119v27"></script>
+  <script defer src="js/piraku-economy.js?v=20261119v28"></script>
   <script defer src="js/piraku-games.js?v=20261119v3"></script>
-  <script defer src="js/piraku-world-live.js?v=20261119v1"></script>
-  <script defer src="js/piraku-nav-modals.js?v=20261119v18"></script>
+  <script defer src="js/piraku-world-live.js?v=20261119v3"></script>
+  <script defer src="js/piraku-nav-modals.js?v=20261119v19"></script>
   <script defer src="js/piraku-vfx.js?v=20261118v98"></script>
-  <script defer src="js/piraku-districts.js?v=20261119v13"></script>
-  <script defer src="js/piraku-fishing.js?v=20261119v29"></script>
+  <script defer src="js/piraku-districts.js?v=20261119v16"></script>
+  <script defer src="js/piraku-fishing.js?v=20261119v30"></script>
 
   
 
@@ -1665,7 +1666,7 @@
     }, 450);
   </script>
 
-  <script defer src="js/piraku-civic.js?v=20261119v2"></script>
+  <script defer src="js/piraku-civic.js?v=20261119v4"></script>
   <script defer src="js/piraku-perf.js?v=20261118v98"></script>
 
 

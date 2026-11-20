@@ -1209,6 +1209,8 @@
     map.set(myNorm || "self", {
       ig: myInfo.ig || "@tamu",
       kecamatan: myInfo.kecamatan || "Bandung",
+      mapId: window.pirakuInDistrict ? (window.pirakuActiveMapId || "distrik") : "pusat_kota",
+      afk: !!document.hidden,
       tierBadge: myInfo.tierBadge || "",
       tierName: myInfo.tierName || "",
       isSelf: true
@@ -1224,6 +1226,8 @@
           map.set(k, {
             ig: p.ig,
             kecamatan: p.kecamatan || "Bandung",
+            mapId: p.mapId || "",
+            afk: !!p.afk,
             tierBadge: p.tierBadge || "",
             tierName: p.tierName || "",
             isSelf: k === myNorm
@@ -1352,19 +1356,23 @@
           <button onclick="document.getElementById('piraku-online-modal').style.display='none'" style="border:none;background:rgba(148,163,184,0.16);color:#f8fafc;width:30px;height:30px;border-radius:9px;font-weight:800;cursor:pointer;">✕</button>
         </div>
         <div style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;">
-          ${list.map(u => `
+          ${list.map(u => {
+            const locText = u.mapId && u.mapId !== "pusat_kota" && u.mapId !== "bandung_wetan"
+              ? ("📍 Kec. " + u.mapId.replace(/_/g, " "))
+              : (u.kecamatan || "Bandung");
+            return `
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-radius:12px;background:${u.isSelf ? "rgba(250,204,21,0.12)" : "rgba(30,41,59,0.85)"};border:1px solid ${u.isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.2)"};">
               <div style="min-width:0;">
                 <div style="font-size:12.5px;font-weight:800;color:${u.isSelf ? "#fde047" : "#f8fafc"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  🟢 ${esc(u.ig)} ${u.isSelf ? "<span style='font-size:10px;color:#4ade80;'>(Kamu)</span>" : ""}
+                  ${u.afk ? "🟡" : "🟢"} ${esc(u.ig)} ${u.afk ? "<span style='font-size:9.5px;color:#fbbf24;'>(AFK)</span>" : ""} ${u.isSelf ? "<span style='font-size:10px;color:#4ade80;'>(Kamu)</span>" : ""}
                 </div>
                 <div style="font-size:10.5px;color:#94a3b8;margin-top:1px;">
-                  ${u.tierBadge && u.tierName ? `<span style="color:#fde047;font-weight:700;">${esc(u.tierBadge)} ${esc(u.tierName)}</span> • ` : ""}${esc(u.kecamatan || "Bandung")}
+                  ${u.tierBadge && u.tierName ? `<span style="color:#fde047;font-weight:700;">${esc(u.tierBadge)} ${esc(u.tierName)}</span> • ` : ""}${esc(locText)}
                 </div>
               </div>
               ${!u.isSelf ? `<button onclick="document.getElementById('piraku-online-modal').style.display='none';if(typeof window.focusOnlineCitizenByIg==='function')window.focusOnlineCitizenByIg('${esc(u.ig)}');" style="border:none;background:rgba(56,189,248,0.2);color:#38bdf8;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;">📍 Lacak</button>` : ""}
             </div>
-          `).join("")}
+          `; }).join("")}
           ${globalOnlineCount > list.length ? `<div style="text-align:center;font-size:10.5px;color:#94a3b8;padding:4px 0;">+ ${globalOnlineCount - list.length} warga lainnya di tab background / tamu.</div>` : ""}
         </div>
         <div style="padding:10px 14px;border-top:1px solid rgba(148,163,184,0.16);display:flex;gap:8px;">
@@ -1404,9 +1412,19 @@
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          try {
-            await globalPresenceChannel.track({ ig: myInfo.ig, online_at: new Date().toISOString() });
-          } catch (e) {}
+          const trackPresence = async () => {
+            try {
+              const curId = getMyIdentity();
+              await globalPresenceChannel.track({
+                ig: curId.ig,
+                mapId: window.pirakuInDistrict ? (window.pirakuActiveMapId || "distrik") : "pusat_kota",
+                afk: !!document.hidden,
+                online_at: new Date().toISOString()
+              });
+            } catch (e) {}
+          };
+          await trackPresence();
+          document.addEventListener("visibilitychange", trackPresence);
         }
       });
   }
