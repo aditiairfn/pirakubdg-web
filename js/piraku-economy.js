@@ -100,6 +100,13 @@
 
     ownedArr.forEach(tag => {
       const s = String(tag || "");
+      if (s.startsWith("daily_streak_")) {
+        const parts = s.replace("daily_streak_", "").split("_");
+        if (parts.length >= 2) {
+          state.lastDailyClaimDate = parts[0];
+          state.dailyStreak = parseInt(parts[1], 10) || 1;
+        }
+      }
       if (s.startsWith("claimed_")) {
         const mKey = s.slice("claimed_".length);
         localStorage.setItem("piraku_claimed_" + mKey + suf, "1");
@@ -195,9 +202,71 @@
     return ig === "yelclaw" && String(reason || "").includes("Admin Founder");
   }
 
+  const DAILY_STREAK_REWARDS = [
+    { day: 1, coins: 25, xp: 0 },
+    { day: 2, coins: 40, xp: 0 },
+    { day: 3, coins: 60, xp: 30 },
+    { day: 4, coins: 85, xp: 0 },
+    { day: 5, coins: 120, xp: 50 },
+    { day: 6, coins: 160, xp: 0 },
+    { day: 7, coins: 300, xp: 100 }
+  ];
+
+  function getWibDateStr(offsetDays = 0) {
+    const now = new Date(Date.now() + 7 * 3600 * 1000 + offsetDays * 86400000);
+    return now.toISOString().slice(0, 10);
+  }
+
+  function getDailyStreakInfo() {
+    const today = getWibDateStr(0);
+    const yesterday = getWibDateStr(-1);
+    const lastDate = state.lastDailyClaimDate || "";
+    const claimedToday = lastDate === today;
+    const prevStreak = parseInt(state.dailyStreak || 0, 10) || 0;
+    const nextDay = claimedToday
+      ? Math.max(1, Math.min(7, prevStreak || 1))
+      : (lastDate === yesterday ? ((prevStreak % 7) + 1) : 1);
+    return {
+      claimedToday,
+      currentStreak: claimedToday ? nextDay : (lastDate === yesterday ? prevStreak : 0),
+      nextDay,
+      reward: DAILY_STREAK_REWARDS[nextDay - 1]
+    };
+  }
+
+  function claimDailyStreak() {
+    if (!(localStorage.getItem("piraku_my_ig") || "").trim()) {
+      if (typeof window.showToast === "function") window.showToast("Silakan Masuk / Daftar E-KTP dulu untuk absen harian! 🪪");
+      if (typeof window.openJoinModal === "function") window.openJoinModal();
+      return false;
+    }
+    const info = getDailyStreakInfo();
+    if (info.claimedToday) {
+      if (typeof window.showToast === "function") window.showToast("Absen harian hari ini sudah diklaim! Besok lagi ya ✨");
+      return false;
+    }
+    const today = getWibDateStr(0);
+    state.lastDailyClaimDate = today;
+    state.dailyStreak = info.nextDay;
+    if (!Array.isArray(state.owned)) state.owned = ["tier_1"];
+    state.owned = state.owned.filter(x => !String(x).startsWith("daily_streak_"));
+    state.owned.push("daily_streak_" + today + "_" + info.nextDay);
+    window.PirakuEconomy.addCoins(info.reward.coins, "Absen Harian Hari " + info.nextDay + "/7");
+    if (info.reward.xp > 0 && typeof window.grantPirakuXP === "function") {
+      window.grantPirakuXP(info.reward.xp, "Bonus Streak Hari " + info.nextDay);
+    }
+    if (typeof window.showToast === "function") {
+      window.showToast(`🎁 Absen Hari ${info.nextDay}/7 berhasil! +${info.reward.coins} 🪙` + (info.reward.xp ? ` & +${info.reward.xp} XP` : ""));
+    }
+    saveState();
+    return true;
+  }
+
   window.PirakuEconomy = Object.freeze({
     getCoins: () => state.coins,
     getState: () => state,
+    getDailyStreakInfo,
+    claimDailyStreak,
     getCatalog: () => CATALOG,
     saveNow: () => saveState(false),
     addCoins(amount, reason) {
@@ -1192,7 +1261,17 @@
           </div>
           <button id="btn-close-eco" style="width:32px;height:32px;border-radius:50%;border:none;background:#1e293b;color:#cbd5e1;font-size:16px;cursor:pointer;">✕</button>
         </div>
-        <div style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Status Warga: <b style="color:#fde047;">${tier.badge} ${tier.name}</b> • Kecepatan: <b style="color:#38bdf8;">${window.PirakuEconomy.getSpeedMultiplier()}x</b></div>
+        <div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">Status Warga: <b style="color:#fde047;">${tier.badge} ${tier.name}</b> • Kecepatan: <b style="color:#38bdf8;">${window.PirakuEconomy.getSpeedMultiplier()}x</b></div>
+        ${(() => {
+          const ds = getDailyStreakInfo();
+          return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-radius:12px;background:${ds.claimedToday ? "rgba(30,41,59,0.7)" : "linear-gradient(135deg,rgba(245,158,11,0.2),rgba(56,189,248,0.16))"};border:1px solid ${ds.claimedToday ? "rgba(148,163,184,0.25)" : "#facc15"};margin-bottom:10px;">
+            <div>
+              <div style="font-size:11.5px;font-weight:900;color:#fde047;">🎁 Absen Harian (Streak ${ds.claimedToday ? ds.currentStreak : ds.nextDay}/7)</div>
+              <div style="font-size:10px;color:#cbd5e1;">${ds.claimedToday ? "Sudah diklaim hari ini ✓" : `Hadiah hari ini: +${ds.reward.coins} 🪙` + (ds.reward.xp ? ` + ${ds.reward.xp} XP` : "")}</div>
+            </div>
+            <button id="btn-claim-daily-streak" ${ds.claimedToday ? "disabled" : ""} style="padding:6px 11px;border-radius:9px;border:none;font-size:11px;font-weight:900;cursor:${ds.claimedToday ? "default" : "pointer"};background:${ds.claimedToday ? "#334155" : "#facc15"};color:${ds.claimedToday ? "#94a3b8" : "#0f172a"};">${ds.claimedToday ? "Selesai ✓" : "Klaim"}</button>
+          </div>`;
+        })()}
         <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px;">
           ${tabs.map(tb => `<button data-eco-tab="${tb.id}" style="padding:7px 2px;border-radius:10px;border:none;font-size:10.5px;font-weight:700;cursor:pointer;background:${activeTab === tb.id ? "#f59e0b" : "#1e293b"};color:${activeTab === tb.id ? "#0f172a" : "#cbd5e1"};">${tb.label}</button>`).join("")}
         </div>
@@ -1200,6 +1279,8 @@
       </div>`;
 
     modal.querySelector("#btn-close-eco").onclick = () => { modal.style.display = "none"; };
+    const dailyBtn = modal.querySelector("#btn-claim-daily-streak");
+    if (dailyBtn) dailyBtn.onclick = () => { if (claimDailyStreak()) renderEconomyModal(); };
     modal.querySelectorAll("[data-eco-tab]").forEach(btn => {
       btn.onclick = () => { activeTab = btn.dataset.ecoTab; renderEconomyModal(); };
     });

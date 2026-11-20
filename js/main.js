@@ -1897,6 +1897,7 @@ let activeQuestSystem = null;
     const savedIg = localStorage.getItem('piraku_my_ig');
     if (savedIg) return null;
     const guestId = 'Tamu_' + Math.random().toString(36).substring(2, 6).toUpperCase();
+    const safePos = getSafeGasibuPos();
     const guestData = {
       id: -Date.now(),
       name: guestId,
@@ -1906,8 +1907,8 @@ let activeQuestSystem = null;
       wish: 'Wargi tamu lagi jalan-jalan di Gasibu!',
       color: [0x2d6a4f, 0xc2593f, 0x334155, 0x0f766e, 0x78350f][Math.floor(Math.random() * 5)],
       acc: "none|" + Math.floor(Math.random() * 3) + "|0|short",
-      x: (Math.random() - 0.5) * 6,
-      z: -6 + (Math.random() - 0.5) * 4,
+      x: safePos.x,
+      z: safePos.z,
       upvotes: 0
     };
     const mesh = createCitizenMesh(guestData);
@@ -1986,6 +1987,25 @@ let activeQuestSystem = null;
       if (jumpBtn) jumpBtn.style.display = 'flex';
     }
 
+    if (!window.pirakuInDistrict && mesh && mesh.position) {
+      if (typeof rebuildPirakuBuildingColliders === "function") rebuildPirakuBuildingColliders();
+      const px = mesh.position.x, pz = mesh.position.z;
+      const stuckInCollider = Array.isArray(pirakuBuildingColliders) && pirakuBuildingColliders.some(b =>
+        px > b.minX - 0.55 && px < b.maxX + 0.55 && pz > b.minZ - 0.55 && pz < b.maxZ + 0.55
+      );
+      if (stuckInCollider || (Math.abs(px) < 0.5 && Math.abs(pz) < 0.5)) {
+        const safe = getSafeGasibuPos();
+        mesh.position.set(safe.x, 0.1, safe.z);
+        if (mesh.userData && mesh.userData.a && mesh.userData.a.c) {
+          mesh.userData.a.c.x = safe.x;
+          mesh.userData.a.c.z = safe.z;
+        }
+      }
+      if (typeof resolvePirakuBuildingCollision === "function") {
+        resolvePirakuBuildingCollision(mesh.position, mesh.position.x, mesh.position.z, 0.48);
+      }
+    }
+
     gsap.to(cam.position, { x: mesh.position.x - 3.5, y: 3.2, z: mesh.position.z - 5.5, duration: 1.5, ease: 'power2.out' });
     controls.target.copy(mesh.position);
     showToast('Mode Kontrol Aktif! Gerakkan dengan WASD / Joystick 🎮');
@@ -2054,9 +2074,9 @@ let activeQuestSystem = null;
   wkCtx.strokeStyle = '#facc15'; wkCtx.lineWidth = 4; wkCtx.stroke();
   wkCtx.fillStyle = '#fde047'; wkCtx.font = '900 22px sans-serif'; wkCtx.textAlign = 'center'; wkCtx.textBaseline = 'middle';
   wkCtx.fillText('🏛️ Pak Walikota • Bandung', 170, 33);
-  const wkSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(wkCv), transparent: true, depthTest: false }));
-  wkSpr.scale.set(2.6, 0.49, 1);
-  wkSpr.position.set(0, 2.28, 0);
+  const wkSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(wkCv), transparent: true, depthTest: true }));
+  wkSpr.scale.set(isPirakuMobile ? 1.75 : 2.15, isPirakuMobile ? 0.33 : 0.40, 1);
+  wkSpr.position.set(0, 1.95, 0);
   WALKOT.add(wkSpr);
 
   const walkotData = { id: 0, name: 'Pak Walikota', ig: '@pirakubdg', role: 'WALKOT', npcBadge: '🏛️ WALIKOTA BANDUNG', kecamatan: 'Bandung Wetan', wish: 'Wilujeng sumping! Keliling Gasibu, mancing di Danau Taman Lansia, atau kunjungi 30 Kecamatan!', upvotes: 42, x: -6.5, z: 1.4 };
@@ -2123,9 +2143,9 @@ let activeQuestSystem = null;
   kdmCtx.strokeStyle = '#facc15'; kdmCtx.lineWidth = 4; kdmCtx.stroke();
   kdmCtx.fillStyle = '#fde047'; kdmCtx.font = '900 22px sans-serif'; kdmCtx.textAlign = 'center'; kdmCtx.textBaseline = 'middle';
   kdmCtx.fillText('🏛️ KDM • Gubernur Jabar', 170, 33);
-  const kdmSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(kdmCv), transparent: true, depthTest: false }));
-  kdmSpr.scale.set(2.6, 0.49, 1);
-  kdmSpr.position.set(0, 2.28, 0);
+  const kdmSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(kdmCv), transparent: true, depthTest: true }));
+  kdmSpr.scale.set(isPirakuMobile ? 1.75 : 2.15, isPirakuMobile ? 0.33 : 0.40, 1);
+  kdmSpr.position.set(0, 1.95, 0);
   KDM.add(kdmSpr);
 
   const kdmData = {
@@ -2723,6 +2743,12 @@ let activeQuestSystem = null;
   }
 
   window.sendQuickChat = function(txt) {
+    if (!(localStorage.getItem('piraku_my_ig') || '').trim()) {
+      showToast('Silakan Masuk / Daftar E-KTP dulu untuk bisa nge-chat! 🪪');
+      if (typeof closeChatModal === 'function') closeChatModal();
+      if (typeof openJoinModal === 'function') openJoinModal();
+      return;
+    }
     const inp = document.getElementById('inp-chat-msg');
     if (!inp) return;
     inp.value = txt;
@@ -2730,10 +2756,16 @@ let activeQuestSystem = null;
   };
 
   window.sendChatMessage = async function() {
+    const myIg = (localStorage.getItem('piraku_my_ig') || '').trim();
+    if (!myIg) {
+      showToast('Silakan Masuk / Daftar E-KTP dulu untuk bisa nge-chat! 🪪');
+      if (typeof closeChatModal === 'function') closeChatModal();
+      if (typeof openJoinModal === 'function') openJoinModal();
+      return;
+    }
     const inp = document.getElementById('inp-chat-msg');
     const msg = inp.value.trim();
     if (!msg) return;
-    const myIg = localStorage.getItem('piraku_my_ig') || '@warga_tamu';
 
     appendChatToUI(myIg, msg);
     inp.value = '';
@@ -3476,22 +3508,78 @@ let activeQuestSystem = null;
   };
   function likeEsc(s) { return String(s || '').replace(/[\\%_]/g, '\\$&amp;'); }
   const esc = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
+  let activeLeaderboardTab = 'level';
+  window.setLeaderboardTab = function(tab) {
+    activeLeaderboardTab = tab || 'level';
+    document.querySelectorAll('#leaderboard-tabs [data-lb-tab]').forEach(btn => {
+      const active = btn.dataset.lbTab === activeLeaderboardTab;
+      btn.style.background = active ? '#facc15' : '#1e293b';
+      btn.style.color = active ? '#0f172a' : '#cbd5e1';
+    });
+    renderLeaderboard();
+  };
+
   function renderLeaderboard() {
-    const sorted = [...registeredCitizensList].sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0)).slice(0, 5);
     const containerEl = document.getElementById('leaderboard-items');
     if (!containerEl) return;
-    containerEl.innerHTML = sorted.map((c, idx) => `
-      <div class="leader-item" onclick="teleportToCitizen('${esc(c.ig)}')">
-        <div class="leader-rank">${['🥇','🥈','🥉'][idx] || '#' + (idx + 1)}</div>
-        <div class="leader-info">
-          <div class="leader-user">${esc(c.ig)} <span style="font-size:9.5px;color:var(--sub);font-weight:600">(${esc(c.kecamatan || 'Bandung')})</span></div>
-          <div class="leader-wish">"${esc(c.wish)}"</div>
+    const tierOrder = { tier_7: 7, tier_6: 6, tier_5: 5, tier_4: 4, tier_3: 3, tier_2: 2, tier_1: 1 };
+    const myIgClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
+    const myEcoTier = (window.PirakuEconomy && typeof window.PirakuEconomy.getTierObj === 'function') ? window.PirakuEconomy.getTierObj() : null;
+
+    const list = registeredCitizensList.map(c => {
+      const clean = String(c?.ig || '').trim().toLowerCase().replace(/^@/, '');
+      const remTier = (window.pirakuRemoteTiers || {})[clean];
+      const lvl = (typeof window.computePirakuLevelFromTotalXp === 'function')
+        ? window.computePirakuLevelFromTotalXp(c.xp || 0).level
+        : (c.level || 1);
+      const lvlTitle = (typeof window.getPirakuCitizenTitle === 'function')
+        ? window.getPirakuCitizenTitle(lvl)
+        : 'Warga Baru';
+      const tObj = (clean && clean === myIgClean && myEcoTier)
+        ? { tierId: myEcoTier.id, tierName: myEcoTier.id === 'tier_1' ? lvlTitle : myEcoTier.name, tierBadge: myEcoTier.id === 'tier_1' ? '🎖️' : myEcoTier.badge }
+        : (remTier && remTier.tierId && remTier.tierId !== 'tier_1'
+          ? remTier
+          : { tierId: 'tier_1', tierName: lvlTitle, tierBadge: '🎖️' });
+      return { ...c, clean, lvl, tierId: tObj.tierId || 'tier_1', tierName: tObj.tierName || lvlTitle, tierBadge: tObj.tierBadge || '🎖️' };
+    });
+
+    let sorted;
+    if (activeLeaderboardTab === 'votes') {
+      sorted = list.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0) || (b.xp || 0) - (a.xp || 0)).slice(0, 10);
+    } else if (activeLeaderboardTab === 'sultan') {
+      sorted = list.sort((a, b) => (tierOrder[b.tierId] || 1) - (tierOrder[a.tierId] || 1) || (b.xp || 0) - (a.xp || 0)).slice(0, 10);
+    } else {
+      sorted = list.sort((a, b) => (b.xp || 0) - (a.xp || 0) || (b.lvl || 1) - (a.lvl || 1)).slice(0, 10);
+    }
+
+    containerEl.innerHTML = sorted.map((c, idx) => {
+      const statText = activeLeaderboardTab === 'votes'
+        ? `❤️ ${c.upvotes || 0}`
+        : activeLeaderboardTab === 'sultan'
+          ? `${c.tierBadge} ${c.tierName || 'Warga'}`
+          : `⭐ Lv.${c.lvl}`;
+      return `
+        <div class="leader-item" onclick="teleportToCitizen('${esc(c.ig)}')" style="background:rgba(30,41,59,0.85);border:1px solid rgba(148,163,184,0.2);color:#f8fafc;">
+          <div class="leader-rank">${['🥇','🥈','🥉'][idx] || '#' + (idx + 1)}</div>
+          <div class="leader-info">
+            <div class="leader-user" style="color:#f8fafc;">${esc(c.ig)}</div>
+            <div style="font-size:10.5px;color:#94a3b8;">Kec. ${esc(c.kecamatan || 'Bandung')} • ${(c.xp || 0).toLocaleString('id-ID')} XP</div>
+          </div>
+          <div class="leader-votes" style="color:#fde047;font-weight:900;font-size:11.5px;white-space:nowrap;">${statText}</div>
         </div>
-        <div class="leader-votes">❤️ ${c.upvotes || 0}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
-  window.teleportToCitizen = function(ig) { closeLeaderboardModal(); const found = registeredCitizensList.find(c => c.ig === ig); if (found) showCitizenSpeech(found); };
+  window.teleportToCitizen = function(ig) {
+    closeLeaderboardModal();
+    if (typeof window.focusOnlineCitizenByIg === 'function') {
+      window.focusOnlineCitizenByIg(ig);
+      return;
+    }
+    const clean = String(ig || '').trim().toLowerCase().replace(/^@/, '');
+    const found = registeredCitizensList.find(c => String(c?.ig || '').trim().toLowerCase().replace(/^@/, '') === clean);
+    if (found) showCitizenSpeech(found, true);
+  };
 
   // Absen Minigame + XP Level Up
   window.openCheckinModal = function() {
@@ -4480,6 +4568,9 @@ let activeQuestSystem = null;
   });
 
   window.resetPirakuCamera = function () {
+    window.pirakuCameraTrackTarget = null;
+    const stopBtn = document.getElementById('piraku-stop-track-btn');
+    if (stopBtn) stopBtn.style.display = 'none';
     if (typeof controls === 'undefined' || !controls) return;
     if (myPlayerMesh) {
       const yaw = myPlayerMesh.rotation.y || 0;
@@ -4520,6 +4611,8 @@ let activeQuestSystem = null;
 
   if (joystickZone) {
     let activeJoyTouchId = null;
+    joystickZone.style.touchAction = 'none';
+    joystickZone.addEventListener('pointerdown', e => e.stopPropagation());
 
     function handleJoyMoveClient(clientX, clientY) {
       let dx = clientX - joyCenter.x;
@@ -4704,6 +4797,16 @@ let activeQuestSystem = null;
     // Jika sedang naik di atas dek tinggi Flyover Pasupati (y > 2.4), tidak bertabrakan dengan bangunan bawah
     if (pos.y > 2.4) return;
 
+    if (window.pirakuInDistrict) {
+      const dTugu = Math.hypot(pos.x, pos.z);
+      if (dTugu < 2.75) {
+        const nx = dTugu > 0.001 ? pos.x / dTugu : 0;
+        const nz = dTugu > 0.001 ? pos.z / dTugu : 1;
+        pos.x = nx * 2.75;
+        pos.z = nz * 2.75;
+      }
+    }
+
     for (let pass = 0; pass < 2; pass++) {
       for (let i = 0; i < pirakuBuildingColliders.length; i++) {
         const b = pirakuBuildingColliders[i];
@@ -4800,6 +4903,12 @@ let activeQuestSystem = null;
     const a = myPlayerMesh.userData.a;
 
     if (hasInput) {
+      if (window.pirakuCameraTrackTarget && inputMag > 0.25) {
+        window.pirakuCameraTrackTarget = null;
+        window.pirakuActiveMinimapTarget = null;
+        const stopBtn = document.getElementById('piraku-stop-track-btn');
+        if (stopBtn) stopBtn.style.display = 'none';
+      }
       const beforeMoveX = myPlayerMesh.position.x;
       const beforeMoveZ = myPlayerMesh.position.z;
 
@@ -4838,6 +4947,11 @@ let activeQuestSystem = null;
       }
 
       resolvePirakuBuildingCollision(myPlayerMesh.position, prevX, prevZ, 0.48);
+      // Cegah karakter tergelincir masuk air kolam saat berjalan di daratan/batu tepi kolam
+      if (isGrounded && prevY >= -0.15 && typeof window.getPirakuFishingGroundY === "function" && window.getPirakuFishingGroundY(myPlayerMesh.position.x, myPlayerMesh.position.z) === -0.72) {
+        myPlayerMesh.position.x = beforeMoveX;
+        myPlayerMesh.position.z = beforeMoveZ;
+      }
       myPlayerMesh.userData.a.c.x = myPlayerMesh.position.x;
       myPlayerMesh.userData.a.c.z = myPlayerMesh.position.z;
 
@@ -4901,10 +5015,15 @@ let activeQuestSystem = null;
     }
     window.pirakuIsAirborne = !isGrounded;
 
+    const track = window.pirakuCameraTrackTarget;
+    const followX = track ? (track.mesh && track.mesh.position ? track.mesh.position.x : track.x) : myPlayerMesh.position.x;
+    const followY = track ? (track.mesh && track.mesh.position ? track.mesh.position.y + 1.3 : 1.4) : (myPlayerMesh.position.y + 1.3);
+    const followZ = track ? (track.mesh && track.mesh.position ? track.mesh.position.z : track.z) : myPlayerMesh.position.z;
+
     const curTarget = controls.target;
-    const diffX = myPlayerMesh.position.x - curTarget.x;
-    const diffY = (myPlayerMesh.position.y + 1.3) - curTarget.y;
-    const diffZ = myPlayerMesh.position.z - curTarget.z;
+    const diffX = followX - curTarget.x;
+    const diffY = followY - curTarget.y;
+    const diffZ = followZ - curTarget.z;
     const lerpFactor = 0.12;
 
     curTarget.x += diffX * lerpFactor;

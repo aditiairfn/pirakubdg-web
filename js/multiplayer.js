@@ -304,6 +304,11 @@
   }
 
   function sendChatMessage(msg) {
+    if (!(localStorage.getItem("piraku_my_ig") || "").trim()) {
+      if (typeof window.showToast === "function") window.showToast("Silakan Masuk / Daftar E-KTP dulu untuk bisa nge-chat! 🪪");
+      if (typeof window.openJoinModal === "function") window.openJoinModal();
+      return;
+    }
     const id = getMyIdentity();
     if ((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : (typeof (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) !== "undefined" ? (typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null) : null))) {
       spawnFloatingBubble((typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null), id.ig, msg);
@@ -1195,6 +1200,179 @@
 
   window.switchMultiplayerDistrict = function() {
     connectGlobalWorld();
+  };
+
+  window.getPirakuOnlineUsersList = function() {
+    const map = new Map();
+    const myInfo = getMyIdentity();
+    const myNorm = String(myInfo.ig || "").trim().toLowerCase().replace(/^@/, "");
+    map.set(myNorm || "self", {
+      ig: myInfo.ig || "@tamu",
+      kecamatan: myInfo.kecamatan || "Bandung",
+      tierBadge: myInfo.tierBadge || "",
+      tierName: myInfo.tierName || "",
+      isSelf: true
+    });
+    const addPresenceMap = (st) => {
+      if (!st || typeof st !== "object") return;
+      Object.values(st).forEach(arr => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(p => {
+          if (!p || !p.ig) return;
+          const k = String(p.ig).trim().toLowerCase().replace(/^@/, "");
+          if (!k || map.has(k)) return;
+          map.set(k, {
+            ig: p.ig,
+            kecamatan: p.kecamatan || "Bandung",
+            tierBadge: p.tierBadge || "",
+            tierName: p.tierName || "",
+            isSelf: k === myNorm
+          });
+        });
+      });
+    };
+    if (globalPresenceChannel && typeof globalPresenceChannel.presenceState === "function") {
+      addPresenceMap(globalPresenceChannel.presenceState());
+    }
+    if (mpChannel && typeof mpChannel.presenceState === "function") {
+      addPresenceMap(mpChannel.presenceState());
+    }
+    remotePlayers.forEach(en => {
+      if (!en || !en.ig) return;
+      const k = String(en.ig).trim().toLowerCase().replace(/^@/, "");
+      if (!k || map.has(k)) return;
+      const rt = (window.pirakuRemoteTiers || {})[k] || {};
+      map.set(k, {
+        ig: en.ig,
+        kecamatan: "Bandung",
+        tierBadge: rt.tierBadge || "",
+        tierName: rt.tierName || "",
+        isSelf: false
+      });
+    });
+    return Array.from(map.values());
+  };
+
+  window.focusOnlineCitizenByIg = function(rawIg) {
+    const clean = String(rawIg || "").trim().toLowerCase().replace(/^@/, "");
+    if (!clean) return;
+    let targetX = null, targetZ = null, liveMesh = null;
+    remotePlayers.forEach(en => {
+      if (!en || !en.ig) return;
+      if (String(en.ig).trim().toLowerCase().replace(/^@/, "") === clean && en.mesh && en.mesh.position) {
+        targetX = en.mesh.position.x;
+        targetZ = en.mesh.position.z;
+        liveMesh = en.mesh;
+      }
+    });
+    if (targetX === null && mpChannel && typeof mpChannel.presenceState === "function") {
+      const pSt = mpChannel.presenceState();
+      Object.values(pSt || {}).forEach(arr => {
+        if (!Array.isArray(arr)) return;
+        arr.forEach(p => {
+          if (!p || !p.ig) return;
+          if (String(p.ig).trim().toLowerCase().replace(/^@/, "") === clean && typeof p.x === "number" && typeof p.z === "number") {
+            targetX = p.x;
+            targetZ = p.z;
+          }
+        });
+      });
+    }
+    if (targetX === null && Array.isArray(window.registeredCitizensList)) {
+      const reg = window.registeredCitizensList.find(c => String(c?.ig || "").trim().toLowerCase().replace(/^@/, "") === clean);
+      if (reg && typeof reg.x === "number" && typeof reg.z === "number") {
+        targetX = reg.x;
+        targetZ = reg.z;
+      }
+    }
+    if (targetX !== null && targetZ !== null) {
+      window.pirakuCameraTrackTarget = { ig: clean, mesh: liveMesh, x: targetX, z: targetZ };
+      window.pirakuActiveMinimapTarget = { x: targetX, z: targetZ, label: "📍 @" + clean, mapId: window.pirakuActiveMapId || "bandung_wetan" };
+      let stopBtn = document.getElementById("piraku-stop-track-btn");
+      if (!stopBtn && document.body) {
+        stopBtn = document.createElement("button");
+        stopBtn.id = "piraku-stop-track-btn";
+        stopBtn.type = "button";
+        stopBtn.style.cssText = "position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:95;padding:6px 14px;border-radius:999px;background:rgba(15,23,42,0.94);border:1.5px solid #38bdf8;color:#fde047;font-size:11.5px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,0.55);cursor:pointer;display:none;";
+        stopBtn.onclick = () => {
+          window.pirakuCameraTrackTarget = null;
+          window.pirakuActiveMinimapTarget = null;
+          stopBtn.style.display = "none";
+          if (typeof window.resetPirakuCamera === "function") window.resetPirakuCamera();
+        };
+        document.body.appendChild(stopBtn);
+      }
+      if (stopBtn) {
+        stopBtn.textContent = "📍 Melacak @" + clean + " • ✕ Kembali";
+        stopBtn.style.display = "block";
+      }
+      const camObj = getActiveCamera();
+      const ctrl = window.pirakuControls;
+      if (typeof gsap !== "undefined") {
+        if (ctrl && ctrl.target) gsap.killTweensOf(ctrl.target);
+        if (camObj && camObj.position) gsap.killTweensOf(camObj.position);
+      }
+      if (ctrl && ctrl.target && camObj) {
+        const offX = camObj.position.x - ctrl.target.x;
+        const offY = Math.max(3.5, camObj.position.y - ctrl.target.y);
+        const offZ = camObj.position.z - ctrl.target.z;
+        ctrl.target.set(targetX, 1.4, targetZ);
+        camObj.position.set(targetX + offX, 1.4 + offY, targetZ + offZ);
+        if (typeof ctrl.update === "function") ctrl.update();
+      }
+      if (liveMesh && liveMesh.userData && liveMesh.userData.a && liveMesh.userData.a.c && typeof window.showCitizenSpeech === "function") {
+        window.showCitizenSpeech(liveMesh.userData.a.c, false);
+      }
+      if (typeof window.showToast === "function") {
+        window.showToast("📍 Melacak @" + clean + (liveMesh ? " (Live)" : " (Lokasi terakhir)"));
+      }
+    } else if (typeof window.showToast === "function") {
+      window.showToast("📍 @" + clean + " sedang berada di distrik / tab lain.");
+    }
+  };
+
+  window.openOnlineCitizensModal = function() {
+    let modal = document.getElementById("piraku-online-modal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "piraku-online-modal";
+      modal.style.cssText = "position:fixed;inset:0;background:rgba(2,6,23,0.78);backdrop-filter:blur(7px);z-index:99995;display:none;align-items:center;justify-content:center;padding:16px;";
+      modal.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
+      document.body.appendChild(modal);
+    }
+    const list = window.getPirakuOnlineUsersList();
+    const esc = s => String(s || "").replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[m]));
+    modal.innerHTML = `
+      <div style="width:100%;max-width:380px;max-height:80dvh;display:flex;flex-direction:column;background:linear-gradient(160deg,#0f172a,#162033);border:1.5px solid rgba(74,222,128,0.45);border-radius:20px;overflow:hidden;color:#f8fafc;box-shadow:0 22px 55px rgba(0,0,0,0.78);">
+        <div style="padding:13px 16px;border-bottom:1px solid rgba(148,163,184,0.18);display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:10px;font-weight:800;color:#4ade80;letter-spacing:0.6px;">● REALTIME PRESENCE</div>
+            <div style="font-size:15px;font-weight:900;">Warga Sedang Online (${Math.max(globalOnlineCount || 1, list.length)})</div>
+          </div>
+          <button onclick="document.getElementById('piraku-online-modal').style.display='none'" style="border:none;background:rgba(148,163,184,0.16);color:#f8fafc;width:30px;height:30px;border-radius:9px;font-weight:800;cursor:pointer;">✕</button>
+        </div>
+        <div style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;">
+          ${list.map(u => `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border-radius:12px;background:${u.isSelf ? "rgba(250,204,21,0.12)" : "rgba(30,41,59,0.85)"};border:1px solid ${u.isSelf ? "rgba(250,204,21,0.45)" : "rgba(148,163,184,0.2)"};">
+              <div style="min-width:0;">
+                <div style="font-size:12.5px;font-weight:800;color:${u.isSelf ? "#fde047" : "#f8fafc"};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  🟢 ${esc(u.ig)} ${u.isSelf ? "<span style='font-size:10px;color:#4ade80;'>(Kamu)</span>" : ""}
+                </div>
+                <div style="font-size:10.5px;color:#94a3b8;margin-top:1px;">
+                  ${u.tierBadge && u.tierName ? `<span style="color:#fde047;font-weight:700;">${esc(u.tierBadge)} ${esc(u.tierName)}</span> • ` : ""}${esc(u.kecamatan || "Bandung")}
+                </div>
+              </div>
+              ${!u.isSelf ? `<button onclick="document.getElementById('piraku-online-modal').style.display='none';if(typeof window.focusOnlineCitizenByIg==='function')window.focusOnlineCitizenByIg('${esc(u.ig)}');" style="border:none;background:rgba(56,189,248,0.2);color:#38bdf8;padding:5px 9px;border-radius:8px;font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;">📍 Lacak</button>` : ""}
+            </div>
+          `).join("")}
+          ${globalOnlineCount > list.length ? `<div style="text-align:center;font-size:10.5px;color:#94a3b8;padding:4px 0;">+ ${globalOnlineCount - list.length} warga lainnya di tab background / tamu.</div>` : ""}
+        </div>
+        <div style="padding:10px 14px;border-top:1px solid rgba(148,163,184,0.16);display:flex;gap:8px;">
+          <button onclick="document.getElementById('piraku-online-modal').style.display='none';if(typeof openChatModal==='function')openChatModal();" style="flex:1;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:9px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">💬 Buka Balai Obrolan</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = "flex";
   };
 
   let globalPresenceChannel = null;

@@ -37,7 +37,10 @@
   const TIER_META = {
     tier_2: { tierId: "tier_2", tierName: "Wargi Aktif", tierBadge: "⭐" },
     tier_3: { tierId: "tier_3", tierName: "Sesepuh Bandung", tierBadge: "👑" },
-    tier_4: { tierId: "tier_4", tierName: "Sultan Dago", tierBadge: "💎" }
+    tier_4: { tierId: "tier_4", tierName: "Sultan Kecamatan", tierBadge: "💎" },
+    tier_5: { tierId: "tier_5", tierName: "Sultan Bandung", tierBadge: "🦁" },
+    tier_6: { tierId: "tier_6", tierName: "Sultan Jabar", tierBadge: "🦅" },
+    tier_7: { tierId: "tier_7", tierName: "Sultan Indo", tierBadge: "🔱" }
   };
 
   async function loadAllRemoteTiersFromSupabase() {
@@ -54,11 +57,10 @@
             if (k1) window.pirakuRemoteOutfits[k1] = r.equipped_outfit;
             if (k2) window.pirakuRemoteOutfits[k2] = r.equipped_outfit;
           }
-          const activeVeh = (r.equipped_vehicle && Number(r.rental_expires_at || 0) > Date.now()) ? r.equipped_vehicle : null;
+          const ownedArr = Array.isArray(r.owned_items) ? r.owned_items : [];
+          const activeVeh = (r.equipped_vehicle && (ownedArr.includes(r.equipped_vehicle) || Number(r.rental_expires_at || 0) > Date.now())) ? r.equipped_vehicle : null;
           if (k1) window.pirakuRemoteVehicles[k1] = activeVeh;
           if (k2) window.pirakuRemoteVehicles[k2] = activeVeh;
-
-          const ownedArr = Array.isArray(r.owned_items) ? r.owned_items : [];
           const hasH = ownedArr.includes("has_house_built") || ownedArr.some(x => String(x).startsWith("house_tier_"));
           if (hasH) {
             let hTier = 1;

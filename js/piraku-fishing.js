@@ -287,12 +287,12 @@
   function isPlayerInLakeWater(px, pz) {
     if (isPlayerOnPier(px, pz)) return false;
     if (window.pirakuInDistrict) {
-      return Math.hypot(px - 42.0, pz - 9.9) < 6.0 || Math.hypot(px - 45.2, pz - 10.4) < 4.2 || Math.hypot(px - 39.4, pz - 9.7) < 4.0;
+      return Math.hypot(px - 42.0, pz - 9.9) < 5.45 || Math.hypot(px - 45.2, pz - 10.4) < 3.65 || Math.hypot(px - 39.4, pz - 9.7) < 3.45;
     }
-    const inMain = Math.hypot(px - 39.0, pz - 15.0) < 6.4;
-    const inEast = Math.hypot(px - 44.5, pz - 14.5) < 5.2;
-    const inSouth1 = Math.hypot(px - 40.0, pz - 22.0) < 6.6;
-    const inSouth2 = Math.hypot(px - 43.5, pz - 26.2) < 5.2;
+    const inMain = Math.hypot(px - 39.0, pz - 15.0) < 5.85;
+    const inEast = Math.hypot(px - 44.5, pz - 14.5) < 4.65;
+    const inSouth1 = Math.hypot(px - 40.0, pz - 22.0) < 6.05;
+    const inSouth2 = Math.hypot(px - 43.5, pz - 26.2) < 4.65;
     return inMain || inEast || inSouth1 || inSouth2;
   }
 
@@ -500,27 +500,32 @@
         lansiaPondGroup.add(sh, sl, dp);
       });
 
-      // Batu alam mengelilingi tepian danau (solid & bisa dinaiki, bebas jalan raya & dermaga)
-      for (let i = 0; i < 34; i++) {
-        const ang = (i / 34) * Math.PI * 2;
-        if (ang > Math.PI * 0.72 && ang < Math.PI * 1.15) continue;
-        const radX = 8.2 + Math.sin(i * 1.9) * 0.6;
-        const radZ = 9.4 + Math.cos(i * 2.3) * 0.6;
-        const rx = Math.cos(ang) * radX + 2.0;
-        const rz = Math.sin(ang) * radZ + 3.4;
-        // Pastikan tidak bocor ke Jl. Diponegoro (world z < 7.2) atau Jl. Sentot (world x < 26.5)
-        if (39 + rx < 27.0 || 16 + rz < 7.6) continue;
-        // Pastikan tidak ada batu menembus koridor dermaga atau gazebo
-        if (rx >= -13.0 && rx <= -1.8 && rz >= -3.0 && rz <= 3.0) continue;
-        if (Math.hypot(rx - (-9.5), rz - 11.5) < 3.6) continue;
-        const rBase = 0.52 + (i % 3) * 0.2;
-        const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(rBase, 0), i % 2 === 0 ? rockMat : darkRockMat);
-        rk.scale.set(1.25, 0.65, 1.05);
-        rk.position.set(rx, 0.22, rz);
-        rk.rotation.y = i * 0.7;
-        lansiaPondGroup.add(rk);
-        lansiaRocks.push({ x: 39 + rx, z: 16 + rz, r: rBase * 1.18, topY: Number((0.22 + rBase * 0.58).toFixed(2)) });
-      }
+      // Batu alam mengikuti bentuk persis kontur 4 cekungan danau (bebas jalan raya & dermaga)
+      const lansiaCircles = [[0, -1.0, 6.6], [5.5, -1.5, 5.4], [1.0, 6.0, 6.8], [4.5, 10.2, 5.4]];
+      let lrIdx = 0;
+      lansiaCircles.forEach(([cx, cz, cr], ci) => {
+        const steps = 28;
+        for (let i = 0; i < steps; i++) {
+          const ang = (i / steps) * Math.PI * 2;
+          const rx = cx + Math.cos(ang) * (cr + 0.55);
+          const rz = cz + Math.sin(ang) * (cr + 0.55);
+          // Skip jika titik berada di dalam lingkaran danau lainnya (ambil kontur terluar saja)
+          if (lansiaCircles.some(([ox, oz, or], oi) => oi !== ci && Math.hypot(rx - ox, rz - oz) < or + 0.2)) continue;
+          // Pastikan tidak bocor ke Jl. Diponegoro (world z < 7.2) atau Jl. Sentot (world x < 26.5)
+          if (39 + rx < 27.2 || 16 + rz < 7.8) continue;
+          // Pastikan tidak ada batu menembus koridor dermaga atau gazebo
+          if (rx >= -13.0 && rx <= -1.8 && rz >= -2.2 && rz <= 2.2) continue;
+          if (Math.hypot(rx - (-9.5), rz - 11.5) < 3.4) continue;
+          const rBase = 0.58 + (lrIdx % 3) * 0.12;
+          const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(rBase, 0), lrIdx % 2 === 0 ? rockMat : darkRockMat);
+          rk.scale.set(1.25, 0.62, 1.1);
+          rk.position.set(rx, 0.22, rz);
+          rk.rotation.y = lrIdx * 0.7;
+          lansiaPondGroup.add(rk);
+          lansiaRocks.push({ x: 39 + rx, z: 16 + rz, r: rBase * 1.45, topY: Number((0.22 + rBase * 0.58).toFixed(2)) });
+          lrIdx++;
+        }
+      });
       // Batu pijakan rapi menuju pintu dermaga barat
       [-12.4, -13.4, -14.4].forEach((sx, si) => {
         const st = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.08, 1.5), shoreMat);
@@ -689,20 +694,27 @@
         districtPondGroup.add(sh, sl, dp);
       });
 
-      // Batu tepian kolam (solid & bisa dinaiki, hindari koridor dermaga selatan)
-      for (let i = 0; i < 28; i++) {
-        const ang = (i / 28) * Math.PI * 2;
-        const rx = Math.cos(ang) * 6.8 + 0.4;
-        const rz = Math.sin(ang) * 5.6 - 0.3;
-        if (rx >= -2.5 && rx <= 2.5 && rz >= 0.0) continue;
-        const rBase = 0.48 + (i % 3) * 0.15;
-        const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(rBase, 0), rockMat);
-        rk.scale.set(1.2, 0.65, 1.0);
-        rk.position.set(rx, 0.2, rz);
-        rk.rotation.y = i * 0.8;
-        districtPondGroup.add(rk);
-        districtRocks.push({ x: 42.0 + rx, z: 10.2 + rz, r: rBase * 1.15, topY: Number((0.2 + rBase * 0.58).toFixed(2)) });
-      }
+      // Batu tepian kolam mengikuti kontur persis 3 lingkaran kolam (hindari koridor dermaga selatan)
+      const distCircles = [[0, -0.3, 6.2], [3.2, 0.2, 4.4], [-2.6, -0.5, 4.2]];
+      let drIdx = 0;
+      distCircles.forEach(([cx, cz, cr], ci) => {
+        const steps = 24;
+        for (let i = 0; i < steps; i++) {
+          const ang = (i / steps) * Math.PI * 2;
+          const rx = cx + Math.cos(ang) * (cr + 0.5);
+          const rz = cz + Math.sin(ang) * (cr + 0.5);
+          if (distCircles.some(([ox, oz, or], oi) => oi !== ci && Math.hypot(rx - ox, rz - oz) < or + 0.2)) continue;
+          if (rx >= -2.2 && rx <= 2.2 && rz >= 0.0) continue;
+          const rBase = 0.54 + (drIdx % 3) * 0.11;
+          const rk = new THREE.Mesh(new THREE.DodecahedronGeometry(rBase, 0), rockMat);
+          rk.scale.set(1.22, 0.62, 1.08);
+          rk.position.set(rx, 0.2, rz);
+          rk.rotation.y = drIdx * 0.8;
+          districtPondGroup.add(rk);
+          districtRocks.push({ x: 42.0 + rx, z: 10.2 + rz, r: rBase * 1.42, topY: Number((0.2 + rBase * 0.58).toFixed(2)) });
+          drIdx++;
+        }
+      });
       // Air terjun batu mini di pojok barat laut kolam kecamatan
       const dwf = new THREE.Mesh(new THREE.DodecahedronGeometry(1.4, 0), rockMat);
       dwf.scale.set(1.2, 1.3, 1.0);
@@ -1526,6 +1538,7 @@
 
     const modal = ensureFishingModal();
     modal.style.zIndex = "99999";
+
     modal.style.display = "flex";
     modal.innerHTML = `
       <div style="width:100%;max-width:360px;background:#0f172a;border:2px solid ${rStyle.border};border-radius:20px;padding:20px;text-align:center;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
@@ -1691,6 +1704,9 @@
     const exFish = (window.pirakuInDistrict && DISTRICT_EXCLUSIVE_FISH[curMapId]) ? DISTRICT_EXCLUSIVE_FISH[curMapId] : null;
     const bestCatch = loadJson("piraku_fish_best" + getUserSuf(), null);
 
+    const prevScrollEl = document.getElementById("piraku-fishing-scroll");
+    const savedScrollTop = (!tabName && prevScrollEl) ? prevScrollEl.scrollTop : 0;
+
     modal.style.display = "flex";
     modal.innerHTML = `
       <div style="width:100%;max-width:440px;max-height:86vh;display:flex;flex-direction:column;background:#0f172a;border:1.5px solid #38bdf8;border-radius:20px;overflow:hidden;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);">
@@ -1709,7 +1725,7 @@
           </div>
         </div>
         ${activeHubTab === "dex" ? `
-        <div style="padding:12px 14px;overflow-y:auto;">
+        <div id="piraku-fishing-scroll" style="padding:12px 14px;overflow-y:auto;">
           <div style="font-size:11px;font-weight:900;color:#7dd3fc;margin-bottom:7px;">🏛️ PUSAT KOTA BANDUNG (${FISH_CATALOG.length} Jenis)</div>
           <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
             ${FISH_CATALOG.map(f => {
@@ -1742,7 +1758,7 @@
             }).join("")}
           </div>
         </div>` : `
-        <div style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+        <div id="piraku-fishing-scroll" style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
           ${exFish ? `<div style="padding:8px 10px;border-radius:10px;background:rgba(168,85,247,0.16);border:1px solid #c084fc;font-size:11px;color:#f5d0fe;">🌟 Ikan Unik <b>Kec. ${exFish.districtName}</b>: <b>${exFish.name}</b> [${exFish.rarity.toUpperCase()}] bisa didapat di kolam ini!</div>` : ""}
           <div style="padding:9px 11px;border-radius:11px;background:${atKopdes ? "rgba(34,197,94,0.16)" : "rgba(245,158,11,0.16)"};border:1px solid ${atKopdes ? "#22c55e" : "#f59e0b"};font-size:11.5px;color:${atKopdes ? "#86efac" : "#fde047"};line-height:1.4;">
             ${atKopdes
@@ -1854,6 +1870,8 @@
         </div>`}
       </div>
     `;
+    const nextScrollEl = document.getElementById("piraku-fishing-scroll");
+    if (nextScrollEl && savedScrollTop > 0) nextScrollEl.scrollTop = savedScrollTop;
   };
 
   window.setPirakuBagSort = function (mode) {
@@ -2012,7 +2030,7 @@
       if (!_barEl) {
         _barEl = document.createElement("div");
         _barEl.id = "piraku-fishing-prompt";
-        _barEl.style.cssText = "position:fixed;bottom:76px;right:12px;z-index:46;display:none;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(15,23,42,0.94);backdrop-filter:blur(10px);border:1.5px solid #38bdf8;color:#f8fafc;font-size:11px;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,0.6);white-space:nowrap;";
+        _barEl.style.cssText = "position:fixed;bottom:calc(134px + env(safe-area-inset-bottom));right:14px;z-index:65;pointer-events:auto;display:none;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:rgba(15,23,42,0.94);backdrop-filter:blur(10px);border:1.5px solid #38bdf8;color:#f8fafc;font-size:10.5px;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,0.6);white-space:nowrap;";
         document.body.appendChild(_barEl);
       }
     }

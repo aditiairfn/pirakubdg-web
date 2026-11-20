@@ -2834,7 +2834,7 @@
     if (!bar && document.body) {
       bar = document.createElement("div");
       bar.id = "piraku-3d-action-bar";
-      bar.style.cssText = "position:fixed;bottom:148px;left:50%;transform:translateX(-50%);z-index:45;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:7px 11px;border-radius:16px;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.65);color:#f8fafc;font-size:11.5px;font-weight:800;box-shadow:0 12px 28px rgba(0,0,0,0.55);max-width:min(360px, calc(100vw - 24px));box-sizing:border-box;text-align:center;";
+      bar.style.cssText = "position:fixed;bottom:calc(188px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:48;display:none;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;padding:7px 11px;border-radius:16px;background:rgba(15,23,42,0.92);backdrop-filter:blur(10px);border:1.5px solid rgba(56,189,248,0.65);color:#f8fafc;font-size:11.5px;font-weight:800;box-shadow:0 12px 28px rgba(0,0,0,0.55);max-width:min(360px, calc(100vw - 24px));box-sizing:border-box;text-align:center;";
       document.body.appendChild(bar);
     }
     if (!bar) return;

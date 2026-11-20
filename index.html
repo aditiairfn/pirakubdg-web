@@ -24,7 +24,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚋</text></svg>">
   <link rel="stylesheet" href="css/clean-hud.css?v=20261119v1">
-  <link rel="stylesheet" href="./css/hud-polish.css?v=20261118v98">
+  <link rel="stylesheet" href="./css/hud-polish.css?v=20261119v1">
   <style id="piraku-zindex-fix">
     body > div[style*="pointer-events: none"][style*="position: absolute"],
     body > div[style*="pointer-events:none"][style*="position:absolute"] { z-index: 5 !important; isolation: isolate !important; }
@@ -507,13 +507,20 @@
 
   <!-- Modal Leaderboard -->
   <div class="modal-overlay" id="leaderboard-modal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Top Warga Berpengaruh 🏆</h3>
-        <button class="btn-close" onclick="closeLeaderboardModal()">✕</button>
+    <div class="modal-card" style="background:linear-gradient(160deg,#0f172a,#162033);color:#f8fafc;border:1.5px solid rgba(250,204,21,0.45);">
+      <div class="modal-header" style="border-bottom:1px solid rgba(148,163,184,0.18);padding-bottom:10px;margin-bottom:10px;">
+        <div>
+          <div style="font-size:10px;font-weight:800;color:#facc15;letter-spacing:0.6px;">PERINGKAT KOTA BANDUNG</div>
+          <h3 style="margin:0;color:#f8fafc;">🏆 Leaderboard Warga</h3>
+        </div>
+        <button class="btn-close" onclick="closeLeaderboardModal()" style="background:rgba(148,163,184,0.16);color:#f8fafc;">✕</button>
       </div>
-      <div style="font-size:11px;color:#64748b;margin-bottom:12px;">Wargi dengan dukungan ❤️ terbanyak:</div>
-      <div class="leaderboard-list" id="leaderboard-items">
+      <div id="leaderboard-tabs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;">
+        <button type="button" data-lb-tab="level" onclick="setLeaderboardTab('level')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:900;cursor:pointer;background:#facc15;color:#0f172a;">⭐ Top Level</button>
+        <button type="button" data-lb-tab="votes" onclick="setLeaderboardTab('votes')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">❤️ Dukungan</button>
+        <button type="button" data-lb-tab="sultan" onclick="setLeaderboardTab('sultan')" style="padding:7px 4px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;background:#1e293b;color:#cbd5e1;">👑 Top Sultan</button>
+      </div>
+      <div class="leaderboard-list" id="leaderboard-items" style="max-height:52dvh;overflow-y:auto;">
         <div style="text-align:center;font-size:11px;color:#94a3b8;padding:20px;">Memuat peringkat...</div>
       </div>
     </div>
@@ -1168,7 +1175,7 @@
   </div>
 
   <div class="hud-side-right">
-    <div class="hud-pill-btn online-status-pill" onclick="openChatModal()" title="Warga sedang online">
+    <div class="hud-pill-btn online-status-pill" onclick="if(typeof window.openOnlineCitizensModal==='function'){window.openOnlineCitizensModal();}else{openChatModal();}" title="Lihat daftar warga yang sedang online">
       <span class="online-dot"></span>
       <span id="top-online-count">1 Warga Online</span>
     </div>
@@ -1275,8 +1282,8 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v31"></script>
-  <script defer src="js/multiplayer.js?v=20261119v35"></script>
+  <script defer src="./js/main.js?v=20261119v39"></script>
+  <script defer src="js/multiplayer.js?v=20261119v41"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
   <script defer src="js/map-beautify.js?v=20261119v20"></script>
@@ -1419,13 +1426,13 @@
     })();
   </script>
 
-  <script defer src="js/piraku-economy.js?v=20261119v26"></script>
+  <script defer src="js/piraku-economy.js?v=20261119v27"></script>
   <script defer src="js/piraku-games.js?v=20261119v3"></script>
-  <script defer src="js/piraku-world-live.js?v=20261118v98"></script>
+  <script defer src="js/piraku-world-live.js?v=20261119v1"></script>
   <script defer src="js/piraku-nav-modals.js?v=20261119v18"></script>
   <script defer src="js/piraku-vfx.js?v=20261118v98"></script>
-  <script defer src="js/piraku-districts.js?v=20261119v12"></script>
-  <script defer src="js/piraku-fishing.js?v=20261119v22"></script>
+  <script defer src="js/piraku-districts.js?v=20261119v13"></script>
+  <script defer src="js/piraku-fishing.js?v=20261119v29"></script>
 
   
 
