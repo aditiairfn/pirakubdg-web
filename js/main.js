@@ -2741,6 +2741,102 @@ let activeQuestSystem = null;
     }
   };
 
+  let activeChatReply = null;
+
+  window.clearChatReply = function() {
+    activeChatReply = null;
+    const prev = document.getElementById('chat-reply-preview');
+    if (prev) prev.style.display = 'none';
+  };
+
+  window.setChatReply = function(sender, rawBody) {
+    const cleanSender = String(sender || '').replace(/[|\]]/g, '').trim();
+    const cleanSnippet = String(rawBody || '').replace(/[|\]]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 48);
+    if (!cleanSender) return;
+    activeChatReply = { sender: cleanSender, snippet: cleanSnippet };
+    const prev = document.getElementById('chat-reply-preview');
+    const tgtEl = document.getElementById('chat-reply-target');
+    const snpEl = document.getElementById('chat-reply-snippet');
+    if (tgtEl) tgtEl.textContent = cleanSender;
+    if (snpEl) snpEl.textContent = cleanSnippet || '...';
+    if (prev) prev.style.display = 'flex';
+    const inp = document.getElementById('inp-chat-msg');
+    if (inp) inp.focus();
+  };
+
+  window.insertChatMention = function(ig) {
+    const inp = document.getElementById('inp-chat-msg');
+    const listEl = document.getElementById('chat-mention-list');
+    if (listEl) listEl.style.display = 'none';
+    if (!inp || !ig) return;
+    const tag = (String(ig).startsWith('@') ? ig : '@' + ig) + ' ';
+    const val = inp.value || '';
+    if (/(?:^|\s)@([a-zA-Z0-9_.-]*)$/.test(val)) {
+      inp.value = val.replace(/(^|\s)@([a-zA-Z0-9_.-]*)$/, '$1' + tag);
+    } else {
+      inp.value = val + (val && !val.endsWith(' ') ? ' ' : '') + tag;
+    }
+    inp.focus();
+  };
+
+  function parsePirakuChatPayload(raw) {
+    const s = String(raw || '');
+    const m = s.match(/^\[REPLY\|([^|\]]+)\|([^\]]*)\]\s*([\s\S]*)$/);
+    if (m) return { replyTo: m[1], replySnippet: m[2], body: m[3] };
+    return { replyTo: null, replySnippet: '', body: s };
+  }
+
+  function formatChatBodyWithMentions(body, myIgClean, isMe) {
+    let mentionedMe = false;
+    const escaped = esc(body);
+    const html = escaped.replace(/@([a-zA-Z0-9_.-]+)/g, (full, uname) => {
+      const isTargetMe = Boolean(myIgClean && uname.toLowerCase() === myIgClean);
+      if (isTargetMe) mentionedMe = true;
+      const bg = isTargetMe
+        ? 'rgba(250,204,21,0.28);color:#fde047;border:1px solid rgba(250,204,21,0.55)'
+        : (isMe ? 'rgba(15,23,42,0.22);color:#041322' : 'rgba(56,189,248,0.2);color:#7dd3fc');
+      return `<span onclick="insertChatMention('${esc(uname)}')" style="display:inline-block;padding:0 5px;border-radius:6px;background:${bg};font-weight:800;cursor:pointer;">${full}</span>`;
+    });
+    return { html, mentionedMe };
+  }
+
+  const chatInpEl = document.getElementById('inp-chat-msg');
+  if (chatInpEl) {
+    chatInpEl.addEventListener('input', () => {
+      const listEl = document.getElementById('chat-mention-list');
+      if (!listEl) return;
+      const m = (chatInpEl.value || '').match(/(?:^|\s)@([a-zA-Z0-9_.-]*)$/);
+      if (!m) {
+        listEl.style.display = 'none';
+        return;
+      }
+      const q = m[1].toLowerCase();
+      const myClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
+      const candidates = (Array.isArray(registeredCitizensList) ? registeredCitizensList : [])
+        .filter(c => c && c.ig)
+        .map(c => ({ ig: String(c.ig).trim(), kec: c.kecamatan || '' }))
+        .filter(c => {
+          const cl = c.ig.toLowerCase().replace(/^@/, '');
+          return cl && cl !== myClean && (!q || cl.includes(q));
+        })
+        .slice(0, 6);
+      if (!candidates.length) {
+        listEl.style.display = 'none';
+        return;
+      }
+      listEl.innerHTML = '';
+      candidates.forEach(c => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;border:none;background:rgba(30,41,59,0.75);color:#f8fafc;padding:6px 10px;border-radius:8px;font-size:11.5px;font-weight:700;cursor:pointer;text-align:left;';
+        btn.innerHTML = `<span style="color:#7dd3fc;">${esc(c.ig.startsWith('@') ? c.ig : '@' + c.ig)}</span><span style="font-size:10px;color:#94a3b8;">${esc(c.kec)}</span>`;
+        btn.onclick = () => window.insertChatMention(c.ig);
+        listEl.appendChild(btn);
+      });
+      listEl.style.display = 'flex';
+    });
+  }
+
   function appendChatToUI(sender, text, createdAt, isHistory) {
     const rawText = String(text || '');
     if (rawText.startsWith('[BILLBOARD] ')) {
@@ -2758,9 +2854,11 @@ let activeQuestSystem = null;
       return;
     }
 
+    const parsed = parsePirakuChatPayload(rawText);
     const stream = document.getElementById('chat-messages');
     if (!stream) return;
     const myIg = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase();
+    const myIgClean = myIg.replace(/^@/, '');
     const isMe = Boolean(myIg && String(sender || '').trim().toLowerCase() === myIg);
     const cit = Array.isArray(registeredCitizensList)
       ? registeredCitizensList.find(c => String(c.ig || '').trim().toLowerCase() === String(sender || '').trim().toLowerCase())
@@ -2770,18 +2868,36 @@ let activeQuestSystem = null;
       ? new Date(createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
+    const { html: bodyHtml, mentionedMe } = formatChatBodyWithMentions(parsed.body, myIgClean, isMe);
+    const isRepliedToMe = Boolean(!isMe && myIgClean && parsed.replyTo && parsed.replyTo.toLowerCase().replace(/^@/, '') === myIgClean);
+    const highlightMe = !isMe && (mentionedMe || isRepliedToMe);
+
     const wrap = document.createElement('div');
     wrap.style.cssText = `display:flex;flex-direction:column;align-items:${isMe ? 'flex-end' : 'flex-start'};max-width:100%;`;
     const bubble = document.createElement('div');
     bubble.style.cssText = isMe
-      ? 'max-width:82%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#041322;padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:12px;box-shadow:0 3px 10px rgba(14,165,233,0.25);word-break:break-word;'
-      : 'max-width:82%;background:#1e293b;border:1px solid rgba(148,163,184,0.24);color:#f8fafc;padding:8px 12px;border-radius:14px 14px 14px 4px;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,0.2);word-break:break-word;';
-    bubble.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;"><span style="font-weight:800;font-size:11px;">${esc(sender)}${kecBadge}</span><span style="font-size:9.5px;opacity:0.7;">${timeStr}</span></div><div>${esc(rawText)}</div>`;
+      ? 'max-width:84%;background:linear-gradient(135deg,#38bdf8,#0ea5e9);color:#041322;padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:12px;box-shadow:0 3px 10px rgba(14,165,233,0.25);word-break:break-word;'
+      : `max-width:84%;background:${highlightMe ? 'rgba(250,204,21,0.12)' : '#1e293b'};border:1px solid ${highlightMe ? 'rgba(250,204,21,0.6)' : 'rgba(148,163,184,0.24)'};color:#f8fafc;padding:8px 12px;border-radius:14px 14px 14px 4px;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,0.2);word-break:break-word;`;
+
+    const quoteHtml = parsed.replyTo
+      ? `<div style="background:${isMe ? 'rgba(15,23,42,0.16)' : 'rgba(15,23,42,0.55)'};border-left:2.5px solid ${isMe ? '#0f172a' : '#38bdf8'};border-radius:6px;padding:4px 7px;margin-bottom:5px;font-size:10.5px;opacity:0.92;"><div style="font-weight:800;">↩️ ${esc(parsed.replyTo)}</div><div style="opacity:0.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(parsed.replySnippet)}</div></div>`
+      : '';
+
+    const replyBtn = `<button type="button" class="piraku-chat-reply-btn" title="Balas pesan ini" style="border:none;background:transparent;color:${isMe ? '#041322' : '#94a3b8'};font-size:11px;cursor:pointer;padding:0 2px;opacity:0.85;">↩️</button>`;
+    const senderBtn = `<span class="piraku-chat-sender-btn" title="Ketuk untuk tag" style="font-weight:800;font-size:11px;cursor:pointer;">${esc(sender)}${kecBadge}${highlightMe ? ' 🔔' : ''}</span>`;
+
+    bubble.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:3px;">${senderBtn}<span style="display:inline-flex;align-items:center;gap:5px;"><span style="font-size:9.5px;opacity:0.7;">${timeStr}</span>${replyBtn}</span></div>${quoteHtml}<div>${bodyHtml}</div>`;
+    const rBtn = bubble.querySelector('.piraku-chat-reply-btn');
+    if (rBtn) rBtn.onclick = () => window.setChatReply(sender, parsed.body);
+    const sBtn = bubble.querySelector('.piraku-chat-sender-btn');
+    if (sBtn) sBtn.onclick = () => window.insertChatMention(sender);
+
     wrap.appendChild(bubble);
     stream.appendChild(wrap);
     stream.scrollTop = stream.scrollHeight;
 
-    showOverheadBubbleOnAvatar(sender, rawText);
+    const overheadMsg = parsed.replyTo ? `↩️ ${parsed.replyTo}: ${parsed.body}` : parsed.body;
+    showOverheadBubbleOnAvatar(sender, overheadMsg);
   }
 
   async function loadRecentChats() {
@@ -2795,7 +2911,7 @@ let activeQuestSystem = null;
 
       if (data && data.length > 0) {
         const stream = document.getElementById('chat-messages');
-        stream.innerHTML = '<div style="background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.35);padding:8px 11px;border-radius:12px;font-size:11.5px;color:#fde047;"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan Warga! Pesan tampil realtime di sini & di atas avatar 3D.</div>';
+        stream.innerHTML = '<div style="background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.35);padding:8px 11px;border-radius:12px;font-size:11.5px;color:#fde047;"><b>@pirakubdg:</b> Wilujeng sumping di Balai Obrolan Warga! Pesan tampil realtime di sini & di atas avatar 3D. Ketuk ↩️ untuk balas atau ketik <b>@nama</b> untuk tag warga.</div>';
         data.reverse().forEach(row => appendChatToUI(row.sender_ig, row.message, row.created_at, true));
       }
     } catch (e) {}
@@ -2823,8 +2939,15 @@ let activeQuestSystem = null;
       return;
     }
     const inp = document.getElementById('inp-chat-msg');
-    const msg = inp.value.trim();
-    if (!msg) return;
+    const rawMsg = inp.value.trim();
+    if (!rawMsg) return;
+    const listEl = document.getElementById('chat-mention-list');
+    if (listEl) listEl.style.display = 'none';
+
+    const msg = activeChatReply
+      ? `[REPLY|${activeChatReply.sender}|${activeChatReply.snippet}] ${rawMsg}`
+      : rawMsg;
+    window.clearChatReply();
 
     appendChatToUI(myIg, msg);
     inp.value = '';
@@ -2841,9 +2964,12 @@ let activeQuestSystem = null;
       .channel('realtime_chat')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_warga' }, payload => {
         const myIg = localStorage.getItem('piraku_my_ig') || '';
+        const myIgClean = myIg.trim().toLowerCase().replace(/^@/, '');
         if (payload.new && payload.new.sender_ig !== myIg) {
-          appendChatToUI(payload.new.sender_ig, payload.new.message, payload.new.created_at);
-          if (!isChatModalOpen && !String(payload.new.message || '').startsWith('[')) {
+          const rawNew = String(payload.new.message || '');
+          const isSystemCmd = rawNew.startsWith('[BILLBOARD] ') || rawNew.startsWith('[MEGAFON] ');
+          appendChatToUI(payload.new.sender_ig, rawNew, payload.new.created_at);
+          if (!isChatModalOpen && !isSystemCmd) {
             unreadChatCount++;
             const badge = document.getElementById('chat-unread-count');
             if (badge) {
@@ -2851,8 +2977,13 @@ let activeQuestSystem = null;
               badge.style.display = 'flex';
             }
           }
-          if (!String(payload.new.message || '').startsWith('[')) {
-            showToast('💬 ' + payload.new.sender_ig + ': ' + payload.new.message.substring(0, 24));
+          if (!isSystemCmd) {
+            const p = parsePirakuChatPayload(rawNew);
+            const isTagged = myIgClean && (
+              (p.replyTo && p.replyTo.toLowerCase().replace(/^@/, '') === myIgClean) ||
+              new RegExp('(?:^|\\s)@' + myIgClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(p.body)
+            );
+            showToast((isTagged ? '🔔 ' : '💬 ') + payload.new.sender_ig + ': ' + p.body.substring(0, 24));
           }
         }
       })

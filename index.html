@@ -473,8 +473,13 @@
         <button onclick="sendQuickChat('🏠 Mampir ke komplekku!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">🏠 Komplek</button>
         <button onclick="sendQuickChat('😂 Wkwk mantap!')" style="padding:4px 9px;border-radius:99px;border:1px solid rgba(148,163,184,0.28);background:#1e293b;color:#e2e8f0;font-size:10.5px;font-weight:700;white-space:nowrap;cursor:pointer;">😂 Mantap</button>
       </div>
+      <div id="chat-mention-list" style="display:none;max-height:130px;overflow-y:auto;background:#0b1324;border:1px solid rgba(56,189,248,0.35);border-radius:10px;padding:4px;margin-bottom:6px;gap:4px;flex-direction:column;"></div>
+      <div id="chat-reply-preview" style="display:none;align-items:center;justify-content:space-between;gap:8px;background:rgba(56,189,248,0.14);border-left:3px solid #38bdf8;border-radius:8px;padding:6px 10px;margin-bottom:6px;font-size:11px;color:#e2e8f0;">
+        <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><b style="color:#38bdf8;">↩️ Balas <span id="chat-reply-target"></span>:</b> <span id="chat-reply-snippet" style="color:#94a3b8;"></span></div>
+        <button type="button" onclick="clearChatReply()" style="border:none;background:transparent;color:#94a3b8;font-weight:900;cursor:pointer;padding:0 4px;">✕</button>
+      </div>
       <div style="display:flex;gap:6px;">
-        <input type="text" class="form-input" id="inp-chat-msg" placeholder="Tulis pesan warga..." style="background:#0f172a;color:#f8fafc;border-color:#334155;" onkeydown="if(event.key==='Enter') sendChatMessage()">
+        <input type="text" class="form-input" id="inp-chat-msg" placeholder="Tulis pesan atau ketik @nama untuk tag..." style="background:#0f172a;color:#f8fafc;border-color:#334155;" onkeydown="if(event.key==='Enter') sendChatMessage()">
         <button class="btn-join" id="btn-send-chat" onclick="sendChatMessage()">Kirim</button>
       </div>
     </div>
@@ -1283,7 +1288,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261119v49"></script>
+  <script defer src="./js/main.js?v=20261119v50"></script>
   <script defer src="js/multiplayer.js?v=20261119v42"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
@@ -1433,7 +1438,7 @@
   <script defer src="js/piraku-nav-modals.js?v=20261119v19"></script>
   <script defer src="js/piraku-vfx.js?v=20261118v98"></script>
   <script defer src="js/piraku-districts.js?v=20261119v16"></script>
-  <script defer src="js/piraku-fishing.js?v=20261119v33"></script>
+  <script defer src="js/piraku-fishing.js?v=20261119v37"></script>
 
   
 

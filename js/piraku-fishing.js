@@ -537,6 +537,107 @@
     return null;
   };
 
+  let _pondWaterTex = null;
+  function getPondWaterTexture() {
+    if (_pondWaterTex) return _pondWaterTex;
+    const cv = document.createElement("canvas");
+    cv.width = 256;
+    cv.height = 256;
+    const ctx = cv.getContext("2d");
+
+    const grad = ctx.createRadialGradient(128, 128, 12, 128, 128, 150);
+    grad.addColorStop(0, "#0ea5e9");
+    grad.addColorStop(0.6, "#0284c7");
+    grad.addColorStop(1, "#0369a1");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Pola caustics & riak air berkilau
+    ctx.strokeStyle = "rgba(186, 230, 253, 0.28)";
+    ctx.lineWidth = 2.2;
+    for (let i = 0; i < 22; i++) {
+      const cx = (i * 59) % 256;
+      const cy = (i * 97) % 256;
+      const r = 16 + (i % 4) * 9;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, r * 1.3, r * 0.7, (i % 5) * 0.5, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(224, 242, 254, 0.24)";
+    for (let j = 0; j < 28; j++) {
+      const px = (j * 43 + 17) % 256;
+      const py = (j * 71 + 11) % 256;
+      ctx.beginPath();
+      ctx.arc(px, py, (j % 3) + 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    _pondWaterTex = new THREE.CanvasTexture(cv);
+    _pondWaterTex.wrapS = THREE.RepeatWrapping;
+    _pondWaterTex.wrapT = THREE.RepeatWrapping;
+    _pondWaterTex.repeat.set(3, 3);
+    return _pondWaterTex;
+  }
+
+  function createLotusAndPad(hasFlower, padScale) {
+    const g = new THREE.Group();
+    const s = padScale || 1;
+    // Daun teratai berlekuk V khas kolam koi
+    const pad = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.52 * s, 0.52 * s, 0.03, 18, 1, false, 0, Math.PI * 1.82),
+      new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.65 })
+    );
+    pad.rotation.y = Math.random() * Math.PI * 2;
+    g.add(pad);
+
+    if (hasFlower) {
+      const petalMat = new THREE.MeshStandardMaterial({ color: 0xf472b6, roughness: 0.35, emissive: 0xbe185d, emissiveIntensity: 0.12 });
+      for (let pi = 0; pi < 6; pi++) {
+        const ang = (pi / 6) * Math.PI * 2;
+        const petal = new THREE.Mesh(new THREE.ConeGeometry(0.08 * s, 0.24 * s, 6), petalMat);
+        petal.position.set(Math.cos(ang) * 0.10 * s, 0.10 * s, Math.sin(ang) * 0.10 * s);
+        petal.rotation.z = -Math.cos(ang) * 0.55;
+        petal.rotation.x = Math.sin(ang) * 0.55;
+        g.add(petal);
+      }
+      const center = new THREE.Mesh(new THREE.SphereGeometry(0.065 * s, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfde047 }));
+      center.position.y = 0.11 * s;
+      g.add(center);
+    }
+    return g;
+  }
+
+  function createCattailReedCluster() {
+    const g = new THREE.Group();
+    const reedMat = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.8 });
+    const headMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+    for (let i = 0; i < 4; i++) {
+      const h = 0.75 + (i % 3) * 0.22;
+      const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.028, h, 6), reedMat);
+      stalk.position.set((i - 1.5) * 0.11, h / 2, ((i % 2) - 0.5) * 0.1);
+      stalk.rotation.z = (i - 1.5) * 0.08;
+      g.add(stalk);
+      if (i % 2 === 0) {
+        const head = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.18, 8), headMat);
+        head.position.set(stalk.position.x + Math.sin(-stalk.rotation.z) * (h * 0.35), h * 0.78, stalk.position.z);
+        head.rotation.z = stalk.rotation.z;
+        g.add(head);
+      }
+    }
+    return g;
+  }
+
+  function createPondKoiMesh(colHex, accHex) {
+    const koi = buildDetailedFishBodyMesh({
+      shape: "koi",
+      meshCol: colHex,
+      accent: accHex,
+      rarity: "Uncommon"
+    }, false);
+    koi.scale.setScalar(0.62);
+    return koi;
+  }
+
   // Danau Taman Lansia koordinat 1:1 presisi (bebas jalan raya, dermaga panjang 8m, & gazebo kering)
   let lansiaPondGroup = null;
   const pondKoiList = [];
@@ -550,8 +651,8 @@
       const grassMat = new THREE.MeshStandardMaterial({ color: 0x3d6639, roughness: 0.92 });
       const rockMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.88, flatShading: true });
       const darkRockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9, flatShading: true });
-      const waterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.12, metalness: 0.35, transparent: true, opacity: 0.92 });
-      const shallowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.18, transparent: true, opacity: 0.65 });
+      const waterMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, map: getPondWaterTexture(), roughness: 0.08, metalness: 0.45, transparent: true, opacity: 0.92 });
+      const shallowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.16, transparent: true, opacity: 0.62 });
       const shoreMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.95 });
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
       const plankMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.75 });
@@ -670,13 +771,11 @@
       bench.rotation.y = 0.4;
       lansiaPondGroup.add(bench);
 
-      // Ikan-ikan koi hidup berenang santai di dalam air danau
+      // Ikan-ikan koi detail berenang santai di dalam air danau
       const koiColors = [0xf97316, 0xfacc15, 0xef4444, 0xf8fafc, 0xfb923c];
+      const koiAccs = ["#ffffff", "#fef08a", "#ffffff", "#ef4444", "#ffffff"];
       for (let k = 0; k < 6; k++) {
-        const koi = new THREE.Group();
-        const kb = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.55, 6), new THREE.MeshStandardMaterial({ color: koiColors[k % koiColors.length], roughness: 0.35 }));
-        kb.rotation.x = Math.PI / 2;
-        koi.add(kb);
+        const koi = createPondKoiMesh(koiColors[k % koiColors.length], koiAccs[k % koiAccs.length]);
         lansiaPondGroup.add(koi);
         pondKoiList.push({
           mesh: koi,
@@ -689,15 +788,17 @@
         });
       }
 
-      [[-1.8, -2.8], [2.4, 2.2], [5.8, -1.4], [-0.5, 4.2], [3.5, 8.2]].forEach(([lx, lz], idx) => {
-        const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.03, 12), new THREE.MeshStandardMaterial({ color: 0x16a34a }));
-        pad.position.set(lx, 0.11, lz);
-        lansiaPondGroup.add(pad);
-        if (idx % 2 === 0) {
-          const flw = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.22, 6), new THREE.MeshStandardMaterial({ color: 0xf472b6 }));
-          flw.position.set(lx, 0.21, lz);
-          lansiaPondGroup.add(flw);
-        }
+      // Daun teratai berlekuk & bunga lotus mekar
+      [[-1.8, -2.8], [2.4, 2.2], [5.8, -1.4], [-0.5, 4.2], [3.5, 8.2], [6.2, 6.8]].forEach(([lx, lz], idx) => {
+        const lotus = createLotusAndPad(idx % 2 === 0, idx % 3 === 0 ? 1.15 : 0.92);
+        lotus.position.set(lx, 0.11, lz);
+        lansiaPondGroup.add(lotus);
+      });
+      // Rumpun alang-alang / tanaman air di tepi danau
+      [[-4.2, -5.8], [8.5, 3.2], [6.5, 11.8], [-3.2, 9.8]].forEach(([rx, rz]) => {
+        const reed = createCattailReedCluster();
+        reed.position.set(rx, 0.06, rz);
+        lansiaPondGroup.add(reed);
       });
 
       const cv = document.createElement("canvas");
@@ -744,8 +845,8 @@
       districtPondGroup = new THREE.Group();
       districtPondGroup.position.set(42.0, 0, 10.2);
 
-      const waterMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.14, metalness: 0.35, transparent: true, opacity: 0.92 });
-      const shallowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.18, transparent: true, opacity: 0.65 });
+      const waterMat = new THREE.MeshStandardMaterial({ color: 0x7dd3fc, map: getPondWaterTexture(), roughness: 0.08, metalness: 0.45, transparent: true, opacity: 0.92 });
+      const shallowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.16, transparent: true, opacity: 0.62 });
       const shoreMat = new THREE.MeshStandardMaterial({ color: 0xcbd5e1, roughness: 0.95 });
       const rockMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.88, flatShading: true });
       const woodMat = new THREE.MeshStandardMaterial({ color: 0x92400e, roughness: 0.8 });
@@ -835,19 +936,21 @@
         districtPondGroup.add(rail, lPole, bulb);
       });
 
-      // Teratai & 5 ikan koi berenang
-      [[-2.5, -2.0], [2.8, -1.5], [1.9, 2.3], [-3.2, 1.1], [0.4, -3.5]].forEach(([lx, lz]) => {
-        const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.03, 10), new THREE.MeshStandardMaterial({ color: 0x16a34a }));
-        pad.position.set(lx, 0.11, lz);
-        districtPondGroup.add(pad);
+      // Teratai berlekuk, tanaman air & 5 ikan koi detail berenang
+      [[-2.5, -2.0], [2.8, -1.5], [1.9, 2.3], [-3.2, 1.1], [0.4, -3.5]].forEach(([lx, lz], idx) => {
+        const lotus = createLotusAndPad(idx % 2 === 0, 0.92);
+        lotus.position.set(lx, 0.11, lz);
+        districtPondGroup.add(lotus);
+      });
+      [[-4.8, 2.2], [5.2, -2.4], [4.8, 3.0]].forEach(([rx, rz]) => {
+        const reed = createCattailReedCluster();
+        reed.position.set(rx, 0.06, rz);
+        districtPondGroup.add(reed);
       });
       const koiCols = [0xf97316, 0xfacc15, 0xef4444, 0xf8fafc, 0xfb923c];
+      const koiAccsD = ["#ffffff", "#fef08a", "#ffffff", "#ef4444", "#ffffff"];
       for (let k = 0; k < 5; k++) {
-        const kGrp = new THREE.Group();
-        const kMat = new THREE.MeshStandardMaterial({ color: koiCols[k], roughness: 0.35 });
-        const kb = new THREE.Mesh(new THREE.ConeGeometry(0.13, 0.44, 6), kMat);
-        kb.rotation.x = Math.PI / 2;
-        kGrp.add(kb);
+        const kGrp = createPondKoiMesh(koiCols[k], koiAccsD[k]);
         districtPondGroup.add(kGrp);
         districtKoiList.push({ mesh: kGrp, cx: 0.3, cz: -0.6, rx: 1.8 + (k % 3) * 0.7, rz: 1.4 + (k % 2) * 0.6, speed: 0.52 + k * 0.1, phase: k * 1.3 });
       }
@@ -1339,7 +1442,7 @@
       if (fishState !== "casting") return;
       const dt = Math.min(0.05, (now - lastCastTs) / 1000);
       lastCastTs = now;
-      castPct += castDir * 115 * dt;
+      castPct += castDir * 85 * dt;
       if (castPct >= 100) { castPct = 100; castDir = -1; }
       else if (castPct <= 0) { castPct = 0; castDir = 1; }
       const fillEl = document.getElementById("pf-cast-fill");
@@ -1361,10 +1464,7 @@
       spawn3DFishingVisuals(pond);
       if (typeof window.playSynthTone === "function") window.playSynthTone(isPerfectCast ? 760 : 520, "sine", 0.14);
 
-      const baseDelayMs = (1900 + Math.random() * 2100) * (bobber.biteSpeed || 1.0) * (isPerfectCast ? 0.78 : 1.0);
-      let waitRemainingMs = baseDelayMs;
-      let waitLastTs = performance.now();
-      let shakeCount = 0;
+      const delayMs = (1500 + Math.random() * 1400) * (bobber.biteSpeed || 1.0) * (isPerfectCast ? 0.8 : 1.0);
 
       function triggerBite() {
         if (fishState !== "waiting") return;
@@ -1377,8 +1477,7 @@
         }
         ui.innerHTML = `
           <div style="font-weight:900;font-size:17px;color:#facc15;text-shadow:0 0 12px rgba(250,204,21,0.55);">❗ IKAN MENYAMBAR!</div>
-          <div style="font-size:11px;color:#fde68a;">Ketuk layar di mana saja atau tekan SPACE!</div>
-          <button onclick="strikePirakuFish()" style="width:100%;border:none;background:linear-gradient(135deg,#facc15,#f97316);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 6px 20px rgba(250,204,21,0.35);">⚡ TARIK SEKARANG! (SPACE)</button>
+          <button onclick="strikePirakuFish()" style="width:100%;border:none;background:linear-gradient(135deg,#facc15,#f97316);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 6px 20px rgba(250,204,21,0.35);">⚡ TARIK SEKARANG! (TAP LAYAR / SPACE)</button>
         `;
         biteTimeout = setTimeout(() => {
           if (fishState === "bite") {
@@ -1386,7 +1485,7 @@
             cancelFishing();
             if (typeof window.showToast === "function") window.showToast("💨 Telat tarik! Ikannya lepas...");
           }
-        }, 4200);
+        }, 4500);
       }
 
       ui.innerHTML = `
@@ -1394,30 +1493,11 @@
           <span style="font-weight:900;font-size:12.5px;color:#7dd3fc;">${isPerfectCast ? "✨ PERFECT CAST! (+30% Luck)" : isGoodCast ? "👍 GOOD CAST! (+10% Luck)" : "🎣 Menunggu di " + pond.name}</span>
           ${catchCombo > 0 ? `<span style="background:#9a3412;color:#fde047;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:900;">🔥 Combo ${catchCombo}x</span>` : ""}
         </div>
-        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Kocok joran agar cepat disambar!</div>
-        <div style="display:flex;gap:8px;width:100%;">
-          <button id="pf-shake-btn" style="flex:1;border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:8px 10px;border-radius:10px;font-size:12px;font-weight:900;cursor:pointer;">🫨 Kocok Joran (Cepat Nyambar)</button>
-          <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:8px 12px;border-radius:10px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
-        </div>
+        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Tunggu sebentar...</div>
+        <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:5px 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
       `;
 
-      const shakeBtn = document.getElementById("pf-shake-btn");
-      if (shakeBtn) {
-        shakeBtn.onclick = () => {
-          if (fishState !== "waiting") return;
-          shakeCount++;
-          const nowTs = performance.now();
-          waitRemainingMs = Math.max(120, waitRemainingMs - (nowTs - waitLastTs) - 380);
-          waitLastTs = nowTs;
-          clearTimeout(waitTimer);
-          waitTimer = setTimeout(triggerBite, waitRemainingMs);
-          if (rodMesh3D) rodMesh3D.rotation.x = (shakeCount % 2 === 0 ? 0.24 : -0.18);
-          if (typeof window.playSynthTone === "function") window.playSynthTone(440 + Math.min(240, shakeCount * 35), "sine", 0.05);
-          shakeBtn.textContent = `🫨 Kocok Lagi! (${shakeCount}x)`;
-        };
-      }
-
-      waitTimer = setTimeout(triggerBite, waitRemainingMs);
+      waitTimer = setTimeout(triggerBite, delayMs);
     };
 
     const castBtn = document.getElementById("pf-cast-btn");
@@ -1437,11 +1517,11 @@
     const rod = getEquippedRod();
     fishPos = 50;
     prevFishPos = 50;
-    fishTarget = 30 + Math.random() * 40;
+    fishTarget = 35 + Math.random() * 30;
     fishChangeAt = 0;
     barPos = 50;
     let barVel = 0;
-    catchProgress = 30;
+    catchProgress = 35;
     isHoldingReel = false;
     lastReelTs = performance.now();
 
@@ -1456,20 +1536,20 @@
     ui.onpointerleave = () => { isHoldingReel = false; };
     ui.innerHTML = `
       <div style="display:flex;justify-content:space-between;width:100%;align-items:center;">
-        <span id="pf-status" style="font-weight:900;font-size:12.5px;color:${isStrongPull ? "#f97316" : "#4ade80"};">${isStrongPull ? "⚡ TARIKAN KUAT! TAHAN LAYAR!" : "✓ ZONA TEPAT!"}</span>
-        <span id="pf-pct" style="font-size:11.5px;font-weight:900;color:#7dd3fc;">30%</span>
+        <span id="pf-status" style="font-weight:900;font-size:12.5px;color:${isStrongPull ? "#f97316" : "#4ade80"};">${isStrongPull ? "⚡ TARIKAN KUAT!" : "✓ ZONA TEPAT!"}</span>
+        <span id="pf-pct" style="font-size:11.5px;font-weight:900;color:#7dd3fc;">35%</span>
       </div>
-      <div id="pf-track" style="position:relative;width:100%;height:40px;background:linear-gradient(180deg,#020617,#0f172a);border:2px solid ${isStrongPull ? "#f97316" : "#38bdf8"};border-radius:14px;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);transition:transform 0.06s, border-color 0.12s;">
+      <div id="pf-track" style="position:relative;width:100%;height:38px;background:linear-gradient(180deg,#020617,#0f172a);border:2px solid ${isStrongPull ? "#f97316" : "#38bdf8"};border-radius:14px;overflow:hidden;box-shadow:inset 0 2px 8px rgba(0,0,0,0.8);">
         <div id="pf-bar" style="position:absolute;top:3px;bottom:3px;width:${rod.barWidth}%;left:${50 - rod.barWidth / 2}%;background:rgba(34,197,94,0.42);border:2px solid #4ade80;border-radius:10px;box-shadow:0 0 14px rgba(74,222,128,0.45);transition:background 0.1s, border-color 0.1s;">
-          <div style="position:absolute;top:2px;bottom:2px;left:35%;right:35%;background:rgba(250,204,21,0.45);border-radius:6px;"></div>
+          <div style="position:absolute;top:2px;bottom:2px;left:36%;right:36%;background:rgba(250,204,21,0.42);border-radius:6px;"></div>
         </div>
         <div id="pf-fish" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8));">🐟</div>
       </div>
       <div style="width:100%;height:10px;background:#1e293b;border-radius:99px;overflow:hidden;">
-        <div id="pf-prog" style="width:30%;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e,#facc15);"></div>
+        <div id="pf-prog" style="width:35%;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e,#facc15);"></div>
       </div>
       <div style="display:flex;gap:8px;width:100%;">
-        <button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;touch-action:none;">✊ TAHAN LAYAR / SPACE (GESER KANAN)</button>
+        <button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;touch-action:none;">✊ TAHAN LAYAR / SPACE</button>
         <button onclick="cancelPirakuFishing()" style="border:none;background:#1e293b;color:#94a3b8;padding:0 12px;border-radius:12px;font-weight:800;cursor:pointer;">✕</button>
       </div>
     `;
@@ -1482,42 +1562,36 @@
     }
 
     let lastTickSound = 0;
-    let dashWarnUntil = 0;
     function stepReel(now) {
       if (fishState !== "reeling") return;
       const dt = Math.min(0.06, Math.max(0.008, (now - lastReelTs) / 1000));
       lastReelTs = now;
 
       if (now >= fishChangeAt) {
-        const doDash = isStrongPull && Math.random() < 0.35;
-        fishTarget = doDash
-          ? (fishPos < 50 ? 68 + Math.random() * 22 : 10 + Math.random() * 22)
-          : (12 + Math.random() * 76);
-        if (doDash) dashWarnUntil = now + 520;
-        fishChangeAt = now + (850 + Math.random() * (1100 - Math.min(600, currentFishSpec.erratic * 420)));
+        fishTarget = 16 + Math.random() * 68;
+        fishChangeAt = now + (1000 + Math.random() * (1100 - Math.min(500, currentFishSpec.erratic * 350)));
       }
       prevFishPos = fishPos;
-      const dashMult = now < dashWarnUntil ? 1.32 : 1.0;
       const fDiff = fishTarget - fishPos;
-      fishPos += Math.sign(fDiff) * Math.min(Math.abs(fDiff), currentFishSpec.speed * 26 * dashMult * dt);
-      fishPos = Math.max(8, Math.min(92, fishPos));
+      fishPos += Math.sign(fDiff) * Math.min(Math.abs(fDiff), currentFishSpec.speed * 18 * dt);
+      fishPos = Math.max(10, Math.min(90, fishPos));
 
-      // Fisika bar halus ala Roblox Fish It (akselerasi responsif + pantulan lembut di dinding)
-      barVel += (isHoldingReel ? 230 : -190) * dt;
-      barVel *= Math.pow(0.06, dt);
-      barVel = Math.max(-68, Math.min(68, barVel));
+      // Fisika bar santai & responsif (mudah dikendalikan di HP maupun PC)
+      barVel += (isHoldingReel ? 200 : -170) * dt;
+      barVel *= Math.pow(0.05, dt);
+      barVel = Math.max(-58, Math.min(58, barVel));
       barPos += barVel * dt;
       const halfBar = rod.barWidth / 2;
-      if (barPos <= halfBar) { barPos = halfBar; if (barVel < 0) barVel = -barVel * 0.25; }
-      if (barPos >= 100 - halfBar) { barPos = 100 - halfBar; if (barVel > 0) barVel = -barVel * 0.25; }
+      if (barPos <= halfBar) { barPos = halfBar; if (barVel < 0) barVel = 0; }
+      if (barPos >= 100 - halfBar) { barPos = 100 - halfBar; if (barVel > 0) barVel = 0; }
 
       const distToCenter = Math.abs(fishPos - barPos);
-      const inside = distToCenter <= halfBar + 3.5;
-      const isPerfect = distToCenter <= halfBar * 0.38;
-      catchProgress += (isPerfect ? 28 : inside ? 17.5 : -7.5) * dt;
+      const inside = distToCenter <= halfBar + 4.5;
+      const isPerfect = distToCenter <= halfBar * 0.42;
+      catchProgress += (isPerfect ? 30 : inside ? 22 : -5) * dt;
       catchProgress = Math.max(0, Math.min(100, catchProgress));
 
-      if (inside && now - lastTickSound > 150 && typeof window.playSynthTone === "function") {
+      if (inside && now - lastTickSound > 160 && typeof window.playSynthTone === "function") {
         lastTickSound = now;
         window.playSynthTone((isPerfect ? 520 : 420) + catchProgress * 4.5, "sine", 0.04);
       }
@@ -1535,8 +1609,6 @@
       }
       if (trackEl) {
         trackEl.style.borderColor = catchProgress >= 80 ? "#facc15" : catchProgress <= 20 ? "#ef4444" : (isStrongPull ? "#f97316" : "#38bdf8");
-        const jiggle = now < dashWarnUntil ? ((Math.sin(now * 0.09) * 2.5).toFixed(1)) : "0";
-        trackEl.style.transform = `translateX(${jiggle}px)`;
       }
       if (fishEl) {
         fishEl.style.left = fishPos.toFixed(1) + "%";
@@ -1546,13 +1618,8 @@
       if (progEl) progEl.style.width = catchProgress.toFixed(1) + "%";
       if (pctEl) pctEl.textContent = Math.round(catchProgress) + "%";
       if (statusEl) {
-        if (now < dashWarnUntil && !inside) {
-          statusEl.textContent = "🔥 IKAN MERONTA! KEJAR!";
-          statusEl.style.color = "#fb923c";
-        } else {
-          statusEl.textContent = isPerfect ? "⚡ PERFECT REEL! (+CEPAT)" : inside ? "✓ ZONA TEPAT!" : "⚠️ KEJAR IKANNYA!";
-          statusEl.style.color = isPerfect ? "#fde047" : inside ? "#4ade80" : "#f87171";
-        }
+        statusEl.textContent = isPerfect ? "⚡ PERFECT REEL!" : inside ? "✓ ZONA TEPAT!" : "⚠️ KEJAR IKANNYA!";
+        statusEl.style.color = isPerfect ? "#fde047" : inside ? "#4ade80" : "#f87171";
       }
 
       if (jumpFishMesh3D && bobberMesh3D) {
@@ -2077,7 +2144,11 @@
     const pond = getActivePond();
     const now = performance.now();
 
-    // Animasi ikan koi berenang di Danau Taman Lansia & Kolam Kecamatan
+    // Animasi riak air & ikan koi berenang di Danau Taman Lansia & Kolam Kecamatan
+    if (_pondWaterTex) {
+      _pondWaterTex.offset.x = (now * 0.000035) % 1;
+      _pondWaterTex.offset.y = (now * 0.000022) % 1;
+    }
     if (pondKoiList.length && lansiaPondGroup && lansiaPondGroup.visible) {
       const kt = now * 0.001;
       for (let i = 0; i < pondKoiList.length; i++) {
@@ -2087,6 +2158,9 @@
         const nz = k.cz + Math.sin(a) * k.rz;
         k.mesh.position.set(nx, 0.14, nz);
         k.mesh.rotation.y = Math.atan2(-Math.sin(a) * k.rx, Math.cos(a) * k.rz);
+        if (k.mesh.userData && k.mesh.userData.tailGroup) {
+          k.mesh.userData.tailGroup.rotation.y = Math.sin(now * 0.012 + k.phase) * 0.35;
+        }
       }
     }
     if (districtKoiList.length && districtPondGroup && districtPondGroup.visible) {
@@ -2096,6 +2170,9 @@
         const a = kt * k.speed + k.phase;
         k.mesh.position.set(k.cx + Math.cos(a) * k.rx, 0.14, k.cz + Math.sin(a) * k.rz);
         k.mesh.rotation.y = Math.atan2(-Math.sin(a) * k.rx, Math.cos(a) * k.rz);
+        if (k.mesh.userData && k.mesh.userData.tailGroup) {
+          k.mesh.userData.tailGroup.rotation.y = Math.sin(now * 0.012 + k.phase) * 0.35;
+        }
       }
     }
     // Animasi NPC pemancing & partikel selebrasi ikan langka
@@ -2262,230 +2339,459 @@
     requestAnimationFrame(tickFishing3D);
   }
 
+  const _fishTexCache = new Map();
+  function getFishScaleTexture(colHex, accHex, sh, isCosmicPlus) {
+    const key = `${colHex}_${accHex}_${sh}_${isCosmicPlus ? 1 : 0}`;
+    if (_fishTexCache.has(key)) return _fishTexCache.get(key);
+    const cv = document.createElement("canvas");
+    cv.width = 256;
+    cv.height = 256;
+    const ctx = cv.getContext("2d");
+
+    const cMain = "#" + (colHex >>> 0).toString(16).padStart(6, "0");
+    const cAcc = "#" + (accHex >>> 0).toString(16).padStart(6, "0");
+
+    // Gradasi punggung ke perut
+    const grad = ctx.createLinearGradient(0, 0, 0, 256);
+    grad.addColorStop(0, cMain);
+    grad.addColorStop(0.55, cMain);
+    grad.addColorStop(1, cAcc);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 256, 256);
+
+    // Pola sisik ikan (overlapping scales)
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 1.6;
+    const stepX = 22, stepY = 18;
+    for (let row = 0; row < 16; row++) {
+      const offsetX = (row % 2) * (stepX / 2);
+      for (let col = -1; col < 14; col++) {
+        ctx.beginPath();
+        ctx.arc(col * stepX + offsetX, row * stepY, 11, 0.15 * Math.PI, 0.85 * Math.PI);
+        ctx.stroke();
+      }
+    }
+
+    // Garis lateral & belang/totol sesuai jenis
+    if (sh === "koi") {
+      ctx.fillStyle = cAcc;
+      ctx.beginPath(); ctx.ellipse(90, 80, 48, 30, 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(185, 130, 38, 26, -0.4, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath(); ctx.ellipse(145, 70, 22, 16, 0.2, 0, Math.PI * 2); ctx.fill();
+    } else if (sh === "chubby" || sh === "whisker") {
+      ctx.fillStyle = "rgba(15,23,42,0.16)";
+      for (let sx = 45; sx <= 205; sx += 42) {
+        ctx.fillRect(sx, 25, 14, 150);
+      }
+    }
+
+    if (isCosmicPlus) {
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+      for (let i = 0; i < 36; i++) {
+        const px = (i * 73) % 256;
+        const py = (i * 137) % 256;
+        ctx.beginPath(); ctx.arc(px, py, (i % 3) + 1, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    _fishTexCache.set(key, tex);
+    return tex;
+  }
+
+  function makeSculptedFinMesh(points, depth, mat) {
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+      const p = points[i];
+      if (p.length === 4) shape.quadraticCurveTo(p[0], p[1], p[2], p[3]);
+      else shape.lineTo(p[0], p[1]);
+    }
+    shape.closePath();
+    const geo = new THREE.ExtrudeGeometry(shape, {
+      depth: depth,
+      bevelEnabled: true,
+      bevelThickness: depth * 0.35,
+      bevelSize: depth * 0.35,
+      bevelSegments: 2
+    });
+    geo.center();
+    return new THREE.Mesh(geo, mat);
+  }
+
   function buildDetailedFishBodyMesh(f, isHighRarity) {
     const grp = new THREE.Group();
     const col = f.meshCol || 0x38bdf8;
     const accHex = f.accent ? parseInt(String(f.accent).replace("#", ""), 16) : 0xffffff;
+    const safeAcc = isNaN(accHex) ? 0xffffff : accHex;
     const sh = f.shape || "chubby";
     const rarity = f.rarity || "Common";
+    const isMythicPlus = rarity === "Mythic" || rarity === "Secret" || rarity === "Cosmic" || rarity === "Divine";
     const isCosmicPlus = rarity === "Cosmic" || rarity === "Divine" || rarity === "Secret";
+
+    const scaleTex = (sh !== "boot") ? getFishScaleTexture(col, safeAcc, sh, isCosmicPlus) : null;
     const mat = new THREE.MeshStandardMaterial({
-      color: col,
-      roughness: isHighRarity ? 0.22 : 0.38,
-      metalness: isHighRarity ? 0.52 : 0.18,
-      emissive: isCosmicPlus ? col : 0x000000,
-      emissiveIntensity: isCosmicPlus ? 0.25 : 0
+      color: scaleTex ? 0xffffff : col,
+      map: scaleTex,
+      roughness: isHighRarity ? 0.16 : 0.28,
+      metalness: isHighRarity ? 0.55 : 0.20,
+      emissive: isCosmicPlus ? col : (rarity === "Mythic" ? col : 0x000000),
+      emissiveIntensity: isCosmicPlus ? 0.32 : (rarity === "Mythic" ? 0.12 : 0)
     });
-    const accMat = new THREE.MeshStandardMaterial({ color: isNaN(accHex) ? 0xffffff : accHex, roughness: 0.35, metalness: 0.25 });
-    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x0f172a });
+    const accMat = new THREE.MeshStandardMaterial({
+      color: safeAcc,
+      roughness: 0.25,
+      metalness: isHighRarity ? 0.45 : 0.18,
+      emissive: isCosmicPlus ? safeAcc : 0x000000,
+      emissiveIntensity: isCosmicPlus ? 0.22 : 0
+    });
+    const finMat = new THREE.MeshStandardMaterial({
+      color: safeAcc,
+      roughness: 0.26,
+      metalness: 0.25,
+      transparent: true,
+      opacity: 0.90,
+      emissive: isCosmicPlus ? safeAcc : 0x000000,
+      emissiveIntensity: isCosmicPlus ? 0.18 : 0
+    });
+    const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.15 });
+    const pupilMat = new THREE.MeshBasicMaterial({ color: isCosmicPlus ? 0xfef08a : 0x090d16 });
     const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
 
+    // Mata ekspresif 3-lapis + kelopak alis ringan
     const addEyes = (ex, ey, ez, r) => {
       [-1, 1].forEach(side => {
-        const e = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 8), eyeMat);
-        e.position.set(side * ex, ey, ez);
-        const dot = new THREE.Mesh(new THREE.SphereGeometry(r * 0.42, 6, 6), shineMat);
-        dot.position.set(side * (ex + r * 0.2), ey + r * 0.25, ez + r * 0.72);
-        grp.add(e, dot);
+        const sclera = new THREE.Mesh(new THREE.SphereGeometry(r * 1.22, 12, 12), scleraMat);
+        sclera.scale.set(0.72, 1.0, 1.0);
+        sclera.position.set(side * ex, ey, ez);
+        const pupil = new THREE.Mesh(new THREE.SphereGeometry(r * 0.84, 10, 10), pupilMat);
+        pupil.position.set(side * (ex + r * 0.34), ey, ez + r * 0.32);
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(r * 0.36, 8, 8), shineMat);
+        dot.position.set(side * (ex + r * 0.56), ey + r * 0.28, ez + r * 0.66);
+        grp.add(sclera, pupil, dot);
       });
     };
 
     if (sh === "boot") {
-      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.52), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-      sole.position.set(0, -0.14, 0.04);
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.36, 10), mat);
+      const sole = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.08, 0.56), new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8 }));
+      sole.position.set(0, -0.15, 0.04);
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.14, 0.40, 16), mat);
       shaft.position.set(0, 0.08, -0.1);
-      const toe = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), mat);
-      toe.scale.set(1.0, 0.8, 1.35);
-      toe.position.set(0, -0.04, 0.14);
-      grp.add(sole, shaft, toe);
+      const cuff = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.025, 8, 18), accMat);
+      cuff.rotation.x = Math.PI / 2;
+      cuff.position.set(0, 0.27, -0.1);
+      const toe = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 12), mat);
+      toe.scale.set(1.0, 0.8, 1.4);
+      toe.position.set(0, -0.04, 0.16);
+      grp.add(sole, shaft, cuff, toe);
       return grp;
     }
 
     if (sh === "whale") {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 12), mat);
-      body.scale.set(0.95, 0.88, 1.55);
-      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), accMat);
-      belly.scale.set(0.86, 0.55, 1.38);
-      belly.position.set(0, -0.11, 0.03);
-      // Ekor horizontal lebar khas paus
+      // Profil Lathe paus streamline dari moncong ke ekor
+      const pts = [
+        new THREE.Vector2(0.00, 0.56),
+        new THREE.Vector2(0.16, 0.50),
+        new THREE.Vector2(0.30, 0.34),
+        new THREE.Vector2(0.34, 0.10),
+        new THREE.Vector2(0.28, -0.18),
+        new THREE.Vector2(0.16, -0.44),
+        new THREE.Vector2(0.06, -0.66),
+        new THREE.Vector2(0.00, -0.70)
+      ];
+      const bodyGeo = new THREE.LatheGeometry(pts, 24);
+      bodyGeo.rotateX(Math.PI / 2);
+      const body = new THREE.Mesh(bodyGeo, mat);
+      body.scale.set(0.95, 0.86, 1.0);
+
+      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 14), accMat);
+      belly.scale.set(0.88, 0.50, 1.55);
+      belly.position.set(0, -0.13, 0.10);
+
+      const dorsal = makeSculptedFinMesh([[0, 0], [0.06, 0.18], [-0.14, 0.20, -0.22, 0]], 0.03, finMat);
+      dorsal.rotation.y = Math.PI / 2;
+      dorsal.position.set(0, 0.28, -0.14);
+
+      const tailGrp = new THREE.Group();
+      tailGrp.position.set(0, 0, -0.64);
       [-1, 1].forEach(s => {
-        const fluke = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.32, 4), mat);
-        fluke.rotation.z = s * 1.15;
-        fluke.rotation.x = -0.35;
-        fluke.scale.set(0.35, 1, 0.7);
-        fluke.position.set(s * 0.18, 0.0, -0.54);
-        const flip = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 4), accMat);
-        flip.rotation.z = s * 1.25;
-        flip.scale.set(0.3, 1, 0.7);
-        flip.position.set(s * 0.3, -0.12, 0.08);
-        grp.add(fluke, flip);
+        const fluke = makeSculptedFinMesh([[0, 0], [0.24, 0.10, 0.36, -0.06], [0.14, -0.14], [0, -0.06]], 0.028, finMat);
+        fluke.rotation.x = Math.PI / 2;
+        fluke.scale.x = s;
+        fluke.position.set(s * 0.17, 0, -0.06);
+        tailGrp.add(fluke);
+
+        const flip = makeSculptedFinMesh([[0, 0], [0.28, 0.08, 0.36, -0.10], [0.12, -0.14]], 0.025, accMat);
+        flip.rotation.x = Math.PI / 2;
+        flip.rotation.y = s * -0.35;
+        flip.scale.x = s;
+        flip.position.set(s * 0.36, -0.14, 0.14);
+        grp.add(flip);
       });
-      const spout = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.24, 8), new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.8 }));
+      grp.userData.tailGroup = tailGrp;
+
+      const spout = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.30, 12), new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.85 }));
       spout.rotation.x = Math.PI;
-      spout.position.set(0, 0.4, 0.05);
-      grp.add(body, belly, spout);
-      addEyes(0.24, 0.05, 0.32, 0.048);
+      spout.position.set(0, 0.44, 0.16);
+      grp.add(body, belly, dorsal, tailGrp, spout);
+      addEyes(0.26, 0.04, 0.38, 0.048);
     } else if (sh === "axolotl") {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.24, 14, 10), mat);
-      body.scale.set(0.95, 0.82, 1.5);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 14, 10), mat);
-      head.scale.set(1.15, 0.85, 0.95);
-      head.position.set(0, 0.04, 0.28);
-      const tail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.46), accMat);
-      tail.position.set(0, 0.0, -0.46);
-      // 6 Insang rumbai lucu kiri-kanan
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.25, 20, 16), mat);
+      body.scale.set(0.95, 0.82, 1.55);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 20, 16), mat);
+      head.scale.set(1.18, 0.84, 0.95);
+      head.position.set(0, 0.04, 0.30);
+
+      const tailGrp = new THREE.Group();
+      tailGrp.position.set(0, 0, -0.34);
+      const tailFin = makeSculptedFinMesh([[0, 0.12], [-0.36, 0.18, -0.48, 0], [-0.36, -0.18, 0, -0.12]], 0.025, finMat);
+      tailFin.rotation.y = Math.PI / 2;
+      tailFin.position.set(0, 0, -0.22);
+      tailGrp.add(tailFin);
+      grp.userData.tailGroup = tailGrp;
+
       [-1, 1].forEach(s => {
         [-0.08, 0.02, 0.12].forEach((gy, gi) => {
-          const gill = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.018, 0.22, 6), accMat);
-          gill.rotation.z = s * (1.1 + gi * 0.22);
-          gill.position.set(s * 0.28, gy + 0.05, 0.25);
-          grp.add(gill);
+          const gill = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.014, 0.26, 8), accMat);
+          gill.rotation.z = s * (1.08 + gi * 0.22);
+          gill.position.set(s * 0.30, gy + 0.05, 0.26);
+          const tip = new THREE.Mesh(new THREE.SphereGeometry(0.034, 8, 8), accMat);
+          tip.position.set(s * 0.41, gy + 0.08, 0.26);
+          grp.add(gill, tip);
         });
-        // Kaki mungil
         [-0.12, 0.16].forEach(lz => {
-          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.03, 0.14, 6), mat);
-          leg.rotation.z = s * 0.7;
-          leg.position.set(s * 0.2, -0.17, lz);
+          const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.030, 0.16, 8), mat);
+          leg.rotation.z = s * 0.72;
+          leg.position.set(s * 0.21, -0.17, lz);
           grp.add(leg);
         });
       });
-      grp.add(body, head, tail);
-      addEyes(0.14, 0.09, 0.47, 0.045);
+      grp.add(body, head, tailGrp);
+      addEyes(0.15, 0.09, 0.49, 0.048);
     } else if (sh === "puffer") {
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 14), mat);
-      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 10), accMat);
+      const body = new THREE.Mesh(new THREE.SphereGeometry(0.34, 24, 20), mat);
+      const belly = new THREE.Mesh(new THREE.SphereGeometry(0.29, 18, 14), accMat);
       belly.position.set(0, -0.07, 0.03);
       belly.scale.set(0.95, 0.82, 0.95);
-      grp.add(body, belly);
-      // Duri-duri buntal di segala arah
-      for (let si = 0; si < 12; si++) {
-        const phi = Math.acos(1 - 2 * (si + 0.5) / 12);
+      const lips = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.02, 8, 16), accMat);
+      lips.position.set(0, -0.04, 0.33);
+      grp.add(body, belly, lips);
+      for (let si = 0; si < 18; si++) {
+        const phi = Math.acos(1 - 2 * (si + 0.5) / 18);
         const th = Math.PI * (1 + Math.sqrt(5)) * si;
         const dx = Math.sin(phi) * Math.cos(th);
         const dy = Math.cos(phi);
         const dz = Math.sin(phi) * Math.sin(th);
-        if (dz > 0.75) continue; // jangan nutupin muka
-        const spk = new THREE.Mesh(new THREE.ConeGeometry(0.042, 0.14, 5), accMat);
-        spk.position.set(dx * 0.32, dy * 0.32, dz * 0.32);
+        if (dz > 0.70) continue;
+        const spk = new THREE.Mesh(new THREE.ConeGeometry(0.040, 0.16, 8), accMat);
+        spk.position.set(dx * 0.35, dy * 0.35, dz * 0.35);
         spk.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(dx, dy, dz));
         grp.add(spk);
       }
-      const tail = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.2, 4), accMat);
-      tail.rotation.x = Math.PI / 2;
-      tail.position.z = -0.38;
-      grp.add(tail);
-      addEyes(0.17, 0.08, 0.27, 0.052);
+      const tailGrp = new THREE.Group();
+      tailGrp.position.set(0, 0, -0.32);
+      const tail = makeSculptedFinMesh([[0, 0.05], [-0.18, 0.16], [-0.22, 0], [-0.18, -0.16], [0, -0.05]], 0.025, finMat);
+      tail.rotation.y = Math.PI / 2;
+      tail.position.set(0, 0, -0.10);
+      tailGrp.add(tail);
+      grp.userData.tailGroup = tailGrp;
+      [-1, 1].forEach(s => {
+        const pec = makeSculptedFinMesh([[0, 0.04], [-0.14, 0.10], [-0.12, -0.08], [0, -0.04]], 0.02, finMat);
+        pec.rotation.y = s * -0.5;
+        pec.position.set(s * 0.33, -0.02, 0.06);
+        grp.add(pec);
+      });
+      grp.add(tailGrp);
+      addEyes(0.18, 0.09, 0.29, 0.054);
     } else if (sh === "eel") {
-      for (let seg = 0; seg < 4; seg++) {
-        const r = 0.17 - seg * 0.028;
-        const sMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 10, 8), seg % 2 === 0 ? mat : accMat);
-        sMesh.scale.set(0.9, 0.95, 1.45);
-        sMesh.position.set(Math.sin(seg * 1.1) * 0.08, 0, 0.28 - seg * 0.24);
+      for (let seg = 0; seg < 7; seg++) {
+        const r = 0.17 - seg * 0.018;
+        const sMesh = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 12), seg % 2 === 0 ? mat : accMat);
+        sMesh.scale.set(0.88, 0.96, 1.55);
+        sMesh.position.set(Math.sin(seg * 1.0) * 0.11, Math.cos(seg * 0.65) * 0.03, 0.40 - seg * 0.18);
         grp.add(sMesh);
       }
-      const dorsal = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.72), accMat);
-      dorsal.position.set(0, 0.16, -0.05);
+      const dorsal = makeSculptedFinMesh([[0.45, 0], [0.25, 0.14], [-0.25, 0.16], [-0.55, 0.06], [-0.55, 0]], 0.022, finMat);
+      dorsal.rotation.y = Math.PI / 2;
+      dorsal.position.set(0, 0.14, -0.10);
       grp.add(dorsal);
-      addEyes(0.11, 0.06, 0.39, 0.042);
+      addEyes(0.11, 0.07, 0.48, 0.044);
     } else {
-      // Bentuk ikan detail (chubby, round, koi, whisker, fancy, crown): badan + sirip punggung + sirip samping + ekor bercabang
+      // Profil Lathe hidrodinamis asli ikan (moncong lancip -> badan berotot -> pangkal ekor ramping!)
       const isRound = sh === "round";
       const isFancy = sh === "fancy" || sh === "crown";
-      const body = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 12), mat);
-      body.scale.set(isRound ? 0.92 : 0.72, isRound ? 1.12 : 0.96, isRound ? 1.25 : 1.55);
+      const pts = isRound
+        ? [
+            new THREE.Vector2(0.00, 0.42),
+            new THREE.Vector2(0.16, 0.36),
+            new THREE.Vector2(0.32, 0.18),
+            new THREE.Vector2(0.34, 0.00),
+            new THREE.Vector2(0.24, -0.22),
+            new THREE.Vector2(0.09, -0.40),
+            new THREE.Vector2(0.00, -0.44)
+          ]
+        : [
+            new THREE.Vector2(0.00, 0.54),
+            new THREE.Vector2(0.12, 0.46),
+            new THREE.Vector2(0.25, 0.24),
+            new THREE.Vector2(0.27, 0.04),
+            new THREE.Vector2(0.20, -0.20),
+            new THREE.Vector2(0.10, -0.42),
+            new THREE.Vector2(0.05, -0.54),
+            new THREE.Vector2(0.00, -0.56)
+          ];
+      const bodyGeo = new THREE.LatheGeometry(pts, 26);
+      bodyGeo.rotateX(Math.PI / 2);
+      const body = new THREE.Mesh(bodyGeo, mat);
+      body.scale.set(isRound ? 0.85 : 0.62, isRound ? 1.05 : 0.96, 1.0);
       grp.add(body);
 
-      // Bercak/sirip aksen
-      if (sh === "koi") {
-        const spot1 = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), accMat);
-        spot1.scale.set(0.85, 0.6, 1.1); spot1.position.set(0, 0.16, 0.08);
-        const spot2 = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), accMat);
-        spot2.position.set(0.04, 0.12, -0.18);
-        grp.add(spot1, spot2);
-      } else {
-        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 8), accMat);
-        belly.scale.set(0.68, 0.55, 1.25);
-        belly.position.set(0, -0.12, 0.02);
-        grp.add(belly);
-      }
+      // Mulut / bibir 3D
+      const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.018, 8, 14), accMat);
+      mouth.position.set(0, -0.02, isRound ? 0.40 : 0.51);
+      grp.add(mouth);
 
-      // Sirip punggung (dorsal fin)
-      const dorsalH = isFancy ? 0.34 : 0.22;
-      const dorsal = new THREE.Mesh(new THREE.ConeGeometry(0.12, dorsalH, 4), accMat);
-      dorsal.scale.set(0.28, 1, 1.6);
-      dorsal.rotation.x = -0.35;
-      dorsal.position.set(0, 0.28, -0.04);
-      grp.add(dorsal);
-
-      // Ekor bercabang atas-bawah (forked/fan tail)
-      [-1, 1].forEach(ud => {
-        const tFin = new THREE.Mesh(new THREE.ConeGeometry(isFancy ? 0.18 : 0.13, isFancy ? 0.42 : 0.3, 4), accMat);
-        tFin.scale.set(0.25, 1, 0.85);
-        tFin.rotation.x = Math.PI / 2 + ud * 0.42;
-        tFin.position.set(0, ud * 0.1, -0.48);
-        grp.add(tFin);
+      // Lengkung tutup insang (operculum)
+      [-1, 1].forEach(s => {
+        const gillPlate = new THREE.Mesh(new THREE.TorusGeometry(0.11, 0.014, 6, 14, Math.PI * 0.85), accMat);
+        gillPlate.rotation.y = s * Math.PI / 2;
+        gillPlate.rotation.z = -0.35;
+        gillPlate.position.set(s * (isRound ? 0.22 : 0.155), -0.01, 0.22);
+        grp.add(gillPlate);
       });
 
-      // Sirip dada kiri-kanan (pectoral fins)
+      // Sirip punggung melengkung (sculpted dorsal fin)
+      const dorsal = makeSculptedFinMesh(
+        isFancy
+          ? [[0.14, 0], [0.05, 0.34, -0.26, 0.36], [-0.34, 0.14, -0.24, 0]]
+          : [[0.12, 0], [0.02, 0.24, -0.20, 0.22], [-0.26, 0.06, -0.20, 0]],
+        0.022,
+        finMat
+      );
+      dorsal.rotation.y = Math.PI / 2;
+      dorsal.position.set(0, isRound ? 0.32 : 0.25, -0.02);
+      grp.add(dorsal);
+
+      // Sirip perut & sirip anal
+      const analFin = makeSculptedFinMesh([[0.08, 0], [-0.04, -0.15], [-0.14, -0.12], [-0.10, 0]], 0.018, finMat);
+      analFin.rotation.y = Math.PI / 2;
+      analFin.position.set(0, isRound ? -0.24 : -0.18, -0.22);
+      grp.add(analFin);
+
+      // Ekor bulan sabit bercabang (sculpted crescent tail) dalam tailGroup agar bisa melambai!
+      const tailGrp = new THREE.Group();
+      tailGrp.position.set(0, 0, isRound ? -0.38 : -0.50);
+      const tailFin = makeSculptedFinMesh(
+        isFancy
+          ? [[0, 0.05], [-0.32, 0.28, -0.38, 0.34], [-0.20, 0.08, -0.16, 0], [-0.20, -0.08, -0.38, -0.34], [-0.32, -0.28, 0, -0.05]]
+          : [[0, 0.04], [-0.22, 0.20, -0.28, 0.24], [-0.14, 0.05, -0.12, 0], [-0.14, -0.05, -0.28, -0.24], [-0.22, -0.20, 0, -0.04]],
+        0.022,
+        finMat
+      );
+      tailFin.rotation.y = Math.PI / 2;
+      tailFin.position.set(0, 0, -0.12);
+      tailGrp.add(tailFin);
+      grp.userData.tailGroup = tailGrp;
+      grp.add(tailGrp);
+
+      // Sirip dada kiri-kanan (sculpted pectoral fins)
       [-1, 1].forEach(s => {
-        const pec = new THREE.Mesh(new THREE.ConeGeometry(0.09, isFancy ? 0.3 : 0.2, 4), accMat);
-        pec.scale.set(0.25, 1, 0.8);
-        pec.rotation.z = s * 1.05;
-        pec.rotation.y = s * -0.4;
-        pec.position.set(s * 0.22, -0.05, 0.12);
+        const pec = makeSculptedFinMesh(
+          isFancy
+            ? [[0, 0.04], [-0.24, 0.14, -0.28, -0.06], [-0.12, -0.12, 0, -0.04]]
+            : [[0, 0.03], [-0.16, 0.10, -0.20, -0.04], [-0.08, -0.08, 0, -0.03]],
+          0.018,
+          finMat
+        );
+        pec.rotation.y = s * -0.65;
+        pec.rotation.z = s * 0.35;
+        pec.position.set(s * (isRound ? 0.24 : 0.17), -0.06, 0.14);
         grp.add(pec);
       });
 
-      // Kumis panjang untuk Lele / Patin / Baung
-      if (sh === "whisker") {
+      // Kumis panjang untuk Lele / Patin / Baung / Naga
+      if (sh === "whisker" || isMythicPlus) {
         [-1, 1].forEach(s => {
-          const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.008, 0.28, 6), accMat);
-          w1.rotation.z = s * 1.15; w1.rotation.x = 0.5;
-          w1.position.set(s * 0.18, -0.04, 0.42);
+          const w1 = new THREE.Mesh(new THREE.CylinderGeometry(0.013, 0.005, isMythicPlus ? 0.44 : 0.30, 8), accMat);
+          w1.rotation.z = s * 1.15; w1.rotation.x = 0.55;
+          w1.position.set(s * 0.18, -0.03, isRound ? 0.36 : 0.48);
           grp.add(w1);
         });
       }
-      addEyes(isRound ? 0.19 : 0.15, 0.08, isRound ? 0.25 : 0.30, 0.048);
+      addEyes(isRound ? 0.20 : 0.14, 0.07, isRound ? 0.28 : 0.38, 0.048);
     }
 
-    // Mahkota & cincin aura untuk Epic/Mythic/Secret/Cosmic/Divine
+    // Mahkota emas untuk Epic / Mythic / Secret / Cosmic / Divine
     if (isHighRarity || sh === "crown") {
-      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.09, 0.14, 5), new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.75, roughness: 0.2 }));
-      crown.position.set(0, 0.37, 0.12);
+      const crownMat = new THREE.MeshStandardMaterial({ color: 0xfde047, metalness: 0.85, roughness: 0.15, emissive: 0xf59e0b, emissiveIntensity: 0.25 });
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.09, 0.15, 6), crownMat);
+      crown.position.set(0, 0.38, 0.16);
       grp.add(crown);
     }
+    // Cincin aura ganda & kristal mengorbit untuk Secret / Cosmic / Divine!
     if (isCosmicPlus) {
-      const auraRing = new THREE.Mesh(
-        new THREE.TorusGeometry(0.48, 0.018, 6, 22),
-        new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.75 })
-      );
-      auraRing.rotation.x = Math.PI / 2.2;
-      grp.add(auraRing);
+      const ringMat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.78 });
+      const auraRing1 = new THREE.Mesh(new THREE.TorusGeometry(0.60, 0.020, 8, 32), ringMat);
+      auraRing1.rotation.x = Math.PI / 2.2;
+      const auraRing2 = new THREE.Mesh(new THREE.TorusGeometry(0.50, 0.015, 8, 28), new THREE.MeshBasicMaterial({ color: safeAcc, transparent: true, opacity: 0.68 }));
+      auraRing2.rotation.y = Math.PI / 3;
+      auraRing2.rotation.x = Math.PI / 3;
+      grp.userData.auraRings = [auraRing1, auraRing2];
+      grp.add(auraRing1, auraRing2);
+
+      // 4 Kristal bercahaya mengorbit
+      const orbMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
+      for (let oi = 0; oi < 4; oi++) {
+        const ang = (oi / 4) * Math.PI * 2;
+        const orb = new THREE.Mesh(new THREE.OctahedronGeometry(0.055, 0), orbMat);
+        orb.position.set(Math.cos(ang) * 0.60, Math.sin(ang) * 0.18, Math.sin(ang) * 0.60);
+        auraRing1.add(orb);
+      }
     }
     return grp;
+  }
+
+  function computeShowOffScale(fishData) {
+    const kg = Math.max(0.5, parseFloat(fishData.kg) || 2);
+    const rarity = fishData.rarity || "Common";
+    // Skala dasar dari berat ikan + lonjakan raksasa untuk ikan langka (hingga segede Gedung Sate!)
+    let base = 0.85 + Math.min(2.4, kg * 0.06);
+    if (rarity === "Rare") base = Math.max(base, 1.9 + Math.min(1.4, kg * 0.05));
+    else if (rarity === "Epic") base = Math.max(base, 3.0 + Math.min(2.2, kg * 0.04));
+    else if (rarity === "Mythic") base = Math.max(base, 5.2 + Math.min(3.5, kg * 0.04));
+    else if (rarity === "Secret") base = Math.max(base, 8.5 + Math.min(4.5, kg * 0.035));
+    else if (rarity === "Cosmic") base = Math.max(base, 12.0 + Math.min(5.0, kg * 0.03));
+    else if (rarity === "Divine") base = Math.max(base, 16.5 + Math.min(6.5, kg * 0.025));
+
+    if (fishData.mut && fishData.mut.includes("Giant")) base *= 1.45;
+    return Math.max(0.85, Math.min(24.0, base));
   }
 
   function create3DFishModel(fishData) {
     const f = ALL_FISH_CATALOG.find(x => x.id === fishData.id) || {};
     const isHigh = ["Epic", "Mythic", "Secret", "Cosmic", "Divine"].includes(fishData.rarity);
     const grp = buildDetailedFishBodyMesh({ ...f, ...fishData }, isHigh);
-    const kgScale = Math.max(0.75, Math.min(2.1, 0.72 + (parseFloat(fishData.kg) || 2) * 0.045)) * (fishData.mut && fishData.mut.includes("Giant") ? 1.35 : 1);
+    const kgScale = computeShowOffScale(fishData);
 
-    // Label kecil nama ikan di atas ikan 3D
+    // Label nama ikan di atas ikan 3D (ukuran proporsional agar tetap terbaca jelas untuk ikan raksasa!)
     const cv = document.createElement("canvas");
-    cv.width = 320; cv.height = 64;
+    cv.width = 360; cv.height = 72;
     const ctx = cv.getContext("2d");
-    ctx.fillStyle = "rgba(15, 23, 42, 0.88)";
-    ctx.beginPath(); ctx.roundRect(6, 6, 308, 52, 26); ctx.fill();
-    ctx.strokeStyle = f.col || "#fde047"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
+    ctx.beginPath(); ctx.roundRect(6, 6, 348, 60, 30); ctx.fill();
+    ctx.strokeStyle = f.col || "#fde047"; ctx.lineWidth = 4; ctx.stroke();
     ctx.fillStyle = "#fde047"; ctx.font = "900 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(`${fishData.name} (${fishData.kg}kg)`, 160, 33);
+    ctx.fillText(`${fishData.name} (${fishData.kg}kg)`, 180, 37);
     const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
-    spr.scale.set(2.4, 0.48, 1);
+    const invSprScale = Math.max(1, 2.8 / Math.max(1, kgScale * 0.55));
+    spr.scale.set(2.8 * invSprScale, 0.56 * invSprScale, 1);
     spr.position.set(0, 0.72, 0);
     grp.add(spr);
 
+    grp.userData.showOffScale = kgScale;
     grp.scale.setScalar(kgScale);
     return grp;
   }
@@ -2507,8 +2813,21 @@
       mesh._pirakuShownFishSig = sig;
       mesh.add(mesh._pirakuShownFishGrp);
     }
-    mesh._pirakuShownFishGrp.position.set(0, 1.48 + Math.sin((now || performance.now()) * 0.004) * 0.09, 0.72);
-    mesh._pirakuShownFishGrp.rotation.y = Math.sin((now || performance.now()) * 0.0025) * 0.35;
+    const tNow = now || performance.now();
+    const grp = mesh._pirakuShownFishGrp;
+    const sc = grp.userData.showOffScale || 1;
+    // Ikan kecil di depan tangan, ikan raksasa melayang gagah di atas/belakang karakter agar tidak menutupi badan pemain!
+    const yPos = sc > 3.5 ? (1.8 + sc * 0.52) : (1.48 + sc * 0.14);
+    const zPos = sc > 3.5 ? (-0.4 - sc * 0.45) : (0.72 + sc * 0.16);
+    grp.position.set(0, yPos + Math.sin(tNow * 0.0035) * Math.min(0.45, 0.08 * sc), zPos);
+    grp.rotation.y = Math.sin(tNow * 0.0022) * 0.35;
+    if (grp.userData.tailGroup) {
+      grp.userData.tailGroup.rotation.y = Math.sin(tNow * 0.009) * 0.28;
+    }
+    if (Array.isArray(grp.userData.auraRings)) {
+      grp.userData.auraRings[0].rotation.z = tNow * 0.0014;
+      grp.userData.auraRings[1].rotation.z = -tNow * 0.0018;
+    }
   };
 
   window.toggleShowOffFish = function (bagIdx) {
