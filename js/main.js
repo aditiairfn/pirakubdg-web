@@ -2219,13 +2219,13 @@ let activeQuestSystem = null;
   cyl(0.21, 0.23, 0.16, 16, 0, 0.15, 0, 0x0f172a, headW);
 
   // Label nama mengambang khas Walikota (Navy & Emas) di atas Pak Walikota
-  const wkCv = document.createElement('canvas'); wkCv.width = 340; wkCv.height = 64;
+  const wkCv = document.createElement('canvas'); wkCv.width = 420; wkCv.height = 64;
   const wkCtx = wkCv.getContext('2d');
   wkCtx.fillStyle = 'rgba(15, 23, 42, 0.94)';
-  wkCtx.beginPath(); wkCtx.roundRect(6, 6, 328, 52, 26); wkCtx.fill();
+  wkCtx.beginPath(); wkCtx.roundRect(6, 6, 408, 52, 26); wkCtx.fill();
   wkCtx.strokeStyle = '#facc15'; wkCtx.lineWidth = 4; wkCtx.stroke();
   wkCtx.fillStyle = '#fde047'; wkCtx.font = '900 22px sans-serif'; wkCtx.textAlign = 'center'; wkCtx.textBaseline = 'middle';
-  wkCtx.fillText('🏛️ Pak Walikota • Bandung', 170, 33);
+  wkCtx.fillText('🏛️ Pak Walikota • Bandung', 210, 33);
   const wkSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(wkCv), transparent: true, depthTest: true }));
   wkSpr.scale.set(isPirakuMobile ? 1.75 : 2.15, isPirakuMobile ? 0.33 : 0.40, 1);
   wkSpr.position.set(0, 1.95, 0);
@@ -2809,21 +2809,27 @@ let activeQuestSystem = null;
             if (ch !== pm && ch.visible) { ch.visible = false; hiddenOthers.push(ch); }
           });
         }
-        let prevPmPos = null, prevPmRotY = 0, prevArmZ = 0, prevArmX = 0;
+        let prevPmPos = null, prevPmRotY = 0, prevArmZ = 0, prevArmX = 0, prevBodyY = 0;
         if (pm) {
           prevPmPos = pm.position.clone();
           prevPmRotY = pm.rotation.y;
+          if (pm.userData?.a?.body) {
+            prevBodyY = pm.userData.a.body.position.y;
+            pm.userData.a.body.position.y = 0;
+          }
           if (pm.userData?.a?.armR) {
             prevArmZ = pm.userData.a.armR.rotation.z;
             prevArmX = pm.userData.a.armR.rotation.x;
-            pm.userData.a.armR.rotation.z = -2.35;
-            pm.userData.a.armR.rotation.x = -0.25;
+            pm.userData.a.armR.rotation.z = 2.35;
+            pm.userData.a.armR.rotation.x = -0.2;
           }
           pm.position.set(0.58, 0.14, 0.5);
           pm.rotation.y = Math.PI + 0.08;
         }
         WALKOT.position.set(-0.62, 0.14, 0.5);
         WALKOT.rotation.y = Math.PI - 0.08;
+        const prevWkSprVis = (typeof wkSpr !== 'undefined' && wkSpr) ? wkSpr.visible : true;
+        if (typeof wkSpr !== 'undefined' && wkSpr) wkSpr.visible = false;
         // Jangan ubah cam.aspect agar hasil render tidak nge-stretch!
         cam.fov = 54;
         cam.updateProjectionMatrix();
@@ -2835,6 +2841,17 @@ let activeQuestSystem = null;
           ? () => renderer.__rawRender(scene, cam)
           : () => renderer.render(scene, cam);
         forceRender();
+
+        // Hitung posisi proyeksi kepala karakter & Pak Walikota untuk label nama tajam di Story
+        const projToStory = (wx, wy, wz, fx, fy, fw, fh, sx, sy, sw, sh, srcW, srcH) => {
+          const v = new THREE.Vector3(wx, wy, wz).project(cam);
+          const px = (v.x * 0.5 + 0.5) * srcW;
+          const py = (-v.y * 0.5 + 0.5) * srcH;
+          return {
+            x: fx + ((px - sx) / sw) * fw,
+            y: fy + ((py - sy) / sh) * fh
+          };
+        };
 
         // Desain kartu Story 9:16 (720x1280) siap upload IG / WA / TikTok Story!
         const pCv = document.createElement('canvas');
@@ -2908,6 +2925,27 @@ let activeQuestSystem = null;
         pCtx.lineWidth = 4;
         pCtx.beginPath(); pCtx.roundRect(fx, fy, fw, fh, 28); pCtx.stroke();
 
+        // Gambar label nama rapi & tajam tepat di atas kepala masing-masing
+        const myIg = (localStorage.getItem('piraku_my_ig') || 'Warga').trim();
+        const dispIg = myIg.startsWith('@') ? myIg : '@' + myIg;
+        const drawTagPill = (x, y, text, borderCol, textCol) => {
+          pCtx.save();
+          pCtx.font = '800 17px sans-serif';
+          const tw = Math.min(230, pCtx.measureText(text).width + 26);
+          const rx = Math.max(fx + 14, Math.min(fx + fw - tw - 14, x - tw / 2));
+          const ry = Math.max(fy + 16, y - 34);
+          pCtx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+          pCtx.beginPath(); pCtx.roundRect(rx, ry, tw, 32, 16); pCtx.fill();
+          pCtx.strokeStyle = borderCol; pCtx.lineWidth = 2.5; pCtx.stroke();
+          pCtx.fillStyle = textCol; pCtx.textAlign = 'center'; pCtx.textBaseline = 'middle';
+          pCtx.fillText(text, rx + tw / 2, ry + 16.5);
+          pCtx.restore();
+        };
+        const pmTagPt = projToStory(0.58, 2.25, 0.5, fx, fy, fw, fh, sx, sy, sw, sh, srcW, srcH);
+        const wkTagPt = projToStory(-0.62, 2.25, 0.5, fx, fy, fw, fh, sx, sy, sw, sh, srcW, srcH);
+        drawTagPill(pmTagPt.x, pmTagPt.y, dispIg, '#38bdf8', '#bae6fd');
+        drawTagPill(wkTagPt.x, wkTagPt.y, '🏛️ Pak Walikota', '#facc15', '#fde047');
+
         // Watermark kecil di pojok bawah foto
         pCtx.fillStyle = 'rgba(15, 23, 42, 0.78)';
         pCtx.beginPath(); pCtx.roundRect(fx + 20, fy + fh - 58, 260, 36, 18); pCtx.fill();
@@ -2917,8 +2955,6 @@ let activeQuestSystem = null;
         pCtx.fillText('📸 Jepretan Teh Dinda', fx + 36, fy + fh - 35);
 
         // Caption Story di bawah foto
-        const myIg = (localStorage.getItem('piraku_my_ig') || 'Warga').trim();
-        const dispIg = myIg.startsWith('@') ? myIg : '@' + myIg;
         pCtx.textAlign = 'center';
         pCtx.fillStyle = '#f8fafc';
         pCtx.font = '900 32px sans-serif';
@@ -2941,6 +2977,7 @@ let activeQuestSystem = null;
 
         // Pulihkan state asli seketika
         hiddenOthers.forEach(ch => { ch.visible = true; });
+        if (typeof wkSpr !== 'undefined' && wkSpr) wkSpr.visible = prevWkSprVis;
         cam.fov = prevFov;
         cam.updateProjectionMatrix();
         cam.position.copy(prevCamPos);
@@ -2950,19 +2987,20 @@ let activeQuestSystem = null;
         if (pm && prevPmPos) {
           pm.position.copy(prevPmPos);
           pm.rotation.y = prevPmRotY;
+          if (pm.userData?.a?.body) pm.userData.a.body.position.y = prevBodyY;
           if (pm.userData?.a?.armR) {
             pm.userData.a.armR.rotation.z = prevArmZ;
             pm.userData.a.armR.rotation.x = prevArmX;
           }
         }
         forceRender();
-        showSavedPolaroidModal(finalPhotoUrl);
+        showSavedPolaroidModal(finalPhotoUrl, pCv);
         return;
       }
     } catch (_) {}
   }
 
-  function showSavedPolaroidModal(photoUrl) {
+  function showSavedPolaroidModal(photoUrl, canvasEl) {
     if (!photoUrl) return;
     let modal = document.getElementById('piraku-photo-result-modal');
     if (!modal) {
@@ -2975,14 +3013,45 @@ let activeQuestSystem = null;
     modal.innerHTML = `
       <div style="background:#0f172a;border:2px solid #f59e0b;border-radius:18px;padding:14px;width:min(360px,94vw);box-shadow:0 24px 60px rgba(0,0,0,0.8);text-align:center;color:#f8fafc;">
         <div style="font-weight:900;font-size:14px;color:#fde047;margin-bottom:10px;">📸 Foto Story 9:16 — Teh Dinda!</div>
-        <img src="${photoUrl}" alt="Foto Story Gedung Sate" style="max-height:60vh;width:auto;max-width:100%;margin:0 auto 12px;border-radius:12px;display:block;box-shadow:0 10px 26px rgba(0,0,0,0.5);">
-        <div style="display:flex;gap:8px;">
-          <a href="${photoUrl}" download="pirakubdg-story-gedungsate.png" style="flex:1;text-decoration:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;">💾 Simpan Story (9:16)</a>
+        <img src="${photoUrl}" alt="Foto Story Gedung Sate" style="max-height:58vh;width:auto;max-width:100%;margin:0 auto 10px;border-radius:12px;display:block;box-shadow:0 10px 26px rgba(0,0,0,0.5);">
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <button type="button" id="piraku-photo-save-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;">💾 Simpan Story (9:16)</button>
           <button type="button" id="piraku-photo-close" style="border:none;background:#1e293b;color:#cbd5e1;padding:10px 14px;border-radius:11px;font-weight:800;font-size:12.5px;cursor:pointer;">Tutup</button>
         </div>
+        <div style="font-size:10.5px;color:#94a3b8;">💡 Di iPhone/HP, bisa juga tekan & tahan foto → Simpan ke Foto</div>
       </div>
     `;
     modal.style.display = 'flex';
+    const saveBtn = modal.querySelector('#piraku-photo-save-btn');
+    if (saveBtn) {
+      saveBtn.onclick = async () => {
+        const triggerDownload = (url) => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'pirakubdg-story-gedungsate.png';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        };
+        if (canvasEl && canvasEl.toBlob) {
+          canvasEl.toBlob(async (blob) => {
+            if (!blob) { triggerDownload(photoUrl); return; }
+            try {
+              const file = new File([blob], 'pirakubdg-story-gedungsate.png', { type: 'image/png' });
+              if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: 'Foto Piraku Bandung' });
+                return;
+              }
+            } catch (_) {}
+            const objUrl = URL.createObjectURL(blob);
+            triggerDownload(objUrl);
+            setTimeout(() => URL.revokeObjectURL(objUrl), 4000);
+          }, 'image/png');
+        } else {
+          triggerDownload(photoUrl);
+        }
+      };
+    }
     const closeBtn = modal.querySelector('#piraku-photo-close');
     if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
     modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
