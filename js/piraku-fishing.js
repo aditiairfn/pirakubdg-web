@@ -2558,6 +2558,7 @@
           `<button onclick="toggleHoldFishingRod()" title="Keluarkan/Simpan Joran" style="border:1px solid ${window.pirakuHoldRodOut ? "#facc15" : "#38bdf8"};background:${window.pirakuHoldRodOut ? "rgba(250,204,21,0.2)" : "#0f172a"};color:${window.pirakuHoldRodOut ? "#fde047" : "#7dd3fc"};padding:6px 9px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">${window.pirakuHoldRodOut ? "✨ Joran" : "🎣 Joran"}</button>` +
           `<button onclick="openFishingHubModal()" style="border:none;background:#1e293b;color:#fde047;padding:6px 11px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;border:1px solid #475569;white-space:nowrap;">🎒 Tas (${bLen})</button>`;
       }
+      _barEl.classList.toggle("is-near-pond", nearPond);
       if (_barEl.style.display !== "flex") _barEl.style.display = "flex";
     } else if (_barEl && _barEl.style.display !== "none") {
       _barEl.style.display = "none";

@@ -2710,7 +2710,9 @@ let activeQuestSystem = null;
 
   function updateNengRaraSpatialAudio(pDist, inMainCity) {
     let pill = document.getElementById('piraku-rara-mute-pill');
-    const nearPill = inMainCity && pDist < 8.5;
+    const fishUiEl = document.getElementById('piraku-fishing-ui');
+    const isFishingUiOpen = Boolean(fishUiEl && fishUiEl.style.display && fishUiEl.style.display !== 'none');
+    const nearPill = inMainCity && pDist < 8.5 && !isFishingUiOpen;
     if (nearPill) {
       if (!pill && document.body) {
         pill = document.createElement('button');
