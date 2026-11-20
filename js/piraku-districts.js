@@ -3180,13 +3180,11 @@
           <div style="padding:14px 16px;background:linear-gradient(135deg,#1d4ed8,#2563eb);display:flex;justify-content:space-between;align-items:center;">
             <div>
               <div style="font-weight:900;font-size:15px;">🏬 KOPDES BIRU PUTIH</div>
-              <div style="font-size:11px;color:#dbeafe;">Jajanan, Minuman, Jual Ikan &amp; Toko Joran!</div>
+              <div style="font-size:11px;color:#dbeafe;">Jajanan, Joran, Baju, Kendaraan &amp; Gelar!</div>
             </div>
             <button onclick="document.getElementById('piraku-mart-modal').style.display='none'" style="border:none;background:rgba(15,23,42,0.45);color:#f8fafc;width:30px;height:30px;border-radius:999px;cursor:pointer;font-weight:800;">✕</button>
           </div>
-          <div id="kopdes-fishing-bar" style="padding:10px 14px 0;">
-            <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openFishingHubModal==='function') window.openFishingHubModal();" style="width:100%;border:none;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;">🎣 Jual Hasil Mancing, Beli Umpan &amp; Upgrade Joran →</button>
-          </div>
+          <div id="kopdes-fishing-bar" style="padding:10px 14px 0;"></div>
           <div id="piraku-mart-items" style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;"></div>
         </div>
       `;
@@ -3194,14 +3192,27 @@
     }
     const fBar = document.getElementById("kopdes-fishing-bar");
     if (fBar) {
-      fBar.innerHTML = `<button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openFishingHubModal==='function') window.openFishingHubModal();" style="width:100%;border:none;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;">🎣 Jual Ikan, Beli Umpan &amp; Upgrade Joran →</button>`;
+      fBar.innerHTML = `
+        <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openFishingHubModal==='function') window.openFishingHubModal();" style="width:100%;border:none;background:linear-gradient(135deg,#0ea5e9,#0284c7);color:#fff;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;cursor:pointer;margin-bottom:7px;">🎣 Jual Ikan, Beli Umpan &amp; Upgrade Joran →</button>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:5px;">
+          <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openEconomyModal==='function') window.openEconomyModal('outfit');" style="border:1px solid rgba(250,204,21,0.35);background:#1e293b;color:#fde047;padding:7px 4px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;">🧥 Baju</button>
+          <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openEconomyModal==='function') window.openEconomyModal('mobility');" style="border:1px solid rgba(56,189,248,0.35);background:#1e293b;color:#7dd3fc;padding:7px 4px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;">🛴 Kendaraan</button>
+          <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openEconomyModal==='function') window.openEconomyModal('tier');" style="border:1px solid rgba(192,132,252,0.4);background:#1e293b;color:#e9d5ff;padding:7px 4px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;">👑 Gelar</button>
+          <button onclick="document.getElementById('piraku-mart-modal').style.display='none'; if(typeof window.openEconomyModal==='function') window.openEconomyModal('city');" style="border:1px solid rgba(74,222,128,0.35);background:#1e293b;color:#86efac;padding:7px 4px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;">📢 Kota</button>
+        </div>
+      `;
     }
     const list = document.getElementById("piraku-mart-items");
     if (list) {
+      const myCoins = (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function")
+        ? (Number(window.PirakuEconomy.getState().coins) || 0)
+        : (parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0);
       const renderGroup = (title, items) => `
         <div style="font-size:11px;font-weight:900;letter-spacing:0.06em;color:#93c5fd;text-transform:uppercase;margin-top:4px;">${title}</div>
-        ${items.map(s => `
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(30,41,59,0.78);border:1px solid rgba(96,165,250,0.22);border-radius:12px;padding:9px 12px;">
+        ${items.map(s => {
+          const canAfford = myCoins >= s.cost;
+          return `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(30,41,59,0.78);border:1px solid rgba(96,165,250,0.22);opacity:${canAfford ? "1" : "0.62"};border-radius:12px;padding:9px 12px;">
             <div style="display:flex;align-items:center;gap:10px;">
               <span style="font-size:22px;">${s.icon}</span>
               <div>
@@ -3210,11 +3221,12 @@
               </div>
             </div>
             <div style="display:flex;gap:5px;flex-shrink:0;">
-              <button onclick="buyPirakuMartSnack('${s.id}', false)" style="border:none;background:linear-gradient(135deg,#f8fafc,#dbeafe);color:#1e3a8a;padding:6px 9px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🍽️ 🪙 ${s.cost}</button>
-              <button onclick="buyPirakuMartSnack('${s.id}', true)" style="border:none;background:#1e293b;color:#fde047;border:1px solid #475569;padding:6px 8px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;white-space:nowrap;">🎒 Simpan</button>
+              <button onclick="buyPirakuMartSnack('${s.id}', false)" style="border:none;background:${canAfford ? "linear-gradient(135deg,#f8fafc,#dbeafe)" : "#334155"};color:${canAfford ? "#1e3a8a" : "#94a3b8"};padding:6px 9px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🍽️ 🪙 ${s.cost}</button>
+              <button onclick="buyPirakuMartSnack('${s.id}', true)" style="border:none;background:${canAfford ? "#1e293b" : "#334155"};color:${canAfford ? "#fde047" : "#94a3b8"};border:1px solid #475569;padding:6px 8px;border-radius:9px;font-weight:800;font-size:10.5px;cursor:pointer;white-space:nowrap;">🎒 Simpan</button>
             </div>
           </div>
-        `).join("")}
+        `;
+        }).join("")}
       `;
       list.innerHTML =
         renderGroup("🍢 Jajanan Bandung", PIRAKU_MART_SNACKS.filter(s => s.cat === "jajanan")) +

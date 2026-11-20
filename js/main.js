@@ -2791,22 +2791,96 @@ let activeQuestSystem = null;
   const _pirakuStoryLogoImg = new Image();
   _pirakuStoryLogoImg.src = './assets/piraku-brand-logo.webp';
 
-  function triggerPolaroidPhotoFx() {
+  function getPhotoAlbumKey() {
+    const ig = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
+    return 'piraku_photo_album_' + (ig || 'guest');
+  }
+  function savePhotoToAlbum(dataUrl, label) {
+    try {
+      const key = getPhotoAlbumKey();
+      const arr = JSON.parse(localStorage.getItem(key) || '[]');
+      arr.unshift({ url: dataUrl, label: label || 'Gedung Sate', ts: Date.now() });
+      localStorage.setItem(key, JSON.stringify(arr.slice(0, 6)));
+    } catch (_) {}
+  }
+  window.openTehDindaPhotoAlbum = function() {
+    let arr = [];
+    try { arr = JSON.parse(localStorage.getItem(getPhotoAlbumKey()) || '[]'); } catch (_) {}
+    let modal = document.getElementById('piraku-photo-album-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-photo-album-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.84);backdrop-filter:blur(6px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      modal.addEventListener('pointerdown', e => e.stopPropagation());
+      document.body.appendChild(modal);
+    }
+    const gridHtml = arr.length
+      ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-height:62vh;overflow-y:auto;">${arr.map((it, i) => `
+          <div style="background:#1e293b;border:1px solid rgba(250,204,21,0.35);border-radius:12px;padding:6px;text-align:center;">
+            <img src="${it.url}" data-idx="${i}" style="width:100%;border-radius:8px;cursor:pointer;display:block;" alt="Foto ${i + 1}">
+            <div style="font-size:10px;color:#fde047;font-weight:800;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${it.label || 'Story 9:16'}</div>
+          </div>`).join('')}</div>`
+      : `<div style="padding:24px;color:#94a3b8;font-size:12.5px;">Belum ada foto tersimpan. Ajak Teh Dinda foto bareng dulu!</div>`;
+    modal.innerHTML = `
+      <div style="background:#0f172a;border:2px solid #f59e0b;border-radius:18px;padding:14px;width:min(380px,94vw);color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.8);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-weight:900;font-size:14px;color:#fde047;">🖼️ Album Kenangan Teh Dinda</span>
+          <button type="button" id="piraku-album-close" style="border:none;background:#1e293b;color:#cbd5e1;width:28px;height:28px;border-radius:999px;font-weight:900;cursor:pointer;">✕</button>
+        </div>
+        ${gridHtml}
+      </div>
+    `;
+    modal.style.display = 'flex';
+    modal.querySelector('#piraku-album-close').onclick = () => { modal.style.display = 'none'; };
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+    modal.querySelectorAll('img[data-idx]').forEach(im => {
+      im.onclick = () => {
+        const it = arr[Number(im.dataset.idx)];
+        if (it && it.url) { modal.style.display = 'none'; showSavedPolaroidModal(it.url, null); }
+      };
+    });
+  };
+
+  function triggerPolaroidPhotoFx(partnerKey) {
     triggerScreenTintFx('#ffffff', 280);
     let finalPhotoUrl = '';
     try {
       const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
-      if (renderer && scene && cam && typeof WALKOT !== 'undefined' && WALKOT) {
-        // Simpan state asli pemain, Walkot, warga sekitar, dan kamera
+      const pKey = partnerKey || 'walkot';
+      let partnerObj = typeof WALKOT !== 'undefined' ? WALKOT : null;
+      let partnerBadgeText = '🏛️ Pak Walikota';
+      let partnerTagHandle = '@pirakubdg';
+      let partnerSubtitle = 'Foto bareng Pak Walikota di depan Gedung Sate ✨';
+      let partnerWalkFlag = null;
+      if (pKey === 'kdm' && typeof KDM !== 'undefined' && KDM) {
+        partnerObj = KDM;
+        partnerBadgeText = '🏛️ Kang Dedi (KDM)';
+        partnerTagHandle = '@dedimulyadi71';
+        partnerSubtitle = 'Foto bareng Gubernur Jabar di depan Gedung Sate ✨';
+      } else if (pKey === 'rara') {
+        const raraMesh = animC.find(x => x && x.userData && x.userData.a && x.userData.a.c && x.userData.a.c.npcRole === 'beggar');
+        if (raraMesh) {
+          partnerObj = raraMesh;
+          partnerBadgeText = '🎸 Neng Rara';
+          partnerTagHandle = 'Neng Rara';
+          partnerSubtitle = 'Foto bareng Pengamen Braga di depan Gedung Sate ✨';
+          partnerWalkFlag = raraMesh.userData.a.walk;
+          raraMesh.userData.a.walk = false;
+        }
+      }
+
+      if (renderer && scene && cam && partnerObj) {
+        // Simpan state asli pemain, partner, warga sekitar, dan kamera
         const prevCamPos = cam.position.clone();
         const prevCamQuat = cam.quaternion.clone();
         const prevFov = cam.fov;
-        const prevWalkotPos = WALKOT.position.clone();
-        const prevWalkotRotY = WALKOT.rotation.y;
+        const prevPartnerPos = partnerObj.position.clone();
+        const prevPartnerRotY = partnerObj.rotation.y;
+        const prevPartnerVis = partnerObj.visible;
         const hiddenOthers = [];
         if (typeof citizensGroup !== 'undefined' && citizensGroup && Array.isArray(citizensGroup.children)) {
           citizensGroup.children.forEach(ch => {
-            if (ch !== pm && ch.visible) { ch.visible = false; hiddenOthers.push(ch); }
+            if (ch !== pm && ch !== partnerObj && ch.visible) { ch.visible = false; hiddenOthers.push(ch); }
           });
         }
         let prevPmPos = null, prevPmRotY = 0, prevArmZ = 0, prevArmX = 0, prevBodyY = 0;
@@ -2826,8 +2900,9 @@ let activeQuestSystem = null;
           pm.position.set(0.58, 0.14, 0.5);
           pm.rotation.y = Math.PI + 0.08;
         }
-        WALKOT.position.set(-0.62, 0.14, 0.5);
-        WALKOT.rotation.y = Math.PI - 0.08;
+        partnerObj.visible = true;
+        partnerObj.position.set(-0.62, 0.14, 0.5);
+        partnerObj.rotation.y = Math.PI - 0.08;
         const prevWkSprVis = (typeof wkSpr !== 'undefined' && wkSpr) ? wkSpr.visible : true;
         if (typeof wkSpr !== 'undefined' && wkSpr) wkSpr.visible = false;
         // Jangan ubah cam.aspect agar hasil render tidak nge-stretch!
@@ -2944,7 +3019,7 @@ let activeQuestSystem = null;
         const pmTagPt = projToStory(0.58, 2.25, 0.5, fx, fy, fw, fh, sx, sy, sw, sh, srcW, srcH);
         const wkTagPt = projToStory(-0.62, 2.25, 0.5, fx, fy, fw, fh, sx, sy, sw, sh, srcW, srcH);
         drawTagPill(pmTagPt.x, pmTagPt.y, dispIg, '#38bdf8', '#bae6fd');
-        drawTagPill(wkTagPt.x, wkTagPt.y, '🏛️ Pak Walikota', '#facc15', '#fde047');
+        drawTagPill(wkTagPt.x, wkTagPt.y, partnerBadgeText, '#facc15', '#fde047');
 
         // Watermark kecil di pojok bawah foto
         pCtx.fillStyle = 'rgba(15, 23, 42, 0.78)';
@@ -2958,11 +3033,11 @@ let activeQuestSystem = null;
         pCtx.textAlign = 'center';
         pCtx.fillStyle = '#f8fafc';
         pCtx.font = '900 32px sans-serif';
-        pCtx.fillText(`${dispIg}  ×  @pirakubdg`, 360, 1080);
+        pCtx.fillText(`${dispIg}  ×  ${partnerTagHandle}`, 360, 1080);
 
         pCtx.fillStyle = '#cbd5e1';
         pCtx.font = '700 20px sans-serif';
-        pCtx.fillText('Foto bareng Pak Walikota di depan Gedung Sate ✨', 360, 1122);
+        pCtx.fillText(partnerSubtitle, 360, 1122);
 
         pCtx.fillStyle = 'rgba(250, 204, 21, 0.14)';
         pCtx.beginPath(); pCtx.roundRect(170, 1160, 380, 44, 22); pCtx.fill();
@@ -2974,6 +3049,7 @@ let activeQuestSystem = null;
         pCtx.fillText('🗓️ ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 360, 1188);
 
         finalPhotoUrl = pCv.toDataURL('image/png');
+        savePhotoToAlbum(pCv.toDataURL('image/jpeg', 0.72), `${dispIg} × ${partnerBadgeText}`);
 
         // Pulihkan state asli seketika
         hiddenOthers.forEach(ch => { ch.visible = true; });
@@ -2982,8 +3058,10 @@ let activeQuestSystem = null;
         cam.updateProjectionMatrix();
         cam.position.copy(prevCamPos);
         cam.quaternion.copy(prevCamQuat);
-        WALKOT.position.copy(prevWalkotPos);
-        WALKOT.rotation.y = prevWalkotRotY;
+        partnerObj.position.copy(prevPartnerPos);
+        partnerObj.rotation.y = prevPartnerRotY;
+        partnerObj.visible = prevPartnerVis;
+        if (partnerWalkFlag !== null && partnerObj.userData?.a) partnerObj.userData.a.walk = partnerWalkFlag;
         if (pm && prevPmPos) {
           pm.position.copy(prevPmPos);
           pm.rotation.y = prevPmRotY;
@@ -3138,8 +3216,15 @@ let activeQuestSystem = null;
         return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">📜 Ambil Misi Jogging 22m (+45 🪙)</button>`;
       }
       if (roleType === 'quest_photo') {
-        if (cdLeft > 0) return `<div style="font-size:11px;color:#fbbf24;text-align:center;margin-bottom:8px;">📸 Sesi foto berikutnya dalam ${cdLeft}d</div>`;
-        return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f172a;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">📸 Pose Foto Wisata (+35 🪙 & +30 XP)</button>`;
+        let albumLen = 0;
+        try { albumLen = JSON.parse(localStorage.getItem(getPhotoAlbumKey()) || '[]').length; } catch (_) {}
+        return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+          <button onclick="window._pirakuSnapPartner('walkot')" style="border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f172a;padding:8px 6px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">📸 Pak Walkot</button>
+          <button onclick="window._pirakuSnapPartner('kdm')" style="border:none;background:linear-gradient(135deg,#38bdf8,#0284c7);color:#fff;padding:8px 6px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">📸 Kang Dedi</button>
+          <button onclick="window._pirakuSnapPartner('rara')" style="border:none;background:linear-gradient(135deg,#f472b6,#db2777);color:#fff;padding:8px 6px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">📸 Neng Rara</button>
+        </div>
+        <button onclick="openTehDindaPhotoAlbum()" style="width:100%;margin-bottom:8px;border:1px solid rgba(250,204,21,0.4);background:#1e293b;color:#fde047;padding:7px 10px;border-radius:9px;font-weight:800;font-size:11.5px;cursor:pointer;">🖼️ Lihat Album Kenangan (${albumLen})</button>
+        ${cdLeft > 0 ? `<div style="font-size:10.5px;color:#94a3b8;text-align:center;margin-bottom:6px;">⏳ Hadiah foto berikutnya dalam ${cdLeft}d (tetap bisa foto!)</div>` : `<div style="font-size:10.5px;color:#fbbf24;text-align:center;margin-bottom:6px;">✨ Bonus foto pertama: +35 🪙 & +30 XP!</div>`}`;
       }
       if (roleType === 'quest_clean') {
         if (cdLeft > 0) return `<div style="font-size:11px;color:#4ade80;text-align:center;margin-bottom:8px;">🧹 Area sudah bersih! Cek lagi ${cdLeft}d lagi</div>`;
@@ -3172,6 +3257,24 @@ let activeQuestSystem = null;
         renderLine();
       };
 
+      window._pirakuSnapPartner = (pKey) => {
+        const eco = window.PirakuEconomy;
+        const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+        const nowTs = Date.now();
+        const canReward = nowTs > (_npcRoleCooldowns.quest_photo || 0);
+        if (canReward) {
+          _npcRoleCooldowns.quest_photo = nowTs + 120000;
+          if (eco) eco.addCoins(35, 'Misi Foto Wisata Bandung');
+          if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(30, 'Misi Foto Wisata');
+        }
+        triggerPolaroidPhotoFx(pKey);
+        if (pm && pm.userData && pm.userData.a && pm.userData.a.armR) {
+          gsap.to(pm.userData.a.armR.rotation, { z: 2.35, duration: 0.22, yoyo: true, repeat: 3 });
+        }
+        playNpcRoleSfx('quest_photo', false);
+        showToast(canReward ? '📸 Cekrek! Foto kece (+35 🪙 & +30 XP)!' : '📸 Cekrek! Foto tersimpan ke Album Kenangan!');
+        renderLine();
+      };
       const raraMuteBtn = card.querySelector('#npc-rara-mute-btn');
       if (raraMuteBtn) {
         raraMuteBtn.onclick = () => {

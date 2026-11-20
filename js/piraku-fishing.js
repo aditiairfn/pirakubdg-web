@@ -3,19 +3,20 @@
   "use strict";
 
   const RODS = [
-    { id: "bamboo",    name: "Joran Bambu Cikapundung", cost: 0,    barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋", tierNote: "Cocok ikan Common–Uncommon (Rare+ sangat langka)" },
-    { id: "fiber",     name: "Joran Fiber Braga",       cost: 150,  barWidth: 40, luckBonus: 0.18, mutChance: 0.10, color: 0x0284c7, badge: "🎣", tierNote: "Buka peluang Rare & Epic" },
-    { id: "carbon",    name: "Joran Karbon Dago",       cost: 450,  barWidth: 46, luckBonus: 0.38, mutChance: 0.18, color: 0x1e293b, badge: "⚡", tierNote: "Efek kilau biru • Peluang Epic & Mythic" },
-    { id: "gold",      name: "Joran Emas Siliwangi",    cost: 1200, barWidth: 54, luckBonus: 0.65, mutChance: 0.28, color: 0xfacc15, badge: "👑", tierNote: "Cahaya emas • Peluang Mythic & Secret tinggi" },
-    { id: "crystal",   name: "Joran Kristal Tangkuban", cost: 2800, barWidth: 60, luckBonus: 0.95, mutChance: 0.38, color: 0x38bdf8, badge: "💎", tierNote: "Cahaya kristal biru • Buru Secret & Cosmic!" },
-    { id: "celestial", name: "Joran Naga Siliwangi",    cost: 6000, barWidth: 68, luckBonus: 1.40, mutChance: 0.52, color: 0xa855f7, badge: "🌌", tierNote: "Aura kosmik • Peluang tertinggi Cosmic & Divine!" }
+    { id: "bamboo",    name: "Joran Bambu Cikapundung", cost: 0,     barWidth: 34, luckBonus: 0.00, mutChance: 0.05, color: 0xa16207, badge: "🎋", tierNote: "Cocok ikan Common–Uncommon (Rare+ sangat langka)" },
+    { id: "fiber",     name: "Joran Fiber Braga",       cost: 600,   barWidth: 40, luckBonus: 0.18, mutChance: 0.10, color: 0x0284c7, badge: "🎣", tierNote: "Buka peluang Rare & Epic" },
+    { id: "carbon",    name: "Joran Karbon Dago",       cost: 2500,  barWidth: 46, luckBonus: 0.38, mutChance: 0.18, color: 0x1e293b, badge: "⚡", tierNote: "Efek kilau biru • Peluang Epic & Mythic" },
+    { id: "gold",      name: "Joran Emas Siliwangi",    cost: 8500,  barWidth: 54, luckBonus: 0.65, mutChance: 0.28, color: 0xfacc15, badge: "👑", tierNote: "Cahaya emas • Peluang Mythic & Secret tinggi" },
+    { id: "crystal",   name: "Joran Kristal Tangkuban", cost: 25000,  barWidth: 60, luckBonus: 0.95, mutChance: 0.38, color: 0x38bdf8, badge: "💎", tierNote: "Cahaya kristal biru • Buru Secret & Cosmic!" },
+    { id: "celestial", name: "Joran Naga Siliwangi",    cost: 65000,  barWidth: 68, luckBonus: 1.40, mutChance: 0.52, color: 0xa855f7, badge: "🌌", tierNote: "Aura kosmik • Peluang tertinggi Cosmic & Divine!" },
+    { id: "galatama",  name: "Joran Galatama Sultan",   cost: 150000, barWidth: 76, luckBonus: 2.10, mutChance: 0.72, color: 0xf43f5e, badge: "🏆", tierNote: "Joran Galatama legendaris • Peluang gacor Mythic–Divine & Mutasi!" }
   ];
 
   const BOBBERS = [
-    { id: "classic", name: "Umbul-umbul Merah Putih", cost: 0,    biteSpeed: 1.00, luckBoost: 0.00, mutBoost: 0.00, topCol: 0xef4444, botCol: 0xf8fafc, glowCol: null,     icon: "🔴", desc: "Pelampung standar" },
-    { id: "neon",    name: "Umbul-umbul Neon Biru",   cost: 200,  biteSpeed: 0.78, luckBoost: 0.16, mutBoost: 0.06, topCol: 0x38bdf8, botCol: 0x0f172a, glowCol: 0x38bdf8, icon: "💠", desc: "Nyambar +22% cepat • Luck +16%" },
-    { id: "emas",    name: "Umbul-umbul Emas Sakti",  cost: 650,  biteSpeed: 0.66, luckBoost: 0.36, mutBoost: 0.14, topCol: 0xfacc15, botCol: 0x78350f, glowCol: 0xfde047, icon: "🌟", desc: "Nyambar +34% cepat • Luck +36% • Mutasi +14%" },
-    { id: "kosmik",  name: "Umbul-umbul Kosmik",      cost: 1500, biteSpeed: 0.52, luckBoost: 0.65, mutBoost: 0.24, topCol: 0xc084fc, botCol: 0x3b0764, glowCol: 0xe879f9, icon: "🔮", desc: "Nyambar +48% cepat • Luck +65% • Mutasi +24%" }
+    { id: "classic", name: "Umbul-umbul Merah Putih", cost: 0,     biteSpeed: 1.00, luckBoost: 0.00, mutBoost: 0.00, topCol: 0xef4444, botCol: 0xf8fafc, glowCol: null,     icon: "🔴", desc: "Pelampung standar" },
+    { id: "neon",    name: "Umbul-umbul Neon Biru",   cost: 1200,  biteSpeed: 0.78, luckBoost: 0.16, mutBoost: 0.06, topCol: 0x38bdf8, botCol: 0x0f172a, glowCol: 0x38bdf8, icon: "💠", desc: "Nyambar +22% cepat • Luck +16%" },
+    { id: "emas",    name: "Umbul-umbul Emas Sakti",  cost: 5000,  biteSpeed: 0.66, luckBoost: 0.36, mutBoost: 0.14, topCol: 0xfacc15, botCol: 0x78350f, glowCol: 0xfde047, icon: "🌟", desc: "Nyambar +34% cepat • Luck +36% • Mutasi +14%" },
+    { id: "kosmik",  name: "Umbul-umbul Kosmik",      cost: 18000, biteSpeed: 0.52, luckBoost: 0.65, mutBoost: 0.24, topCol: 0xc084fc, botCol: 0x3b0764, glowCol: 0xe879f9, icon: "🔮", desc: "Nyambar +48% cepat • Luck +65% • Mutasi +24%" }
   ];
 
   const FISH_CATALOG = [
@@ -242,7 +243,7 @@
     return arr;
   }
   function saveItemBag(arr) {
-    const trimmed = arr.slice(0, 60);
+    const trimmed = arr.slice(0, 1000);
     _cachedItemLen = trimmed.length;
     localStorage.setItem("piraku_item_bag" + getUserSuf(), JSON.stringify(trimmed));
     markLocalFishTs();
@@ -254,7 +255,7 @@
     return (_cachedBagLen || 0) + (_cachedItemLen || 0);
   }
   function saveBag(bag) {
-    const trimmed = bag.slice(0, 60);
+    const trimmed = bag.slice(0, 1000);
     _cachedBagLen = trimmed.length;
     localStorage.setItem("piraku_fish_bag" + getUserSuf(), JSON.stringify(trimmed));
     markLocalFishTs();
@@ -1094,16 +1095,17 @@
     tilt.rotation.x = 0.76;
     const isCrystal = rodId === "crystal";
     const isCelestial = rodId === "celestial";
-    const isHighTier = isGold || isCrystal || isCelestial;
+    const isGalatama = rodId === "galatama";
+    const isHighTier = isGold || isCrystal || isCelestial || isGalatama;
     const blankMat = new THREE.MeshStandardMaterial({
       color: rodColor || 0xa16207,
       metalness: isHighTier ? 0.75 : 0.3,
       roughness: isHighTier ? 0.2 : 0.42,
-      emissive: isCelestial ? 0x581c87 : (isCrystal ? 0x0369a1 : 0x000000),
-      emissiveIntensity: isCelestial ? 0.45 : (isCrystal ? 0.35 : 0)
+      emissive: isGalatama ? 0xbe123c : (isCelestial ? 0x581c87 : (isCrystal ? 0x0369a1 : 0x000000)),
+      emissiveIntensity: isGalatama ? 0.52 : (isCelestial ? 0.45 : (isCrystal ? 0.35 : 0))
     });
     const trimMat = new THREE.MeshStandardMaterial({
-      color: isGold ? 0xfef08a : (isCelestial ? 0xf5d0fe : (isCrystal ? 0xbae6fd : 0xe2e8f0)),
+      color: (isGold || isGalatama) ? 0xfef08a : (isCelestial ? 0xf5d0fe : (isCrystal ? 0xbae6fd : 0xe2e8f0)),
       metalness: 0.88,
       roughness: 0.18
     });
@@ -1427,12 +1429,137 @@
   let castLuckBonus = 0;
   let castBarRaf = null;
   let _finishPowerCastFn = null;
+  let autoFishingEnabled = false;
+  let _autoFishingTimer = null;
 
-  function cancelFishing() {
+  window.toggleAutoPirakuFishing = function () {
+    if (!autoFishingEnabled) {
+      const hasUpgradedRod = getOwnedRods().some(id => id !== "bamboo");
+      if (!hasUpgradedRod) {
+        if (typeof window.showToast === "function") {
+          window.showToast("🔒 Mancing Auto terkunci! Beli minimal Joran Fiber Braga (600 🪙) di Kopdes dulu.");
+        }
+        return;
+      }
+    }
+    autoFishingEnabled = !autoFishingEnabled;
+    clearTimeout(_autoFishingTimer);
+    lastPondSig = "";
+    if (autoFishingEnabled) {
+      if (getBag().length >= 1000) {
+        autoFishingEnabled = false;
+        if (typeof window.showToast === "function") window.showToast("🎒 Tas ikan penuh (1000/1000)! Jual dulu di Kopdes.");
+        return;
+      }
+      if (typeof window.showToast === "function") window.showToast("🤖 Mancing Auto AKTIF! Duduk santai & tonton saja 🎣");
+      if (fishState === "idle" && typeof window.castPirakuFishingRod === "function") {
+        window.castPirakuFishingRod();
+      }
+    } else {
+      if (typeof window.showToast === "function") window.showToast("⏹️ Mancing Auto dimatikan");
+      if (fishState !== "idle") cancelFishing(true);
+    }
+  };
+
+  // ================= TURNAMEN GALATAMA 3 MENIT & BANNER HUJAN 2X LUCK =================
+  const galatamaEvent = { active: false, endsAt: 0, bestKg: 0, bestFishName: "", catches: 0, cooldownUntil: 0 };
+
+  window.startPirakuGalatama = function () {
+    const now = Date.now();
+    if (galatamaEvent.active) {
+      if (typeof window.showToast === "function") window.showToast(`🏆 Galatama sedang berlangsung! Rekor: ${galatamaEvent.bestKg.toFixed(1)} kg`);
+      return;
+    }
+    if (now < galatamaEvent.cooldownUntil) {
+      const waitSec = Math.ceil((galatamaEvent.cooldownUntil - now) / 1000);
+      if (typeof window.showToast === "function") window.showToast(`⏳ Turnamen Galatama berikutnya dalam ${waitSec} detik!`);
+      return;
+    }
+    galatamaEvent.active = true;
+    galatamaEvent.endsAt = now + 180000;
+    galatamaEvent.bestKg = 0;
+    galatamaEvent.bestFishName = "";
+    galatamaEvent.catches = 0;
+    lastPondSig = "";
+    if (typeof window.playSynthTone === "function") window.playSynthTone(880, "triangle", 0.22);
+    if (typeof window.showToast === "function") window.showToast("🏆 Turnamen Galatama 3 Menit DIMULAI! Tangkap ikan terberatmu!");
+  };
+
+  function updateGalatamaHud() {
+    let pill = document.getElementById("piraku-galatama-hud");
+    if (!galatamaEvent.active) {
+      if (pill) pill.style.display = "none";
+      return;
+    }
+    const now = Date.now();
+    const remMs = galatamaEvent.endsAt - now;
+    if (remMs <= 0) {
+      galatamaEvent.active = false;
+      galatamaEvent.cooldownUntil = now + 120000;
+      lastPondSig = "";
+      if (pill) pill.style.display = "none";
+      if (galatamaEvent.catches > 0 && galatamaEvent.bestKg > 0) {
+        const reward = Math.min(250, Math.round(60 + galatamaEvent.bestKg * 4));
+        if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
+          window.PirakuEconomy.addCoins(reward, "Hadiah Turnamen Galatama");
+        }
+        if (typeof window.grantPirakuXP === "function") window.grantPirakuXP(50, "Turnamen Galatama");
+        if (typeof window.playSynthTone === "function") window.playSynthTone(1046, "sine", 0.35);
+        if (typeof window.showToast === "function") {
+          window.showToast(`🏆 Galatama Selesai! Terberat: ${galatamaEvent.bestFishName} (${galatamaEvent.bestKg.toFixed(1)} kg) → +${reward} 🪙 & +50 XP!`);
+        }
+        if (galatamaEvent.bestKg >= 10 && typeof window.broadcastChatMessage === "function") {
+          const myIg = localStorage.getItem("piraku_my_ig") || "Warga";
+          window.broadcastChatMessage(`🏆 ${myIg} menuntaskan Lomba Galatama dengan rekor ${galatamaEvent.bestFishName} (${galatamaEvent.bestKg.toFixed(1)} kg)!`);
+        }
+      } else if (typeof window.showToast === "function") {
+        window.showToast("🏆 Waktu Galatama habis! Belum ada ikan yang tertangkap.");
+      }
+      return;
+    }
+    if (!pill && document.body) {
+      pill = document.createElement("div");
+      pill.id = "piraku-galatama-hud";
+      pill.style.cssText = "position:fixed;top:116px;left:50%;transform:translateX(-50%);z-index:9001;background:linear-gradient(135deg,rgba(15,23,42,0.95),rgba(30,41,59,0.95));border:1.5px solid #facc15;color:#fde047;padding:6px 14px;border-radius:999px;font-size:11.5px;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none;white-space:nowrap;";
+      document.body.appendChild(pill);
+    }
+    const sec = Math.ceil(remMs / 1000);
+    const mm = String(Math.floor(sec / 60)).padStart(2, "0");
+    const ss = String(sec % 60).padStart(2, "0");
+    pill.innerHTML = `🏆 Galatama ${mm}:${ss} • Rekor: <span style="color:#4ade80;">${galatamaEvent.bestKg.toFixed(1)} kg</span> (${galatamaEvent.catches} ikan)`;
+    pill.style.display = "block";
+  }
+
+  let _lastWasRainEvent = false;
+  function showRainLuckBanner() {
+    let b = document.getElementById("piraku-rain-luck-banner");
+    if (!b && document.body) {
+      b = document.createElement("div");
+      b.id = "piraku-rain-luck-banner";
+      b.style.cssText = "position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:9500;background:linear-gradient(135deg,rgba(12,74,110,0.95),rgba(30,58,138,0.95));border:1.5px solid #38bdf8;color:#e0f2fe;padding:8px 16px;border-radius:999px;font-size:12px;font-weight:900;box-shadow:0 10px 28px rgba(0,0,0,0.5);pointer-events:none;white-space:nowrap;transition:opacity 0.35s;";
+      document.body.appendChild(b);
+    }
+    if (!b) return;
+    b.innerHTML = "🌧️ <b>Hujan Deras Turun!</b> Peluang Ikan Rare–Divine <b>2x Lipat</b> di Danau!";
+    b.style.opacity = "1";
+    b.style.display = "block";
+    clearTimeout(b._t);
+    b._t = setTimeout(() => {
+      b.style.opacity = "0";
+      setTimeout(() => { b.style.display = "none"; }, 350);
+    }, 4500);
+  }
+
+  function cancelFishing(stopAuto) {
     clearTimeout(waitTimer);
     clearTimeout(biteTimeout);
+    clearTimeout(_autoFishingTimer);
     cancelAnimationFrame(reelRaf);
     cancelAnimationFrame(castBarRaf);
+    if (stopAuto === true) {
+      autoFishingEnabled = false;
+      lastPondSig = "";
+    }
     _finishPowerCastFn = null;
     castLuckBonus = 0;
     fishState = "idle";
@@ -1529,6 +1656,11 @@
           <div style="font-weight:900;font-size:17px;color:#facc15;text-shadow:0 0 12px rgba(250,204,21,0.55);">❗ IKAN MENYAMBAR!</div>
           <button onclick="strikePirakuFish()" style="width:100%;border:none;background:linear-gradient(135deg,#facc15,#f97316);color:#0f172a;padding:11px;border-radius:12px;font-weight:900;font-size:14px;cursor:pointer;box-shadow:0 6px 20px rgba(250,204,21,0.35);">⚡ TARIK SEKARANG! (TAP LAYAR / SPACE)</button>
         `;
+        if (autoFishingEnabled) {
+          _autoFishingTimer = setTimeout(() => {
+            if (fishState === "bite" && autoFishingEnabled) window.strikePirakuFish();
+          }, 340);
+        }
         biteTimeout = setTimeout(() => {
           if (fishState === "bite") {
             catchCombo = 0;
@@ -1543,8 +1675,11 @@
           <span style="font-weight:900;font-size:12.5px;color:#7dd3fc;">${isPerfectCast ? "✨ PERFECT CAST! (+30% Luck)" : isGoodCast ? "👍 GOOD CAST! (+10% Luck)" : "🎣 Menunggu di " + pond.name}</span>
           ${catchCombo > 0 ? `<span style="background:#9a3412;color:#fde047;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:900;">🔥 Combo ${catchCombo}x</span>` : ""}
         </div>
-        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • Tunggu sebentar...</div>
-        <button onclick="cancelPirakuFishing()" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:5px 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
+        <div style="font-size:11px;color:#94a3b8;">Umbul-umbul: ${bobber.icon} <b>${bobber.name}</b> • ${autoFishingEnabled ? "🤖 Auto-Mancing aktif..." : "Tunggu sebentar..."}</div>
+        <div style="display:flex;gap:8px;width:100%;">
+          ${autoFishingEnabled ? `<button onclick="toggleAutoPirakuFishing()" style="flex:1;border:none;background:#991b1b;color:#fecaca;padding:6px 12px;border-radius:9px;font-size:11px;font-weight:900;cursor:pointer;">⏹️ Stop Auto</button>` : ""}
+          <button onclick="cancelPirakuFishing(true)" style="border:none;background:rgba(148,163,184,0.2);color:#e2e8f0;padding:6px 12px;border-radius:9px;font-size:11px;font-weight:800;cursor:pointer;">Batal</button>
+        </div>
       `;
 
       waitTimer = setTimeout(triggerBite, delayMs);
@@ -1552,6 +1687,11 @@
 
     const castBtn = document.getElementById("pf-cast-btn");
     if (castBtn) castBtn.onclick = _finishPowerCastFn;
+    if (autoFishingEnabled) {
+      _autoFishingTimer = setTimeout(() => {
+        if (fishState === "casting" && autoFishingEnabled && _finishPowerCastFn) _finishPowerCastFn();
+      }, 780);
+    }
   };
 
   window.cancelPirakuFishing = cancelFishing;
@@ -1599,13 +1739,15 @@
         <div id="pf-prog" style="width:35%;height:100%;background:linear-gradient(90deg,#38bdf8,#22c55e,#facc15);"></div>
       </div>
       <div style="display:flex;gap:8px;width:100%;">
-        <button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;touch-action:none;">✊ TAHAN LAYAR / SPACE</button>
-        <button onclick="cancelPirakuFishing()" style="border:none;background:#1e293b;color:#94a3b8;padding:0 12px;border-radius:12px;font-weight:800;cursor:pointer;">✕</button>
+        ${autoFishingEnabled
+          ? `<button id="pf-hold-btn" onclick="toggleAutoPirakuFishing()" style="flex:1;border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;">🤖 AUTO REEL AKTIF (Ketuk untuk Stop)</button>`
+          : `<button id="pf-hold-btn" style="flex:1;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:11px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;touch-action:none;">✊ TAHAN LAYAR / SPACE</button>`}
+        <button onclick="cancelPirakuFishing(true)" style="border:none;background:#1e293b;color:#94a3b8;padding:0 12px;border-radius:12px;font-weight:800;cursor:pointer;">✕</button>
       </div>
     `;
 
     const btn = document.getElementById("pf-hold-btn");
-    if (btn) {
+    if (btn && !autoFishingEnabled) {
       btn.onpointerdown = (e) => { e.preventDefault(); isHoldingReel = true; };
       btn.onpointerup = () => { isHoldingReel = false; };
       btn.onpointerleave = () => { isHoldingReel = false; };
@@ -1625,6 +1767,10 @@
       const fDiff = fishTarget - fishPos;
       fishPos += Math.sign(fDiff) * Math.min(Math.abs(fDiff), currentFishSpec.speed * 18 * dt);
       fishPos = Math.max(10, Math.min(90, fishPos));
+
+      if (autoFishingEnabled) {
+        isHoldingReel = barPos < fishPos - 1.5;
+      }
 
       // Fisika bar santai & responsif (mudah dikendalikan di HP maupun PC)
       barVel += (isHoldingReel ? 200 : -170) * dt;
@@ -1734,6 +1880,16 @@
       markLocalFishTs();
       syncFishingToCloud();
     }
+    if (galatamaEvent.active) {
+      galatamaEvent.catches++;
+      if (kg > galatamaEvent.bestKg) {
+        galatamaEvent.bestKg = kg;
+        galatamaEvent.bestFishName = fish.name;
+        if (typeof window.showToast === "function") {
+          window.showToast(`🏆 Rekor Galatama Baru: ${fish.name} (${kg} kg)!`);
+        }
+      }
+    }
     if (["Mythic", "Secret", "Cosmic", "Divine"].includes(fish.rarity)) {
       spawnRareCatchVFX(fish.meshCol || 0xfde047);
     }
@@ -1742,7 +1898,7 @@
       mutation = MUTATIONS[Math.floor(Math.random() * MUTATIONS.length)];
     }
     const kgFactor = 1 + (kg / Math.max(2, fish.maxKg)) * 0.45;
-    const coinVal = fish.baseCoin <= 0 ? 0 : Math.max(1, Math.round(fish.baseCoin * kgFactor * (mutation ? mutation.mult : 1)));
+    const coinVal = fish.baseCoin <= 0 ? 0 : Math.max(1, Math.round(fish.baseCoin * kgFactor * (mutation ? mutation.mult : 1) * 0.45));
 
     const bag = getBag();
     const caughtItem = {
@@ -1795,6 +1951,20 @@
         <button onclick="openFishingHubModal()" style="width:100%;margin-top:8px;border:none;background:#1e293b;color:#f8fafc;padding:9px;border-radius:12px;font-weight:800;border:1px solid #475569;cursor:pointer;">🎒 Buka Tas Ikan</button>
       </div>
     `;
+    if (autoFishingEnabled) {
+      _autoFishingTimer = setTimeout(() => {
+        if (!autoFishingEnabled) return;
+        const m = document.getElementById("piraku-fishing-modal");
+        if (m) m.style.display = "none";
+        if (getBag().length >= 1000) {
+          autoFishingEnabled = false;
+          lastPondSig = "";
+          if (typeof window.showToast === "function") window.showToast("🎒 Tas ikan penuh (1000/1000)! Mancing Auto berhenti.");
+          return;
+        }
+        if (fishState === "idle") window.castPirakuFishingRod();
+      }, 1700);
+    }
   }
 
   function ensureFishingModal() {
@@ -1817,25 +1987,7 @@
     window.openFishingHubModal("bag");
   };
 
-  window.sellSingleCaughtFish = function (origIdx) {
-    if (!isNearKopdes()) {
-      if (typeof window.showToast === "function") window.showToast("🏪 Jalan kaki ke Kopdes Biru Putih dulu untuk menjual ikan!");
-      return;
-    }
-    const bag = getBag();
-    const item = bag[origIdx];
-    if (!item || item.locked) return;
-    bag.splice(origIdx, 1);
-    saveBag(bag);
-    const c = Number(item.coins) || 0;
-    if (c > 0 && window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-      window.PirakuEconomy.addCoins(c, "Jual " + item.name + " di Kopdes");
-    }
-    if (typeof window.showToast === "function") {
-      window.showToast(c > 0 ? `💰 Terjual ${item.name} seharga 🪙 ${c}!` : `🗑️ ${item.name} dibuang (0 🪙).`);
-    }
-    window.openFishingHubModal("bag");
-  };
+  const RARE_SELL_TIERS = ["Rare", "Epic", "Mythic", "Secret", "Cosmic", "Divine"];
 
   window.sellAllCaughtFish = function () {
     if (!isNearKopdes()) {
@@ -1849,6 +2001,14 @@
     if (!toSell.length) {
       if (typeof window.showToast === "function") window.showToast("🔒 Semua ikan di tas sedang dikunci! Buka kunci dulu jika ingin dijual.");
       return;
+    }
+    const rareToSell = toSell.filter(f => RARE_SELL_TIERS.includes(f.rarity));
+    if (rareToSell.length > 0) {
+      const preview = rareToSell.slice(0, 3).map(f => `[${f.rarity}] ${f.name}`).join(", ");
+      const more = rareToSell.length > 3 ? ` +${rareToSell.length - 3} lainnya` : "";
+      if (!confirm(`⚠️ Ada ${rareToSell.length} ikan langka yang belum dikunci (${preview}${more})!\n\nYakin mau JUAL SEMUA? (Tips: klik 🔒 dulu agar tidak ikut terjual)`)) {
+        return;
+      }
     }
     const validFish = toSell.filter(f => (Number(f.coins) || 0) > 0);
     const trashCount = toSell.length - validFish.length;
@@ -1878,6 +2038,11 @@
     const bag = getBag();
     const item = bag[origIdx];
     if (!item || item.locked) return;
+    if (RARE_SELL_TIERS.includes(item.rarity)) {
+      if (!confirm(`⚠️ Yakin mau jual ikan langka [${item.rarity}] ${item.name} (${item.kg} kg)?\n(Tips: pakai tombol 🔒 untuk mengunci ikan)`)) {
+        return;
+      }
+    }
     bag.splice(origIdx, 1);
     saveBag(bag);
     const c = Number(item.coins) || 0;
@@ -1928,7 +2093,9 @@
 
   let activeHubTab = "bag";
   window.openFishingHubModal = function (tabName) {
+    const prevTab = activeHubTab;
     if (tabName) activeHubTab = tabName;
+    const isSameTab = !tabName || tabName === prevTab;
     const modal = ensureFishingModal();
     const bag = getBag();
     const dex = getDex();
@@ -1944,9 +2111,12 @@
     const curMapId = window.pirakuActiveMapId || "bandung_wetan";
     const exFish = (window.pirakuInDistrict && DISTRICT_EXCLUSIVE_FISH[curMapId]) ? DISTRICT_EXCLUSIVE_FISH[curMapId] : null;
     const bestCatch = loadJson("piraku_fish_best" + getUserSuf(), null);
+    const myCoins = (window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function")
+      ? (Number(window.PirakuEconomy.getState().coins) || 0)
+      : (parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0);
 
     const prevScrollEl = document.getElementById("piraku-fishing-scroll");
-    const savedScrollTop = (!tabName && prevScrollEl) ? prevScrollEl.scrollTop : 0;
+    const savedScrollTop = (isSameTab && prevScrollEl) ? prevScrollEl.scrollTop : 0;
 
     modal.style.display = "flex";
     modal.innerHTML = `
@@ -2016,11 +2186,12 @@
               ${BOBBERS.map(b => {
                 const isOwn = ownedBobbers.includes(b.id);
                 const isEq = eqBobber === b.id;
+                const canAfford = isOwn || myCoins >= b.cost;
                 return `
-                  <button onclick="buyOrEquipBobber('${b.id}')" style="text-align:left;border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.22)"};background:${isEq ? "rgba(56,189,248,0.18)" : "rgba(30,41,59,0.75)"};padding:8px 9px;border-radius:10px;color:#f8fafc;cursor:pointer;">
+                  <button onclick="buyOrEquipBobber('${b.id}')" style="text-align:left;border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.22)"};background:${isEq ? "rgba(56,189,248,0.18)" : (canAfford ? "rgba(30,41,59,0.75)" : "rgba(15,23,42,0.55)")};opacity:${canAfford ? "1" : "0.6"};padding:8px 9px;border-radius:10px;color:#f8fafc;cursor:pointer;">
                     <div style="font-size:12px;font-weight:800;">${b.icon} ${b.name}</div>
                     <div style="font-size:10px;color:#94a3b8;margin-top:2px;">${b.desc}</div>
-                    <div style="font-size:10px;font-weight:900;color:${isEq ? "#4ade80" : "#fde047"};margin-top:4px;">${isEq ? "Dipakai ✓" : (isOwn ? "Pasang" : (atKopdes ? "Beli 🪙 " + b.cost : "🏪 Kopdes (🪙" + b.cost + ")"))}</div>
+                    <div style="font-size:10px;font-weight:900;color:${isEq ? "#4ade80" : (canAfford ? "#fde047" : "#64748b")};margin-top:4px;">${isEq ? "Dipakai ✓" : (isOwn ? "Pasang" : (atKopdes ? "Beli 🪙 " + b.cost.toLocaleString("id-ID") : "🏪 Kopdes (🪙" + b.cost.toLocaleString("id-ID") + ")"))}</div>
                   </button>
                 `;
               }).join("")}
@@ -2033,14 +2204,15 @@
               ${RODS.map(r => {
                 const isOwn = owned.includes(r.id);
                 const isEq = eqId === r.id;
+                const canAfford = isOwn || myCoins >= r.cost;
                 return `
-                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(30,41,59,0.8);border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.2)"};padding:8px 10px;border-radius:11px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;background:rgba(30,41,59,0.8);border:1px solid ${isEq ? "#38bdf8" : "rgba(148,163,184,0.2)"};opacity:${canAfford ? "1" : "0.62"};padding:8px 10px;border-radius:11px;">
                     <div style="min-width:0;">
                       <div style="font-weight:800;font-size:12.5px;">${r.badge} ${r.name}</div>
                       <div style="font-size:10px;color:#7dd3fc;">${r.tierNote || ""}</div>
                       <div style="font-size:10px;color:#94a3b8;">Bar ${r.barWidth}% • Luck +${Math.round(r.luckBonus * 100)}% • Mutasi ${Math.round(r.mutChance * 100)}%</div>
                     </div>
-                    <button onclick="buyOrEquipFishingRod('${r.id}')" style="border:none;background:${isEq ? "#22c55e" : isOwn ? "#334155" : (atKopdes ? "#facc15" : "#475569")};color:${isEq || (!isOwn && atKopdes) ? "#0f172a" : "#f8fafc"};padding:6px 10px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">${isEq ? "Dipakai ✓" : isOwn ? "Pakai" : (atKopdes ? "🪙 " + r.cost : "🏪 Kopdes (🪙" + r.cost + ")")}</button>
+                    <button onclick="buyOrEquipFishingRod('${r.id}')" style="border:none;background:${isEq ? "#22c55e" : isOwn ? "#334155" : (!canAfford ? "#334155" : (atKopdes ? "#facc15" : "#475569"))};color:${isEq || (!isOwn && atKopdes && canAfford) ? "#0f172a" : (canAfford ? "#f8fafc" : "#94a3b8")};padding:6px 10px;border-radius:9px;font-weight:900;font-size:11px;cursor:pointer;">${isEq ? "Dipakai ✓" : isOwn ? "Pakai" : (atKopdes ? "🪙 " + r.cost.toLocaleString("id-ID") : "🏪 Kopdes (🪙" + r.cost.toLocaleString("id-ID") + ")")}</button>
                   </div>
                 `;
               }).join("")}
@@ -2106,7 +2278,7 @@
                       indexed.sort((a, b) => String(a.f.name).localeCompare(String(b.f.name)) || (rankMap[b.f.rarity] || 0) - (rankMap[a.f.rarity] || 0));
                     }
                     if (indexed.length === 0) return `<div style="font-size:11px;color:#94a3b8;padding:10px;text-align:center;">Tidak ada ikan yang cocok dengan filter ini.</div>`;
-                    return indexed.slice(0, 60).map(({ f, origIdx }) => {
+                    return indexed.slice(0, 1000).map(({ f, origIdx }) => {
                       const rs = RARITY_STYLE[f.rarity] || RARITY_STYLE.Common;
                       const isShown = window.pirakuShownFish && window.pirakuShownFish.id === f.id && window.pirakuShownFish.kg === f.kg;
                       return `<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;background:rgba(30,41,59,0.75);padding:7px 10px;border-radius:10px;border-left:3px solid ${rs.border};">
@@ -2124,7 +2296,10 @@
       </div>
     `;
     const nextScrollEl = document.getElementById("piraku-fishing-scroll");
-    if (nextScrollEl && savedScrollTop > 0) nextScrollEl.scrollTop = savedScrollTop;
+    if (nextScrollEl && savedScrollTop > 0) {
+      nextScrollEl.scrollTop = savedScrollTop;
+      requestAnimationFrame(() => { nextScrollEl.scrollTop = savedScrollTop; });
+    }
   };
 
   window.setPirakuBagSort = function (mode) {
@@ -2190,6 +2365,10 @@
   function tickFishing3D() {
     ensureTamanLansiaPondVisible();
     ensureDistrictPondVisible();
+    updateGalatamaHud();
+    const isRainNow = window.pirakuCurrentEventId === "rain";
+    if (isRainNow && !_lastWasRainEvent) showRainLuckBanner();
+    _lastWasRainEvent = isRainNow;
     const pm = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
     const pond = getActivePond();
     const now = performance.now();
@@ -2361,10 +2540,14 @@
     if (_barEl && fishState === "idle") {
       const bLen = getBagLen();
       const holdFlag = window.pirakuHoldRodOut ? "1" : "0";
-      const sig = (nearPond ? "near_" : "far_") + pond.name + "_" + bLen + "_" + holdFlag;
+      const autoFlag = autoFishingEnabled ? "1" : "0";
+      const galFlag = galatamaEvent.active ? "1" : "0";
+      const autoUnlocked = getOwnedRods().some(id => id !== "bamboo");
+      const sig = (nearPond ? "near_" : "far_") + pond.name + "_" + bLen + "_" + holdFlag + "_" + autoFlag + "_" + galFlag + "_" + (autoUnlocked ? "1" : "0");
       if (lastPondSig !== sig) {
         lastPondSig = sig;
-        _barEl.innerHTML = (nearPond ? `<button onclick="castPirakuFishingRod()" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:6px 12px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🎣 Lempar Joran</button>` : "") +
+        const autoLabel = autoFishingEnabled ? "🤖 Auto: ON" : (autoUnlocked ? "🤖 Auto" : "🔒 Auto");
+        _barEl.innerHTML = (nearPond ? `<button onclick="castPirakuFishingRod()" style="border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:6px 12px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🎣 Lempar Joran</button><button onclick="toggleAutoPirakuFishing()" style="border:1px solid ${autoFishingEnabled ? "#4ade80" : (autoUnlocked ? "#38bdf8" : "#64748b")};background:${autoFishingEnabled ? "rgba(34,197,94,0.22)" : "#0f172a"};color:${autoFishingEnabled ? "#4ade80" : (autoUnlocked ? "#7dd3fc" : "#94a3b8")};padding:6px 10px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">${autoLabel}</button><button onclick="startPirakuGalatama()" style="border:1px solid #facc15;background:${galatamaEvent.active ? "rgba(250,204,21,0.24)" : "#0f172a"};color:#fde047;padding:6px 9px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">🏆 Galatama</button>` : "") +
           `<button onclick="toggleHoldFishingRod()" title="Keluarkan/Simpan Joran" style="border:1px solid ${window.pirakuHoldRodOut ? "#facc15" : "#38bdf8"};background:${window.pirakuHoldRodOut ? "rgba(250,204,21,0.2)" : "#0f172a"};color:${window.pirakuHoldRodOut ? "#fde047" : "#7dd3fc"};padding:6px 9px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;white-space:nowrap;">${window.pirakuHoldRodOut ? "✨ Joran" : "🎣 Joran"}</button>` +
           `<button onclick="openFishingHubModal()" style="border:none;background:#1e293b;color:#fde047;padding:6px 11px;border-radius:999px;font-weight:900;font-size:11px;cursor:pointer;border:1px solid #475569;white-space:nowrap;">🎒 Tas (${bLen})</button>`;
       }

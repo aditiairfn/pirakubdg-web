@@ -24,12 +24,12 @@
     ],
     tier: [
       { id: "tier_1", name: "Warga Baru", badge: "🌱", price: 0, desc: "Status dasar warga Piraku Bandung." },
-      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 350, desc: "Lencana bintang di label nama + prioritas polling." },
-      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 1200, desc: "Mahkota emas di label nama + gelar Sesepuh." },
-      { id: "tier_4", name: "Sultan Kecamatan", badge: "💎", price: 4500, dynamicKec: true, desc: "Gelar Sultan sesuai kecamatanmu dengan bingkai berlian." },
-      { id: "tier_5", name: "Sultan Bandung", badge: "🦁", price: 12000, desc: "Sultan tertinggi se-Kota Bandung dengan lencana singa." },
-      { id: "tier_6", name: "Sultan Jabar", badge: "🦅", price: 25000, desc: "Penguasa Jawa Barat dengan lencana elang eksklusif." },
-      { id: "tier_7", name: "Sultan Indo", badge: "🔱", price: 50000, desc: "Gelar paling langka se-Indonesia dengan aura trisula!" }
+      { id: "tier_2", name: "Wargi Aktif", badge: "⭐", price: 1500, desc: "Lencana bintang di label nama + prioritas polling." },
+      { id: "tier_3", name: "Sesepuh Bandung", badge: "👑", price: 6000, desc: "Mahkota emas di label nama + gelar Sesepuh." },
+      { id: "tier_4", name: "Sultan Kecamatan", badge: "💎", price: 20000, dynamicKec: true, desc: "Gelar Sultan sesuai kecamatanmu dengan bingkai berlian." },
+      { id: "tier_5", name: "Sultan Bandung", badge: "🦁", price: 60000, desc: "Sultan tertinggi se-Kota Bandung dengan lencana singa." },
+      { id: "tier_6", name: "Sultan Jabar", badge: "🦅", price: 150000, desc: "Penguasa Jawa Barat dengan lencana elang eksklusif." },
+      { id: "tier_7", name: "Sultan Indo", badge: "🔱", price: 350000, desc: "Gelar paling langka se-Indonesia dengan aura trisula!" }
     ]
   };
 
@@ -132,8 +132,8 @@
       const cloudFishTs = Number(latestFishData.ts || 0);
       const hasLocalBag = localStorage.getItem("piraku_fish_bag" + suf) !== null;
       if (!hasLocalBag || cloudFishTs >= localFishTs) {
-        if (Array.isArray(latestFishData.bag)) localStorage.setItem("piraku_fish_bag" + suf, JSON.stringify(latestFishData.bag.slice(0, 60)));
-        if (Array.isArray(latestFishData.itemBag)) localStorage.setItem("piraku_item_bag" + suf, JSON.stringify(latestFishData.itemBag.slice(0, 60)));
+        if (Array.isArray(latestFishData.bag)) localStorage.setItem("piraku_fish_bag" + suf, JSON.stringify(latestFishData.bag.slice(0, 1000)));
+        if (Array.isArray(latestFishData.itemBag)) localStorage.setItem("piraku_item_bag" + suf, JSON.stringify(latestFishData.itemBag.slice(0, 1000)));
         if (latestFishData.dex && typeof latestFishData.dex === "object") localStorage.setItem("piraku_fish_dex" + suf, JSON.stringify(latestFishData.dex));
         if (Array.isArray(latestFishData.rods) && latestFishData.rods.length) localStorage.setItem("piraku_fish_rods" + suf, JSON.stringify(latestFishData.rods));
         if (latestFishData.rodEq) localStorage.setItem("piraku_fish_rod_eq" + suf, String(latestFishData.rodEq));
@@ -1193,10 +1193,12 @@
 
     let bodyHTML = "";
     if (activeTab === "outfit") {
+      const myCoins = Number(state.coins) || 0;
       bodyHTML = CATALOG.outfit.map(item => {
         const owned = state.owned.includes(item.id);
         const equipped = state.equippedOutfit === item.id;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${equipped ? "#facc15" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
+        const canAfford = owned || myCoins >= item.price;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${equipped ? "#facc15" : "rgba(148,163,184,0.2)"};opacity:${canAfford ? "1" : "0.62"};margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:24px;">${item.icon}</span>
             <div>
@@ -1204,19 +1206,22 @@
               <div style="font-size:11px;color:#94a3b8;">${item.desc}</div>
             </div>
           </div>
-          <button data-buy-outfit="${item.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${equipped ? "#22c55e" : owned ? "#38bdf8" : "#f59e0b"};color:#0f172a;">
-            ${equipped ? "Dipakai ✓" : owned ? "Pakai" : "🪙 " + item.price}
+          <button data-buy-outfit="${item.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${equipped ? "#22c55e" : owned ? "#38bdf8" : (canAfford ? "#f59e0b" : "#334155")};color:${canAfford ? "#0f172a" : "#94a3b8"};">
+            ${equipped ? "Dipakai ✓" : owned ? "Pakai" : "🪙 " + item.price.toLocaleString("id-ID")}
           </button>
         </div>`;
       }).join("");
     } else if (activeTab === "mobility") {
       const rental = window.PirakuEconomy.getActiveRental();
+      const myCoins = Number(state.coins) || 0;
       bodyHTML = `<div style="font-size:11px;color:#38bdf8;background:rgba(56,189,248,0.12);padding:8px 10px;border-radius:10px;margin-bottom:8px;">⏱️ Sewa berlaku <b>10 menit</b> (bisa gonta-ganti tanpa hangus), atau <b>Beli Permanen</b> biar jadi milik selamanya!</div>` +
         CATALOG.mobility.map(item => {
           const isOwned = Array.isArray(state.owned) && state.owned.includes(item.id);
           const remMs = window.PirakuEconomy.getVehicleRemainingMs(item.id);
           const isRented = !isOwned && remMs > 0;
           const isEquipped = rental && rental.item.id === item.id;
+          const canRent = myCoins >= item.price;
+          const canBuyPerm = myCoins >= item.buyPrice;
           return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border-radius:12px;background:#1e293b;border:1px solid ${isEquipped ? "#38bdf8" : "rgba(148,163,184,0.2)"};margin-bottom:8px;">
             <div style="display:flex;align-items:center;gap:10px;min-width:0;">
               <span style="font-size:24px;">${item.icon}</span>
@@ -1230,8 +1235,8 @@
               ${isOwned
                 ? `<button data-equip-veh="${item.id}" style="padding:7px 11px;border-radius:10px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isEquipped ? "#22c55e" : "#38bdf8"};color:#0f172a;">${isEquipped ? "Turun" : "Pakai"}</button>`
                 : `${isRented && !isEquipped ? `<button data-equip-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:#22c55e;color:#0f172a;">Pakai</button>` : ""}
-                   <button data-rent-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${isEquipped ? "#38bdf8" : "#f59e0b"};color:#0f172a;">${isRented ? "+10m (🪙 " + item.price + ")" : "Sewa 🪙 " + item.price}</button>
-                   <button data-buy-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:1px solid rgba(250,204,21,0.5);font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:#0f172a;color:#facc15;">Beli 🪙 ${item.buyPrice.toLocaleString("id-ID")}</button>`
+                   <button data-rent-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:none;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;background:${!canRent ? "#334155" : (isEquipped ? "#38bdf8" : "#f59e0b")};color:${canRent ? "#0f172a" : "#94a3b8"};">${isRented ? "+10m (🪙 " + item.price + ")" : "Sewa 🪙 " + item.price}</button>
+                   <button data-buy-veh="${item.id}" style="padding:6px 10px;border-radius:9px;border:1px solid ${canBuyPerm ? "rgba(250,204,21,0.5)" : "#334155"};font-size:10.5px;font-weight:800;cursor:pointer;white-space:nowrap;background:${canBuyPerm ? "#0f172a" : "#1e293b"};color:${canBuyPerm ? "#facc15" : "#64748b"};">Beli 🪙 ${item.buyPrice.toLocaleString("id-ID")}</button>`
               }
             </div>
           </div>`;
@@ -1283,12 +1288,14 @@
         tier_6: { bg: "linear-gradient(135deg,#3b0764,#6b21a8)", border: "#c084fc", accent: "#f3e8ff", tag: "KOSMIK JABAR" },
         tier_7: { bg: "linear-gradient(135deg,#450a0a,#991b1b 55%,#78350f)", border: "#facc15", accent: "#fef08a", tag: "GARUDA PRISMATIC" }
       };
+      const myCoins = Number(state.coins) || 0;
       bodyHTML = CATALOG.tier.map(t => {
         const owned = state.owned.includes(t.id);
         const current = state.tier === t.id;
+        const canAfford = owned || myCoins >= t.price;
         const dispName = t.dynamicKec ? ("Sultan " + (myKecName || "Dago")) : t.name;
         const th = TIER_THEMES[t.id] || TIER_THEMES.tier_1;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:14px;background:${th.bg};border:1.8px solid ${current ? "#22c55e" : th.border};box-shadow:${current ? "0 0 16px rgba(34,197,94,0.35)" : "0 6px 16px rgba(0,0,0,0.28)"};margin-bottom:9px;">
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:14px;background:${th.bg};border:1.8px solid ${current ? "#22c55e" : th.border};opacity:${canAfford ? "1" : "0.65"};box-shadow:${current ? "0 0 16px rgba(34,197,94,0.35)" : "0 6px 16px rgba(0,0,0,0.28)"};margin-bottom:9px;">
           <div style="display:flex;align-items:center;gap:10px;min-width:0;">
             <div style="width:42px;height:42px;border-radius:12px;background:rgba(2,6,23,0.45);border:1px solid ${th.border};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${t.badge}</div>
             <div style="min-width:0;">
@@ -1299,7 +1306,7 @@
               <div style="font-size:11px;color:#e2e8f0;opacity:0.88;margin-top:2px;">${t.desc}</div>
             </div>
           </div>
-          <button data-buy-tier="${t.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${current ? "#22c55e" : owned ? th.border : "#f59e0b"};color:#0f172a;">
+          <button data-buy-tier="${t.id}" style="padding:7px 12px;border-radius:10px;border:none;font-size:11.5px;font-weight:900;cursor:pointer;white-space:nowrap;flex-shrink:0;background:${current ? "#22c55e" : owned ? th.border : (canAfford ? "#f59e0b" : "#334155")};color:${canAfford ? "#0f172a" : "#94a3b8"};">
             ${current ? "Gelar Aktif ✓" : owned ? "Pasang" : "🪙 " + t.price.toLocaleString("id-ID")}
           </button>
         </div>`;
