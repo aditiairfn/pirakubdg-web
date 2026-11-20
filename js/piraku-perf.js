@@ -54,6 +54,7 @@
 
     // 3. Throttle renderer.render() berbasis aktivitas & tab visibility
     const origRender = renderer.render.bind(renderer);
+    renderer.__rawRender = origRender;
     let lastRenderTimestamp = 0;
 
     renderer.render = function (scene, camera) {

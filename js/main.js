@@ -526,7 +526,7 @@ let activeQuestSystem = null;
   window.addEventListener('click', () => { closeHudMenu(); });
 
   // Renderer & Scene
-  const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth > 820, powerPreference: "high-performance" }); window.pirakuRenderer = renderer;
+  const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth > 820, powerPreference: "high-performance", preserveDrawingBuffer: true }); window.pirakuRenderer = renderer;
   const isPirakuMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPirakuMobile ? 1.15 : 1.35));
   renderer.setSize(W, H);
@@ -1743,6 +1743,17 @@ let activeQuestSystem = null;
     };
   }
 
+  function getSafeCityRoamPos() {
+    const zones = [
+      () => ({ x: (Math.random() - 0.5) * 34, z: -38 + (Math.random() - 0.5) * 14 }), // Area Monju
+      () => ({ x: (Math.random() - 0.5) * 44, z: -14 + (Math.random() - 0.5) * 18 }), // Lapangan Gasibu
+      () => ({ x: (Math.random() - 0.5) * 40, z: 9 + (Math.random() - 0.5) * 8 }),    // Depan Gedung Sate
+      () => ({ x: 24 + Math.random() * 10, z: -12 + Math.random() * 34 }),             // Jalur Taman Lansia / Sentot
+      () => ({ x: -38 + Math.random() * 16, z: -20 + Math.random() * 34 })             // Area Barat / Pasupati
+    ];
+    return zones[Math.floor(Math.random() * zones.length)]();
+  }
+
   function parseCitizenStyle(c) {
     // Format c.acc: 'acc|skinIdx|pantsIdx|hairStyle|gender'
     const raw = String(c.acc || 'none');
@@ -1951,11 +1962,70 @@ let activeQuestSystem = null;
     hitbox.userData.meshGroup = cg;
     clickableObjects.push(hitbox);
     const normNewIg = String(c?.ig || '').trim().toLowerCase().replace(/^@/, '');
-    const existingIdx = normNewIg ? registeredCitizensList.findIndex(x => String(x?.ig || '').trim().toLowerCase().replace(/^@/, '') === normNewIg) : -1;
-    if (existingIdx >= 0) {
-      registeredCitizensList[existingIdx] = Object.assign({}, registeredCitizensList[existingIdx], c);
-    } else {
-      registeredCitizensList.push(c);
+    if (!c?.isRoleNpc) {
+      const existingIdx = normNewIg ? registeredCitizensList.findIndex(x => String(x?.ig || '').trim().toLowerCase().replace(/^@/, '') === normNewIg) : -1;
+      if (existingIdx >= 0) {
+        registeredCitizensList[existingIdx] = Object.assign({}, registeredCitizensList[existingIdx], c);
+      } else {
+        registeredCitizensList.push(c);
+      }
+    } else if (c.npcBadge) {
+      const cv = document.createElement('canvas');
+      cv.width = 420; cv.height = 96;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = c.badgeBg || 'rgba(15,23,42,0.92)';
+      ctx.beginPath(); ctx.roundRect(6, 6, 408, 84, 24); ctx.fill();
+      ctx.strokeStyle = c.badgeBorder || '#38bdf8'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = c.badgeTextCol || '#bae6fd'; ctx.font = '800 20px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(c.npcBadge, 210, 36);
+      ctx.fillStyle = '#ffffff'; ctx.font = '900 23px sans-serif';
+      ctx.fillText(c.ig, 210, 70);
+      const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
+      spr.scale.set(2.2, 0.50, 1);
+      spr.position.set(0, 1.88, 0);
+      cg.add(spr);
+
+      // Aura cincin bercahaya di bawah kaki NPC sesuai peran
+      const auraColHex = parseInt(String(c.badgeBorder || '#38bdf8').replace('#', ''), 16) || 0x38bdf8;
+      const auraGeo = new THREE.RingGeometry(0.48, 0.66, 28);
+      auraGeo.rotateX(-PI / 2);
+      const roleAura = new THREE.Mesh(auraGeo, new THREE.MeshBasicMaterial({ color: auraColHex, transparent: true, opacity: 0.65, side: THREE.DoubleSide }));
+      roleAura.position.y = 0.04;
+      cg.add(roleAura);
+      cg.userData.roleAuraRing = roleAura;
+
+      // Properti 3D khas tiap NPC (Ukulele Neng Rara, Kamera Teh Dinda, Sapu Mang Asep, Kristal Ki Sunda, Gulungan Mang Cepot)
+      if (c.npcRole === 'beggar') {
+        const uke = new THREE.Group();
+        uke.position.set(0.06, 0.56, 0.22);
+        uke.rotation.z = -0.55;
+        uke.rotation.x = 0.15;
+        cyl(0.11, 0.12, 0.055, 14, 0, -0.05, 0, 0xb45309, uke).rotation.x = PI / 2;
+        cyl(0.085, 0.09, 0.055, 14, 0, 0.07, 0, 0xd97706, uke).rotation.x = PI / 2;
+        cyl(0.036, 0.036, 0.06, 10, 0, -0.02, 0.005, 0x1e293b, uke, false).rotation.x = PI / 2;
+        box(0.045, 0.28, 0.03, 0, 0.23, 0, 0x78350f, uke);
+        box(0.065, 0.08, 0.035, 0, 0.39, 0, 0x451a03, uke);
+        body.add(uke);
+      } else if (c.npcRole === 'quest_photo') {
+        const camProp = new THREE.Group();
+        camProp.position.set(0, 0.62, 0.22);
+        box(0.18, 0.12, 0.10, 0, 0, 0, 0x1e293b, camProp);
+        cyl(0.045, 0.045, 0.08, 12, 0, 0, 0.07, 0x94a3b8, camProp).rotation.x = PI / 2;
+        body.add(camProp);
+      } else if (c.npcRole === 'quest_clean') {
+        const broom = new THREE.Group();
+        broom.position.set(0, -0.34, 0.08);
+        broom.rotation.x = 0.4;
+        cyl(0.018, 0.018, 0.95, 8, 0, 0.15, 0, 0x92400e, broom);
+        cyl(0.03, 0.11, 0.22, 10, 0, -0.36, 0, 0xd97706, broom);
+        armR.add(broom);
+      } else if (c.npcRole === 'fortune') {
+        const orb = mk(SP(0.10, 12, 10), new THREE.MeshBasicMaterial({ color: 0xc084fc }), 0, -0.38, 0.08, armR, false);
+        orb.material.transparent = true; orb.material.opacity = 0.9;
+      } else if (c.npcRole === 'quest') {
+        const scroll = cyl(0.035, 0.035, 0.24, 10, 0, -0.36, 0.06, 0xfef08a, armR);
+        scroll.rotation.x = PI / 2;
+      }
     }
     citizensGroup.add(cg);
 
@@ -2252,6 +2322,106 @@ let activeQuestSystem = null;
   const kdmWaypoints = [[-19.2, 6.6], [19.2, 6.6], [19.2, 21.0], [-19.2, 21.0]];
   let kdmWpIdx = 1;
 
+  // ================= NPC RANDOM BERPERAN (MISI, PREMAN PALAK, PENGAMEN, PERAMAL, FOTOGRAFER, KEBERSIHAN) =================
+  (function spawnCityRoleNpcs() {
+    const roleSpecs = [
+      {
+        id: -101,
+        isRoleNpc: true,
+        ig: 'Kang Preman Gasibu',
+        role: 'PREMAN',
+        npcRole: 'extort',
+        npcBadge: '🕶️ PREMAN GASIBU',
+        badgeBg: 'rgba(127, 29, 29, 0.94)',
+        badgeBorder: '#ef4444',
+        badgeTextCol: '#fecaca',
+        color: 0x1e293b,
+        acc: 'glasses|2|0|mohawk|male',
+        x: -14.5, z: -12.0,
+        wish: 'Eh bro, lewat wilayah Gasibu ada uang keamanan 15 🪙 nih! Mau kasih baik-baik atau gue pelototin?'
+      },
+      {
+        id: -102,
+        isRoleNpc: true,
+        ig: 'Neng Rara • Pengamen',
+        role: 'PENGAMEN',
+        npcRole: 'beggar',
+        npcBadge: '🎸 PENGAMEN BRAGA',
+        badgeBg: 'rgba(131, 24, 67, 0.94)',
+        badgeBorder: '#f472b6',
+        badgeTextCol: '#fbcfe8',
+        color: 0xdb2777,
+        acc: 'ribbon|1|3|long|female',
+        x: 10.5, z: -20.5,
+        wish: 'Permisi akang/teteh, lagi ngamen buat beli senar gitar nih... Boleh minta 10 🪙 seikhlasnya?'
+      },
+      {
+        id: -103,
+        isRoleNpc: true,
+        ig: 'Mang Cepot • Misi',
+        role: 'PEMBERI_MISI',
+        npcRole: 'quest',
+        npcBadge: '📜 PEMBERI MISI',
+        badgeBg: 'rgba(12, 74, 110, 0.94)',
+        badgeBorder: '#38bdf8',
+        badgeTextCol: '#bae6fd',
+        color: 0x0284c7,
+        acc: 'peci|2|1|short|male',
+        x: -11.0, z: -28.0,
+        wish: 'Mau duit jajan? Coba jogging keliling Gasibu sejauh 22 meter dari sini, nanti Mang kasih 45 🪙 + 40 XP!'
+      },
+      {
+        id: -104,
+        isRoleNpc: true,
+        ig: 'Teh Dinda • Foto',
+        role: 'FOTOGRAFER',
+        npcRole: 'quest_photo',
+        npcBadge: '📸 FOTOGRAFER KOTA',
+        badgeBg: 'rgba(120, 53, 15, 0.94)',
+        badgeBorder: '#f59e0b',
+        badgeTextCol: '#fde68a',
+        color: 0xd97706,
+        acc: 'cap|1|2|ponytail|female',
+        x: 11.5, z: 6.5,
+        wish: 'Wargi kece! Yuk ikutan sesi foto wisata depan Gedung Sate, langsung dapat 35 🪙 + 30 XP!'
+      },
+      {
+        id: -105,
+        isRoleNpc: true,
+        ig: 'Ki Sunda • Peramal',
+        role: 'PERAMAL',
+        npcRole: 'fortune',
+        npcBadge: '🔮 PERAMAL GASIBU',
+        badgeBg: 'rgba(88, 28, 135, 0.94)',
+        badgeBorder: '#c084fc',
+        badgeTextCol: '#e9d5ff',
+        color: 0x7e22ce,
+        acc: 'peci|3|4|short|male',
+        x: 22.5, z: 12.0,
+        wish: 'Sampurasun... Cukup mahar 5 🪙, Ki Sunda ramal hokimu hari ini — kalau lagi mujur bisa dapat berkah koin!'
+      },
+      {
+        id: -106,
+        isRoleNpc: true,
+        ig: 'Mang Asep • Kebersihan',
+        role: 'KEBERSIHAN',
+        npcRole: 'quest_clean',
+        npcBadge: '🧹 TIM KEBERSIHAN',
+        badgeBg: 'rgba(20, 83, 45, 0.94)',
+        badgeBorder: '#4ade80',
+        badgeTextCol: '#bbf7d0',
+        color: 0x16a34a,
+        acc: 'cap|2|5|parted|male',
+        x: 16.0, z: -12.5,
+        wish: 'Ayo wargi bantu Mang Asep bersihin daun kering di sekitar Gasibu! Hadiah 30 🪙 + 35 XP!'
+      }
+    ];
+
+    roleSpecs.forEach(sp => {
+      createCitizenMesh(sp);
+    });
+  })();
+
   let totalWarga = 1;
 
   window.syncAmbientOfflineNpcVisibility = function(onlineCount) {
@@ -2513,9 +2683,337 @@ let activeQuestSystem = null;
     ];
   }
 
+  const _npcRoleCooldowns = {};
+  let _npcJogQuest = null;
+  let activeNpcDialogueTarget = null;
+  let _lastPremanInterceptAt = 0;
+
+  const _npcProximityLastAt = {};
+  const nengRaraAudio = new Audio('./assets/neng-rara-ukulele.mp3');
+  nengRaraAudio.loop = true;
+  nengRaraAudio.volume = 0;
+  let nengRaraMuted = localStorage.getItem('piraku_mute_rara') === '1';
+
+  window.toggleNengRaraMute = function() {
+    nengRaraMuted = !nengRaraMuted;
+    localStorage.setItem('piraku_mute_rara', nengRaraMuted ? '1' : '0');
+    if (nengRaraMuted) {
+      nengRaraAudio.volume = 0;
+      nengRaraAudio.pause();
+    }
+    if (typeof window.showToast === 'function') {
+      window.showToast(nengRaraMuted ? '🔇 Musik Neng Rara dimute' : '🎸 Musik Neng Rara dinyalakan');
+    }
+    const pillBtn = document.getElementById('piraku-rara-mute-pill');
+    if (pillBtn) pillBtn.innerHTML = nengRaraMuted ? '🎸 Rara: 🔇 Unmute' : '🎸 Rara: 🔊 Mute';
+  };
+
+  function updateNengRaraSpatialAudio(pDist, inMainCity) {
+    let pill = document.getElementById('piraku-rara-mute-pill');
+    const nearPill = inMainCity && pDist < 8.5;
+    if (nearPill) {
+      if (!pill && document.body) {
+        pill = document.createElement('button');
+        pill.id = 'piraku-rara-mute-pill';
+        pill.type = 'button';
+        pill.style.cssText = 'position:fixed;bottom:164px;left:16px;z-index:9000;background:rgba(15,23,42,0.9);border:1.5px solid #f472b6;color:#fbcfe8;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.45);';
+        pill.onclick = () => window.toggleNengRaraMute();
+        document.body.appendChild(pill);
+      }
+      if (pill) {
+        pill.innerHTML = nengRaraMuted ? '🎸 Rara: 🔇 Unmute' : '🎸 Rara: 🔊 Mute';
+        pill.style.display = 'inline-flex';
+      }
+    } else if (pill) {
+      pill.style.display = 'none';
+    }
+
+    if (!inMainCity || nengRaraMuted || pDist >= 11.5) {
+      if (!nengRaraAudio.paused) {
+        nengRaraAudio.volume = Math.max(0, nengRaraAudio.volume - 0.02);
+        if (nengRaraAudio.volume <= 0.01) { nengRaraAudio.volume = 0; nengRaraAudio.pause(); }
+      }
+      return;
+    }
+    const targetVol = 0.22 * Math.max(0, Math.min(1, 1 - pDist / 11.5));
+    if (nengRaraAudio.paused && targetVol > 0.015) {
+      nengRaraAudio.play().catch(() => {});
+    }
+    nengRaraAudio.volume += (targetVol - nengRaraAudio.volume) * 0.12;
+  }
+
+  function playNpcRoleSfx(roleType, isProximity) {
+    if (typeof window.playSynthTone !== 'function') return;
+    if (roleType === 'beggar') {
+      if (!isProximity) {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => window.playSynthTone(f, 'triangle', 0.12), i * 85));
+      }
+    } else if (roleType === 'extort') {
+      window.playSynthTone(isProximity ? 140 : 120, 'sawtooth', 0.18);
+      if (!isProximity) setTimeout(() => window.playSynthTone(95, 'sawtooth', 0.22), 110);
+    } else if (roleType === 'fortune') {
+      window.playSynthTone(587.33, 'sine', 0.18);
+      setTimeout(() => window.playSynthTone(880, 'sine', 0.22), 110);
+    } else if (roleType === 'quest_photo') {
+      if (isProximity) {
+        window.playSynthTone(1150, 'sine', 0.08);
+      } else {
+        window.playSynthTone(1320, 'square', 0.05);
+        setTimeout(() => window.playSynthTone(1760, 'sine', 0.09), 65);
+      }
+    } else if (roleType === 'quest_clean') {
+      window.playSynthTone(440, 'triangle', 0.11);
+      setTimeout(() => window.playSynthTone(554.37, 'triangle', 0.14), 90);
+    } else if (roleType === 'quest') {
+      window.playSynthTone(523.25, 'sine', 0.12);
+      setTimeout(() => window.playSynthTone(659.25, 'sine', 0.16), 95);
+    }
+  }
+
+  function triggerScreenTintFx(bgCss, durationMs) {
+    const fx = document.createElement('div');
+    fx.style.cssText = `position:fixed;inset:0;background:${bgCss};opacity:0.8;z-index:999998;pointer-events:none;transition:opacity ${(durationMs || 320) / 1000}s ease-out;`;
+    document.body.appendChild(fx);
+    requestAnimationFrame(() => { fx.style.opacity = '0'; });
+    setTimeout(() => fx.remove(), (durationMs || 320) + 40);
+  }
+
+  function triggerScreenShakeFx() {
+    const cvEl = renderer && renderer.domElement;
+    if (!cvEl) return;
+    cvEl.style.transition = 'transform 0.05s';
+    const seq = [[-7, 4], [7, -4], [-5, -3], [5, 3], [0, 0]];
+    seq.forEach(([x, y], i) => {
+      setTimeout(() => { cvEl.style.transform = (x === 0 && y === 0) ? '' : `translate(${x}px, ${y}px)`; }, i * 55);
+    });
+  }
+
+  const _pirakuStoryLogoImg = new Image();
+  _pirakuStoryLogoImg.src = './assets/piraku-brand-logo.webp';
+
+  function triggerPolaroidPhotoFx() {
+    triggerScreenTintFx('#ffffff', 280);
+    let finalPhotoUrl = '';
+    try {
+      const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+      if (renderer && scene && cam && typeof WALKOT !== 'undefined' && WALKOT) {
+        // Simpan state asli pemain, Walkot, warga sekitar, dan kamera
+        const prevCamPos = cam.position.clone();
+        const prevCamQuat = cam.quaternion.clone();
+        const prevFov = cam.fov;
+        const prevWalkotPos = WALKOT.position.clone();
+        const prevWalkotRotY = WALKOT.rotation.y;
+        const hiddenOthers = [];
+        if (typeof citizensGroup !== 'undefined' && citizensGroup && Array.isArray(citizensGroup.children)) {
+          citizensGroup.children.forEach(ch => {
+            if (ch !== pm && ch.visible) { ch.visible = false; hiddenOthers.push(ch); }
+          });
+        }
+        let prevPmPos = null, prevPmRotY = 0, prevArmZ = 0, prevArmX = 0;
+        if (pm) {
+          prevPmPos = pm.position.clone();
+          prevPmRotY = pm.rotation.y;
+          if (pm.userData?.a?.armR) {
+            prevArmZ = pm.userData.a.armR.rotation.z;
+            prevArmX = pm.userData.a.armR.rotation.x;
+            pm.userData.a.armR.rotation.z = -2.35;
+            pm.userData.a.armR.rotation.x = -0.25;
+          }
+          pm.position.set(0.58, 0.14, 0.5);
+          pm.rotation.y = Math.PI + 0.08;
+        }
+        WALKOT.position.set(-0.62, 0.14, 0.5);
+        WALKOT.rotation.y = Math.PI - 0.08;
+        // Jangan ubah cam.aspect agar hasil render tidak nge-stretch!
+        cam.fov = 54;
+        cam.updateProjectionMatrix();
+        cam.position.set(0.0, 1.85, -6.5);
+        cam.lookAt(0.0, 2.75, 13.5);
+        cam.updateMatrixWorld();
+
+        const forceRender = typeof renderer.__rawRender === 'function'
+          ? () => renderer.__rawRender(scene, cam)
+          : () => renderer.render(scene, cam);
+        forceRender();
+
+        // Desain kartu Story 9:16 (720x1280) siap upload IG / WA / TikTok Story!
+        const pCv = document.createElement('canvas');
+        pCv.width = 720;
+        pCv.height = 1280;
+        const pCtx = pCv.getContext('2d');
+
+        // Latar belakang gradasi elegan Bandung + aksen cahaya
+        const bgGrad = pCtx.createLinearGradient(0, 0, 720, 1280);
+        bgGrad.addColorStop(0, '#091124');
+        bgGrad.addColorStop(0.5, '#13203d');
+        bgGrad.addColorStop(1, '#070d1a');
+        pCtx.fillStyle = bgGrad;
+        pCtx.fillRect(0, 0, 720, 1280);
+
+        // Dekorasi bokeh lembut
+        pCtx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+        pCtx.beginPath(); pCtx.arc(110, 140, 150, 0, Math.PI * 2); pCtx.fill();
+        pCtx.fillStyle = 'rgba(250, 204, 21, 0.12)';
+        pCtx.beginPath(); pCtx.arc(620, 1140, 170, 0, Math.PI * 2); pCtx.fill();
+
+        // Header Story dengan Logo Resmi PirakuBdg
+        if (_pirakuStoryLogoImg.complete && _pirakuStoryLogoImg.naturalWidth > 0) {
+          const lRatio = _pirakuStoryLogoImg.naturalWidth / Math.max(1, _pirakuStoryLogoImg.naturalHeight);
+          const lH = 56;
+          const lW = Math.min(260, lH * lRatio);
+          pCtx.drawImage(_pirakuStoryLogoImg, 360 - lW / 2, 30, lW, lH);
+        } else {
+          pCtx.fillStyle = '#fde047';
+          pCtx.font = '900 28px sans-serif';
+          pCtx.textAlign = 'center';
+          pCtx.fillText('PIRAKU BANDUNG', 360, 68);
+        }
+
+        pCtx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+        pCtx.beginPath(); pCtx.roundRect(150, 98, 420, 38, 19); pCtx.fill();
+        pCtx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+        pCtx.lineWidth = 2;
+        pCtx.stroke();
+        pCtx.fillStyle = '#7dd3fc';
+        pCtx.font = '800 17px sans-serif';
+        pCtx.textAlign = 'center';
+        pCtx.fillText('📍 GEDUNG SATE • KOTA BANDUNG', 360, 123);
+
+        // Bingkai foto 3D utama (640x860) dengan sudut membulat & border emas
+        const fx = 40, fy = 156, fw = 640, fh = 860;
+        pCtx.save();
+        pCtx.beginPath();
+        pCtx.roundRect(fx, fy, fw, fh, 28);
+        pCtx.clip();
+
+        const srcW = renderer.domElement.width || 720;
+        const srcH = renderer.domElement.height || 960;
+        const sAsp = srcW / Math.max(1, srcH);
+        const dAsp = fw / fh;
+        let sx = 0, sy = 0, sw = srcW, sh = srcH;
+        if (sAsp > dAsp) { sw = srcH * dAsp; sx = (srcW - sw) / 2; }
+        else { sh = srcW / dAsp; sy = (srcH - sh) / 2; }
+        pCtx.drawImage(renderer.domElement, sx, sy, sw, sh, fx, fy, fw, fh);
+
+        // Vignette bawah halus di dalam foto
+        const vig = pCtx.createLinearGradient(0, fy + fh - 160, 0, fy + fh);
+        vig.addColorStop(0, 'rgba(9,17,36,0)');
+        vig.addColorStop(1, 'rgba(9,17,36,0.72)');
+        pCtx.fillStyle = vig;
+        pCtx.fillRect(fx, fy + fh - 160, fw, 160);
+        pCtx.restore();
+
+        // Border emas frame foto
+        pCtx.strokeStyle = '#facc15';
+        pCtx.lineWidth = 4;
+        pCtx.beginPath(); pCtx.roundRect(fx, fy, fw, fh, 28); pCtx.stroke();
+
+        // Watermark kecil di pojok bawah foto
+        pCtx.fillStyle = 'rgba(15, 23, 42, 0.78)';
+        pCtx.beginPath(); pCtx.roundRect(fx + 20, fy + fh - 58, 260, 36, 18); pCtx.fill();
+        pCtx.fillStyle = '#fde047';
+        pCtx.font = '800 15px sans-serif';
+        pCtx.textAlign = 'left';
+        pCtx.fillText('📸 Jepretan Teh Dinda', fx + 36, fy + fh - 35);
+
+        // Caption Story di bawah foto
+        const myIg = (localStorage.getItem('piraku_my_ig') || 'Warga').trim();
+        const dispIg = myIg.startsWith('@') ? myIg : '@' + myIg;
+        pCtx.textAlign = 'center';
+        pCtx.fillStyle = '#f8fafc';
+        pCtx.font = '900 32px sans-serif';
+        pCtx.fillText(`${dispIg}  ×  @pirakubdg`, 360, 1080);
+
+        pCtx.fillStyle = '#cbd5e1';
+        pCtx.font = '700 20px sans-serif';
+        pCtx.fillText('Foto bareng Pak Walikota di depan Gedung Sate ✨', 360, 1122);
+
+        pCtx.fillStyle = 'rgba(250, 204, 21, 0.14)';
+        pCtx.beginPath(); pCtx.roundRect(170, 1160, 380, 44, 22); pCtx.fill();
+        pCtx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+        pCtx.lineWidth = 1.5;
+        pCtx.stroke();
+        pCtx.fillStyle = '#fde047';
+        pCtx.font = '800 17px sans-serif';
+        pCtx.fillText('🗓️ ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }), 360, 1188);
+
+        finalPhotoUrl = pCv.toDataURL('image/png');
+
+        // Pulihkan state asli seketika
+        hiddenOthers.forEach(ch => { ch.visible = true; });
+        cam.fov = prevFov;
+        cam.updateProjectionMatrix();
+        cam.position.copy(prevCamPos);
+        cam.quaternion.copy(prevCamQuat);
+        WALKOT.position.copy(prevWalkotPos);
+        WALKOT.rotation.y = prevWalkotRotY;
+        if (pm && prevPmPos) {
+          pm.position.copy(prevPmPos);
+          pm.rotation.y = prevPmRotY;
+          if (pm.userData?.a?.armR) {
+            pm.userData.a.armR.rotation.z = prevArmZ;
+            pm.userData.a.armR.rotation.x = prevArmX;
+          }
+        }
+        forceRender();
+        showSavedPolaroidModal(finalPhotoUrl);
+        return;
+      }
+    } catch (_) {}
+  }
+
+  function showSavedPolaroidModal(photoUrl) {
+    if (!photoUrl) return;
+    let modal = document.getElementById('piraku-photo-result-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'piraku-photo-result-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(2,6,23,0.82);backdrop-filter:blur(6px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;';
+      modal.addEventListener('pointerdown', e => e.stopPropagation());
+      document.body.appendChild(modal);
+    }
+    modal.innerHTML = `
+      <div style="background:#0f172a;border:2px solid #f59e0b;border-radius:18px;padding:14px;width:min(360px,94vw);box-shadow:0 24px 60px rgba(0,0,0,0.8);text-align:center;color:#f8fafc;">
+        <div style="font-weight:900;font-size:14px;color:#fde047;margin-bottom:10px;">📸 Foto Story 9:16 — Teh Dinda!</div>
+        <img src="${photoUrl}" alt="Foto Story Gedung Sate" style="max-height:60vh;width:auto;max-width:100%;margin:0 auto 12px;border-radius:12px;display:block;box-shadow:0 10px 26px rgba(0,0,0,0.5);">
+        <div style="display:flex;gap:8px;">
+          <a href="${photoUrl}" download="pirakubdg-story-gedungsate.png" style="flex:1;text-decoration:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:10px 12px;border-radius:11px;font-weight:900;font-size:12.5px;display:inline-flex;align-items:center;justify-content:center;">💾 Simpan Story (9:16)</a>
+          <button type="button" id="piraku-photo-close" style="border:none;background:#1e293b;color:#cbd5e1;padding:10px 14px;border-radius:11px;font-weight:800;font-size:12.5px;cursor:pointer;">Tutup</button>
+        </div>
+      </div>
+    `;
+    modal.style.display = 'flex';
+    const closeBtn = modal.querySelector('#piraku-photo-close');
+    if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
+    modal.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
+  }
+
+  function updateJogQuestHudPill() {
+    let pill = document.getElementById('piraku-jog-quest-pill');
+    if (!_npcJogQuest) {
+      if (pill) pill.style.display = 'none';
+      return;
+    }
+    if (!pill && document.body) {
+      pill = document.createElement('div');
+      pill.id = 'piraku-jog-quest-pill';
+      pill.style.cssText = 'position:fixed;top:116px;left:50%;transform:translateX(-50%);z-index:9000;background:rgba(15,23,42,0.92);border:1.5px solid #38bdf8;color:#f8fafc;padding:6px 14px;border-radius:999px;font-size:11.5px;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,0.45);pointer-events:none;white-space:nowrap;';
+      document.body.appendChild(pill);
+    }
+    const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+    const dist = pm ? Math.hypot(pm.position.x - _npcJogQuest.x, pm.position.z - _npcJogQuest.z) : 0;
+    const done = dist >= 22;
+    pill.style.borderColor = done ? '#4ade80' : '#38bdf8';
+    pill.innerHTML = done
+      ? '✅ Misi Jogging 22m beres! Lapor ke <b>Mang Cepot</b> (+45 🪙)'
+      : `🏃 Misi Mang Cepot: <b>${Math.min(22, Math.round(dist))}/22m</b>`;
+    pill.style.display = 'block';
+  }
+
   function openNpcDialogueCard(data) {
     if (bubbleEl) bubbleEl.style.display = 'none';
     activeCitizenTarget = null;
+    activeNpcDialogueTarget = data || null;
     let card = document.getElementById('piraku-npc-dialogue');
     if (!card && document.body) {
       card = document.createElement('div');
@@ -2530,6 +3028,57 @@ let activeQuestSystem = null;
     const lines = rawLines.map(l => l || 'Wilujeng sumping di Piraku Bandung!').filter(Boolean);
     let lineIdx = 0;
     const badgeText = data.npcBadge || '🏛️ NPC KOTA';
+    const roleType = data.npcRole || '';
+
+    const buildRoleActionHtml = () => {
+      const now = Date.now();
+      const cdEnd = _npcRoleCooldowns[roleType] || 0;
+      const cdLeft = Math.max(0, Math.ceil((cdEnd - now) / 1000));
+      if (roleType === 'extort') {
+        if (cdLeft > 0) return `<div style="font-size:11px;color:#94a3b8;text-align:center;margin-bottom:8px;">⏳ Preman lagi minggir dulu (${cdLeft}d)</div>`;
+        return `<div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button id="npc-role-act1" style="flex:1;border:none;background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;padding:8px 10px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">💸 Kasih 15 🪙 (+10 XP)</button>
+          <button id="npc-role-act2" style="flex:1;border:none;background:#334155;color:#f8fafc;padding:8px 10px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;">😤 Tolak & Lari</button>
+        </div>`;
+      }
+      if (roleType === 'beggar') {
+        const muteLabel = nengRaraMuted ? '🔊 Nyalakan Musik Rara' : '🔇 Mute Musik Rara';
+        const muteBtnHtml = `<button id="npc-rara-mute-btn" style="width:100%;margin-bottom:8px;border:1px solid rgba(244,114,182,0.4);background:rgba(131,24,67,0.35);color:#fbcfe8;padding:7px 10px;border-radius:10px;font-weight:800;font-size:11.5px;cursor:pointer;">${muteLabel}</button>`;
+        if (cdLeft > 0) return `${muteBtnHtml}<div style="font-size:11px;color:#f472b6;text-align:center;margin-bottom:8px;">🎵 Makasih ya kak! (${cdLeft}d)</div>`;
+        return `${muteBtnHtml}<div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button id="npc-role-act1" style="flex:1;border:none;background:linear-gradient(135deg,#ec4899,#db2777);color:#fff;padding:8px 10px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">🪙 Kasih 10 🪙 (+25 XP & Ngebut)</button>
+          <button id="npc-role-act2" style="border:none;background:#334155;color:#cbd5e1;padding:8px 10px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;">🙏 Lewat Dulu</button>
+        </div>`;
+      }
+      if (roleType === 'fortune') {
+        if (cdLeft > 0) return `<div style="font-size:11px;color:#c084fc;text-align:center;margin-bottom:8px;">🔮 Ramalan berikutnya tersedia dalam ${cdLeft}d</div>`;
+        return `<div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button id="npc-role-act1" style="flex:1;border:none;background:linear-gradient(135deg,#9333ea,#7e22ce);color:#fff;padding:8px 10px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">🔮 Ramal Nasib (5 🪙)</button>
+        </div>`;
+      }
+      if (roleType === 'quest') {
+        if (cdLeft > 0) return `<div style="font-size:11px;color:#38bdf8;text-align:center;margin-bottom:8px;">⏳ Misi Jogging berikutnya dalam ${cdLeft}d</div>`;
+        const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+        if (_npcJogQuest && pm) {
+          const dist = Math.hypot(pm.position.x - _npcJogQuest.x, pm.position.z - _npcJogQuest.z);
+          if (dist >= 22) {
+            return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">🎁 Klaim Hadiah Misi (+45 🪙 & +40 XP)</button>`;
+          }
+          return `<div style="font-size:11.5px;color:#fde047;text-align:center;margin-bottom:8px;">🏃 Progres Jogging: <b>${Math.round(dist)}/22m</b> — jalan lagi lalu klik Mang Cepot!</div>`;
+        }
+        return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">📜 Ambil Misi Jogging 22m (+45 🪙)</button>`;
+      }
+      if (roleType === 'quest_photo') {
+        if (cdLeft > 0) return `<div style="font-size:11px;color:#fbbf24;text-align:center;margin-bottom:8px;">📸 Sesi foto berikutnya dalam ${cdLeft}d</div>`;
+        return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#0f172a;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">📸 Pose Foto Wisata (+35 🪙 & +30 XP)</button>`;
+      }
+      if (roleType === 'quest_clean') {
+        if (cdLeft > 0) return `<div style="font-size:11px;color:#4ade80;text-align:center;margin-bottom:8px;">🧹 Area sudah bersih! Cek lagi ${cdLeft}d lagi</div>`;
+        return `<button id="npc-role-act1" style="width:100%;margin-bottom:8px;border:none;background:linear-gradient(135deg,#22c55e,#16a34a);color:#052e16;padding:9px 12px;border-radius:10px;font-weight:900;font-size:12.5px;cursor:pointer;">🧹 Bantu Bersih-bersih (+30 🪙 & +35 XP)</button>`;
+      }
+      return '';
+    };
+
     const renderLine = () => {
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -2540,18 +3089,152 @@ let activeQuestSystem = null;
           <button id="npc-dlg-close" style="border:none;background:rgba(148,163,184,0.2);color:#cbd5e1;width:26px;height:26px;border-radius:999px;font-weight:900;cursor:pointer;">✕</button>
         </div>
         <div style="background:rgba(2,6,23,0.55);border:1px solid rgba(148,163,184,0.22);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:#e2e8f0;margin-bottom:10px;">“${lines[lineIdx]}”</div>
+        ${buildRoleActionHtml()}
         <div style="display:flex;gap:8px;">
           <button id="npc-dlg-next" style="flex:1;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;padding:8px 12px;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer;">💬 Ngobrol Lagi (${lineIdx + 1}/${lines.length})</button>
           <button id="npc-dlg-bye" style="border:none;background:#1e293b;color:#fde047;border:1px solid #475569;padding:8px 12px;border-radius:10px;font-weight:800;font-size:12px;cursor:pointer;">👋 Pamit</button>
         </div>
       `;
-      card.querySelector('#npc-dlg-close').onclick = () => { card.style.display = 'none'; };
-      card.querySelector('#npc-dlg-bye').onclick = () => { card.style.display = 'none'; };
+      card.querySelector('#npc-dlg-close').onclick = () => { card.style.display = 'none'; activeNpcDialogueTarget = null; };
+      card.querySelector('#npc-dlg-bye').onclick = () => { card.style.display = 'none'; activeNpcDialogueTarget = null; };
       card.querySelector('#npc-dlg-next').onclick = () => {
         lineIdx = (lineIdx + 1) % lines.length;
         if (typeof window.playSynthTone === 'function') window.playSynthTone(620, 'sine', 0.08);
         renderLine();
       };
+
+      const raraMuteBtn = card.querySelector('#npc-rara-mute-btn');
+      if (raraMuteBtn) {
+        raraMuteBtn.onclick = () => {
+          window.toggleNengRaraMute();
+          renderLine();
+        };
+      }
+      const act1 = card.querySelector('#npc-role-act1');
+      const act2 = card.querySelector('#npc-role-act2');
+      if (act1) {
+        act1.onclick = () => {
+          const eco = window.PirakuEconomy;
+          const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+          if (roleType === 'extort') {
+            if (!eco || !eco.spendCoins(15, 'Uang Keamanan Preman Gasibu')) {
+              showToast('Preman: Duit lu kurang! Narik Ojol dulu sana 🛵');
+              return;
+            }
+            _npcRoleCooldowns[roleType] = Date.now() + 90000;
+            if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(10, 'Damai sama Preman');
+            if (data.meshGroup && data.meshGroup.userData?.a?.armR) {
+              gsap.to(data.meshGroup.userData.a.armR.rotation, { z: -2.2, duration: 0.22, yoyo: true, repeat: 3 });
+            }
+            showOverheadBubbleOnAvatar(data.ig, '😎 Aman Bos!');
+            showToast('💸 Bayar 15 🪙 ke Kang Preman — aman bos! (+10 XP)');
+          } else if (roleType === 'beggar') {
+            if (!eco || !eco.spendCoins(10, 'Sumbangan Pengamen Braga')) {
+              showToast('Koin kamu belum cukup 10 🪙!');
+              return;
+            }
+            _npcRoleCooldowns[roleType] = Date.now() + 90000;
+            if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(25, 'Sedekah ke Pengamen');
+            window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + 20000;
+            triggerScreenTintFx('rgba(244,114,182,0.35)', 420);
+            if (pm) gsap.to(pm.position, { y: 0.55, duration: 0.18, yoyo: true, repeat: 3 });
+            showOverheadBubbleOnAvatar(data.ig, '🎵 Makasih banyak kak! ✨');
+            showToast('🎸 Makasih! Dapat berkah +25 XP & lari ngebut 20 detik!');
+          } else if (roleType === 'fortune') {
+            if (!eco || !eco.spendCoins(5, 'Ramalan Ki Sunda')) {
+              showToast('Mahar ramalan minimal 5 🪙!');
+              return;
+            }
+            _npcRoleCooldowns[roleType] = Date.now() + 75000;
+            triggerScreenTintFx('rgba(168,85,247,0.42)', 500);
+            const roll = Math.random();
+            if (roll < 0.45) {
+              eco.addCoins(20, 'Berkah Ramalan Ki Sunda');
+              showOverheadBubbleOnAvatar(data.ig, '🔮 Hoki besar! +20 🪙');
+              showToast('🔮 Hoki besar! Ki Sunda kasih berkah +20 🪙!');
+            } else if (roll < 0.8) {
+              if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(20, 'Petuah Ki Sunda');
+              showOverheadBubbleOnAvatar(data.ig, '🔮 Aura emas! +20 XP');
+              showToast('🔮 Ramalan: Hari ini bakal dapat ikan langka! (+20 XP)');
+            } else {
+              window.pirakuSpeedBoostUntil = Math.max(window.pirakuSpeedBoostUntil || 0, Date.now()) + 25000;
+              showOverheadBubbleOnAvatar(data.ig, '🔮 Langkah ringan! ⚡');
+              showToast('🔮 Ramalan: Langkahmu ringan hari ini! (+Ngebut 25d)');
+            }
+          } else if (roleType === 'quest') {
+            if (!_npcJogQuest) {
+              _npcJogQuest = { x: pm ? pm.position.x : 0, z: pm ? pm.position.z : 0, notified: false };
+              updateJogQuestHudPill();
+              showToast('🏃 Misi dimulai! Jalan 22m keliling Gasibu lalu lapor Mang Cepot!');
+              card.style.display = 'none';
+              activeNpcDialogueTarget = null;
+              return;
+            }
+            const dist = pm ? Math.hypot(pm.position.x - _npcJogQuest.x, pm.position.z - _npcJogQuest.z) : 0;
+            if (dist >= 22) {
+              _npcJogQuest = null;
+              updateJogQuestHudPill();
+              _npcRoleCooldowns[roleType] = Date.now() + 120000;
+              if (eco) eco.addCoins(45, 'Misi Jogging Mang Cepot');
+              if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(40, 'Misi Jogging Gasibu');
+              triggerScreenTintFx('rgba(250,204,21,0.35)', 380);
+              if (pm) gsap.to(pm.position, { y: 0.65, duration: 0.2, yoyo: true, repeat: 1 });
+              showToast('🎉 Misi Jogging selesai! +45 🪙 & +40 XP!');
+            }
+          } else if (roleType === 'quest_photo') {
+            _npcRoleCooldowns[roleType] = Date.now() + 120000;
+            triggerPolaroidPhotoFx();
+            if (pm && pm.userData && pm.userData.a && pm.userData.a.armR) {
+              gsap.to(pm.userData.a.armR.rotation, { z: -2.4, duration: 0.22, yoyo: true, repeat: 3 });
+            }
+            if (eco) eco.addCoins(35, 'Misi Foto Wisata Bandung');
+            if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(30, 'Misi Foto Wisata');
+            showToast('📸 Cekrek! Foto kece di Gedung Sate (+35 🪙 & +30 XP)!');
+          } else if (roleType === 'quest_clean') {
+            _npcRoleCooldowns[roleType] = Date.now() + 120000;
+            triggerScreenTintFx('rgba(74,222,128,0.3)', 350);
+            if (pm && pm.userData && pm.userData.a && pm.userData.a.armR) {
+              gsap.to(pm.userData.a.armR.rotation, { x: -1.4, duration: 0.18, yoyo: true, repeat: 3 });
+            }
+            if (eco) eco.addCoins(30, 'Bantu Kebersihan Gasibu');
+            if (typeof window.grantPirakuXP === 'function') window.grantPirakuXP(35, 'Bantu Kebersihan');
+            showToast('🧹 Gasibu kinclong! Hadiah +30 🪙 & +35 XP!');
+          }
+          playNpcRoleSfx(roleType, false);
+          renderLine();
+        };
+      }
+      if (act2) {
+        act2.onclick = () => {
+          _npcRoleCooldowns[roleType] = Date.now() + 45000;
+          if (roleType === 'extort') {
+            const pm = typeof window.getMyActivePlayerMesh === 'function' ? window.getMyActivePlayerMesh() : myPlayerMesh;
+            if (pm && data) {
+              const dx = pm.position.x - (data.x || 0);
+              const dz = pm.position.z - (data.z || 0);
+              const len = Math.max(0.1, Math.hypot(dx, dz));
+              gsap.to(pm.position, { x: pm.position.x + (dx / len) * 3.2, z: pm.position.z + (dz / len) * 3.2, duration: 0.28, ease: 'power2.out' });
+              gsap.to(pm.position, { y: 0.5, duration: 0.14, yoyo: true, repeat: 1 });
+            }
+            if (data.meshGroup && data.meshGroup.userData?.a?.armR) {
+              gsap.to(data.meshGroup.userData.a.armR.rotation, { x: -1.9, duration: 0.16, yoyo: true, repeat: 1 });
+            }
+            triggerScreenShakeFx();
+            triggerScreenTintFx('rgba(239,68,68,0.45)', 400);
+            window.pirakuSpeedMult = 0.55;
+            setTimeout(() => { if (window.pirakuSpeedMult === 0.55) window.pirakuSpeedMult = 1.0; }, 1800);
+            const eco = window.PirakuEconomy;
+            const dropped = eco && eco.spendCoins(5, 'Koin Jatuh Digertak Preman');
+            if (typeof window.playSynthTone === 'function') window.playSynthTone(150, 'sawtooth', 0.24);
+            showOverheadBubbleOnAvatar(data.ig, '💢 Awas lu ya!');
+            showToast(dropped ? '💥 Digertak Kang Preman! Kamu terpental, pusing 2d, & koin jatuh 5 🪙!' : '💥 Digertak Kang Preman! Kamu terpental & pusing!');
+          } else {
+            showToast('🎸 Neng Rara: Hati-hati di jalan kak!');
+          }
+          card.style.display = 'none';
+          activeNpcDialogueTarget = null;
+        };
+      }
     };
     renderLine();
     card.style.display = 'block';
@@ -5382,27 +6065,78 @@ let activeQuestSystem = null;
     if (activeQuestSystem && myPlayerMesh) {
       activeQuestSystem.update(0.016, myPlayerMesh.position);
     }
+    if (_npcJogQuest && myPlayerMesh) {
+      updateJogQuestHudPill();
+      if (!_npcJogQuest.notified && Math.hypot(myPlayerMesh.position.x - _npcJogQuest.x, myPlayerMesh.position.z - _npcJogQuest.z) >= 22) {
+        _npcJogQuest.notified = true;
+        if (typeof window.playSynthTone === 'function') window.playSynthTone(960, 'sine', 0.22);
+        showToast('🎉 Misi Jogging 22m beres! Lapor ke Mang Cepot buat klaim 45 🪙!');
+      }
+    }
 
     animC.forEach(g => {
+      if (g.userData && g.userData.a && g.userData.a.c && g.userData.a.c.isRoleNpc) {
+        g.visible = !window.pirakuInDistrict;
+        if (g.visible && myPlayerMesh) {
+          const rType = g.userData.a.c.npcRole;
+          const pDist = Math.hypot(myPlayerMesh.position.x - g.position.x, myPlayerMesh.position.z - g.position.z);
+          if (g.userData.roleAuraRing) {
+            const pulse = 1 + Math.sin(clockTime * (pDist < 5.5 ? 7 : 3) + g.userData.a.ph) * 0.14;
+            g.userData.roleAuraRing.scale.setScalar(pulse);
+            g.userData.roleAuraRing.material.opacity = pDist < 5.5 ? 0.85 : 0.42;
+          }
+          const nowMs = Date.now();
+          if (rType === 'beggar') {
+            updateNengRaraSpatialAudio(pDist, true);
+          } else if (rType && pDist < 4.5) {
+            if (nowMs - (_npcProximityLastAt[rType] || 0) > 12000) {
+              _npcProximityLastAt[rType] = nowMs;
+              playNpcRoleSfx(rType, true);
+            }
+          }
+        } else if (g.userData.a.c.npcRole === 'beggar' && !g.visible) {
+          updateNengRaraSpatialAudio(999, false);
+        }
+      }
       if (g === myPlayerMesh || !g.visible || (g.userData && g.userData.a && g.userData.a.isRemotePlayer)) return;
 
       const a = g.userData.a;
       let isWalking = 0;
 
-      if (a.walk && a.c !== activeCitizenTarget) {
+      if (a.walk && a.c !== activeCitizenTarget && a.c !== activeNpcDialogueTarget) {
         const dx = a.tx - g.position.x, dz = a.tz - g.position.z, d = Math.hypot(dx, dz);
         if (d < 0.4) {
-          const nextTarget = getSafeGasibuPos();
-          a.tx = nextTarget.x;
-          a.tz = nextTarget.z;
+          if (a.c && a.c.npcRole === 'quest_photo') {
+            a.tx = (g.position.x > 0) ? -11.5 : 11.5;
+            a.tz = 2.4;
+          } else {
+            const nextTarget = (a.c && a.c.isRoleNpc) ? getSafeCityRoamPos() : getSafeGasibuPos();
+            a.tx = nextTarget.x;
+            a.tz = nextTarget.z;
+          }
         } else {
           isWalking = 1;
-          g.position.x += (dx / d) * 0.015;
-          g.position.z += (dz / d) * 0.015;
+          const stepSpd = (a.c && a.c.isRoleNpc) ? 0.024 : 0.015;
+          g.position.x += (dx / d) * stepSpd;
+          g.position.z += (dz / d) * stepSpd;
           a.c.x = g.position.x;
           a.c.z = g.position.z;
           g.rotation.y = Math.atan2(dx, dz);
         }
+        // Kang Preman bisa menghadang jika pemain lewat sangat dekat saat cooldown siap
+        if (a.c && a.c.npcRole === 'extort' && !window.pirakuInDistrict && myPlayerMesh && !activeNpcDialogueTarget) {
+          const nowMs = Date.now();
+          if (nowMs > (_npcRoleCooldowns.extort || 0) && nowMs - _lastPremanInterceptAt > 60000) {
+            const pDist = Math.hypot(myPlayerMesh.position.x - g.position.x, myPlayerMesh.position.z - g.position.z);
+            if (pDist < 2.2) {
+              _lastPremanInterceptAt = nowMs;
+              showToast('🕶️ Kang Preman menghadangmu!');
+              openNpcDialogueCard(a.c);
+            }
+          }
+        }
+      } else if (a.c === activeNpcDialogueTarget && myPlayerMesh) {
+        g.rotation.y = Math.atan2(myPlayerMesh.position.x - g.position.x, myPlayerMesh.position.z - g.position.z);
       }
       const s = Math.sin(clockTime * (isWalking ? 8 : 2.5) + a.ph);
       a.body.position.y = Math.abs(s) * (isWalking ? 0.07 : 0.035);
