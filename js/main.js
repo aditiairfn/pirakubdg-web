@@ -2716,7 +2716,7 @@ let activeQuestSystem = null;
         pill = document.createElement('button');
         pill.id = 'piraku-rara-mute-pill';
         pill.type = 'button';
-        pill.style.cssText = 'position:fixed;bottom:164px;left:16px;z-index:9000;background:rgba(15,23,42,0.9);border:1.5px solid #f472b6;color:#fbcfe8;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.45);';
+        pill.style.cssText = 'position:fixed;bottom:204px;left:16px;z-index:24;background:rgba(15,23,42,0.9);border:1.5px solid #f472b6;color:#fbcfe8;padding:6px 12px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.45);';
         pill.onclick = () => window.toggleNengRaraMute();
         document.body.appendChild(pill);
       }

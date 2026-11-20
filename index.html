@@ -15,7 +15,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap"></noscript>
-  <link rel="stylesheet" href="./css/style.css?v=20261119v1">
+  <link rel="stylesheet" href="./css/style.css?v=20261121v3">
 
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -103,6 +103,29 @@
       font-size: 11px !important;
       margin: 0 !important;
       z-index: 20 !important;
+    }
+
+    /* 4. Mobile: cegah guided-quest-hud menumpuk di atas tombol kiri/kanan & minimap */
+    @media (max-width: 900px) {
+      #piraku-guided-quest-hud {
+        top: 52px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: calc(100vw - 20px) !important;
+        overflow-x: auto !important;
+        padding: 5px 10px !important;
+        gap: 6px !important;
+      }
+      body.has-guided-quest-hud .hud-side-left,
+      body.has-guided-quest-hud .hud-side-right {
+        top: 96px !important;
+      }
+      body.has-guided-quest-hud #piraku-minimap-radar {
+        top: 132px !important;
+      }
+      body.has-guided-quest-hud #piraku-wallet-pill {
+        top: 248px !important;
+      }
     }
   </style>
   <script>
@@ -319,7 +342,7 @@
     gap: 16px;
     color: #f8fafc;
     font-family: system-ui, -apple-system, sans-serif;
-    transition: opacity 0.4s ease;
+    transition: opacity 0.15s ease;
   }
   #piraku-boot-loader.fade-out {
     opacity: 0;
@@ -1290,7 +1313,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261121v71"></script>
+  <script defer src="./js/main.js?v=20261121v72"></script>
   <script defer src="js/multiplayer.js?v=20261121v44"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
@@ -1673,7 +1696,7 @@
     }, 450);
   </script>
 
-  <script defer src="js/piraku-civic.js?v=20261119v4"></script>
+  <script defer src="js/piraku-civic.js?v=20261121v5"></script>
   <script defer src="js/piraku-perf.js?v=20261119v99"></script>
 
 
@@ -1711,7 +1734,7 @@
       const loader = document.getElementById('piraku-boot-loader');
       if (loader) {
         loader.classList.add('fade-out');
-        setTimeout(function () { loader.remove(); }, 350);
+        setTimeout(function () { loader.remove(); }, 160);
       }
     }
     if (document.readyState === 'loading') {

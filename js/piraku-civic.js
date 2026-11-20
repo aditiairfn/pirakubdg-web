@@ -861,6 +861,7 @@
     localStorage.setItem("piraku_onboarding_hud_done" + suf, "1");
     const hud = document.getElementById("piraku-guided-quest-hud");
     if (hud) hud.style.display = "none";
+    document.body.classList.remove("has-guided-quest-hud");
   };
 
   function updateMisiTabBadge(isReg, hasHouse, houseKeys, myCoins) {
@@ -919,6 +920,7 @@
     // Hilangkan HUD setelah punya rumah; jika siap bangun rumah (2/2 + 30 koin) tampilkan terus sampai klik Bangun Rumah
     if (isReg && onboardingDone && !canBuildNow && !kavFull) {
       if (hud.style.display !== "none") hud.style.display = "none";
+      document.body.classList.remove("has-guided-quest-hud");
       return;
     }
 
@@ -926,6 +928,7 @@
     if (!isReg) {
       if (localStorage.getItem("piraku_onboarding_hud_done_guest") === "1") {
         if (hud.style.display !== "none") hud.style.display = "none";
+        document.body.classList.remove("has-guided-quest-hud");
         return;
       }
       html = `<span style="color:#fde047;">🎯 Langkah Awal: Daftar KTP Warga Bandung</span>` +
@@ -945,6 +948,7 @@
     }
 
     hud.style.display = "flex";
+    document.body.classList.add("has-guided-quest-hud");
     if (html !== lastQuestHudSig) {
       lastQuestHudSig = html;
       hud.innerHTML = html;
