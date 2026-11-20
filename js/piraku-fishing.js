@@ -195,11 +195,11 @@
     try { localStorage.setItem("piraku_fish_sync_ts" + getUserSuf(), String(Date.now())); } catch (_) {}
   }
 
-  function syncFishingToCloud() {
+  function syncFishingToCloud(immediate) {
     const ig = (localStorage.getItem("piraku_my_ig") || "").trim().toLowerCase().replace(/^@/, "");
     if (!ig) return;
-    clearTimeout(_fishCloudSyncTimer);
-    _fishCloudSyncTimer = setTimeout(() => {
+    const doFlush = () => {
+      _fishCloudSyncTimer = null;
       if (!window.PirakuEconomy || typeof window.PirakuEconomy.getState !== "function") return;
       const ecoState = window.PirakuEconomy.getState();
       if (!ecoState || !ecoState._hydrated || !Array.isArray(ecoState.owned)) return;
@@ -217,8 +217,15 @@
       ecoState.owned = ecoState.owned.filter(tag => !String(tag || "").startsWith("fish_sync_v1:"));
       ecoState.owned.push("fish_sync_v1:" + JSON.stringify(payload));
       if (typeof window.PirakuEconomy.saveNow === "function") window.PirakuEconomy.saveNow();
-    }, 150);
+    };
+    clearTimeout(_fishCloudSyncTimer);
+    if (immediate) {
+      doFlush();
+      return;
+    }
+    _fishCloudSyncTimer = setTimeout(doFlush, 15000);
   }
+  window.addEventListener("pagehide", () => { if (_fishCloudSyncTimer) syncFishingToCloud(true); });
 
   window.refreshPirakuFishingForCurrentUser = function () {
     _cachedBagLen = null;

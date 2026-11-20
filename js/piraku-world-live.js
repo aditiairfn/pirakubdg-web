@@ -45,6 +45,7 @@
   };
 
   async function loadAllRemoteTiersFromSupabase() {
+    if (document.hidden) return;
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
@@ -107,7 +108,7 @@
   }
   window.refreshPirakuRemoteTiers = loadAllRemoteTiersFromSupabase;
   setTimeout(loadAllRemoteTiersFromSupabase, 150);
-  setInterval(loadAllRemoteTiersFromSupabase, 10000);
+  setInterval(loadAllRemoteTiersFromSupabase, 60000);
 
   window.getPirakuCitizenKey = function() {
     return getCitizenIdentity().key;
@@ -422,7 +423,7 @@
 
   setTimeout(() => {
     refreshLeaderboard3D();
-    setInterval(refreshLeaderboard3D, 15000);
+    setInterval(() => { if (!document.hidden) refreshLeaderboard3D(); }, 60000);
     requestAnimationFrame(tickWorldLive);
   }, 1500);
 })();
