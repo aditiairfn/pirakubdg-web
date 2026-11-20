@@ -1193,7 +1193,12 @@
 
   function setMobileControlsHidden(hide) {
     const jz = document.getElementById("joystick-zone");
-    if (jz) { jz.style.display = hide ? "none" : ""; jz.style.pointerEvents = hide ? "none" : ""; }
+    const isTouchDev = 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 900;
+    if (jz) {
+      jz.style.display = hide ? "none" : (isTouchDev ? "block" : "");
+      jz.style.visibility = hide ? "hidden" : "visible";
+      jz.style.pointerEvents = hide ? "none" : "auto";
+    }
     document.querySelectorAll('button[title="Buka Balai Obrolan Warga"], .btn-chat-fab').forEach(b => {
       b.style.display = hide ? "none" : "";
     });

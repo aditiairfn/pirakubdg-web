@@ -2058,9 +2058,13 @@ let activeQuestSystem = null;
     isControlledByPlayer = true;
     mesh.userData.a.walk = false;
 
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth <= 900) {
       const joyZone = document.getElementById('joystick-zone');
-      if (joyZone) joyZone.style.display = 'block';
+      if (joyZone) {
+        joyZone.style.display = 'block';
+        joyZone.style.visibility = 'visible';
+        joyZone.style.pointerEvents = 'auto';
+      }
       const jumpBtn = document.getElementById('btn-jump-mobile');
       if (jumpBtn) jumpBtn.style.display = 'flex';
     }

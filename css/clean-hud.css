@@ -74,9 +74,15 @@
 }
 
 #mp-quick-bar input {
-  font-size: 12px !important;
+  font-size: 16px !important;
   width: 140px !important;
   color: #f8fafc !important;
+}
+
+@media (max-width: 900px) {
+  input, textarea, select, .form-input, .form-select, #inp-chat-msg {
+    font-size: 16px !important;
+  }
 }
 
 #mp-quick-bar button:last-child {
