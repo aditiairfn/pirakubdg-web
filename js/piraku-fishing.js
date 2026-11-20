@@ -883,38 +883,65 @@
           drIdx++;
         }
       });
-      // Air terjun batu mini di pojok barat laut kolam kecamatan
-      const dwf = new THREE.Mesh(new THREE.DodecahedronGeometry(1.4, 0), rockMat);
-      dwf.scale.set(1.2, 1.3, 1.0);
-      dwf.position.set(-5.6, 0.9, -3.8);
-      const dStream = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.7, 0.28), new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.85 }));
-      dStream.position.set(-4.8, 0.85, -3.2);
+      // Air terjun batu bertingkat + buih air di pojok barat laut kolam kecamatan
+      const darkRockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9, flatShading: true });
+      const dwf = new THREE.Mesh(new THREE.DodecahedronGeometry(1.5, 0), darkRockMat);
+      dwf.scale.set(1.25, 1.35, 1.05);
+      dwf.position.set(-5.6, 0.95, -3.8);
+      const dwfTop = new THREE.Mesh(new THREE.DodecahedronGeometry(0.95, 0), rockMat);
+      dwfTop.position.set(-5.9, 1.95, -4.1);
+      const dStream = new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.85, 0.30), new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x0284c7, emissiveIntensity: 0.25, transparent: true, opacity: 0.88 }));
+      dStream.position.set(-4.75, 0.92, -3.15);
       dStream.rotation.y = 0.7; dStream.rotation.x = 0.25;
-      districtPondGroup.add(dwf, dStream);
+      const dFoam = new THREE.Mesh(new THREE.CircleGeometry(1.35, 16), new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.72 }));
+      dFoam.rotation.x = -Math.PI / 2;
+      dFoam.position.set(-4.15, 0.11, -2.65);
+      districtPondGroup.add(dwf, dwfTop, dStream, dFoam);
 
-      // Saung Bambu santai di sisi timur laut
-      const saungBase = new THREE.Mesh(new THREE.CylinderGeometry(1.7, 1.85, 0.2, 6), shoreMat);
-      saungBase.position.set(6.8, 0.1, -4.0);
-      const saungRoof = new THREE.Mesh(new THREE.ConeGeometry(2.15, 1.15, 6), plankMat);
+      // Saung Bambu santai di sisi timur laut lengkap dengan lantai kayu & lampion gantung
+      const saungBase = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.9, 0.24, 6), woodMat);
+      saungBase.position.set(6.8, 0.12, -4.0);
+      const saungDeck = new THREE.Mesh(new THREE.CylinderGeometry(1.65, 1.65, 0.06, 6), plankMat);
+      saungDeck.position.set(6.8, 0.26, -4.0);
+      const saungRoof = new THREE.Mesh(new THREE.ConeGeometry(2.25, 1.2, 6), plankMat);
       saungRoof.position.set(6.8, 2.55, -4.0);
-      districtPondGroup.add(saungBase, saungRoof);
+      const saungLantern = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 8), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+      saungLantern.position.set(6.8, 1.92, -4.0);
+      districtPondGroup.add(saungBase, saungDeck, saungRoof, saungLantern);
       for (let sp = 0; sp < 6; sp++) {
         const sa = (sp / 6) * Math.PI * 2;
-        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.9, 6), woodMat);
-        post.position.set(6.8 + Math.cos(sa) * 1.35, 1.05, -4.0 + Math.sin(sa) * 1.35);
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.08, 1.95, 6), woodMat);
+        post.position.set(6.8 + Math.cos(sa) * 1.38, 1.08, -4.0 + Math.sin(sa) * 1.38);
         districtPondGroup.add(post);
       }
 
-      // Batu pijakan rapi dari trotoar selatan ke dermaga + 2 bangku taman
+      // Semak bunga warna-warni di sekitar tepian kolam
+      const bushMat = new THREE.MeshStandardMaterial({ color: 0x3d6639, roughness: 0.9 });
+      [[-6.2, 1.2, 0xf43f5e], [6.4, 2.6, 0xfacc15], [4.6, -5.8, 0xa855f7], [-2.8, -5.6, 0xfb923c]].forEach(([fx, fz, fCol]) => {
+        const bush = new THREE.Mesh(new THREE.DodecahedronGeometry(0.46, 0), bushMat);
+        bush.position.set(fx, 0.30, fz);
+        const fl = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), new THREE.MeshStandardMaterial({ color: fCol }));
+        fl.position.set(fx, 0.64, fz);
+        districtPondGroup.add(bush, fl);
+      });
+
+      // Batu pijakan rapi dari trotoar selatan ke dermaga + 2 bangku taman bersandaran
       [5.9, 6.6].forEach(sz => {
         const st = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.07, 0.6), shoreMat);
         st.position.set(0, 0.04, sz);
         districtPondGroup.add(st);
       });
       [-3.8, 3.8].forEach(bx => {
-        const bch = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.3, 0.55), woodMat);
-        bch.position.set(bx, 0.2, 5.2);
-        districtPondGroup.add(bch);
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.12, 0.55), plankMat);
+        seat.position.set(bx, 0.34, 5.2);
+        const back = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.42, 0.08), woodMat);
+        back.position.set(bx, 0.58, 5.44);
+        [-0.68, 0.68].forEach(lx => {
+          const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.34, 0.48), woodMat);
+          leg.position.set(bx + lx, 0.17, 5.2);
+          districtPondGroup.add(leg);
+        });
+        districtPondGroup.add(seat, back);
       });
 
       // Dermaga kayu panjang kecamatan (world x: 40.4..43.6, z: 10.9..16.1)
@@ -926,15 +953,38 @@
         plank.position.set(0, 0.34, pz);
         districtPondGroup.add(plank);
       }
+      [0.9, 3.3, 5.6].forEach(pz => {
+        [-1.5, 1.5].forEach(lx => {
+          const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.10, 0.95, 6), woodMat);
+          post.position.set(lx, 0.48, pz);
+          districtPondGroup.add(post);
+        });
+      });
       [-1.5, 1.5].forEach(lx => {
         const rail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 5.0), plankMat);
         rail.position.set(lx, 0.85, 3.3);
         const lPole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 1.5, 6), woodMat);
         lPole.position.set(lx, 1.1, 0.9);
-        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
+        const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), new THREE.MeshBasicMaterial({ color: 0xfef08a }));
         bulb.position.set(lx, 1.9, 0.9);
         districtPondGroup.add(rail, lPole, bulb);
       });
+
+      // Papan nama Kolam Mancing Kecamatan
+      const dCv = document.createElement("canvas");
+      dCv.width = 480; dCv.height = 112;
+      const dCtx = dCv.getContext("2d");
+      dCtx.fillStyle = "#0f172a"; dCtx.fillRect(0, 0, 480, 112);
+      dCtx.strokeStyle = "#38bdf8"; dCtx.lineWidth = 7; dCtx.strokeRect(4, 4, 472, 104);
+      dCtx.fillStyle = "#38bdf8"; dCtx.font = "900 30px sans-serif"; dCtx.textAlign = "center";
+      dCtx.fillText("🎣 KOLAM KECAMATAN", 240, 48);
+      dCtx.fillStyle = "#fde047"; dCtx.font = "700 20px sans-serif";
+      dCtx.fillText("Tersedia Ikan Eksklusif Wilayah!", 240, 86);
+      const dSign = new THREE.Mesh(new THREE.PlaneGeometry(2.9, 0.68), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(dCv), side: THREE.DoubleSide }));
+      dSign.position.set(-2.9, 1.85, 5.6);
+      const dSignPole = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 1.85, 8), woodMat);
+      dSignPole.position.set(-2.9, 0.92, 5.6);
+      districtPondGroup.add(dSign, dSignPole);
 
       // Teratai berlekuk, tanaman air & 5 ikan koi detail berenang
       [[-2.5, -2.0], [2.8, -1.5], [1.9, 2.3], [-3.2, 1.1], [0.4, -3.5]].forEach(([lx, lz], idx) => {
@@ -2755,19 +2805,11 @@
   }
 
   function computeShowOffScale(fishData) {
-    const kg = Math.max(0.5, parseFloat(fishData.kg) || 2);
-    const rarity = fishData.rarity || "Common";
-    // Skala dasar dari berat ikan + lonjakan raksasa untuk ikan langka (hingga segede Gedung Sate!)
-    let base = 0.85 + Math.min(2.4, kg * 0.06);
-    if (rarity === "Rare") base = Math.max(base, 1.9 + Math.min(1.4, kg * 0.05));
-    else if (rarity === "Epic") base = Math.max(base, 3.0 + Math.min(2.2, kg * 0.04));
-    else if (rarity === "Mythic") base = Math.max(base, 5.2 + Math.min(3.5, kg * 0.04));
-    else if (rarity === "Secret") base = Math.max(base, 8.5 + Math.min(4.5, kg * 0.035));
-    else if (rarity === "Cosmic") base = Math.max(base, 12.0 + Math.min(5.0, kg * 0.03));
-    else if (rarity === "Divine") base = Math.max(base, 16.5 + Math.min(6.5, kg * 0.025));
-
-    if (fishData.mut && fishData.mut.includes("Giant")) base *= 1.45;
-    return Math.max(0.85, Math.min(24.0, base));
+    const kg = Math.max(0.2, parseFloat(fishData.kg) || 1);
+    // Ukuran murni mengikuti berat (kg): makin berat kg-nya makin besar (ikan ratusan kg bisa segede Gedung Sate!)
+    let base = 0.62 + Math.pow(kg, 0.56) * 0.46;
+    if (fishData.mut && fishData.mut.includes("Giant")) base *= 1.35;
+    return Math.max(0.65, Math.min(22.0, base));
   }
 
   function create3DFishModel(fishData) {
@@ -2776,19 +2818,20 @@
     const grp = buildDetailedFishBodyMesh({ ...f, ...fishData }, isHigh);
     const kgScale = computeShowOffScale(fishData);
 
-    // Label nama ikan di atas ikan 3D (ukuran proporsional agar tetap terbaca jelas untuk ikan raksasa!)
+    // Label nama ikan ringkas & proporsional di atas ikan (tidak kebesaran!)
     const cv = document.createElement("canvas");
-    cv.width = 360; cv.height = 72;
+    cv.width = 320; cv.height = 60;
     const ctx = cv.getContext("2d");
-    ctx.fillStyle = "rgba(15, 23, 42, 0.9)";
-    ctx.beginPath(); ctx.roundRect(6, 6, 348, 60, 30); ctx.fill();
-    ctx.strokeStyle = f.col || "#fde047"; ctx.lineWidth = 4; ctx.stroke();
-    ctx.fillStyle = "#fde047"; ctx.font = "900 22px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
-    ctx.fillText(`${fishData.name} (${fishData.kg}kg)`, 180, 37);
+    ctx.fillStyle = "rgba(15, 23, 42, 0.86)";
+    ctx.beginPath(); ctx.roundRect(6, 6, 308, 48, 24); ctx.fill();
+    ctx.strokeStyle = f.col || "#fde047"; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = "#fde047"; ctx.font = "900 18px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(`${fishData.name} (${fishData.kg}kg)`, 160, 31);
     const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, depthTest: false }));
-    const invSprScale = Math.max(1, 2.8 / Math.max(1, kgScale * 0.55));
-    spr.scale.set(2.8 * invSprScale, 0.56 * invSprScale, 1);
-    spr.position.set(0, 0.72, 0);
+    const worldW = Math.min(3.2, Math.max(1.25, 1.15 + kgScale * 0.11));
+    const localW = worldW / kgScale;
+    spr.scale.set(localW, localW * 0.19, 1);
+    spr.position.set(0, 0.48 + 0.16 / kgScale, 0);
     grp.add(spr);
 
     grp.userData.showOffScale = kgScale;
@@ -2816,11 +2859,11 @@
     const tNow = now || performance.now();
     const grp = mesh._pirakuShownFishGrp;
     const sc = grp.userData.showOffScale || 1;
-    // Ikan kecil di depan tangan, ikan raksasa melayang gagah di atas/belakang karakter agar tidak menutupi badan pemain!
-    const yPos = sc > 3.5 ? (1.8 + sc * 0.52) : (1.48 + sc * 0.14);
-    const zPos = sc > 3.5 ? (-0.4 - sc * 0.45) : (0.72 + sc * 0.16);
-    grp.position.set(0, yPos + Math.sin(tNow * 0.0035) * Math.min(0.45, 0.08 * sc), zPos);
-    grp.rotation.y = Math.sin(tNow * 0.0022) * 0.35;
+    // Dipegang di depan tangan (melintang kiri-kanan) seperti di Roblox Fisch/Fish It, tidak melayang aneh!
+    const yPos = 0.62 + sc * 0.34;
+    const zPos = 0.50 + sc * 0.28;
+    grp.position.set(0, yPos + Math.sin(tNow * 0.004) * 0.025, zPos);
+    grp.rotation.y = Math.PI / 2 + Math.sin(tNow * 0.0025) * 0.12;
     if (grp.userData.tailGroup) {
       grp.userData.tailGroup.rotation.y = Math.sin(tNow * 0.009) * 0.28;
     }
