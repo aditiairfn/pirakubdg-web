@@ -223,7 +223,7 @@
       doFlush();
       return;
     }
-    _fishCloudSyncTimer = setTimeout(doFlush, 15000);
+    _fishCloudSyncTimer = setTimeout(doFlush, 30000);
   }
   window.addEventListener("pagehide", () => { if (_fishCloudSyncTimer) syncFishingToCloud(true); });
 

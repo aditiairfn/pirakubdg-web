@@ -3809,6 +3809,10 @@ let activeQuestSystem = null;
     appendChatToUI(myIg, msg);
     inp.value = '';
 
+    if (typeof window.broadcastWargaChat === 'function') {
+      window.broadcastWargaChat(myIg, msg, new Date().toISOString());
+    }
+
     if (supabaseClient) {
       try {
         await supabaseClient.from('chat_warga').insert([{ sender_ig: myIg, message: msg }]);
@@ -3816,36 +3820,32 @@ let activeQuestSystem = null;
     }
   };
 
-  if (supabaseClient) {
-    supabaseClient
-      .channel('realtime_chat')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_warga' }, payload => {
-        const myIg = localStorage.getItem('piraku_my_ig') || '';
-        const myIgClean = myIg.trim().toLowerCase().replace(/^@/, '');
-        if (payload.new && payload.new.sender_ig !== myIg) {
-          const rawNew = String(payload.new.message || '');
-          const isSystemCmd = rawNew.startsWith('[BILLBOARD] ') || rawNew.startsWith('[MEGAFON] ');
-          appendChatToUI(payload.new.sender_ig, rawNew, payload.new.created_at);
-          if (!isChatModalOpen && !isSystemCmd) {
-            unreadChatCount++;
-            const badge = document.getElementById('chat-unread-count');
-            if (badge) {
-              badge.innerText = unreadChatCount;
-              badge.style.display = 'flex';
-            }
-          }
-          if (!isSystemCmd) {
-            const p = parsePirakuChatPayload(rawNew);
-            const isTagged = myIgClean && (
-              (p.replyTo && p.replyTo.toLowerCase().replace(/^@/, '') === myIgClean) ||
-              new RegExp('(?:^|\\s)@' + myIgClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(p.body)
-            );
-            showToast((isTagged ? '🔔 ' : '💬 ') + payload.new.sender_ig + ': ' + p.body.substring(0, 24));
-          }
+  window.onPirakuWargaChatBroadcast = function(newRow) {
+    if (!newRow || !newRow.sender_ig) return;
+    const myIg = localStorage.getItem('piraku_my_ig') || '';
+    const myIgClean = myIg.trim().toLowerCase().replace(/^@/, '');
+    if (newRow.sender_ig !== myIg) {
+      const rawNew = String(newRow.message || '');
+      const isSystemCmd = rawNew.startsWith('[BILLBOARD] ') || rawNew.startsWith('[MEGAFON] ');
+      appendChatToUI(newRow.sender_ig, rawNew, newRow.created_at);
+      if (!isChatModalOpen && !isSystemCmd) {
+        unreadChatCount++;
+        const badge = document.getElementById('chat-unread-count');
+        if (badge) {
+          badge.innerText = unreadChatCount;
+          badge.style.display = 'flex';
         }
-      })
-      .subscribe();
-  }
+      }
+      if (!isSystemCmd) {
+        const p = parsePirakuChatPayload(rawNew);
+        const isTagged = myIgClean && (
+          (p.replyTo && p.replyTo.toLowerCase().replace(/^@/, '') === myIgClean) ||
+          new RegExp('(?:^|\\s)@' + myIgClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(p.body)
+        );
+        showToast((isTagged ? '🔔 ' : '💬 ') + newRow.sender_ig + ': ' + p.body.substring(0, 24));
+      }
+    }
+  };
 
   // Polling
   window.openPollingModal = function() {

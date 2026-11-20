@@ -49,7 +49,11 @@
     const sb = window.pirakuSupabase;
     if (!sb) return;
     try {
-      const { data, error } = await sb.from("piraku_wallets").select("citizen_key, display_name, coins, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at, owned_items");
+      const { data, error } = await sb
+        .from("piraku_wallets")
+        .select("citizen_key, display_name, coins, tier_id, equipped_outfit, equipped_vehicle, rental_expires_at, owned_items")
+        .order("coins", { ascending: false })
+        .limit(150);
       if (!error && Array.isArray(data)) {
         let houseChanged = false;
         data.forEach(r => {
@@ -107,8 +111,8 @@
     } catch (e) {}
   }
   window.refreshPirakuRemoteTiers = loadAllRemoteTiersFromSupabase;
-  setTimeout(loadAllRemoteTiersFromSupabase, 150);
-  setInterval(loadAllRemoteTiersFromSupabase, 60000);
+  setTimeout(loadAllRemoteTiersFromSupabase, 2500);
+  setInterval(loadAllRemoteTiersFromSupabase, 300000);
 
   window.getPirakuCitizenKey = function() {
     return getCitizenIdentity().key;
@@ -423,7 +427,7 @@
 
   setTimeout(() => {
     refreshLeaderboard3D();
-    setInterval(() => { if (!document.hidden) refreshLeaderboard3D(); }, 60000);
+    setInterval(() => { if (!document.hidden) refreshLeaderboard3D(); }, 300000);
     requestAnimationFrame(tickWorldLive);
   }, 1500);
 })();

@@ -1100,6 +1100,12 @@
           spawnFloatingBubble(entry.mesh, payload.ig, payload.message);
         }
       })
+      .on('broadcast', { event: 'warga-chat' }, ({ payload }) => {
+        if (!payload || payload.sessionId === mySessionId) return;
+        if (typeof window.onPirakuWargaChatBroadcast === 'function') {
+          window.onPirakuWargaChatBroadcast(payload);
+        }
+      })
       .on('broadcast', { event: 'founder-gift' }, ({ payload }) => {
         if (!payload || !payload.targetIg) return;
         const myClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
@@ -1205,6 +1211,21 @@
   window.broadcastFounderGift = function(targetIg, summaryText) {
     if (mpChannel && mpChannel.state === 'joined') {
       mpChannel.send({ type: 'broadcast', event: 'founder-gift', payload: { targetIg, summaryText } });
+    }
+  };
+
+  window.broadcastWargaChat = function(senderIg, message, createdAt) {
+    if (mpChannel && mpChannel.state === 'joined') {
+      mpChannel.send({
+        type: 'broadcast',
+        event: 'warga-chat',
+        payload: {
+          sessionId: mySessionId,
+          sender_ig: senderIg,
+          message: String(message || '').slice(0, 500),
+          created_at: createdAt || new Date().toISOString()
+        }
+      });
     }
   };
 
