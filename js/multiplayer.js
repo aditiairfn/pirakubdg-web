@@ -1110,7 +1110,13 @@
         if (!payload || !payload.targetIg) return;
         const myClean = (localStorage.getItem('piraku_my_ig') || '').trim().toLowerCase().replace(/^@/, '');
         if (myClean && myClean === String(payload.targetIg).trim().toLowerCase().replace(/^@/, '')) {
-          if (typeof window.reloadPirakuEconomyForCurrentUser === 'function') window.reloadPirakuEconomyForCurrentUser();
+          const reloadPromise = (typeof window.reloadPirakuEconomyForCurrentUser === 'function')
+            ? Promise.resolve(window.reloadPirakuEconomyForCurrentUser())
+            : Promise.resolve();
+          reloadPromise.then(() => {
+            if (typeof window.refreshPirakuFishingForCurrentUser === 'function') window.refreshPirakuFishingForCurrentUser();
+            if (typeof window.forceBroadcastMyAppearance === 'function') window.forceBroadcastMyAppearance();
+          });
           if (typeof window.showToast === 'function') window.showToast('🎁 Hadiah dari Founder @yelclaw: ' + (payload.summaryText || 'Cek dompet & tasmu!'));
         }
       })
