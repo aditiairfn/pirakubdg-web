@@ -1476,12 +1476,7 @@
   </script>
 
   <script defer src="js/piraku-economy.js?v=20261121v34"></script>
-  <script defer src="js/piraku-games.js?v=20261119v3"></script>
-  <script defer src="js/piraku-world-live.js?v=20261121v5"></script>
-  <script defer src="js/piraku-nav-modals.js?v=20261119v19"></script>
-  <script defer src="js/piraku-vfx.js?v=20261118v98"></script>
-  <script defer src="js/piraku-districts.js?v=20261119v17"></script>
-  <script defer src="js/piraku-fishing.js?v=20261121v57"></script>
+  <!-- Modul sekunder dimuat bertahap setelah frame 3D pertama agar LCP & TBT lebih cepat -->
 
   
 
@@ -1714,7 +1709,6 @@
     }, 450);
   </script>
 
-  <script defer src="js/piraku-civic.js?v=20261121v5"></script>
   <script defer src="js/piraku-perf.js?v=20261119v99"></script>
 
 
@@ -1745,6 +1739,26 @@
 
   (function () {
     let loaderHidden = false;
+    let secondaryLoaded = false;
+    function loadSecondaryModules() {
+      if (secondaryLoaded) return;
+      secondaryLoaded = true;
+      const scripts = [
+        'js/piraku-games.js?v=20261119v3',
+        'js/piraku-world-live.js?v=20261121v5',
+        'js/piraku-nav-modals.js?v=20261119v19',
+        'js/piraku-vfx.js?v=20261118v98',
+        'js/piraku-districts.js?v=20261119v17',
+        'js/piraku-fishing.js?v=20261121v57',
+        'js/piraku-civic.js?v=20261121v5'
+      ];
+      scripts.forEach(function (src) {
+        const s = document.createElement('script');
+        s.src = src;
+        s.async = false;
+        document.body.appendChild(s);
+      });
+    }
     function hidePirakuLoader() {
       if (loaderHidden) return;
       loaderHidden = true;
@@ -1754,6 +1768,7 @@
         loader.classList.add('fade-out');
         setTimeout(function () { loader.remove(); }, 160);
       }
+      setTimeout(loadSecondaryModules, 60);
     }
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', function () {
