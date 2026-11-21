@@ -327,7 +327,9 @@
       const val = Math.round(Number(amount) || 0);
       if (!val) return state.coins;
       if (val > 0 && !isFounderBypass(reason)) {
-        if (val > 2500) {
+        const isFishingPayout = /Jual .* di Kopdes|Hadiah Turnamen Galatama/i.test(String(reason || ""));
+        const maxGrant = isFishingPayout ? 250000 : 2500;
+        if (val > maxGrant) {
           console.warn("[PirakuSecurity] Penambahan koin terlalu besar ditolak:", val);
           return state.coins;
         }

@@ -2020,15 +2020,20 @@
     const validFish = toSell.filter(f => (Number(f.coins) || 0) > 0);
     const trashCount = toSell.length - validFish.length;
     const totalCoins = validFish.reduce((s, f) => s + (Number(f.coins) || 0), 0);
-    saveBag(lockedFish);
     if (totalCoins > 0) {
       if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-        window.PirakuEconomy.addCoins(totalCoins, "Jual " + validFish.length + " Ikan di Kopdes");
+        const beforeCoins = Number(window.PirakuEconomy.getCoins ? window.PirakuEconomy.getCoins() : 0) || 0;
+        const afterCoins = Number(window.PirakuEconomy.addCoins(totalCoins, "Jual " + validFish.length + " Ikan di Kopdes")) || 0;
+        if (afterCoins <= beforeCoins) {
+          if (typeof window.showToast === "function") window.showToast("⚠️ Penjualan tertahan rate-limit, coba lagi beberapa detik!");
+          return;
+        }
       } else {
         const prev = parseInt(localStorage.getItem("piraku_coins") || "0", 10) || 0;
         localStorage.setItem("piraku_coins", String(prev + totalCoins));
       }
     }
+    saveBag(lockedFish);
     if (typeof window.showToast === "function") {
       window.showToast(totalCoins > 0
         ? `💰 Terjual ${validFish.length} ikan seharga 🪙 ${totalCoins}!${trashCount > 0 ? ` (${trashCount} sampah dibuang)` : ""}${lockedFish.length > 0 ? ` • 🔒 ${lockedFish.length} disimpan` : ""}`
@@ -2050,12 +2055,17 @@
         return;
       }
     }
-    bag.splice(origIdx, 1);
-    saveBag(bag);
     const c = Number(item.coins) || 0;
     if (c > 0 && window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-      window.PirakuEconomy.addCoins(c, "Jual " + item.name + " di Kopdes");
+      const beforeCoins = Number(window.PirakuEconomy.getCoins ? window.PirakuEconomy.getCoins() : 0) || 0;
+      const afterCoins = Number(window.PirakuEconomy.addCoins(c, "Jual " + item.name + " di Kopdes")) || 0;
+      if (afterCoins <= beforeCoins) {
+        if (typeof window.showToast === "function") window.showToast("⚠️ Penjualan tertahan rate-limit, coba lagi beberapa detik!");
+        return;
+      }
     }
+    bag.splice(origIdx, 1);
+    saveBag(bag);
     if (typeof window.showToast === "function") {
       window.showToast(c > 0 ? `💰 Terjual ${item.name} seharga 🪙 ${c}!` : `🗑️ ${item.name} dibuang (0 🪙).`);
     }
@@ -2311,26 +2321,6 @@
 
   window.setPirakuBagSort = function (mode) {
     window._pirakuBagSort = mode || "newest";
-    window.openFishingHubModal("bag");
-  };
-
-  window.sellSingleCaughtFish = function (origIdx) {
-    if (!isNearKopdes()) {
-      if (typeof window.showToast === "function") window.showToast("🏪 Jalan kaki ke Kopdes Biru Putih dulu untuk menjual ikan!");
-      return;
-    }
-    const bag = getBag();
-    const item = bag[origIdx];
-    if (!item || item.locked) return;
-    bag.splice(origIdx, 1);
-    saveBag(bag);
-    const c = Number(item.coins) || 0;
-    if (c > 0 && window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
-      window.PirakuEconomy.addCoins(c, "Jual " + item.name + " di Kopdes");
-    }
-    if (typeof window.showToast === "function") {
-      window.showToast(c > 0 ? `💰 Terjual ${item.name} seharga 🪙 ${c}!` : `🗑️ ${item.name} dibuang (0 🪙).`);
-    }
     window.openFishingHubModal("bag");
   };
 
@@ -3073,6 +3063,7 @@
       window.pirakuShownFish = null;
       if (typeof window.showToast === "function") window.showToast("🎒 Ikan disimpan kembali ke tas.");
     } else {
+      window.pirakuHoldRodOut = false;
       window.pirakuShownFish = {
         id: item.id,
         name: item.name,
@@ -3113,6 +3104,9 @@
 
   window.toggleHoldFishingRod = function () {
     window.pirakuHoldRodOut = !window.pirakuHoldRodOut;
+    if (window.pirakuHoldRodOut && window.pirakuShownFish) {
+      window.pirakuShownFish = null;
+    }
     const rod = getEquippedRod();
     if (typeof window.showToast === "function") {
       window.showToast(window.pirakuHoldRodOut
