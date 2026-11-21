@@ -1372,19 +1372,65 @@
       }
       tipSection.add(orbitGroup);
     }
+
+    // Referensi Fish It: Spiral Energy Coil & Dorsal Crystal/Dragon Fins untuk joran mahal
+    if (isGold || isCrystal || isCelestial || isGalatama) {
+      const helixPts = [];
+      const helixTurns = isGalatama ? 5.5 : (isCelestial ? 4.5 : (isCrystal ? 3.5 : 2.5));
+      const helixSteps = 28;
+      for (let hi = 0; hi <= helixSteps; hi++) {
+        const u = hi / helixSteps;
+        const ang = u * Math.PI * 2 * helixTurns;
+        const rad = 0.068 - u * 0.022;
+        helixPts.push(new THREE.Vector3(Math.cos(ang) * rad, 0.62 + u * 0.90, Math.sin(ang) * rad));
+      }
+      const helixGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts), 28, isGalatama ? 0.012 : 0.009, 5, false);
+      const helixMat = new THREE.MeshBasicMaterial({ color: isGalatama ? 0xfde047 : tipColor, transparent: true, opacity: 0.9 });
+      tilt.add(new THREE.Mesh(helixGeo, helixMat));
+
+      if (isGalatama) {
+        const helixPts2 = helixPts.map(p => new THREE.Vector3(-p.x, p.y, -p.z));
+        const helixGeo2 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts2), 28, 0.011, 5, false);
+        tilt.add(new THREE.Mesh(helixGeo2, new THREE.MeshBasicMaterial({ color: 0xfb7185, transparent: true, opacity: 0.9 })));
+      }
+    }
+    if (isCrystal || isCelestial || isGalatama) {
+      const finCount = isGalatama ? 5 : (isCelestial ? 4 : 3);
+      for (let fi = 0; fi < finCount; fi++) {
+        const fy = 0.16 + fi * (0.68 / finCount);
+        const finLen = (isGalatama ? 0.20 : 0.15) - fi * 0.014;
+        const finMesh = new THREE.Mesh(
+          new THREE.ConeGeometry(0.026, finLen, 4),
+          new THREE.MeshBasicMaterial({ color: fi % 2 === 0 ? tipColor : 0xfde047, transparent: true, opacity: 0.92 })
+        );
+        finMesh.position.set(0, fy, -0.05 - fi * 0.004);
+        finMesh.rotation.x = -1.05;
+        midSection.add(finMesh);
+      }
+    }
+
     rodGrp.userData.animRings = animRings;
     rodGrp.userData.orbitGroup = orbitGroup;
     rodGrp.userData.collarGroup = collarGroup;
     rodGrp.userData.auraSphere = auraSphere;
     rodGrp.userData.tipGlow = tipGlow;
 
-    // Reel spinning lengkap: dudukan, bodi, spool metalik, bail arm, & engkol
-    const reelBody = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.13, 12), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 }));
+    // Reel spinning lengkap: dudukan, bodi, spool metalik, bail arm, engkol, & glowing core (Carbon+)
+    const reelBody = new THREE.Mesh(new THREE.CylinderGeometry(0.095, 0.095, 0.13, 12), new THREE.MeshStandardMaterial({ color: isHighTier ? 0x1e293b : 0x334155, metalness: 0.85 }));
     reelBody.rotation.z = Math.PI / 2;
     reelBody.position.set(0, 0.56, 0.12);
     const reelSpool = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.15, 12), trimMat);
     reelSpool.rotation.z = Math.PI / 2;
     reelSpool.position.set(0, 0.56, 0.12);
+    if (isCarbon || isHighTier) {
+      const reelHalo = new THREE.Mesh(
+        new THREE.TorusGeometry(0.092, isHighTier ? 0.013 : 0.009, 6, 18),
+        new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: 0.9 })
+      );
+      reelHalo.rotation.y = Math.PI / 2;
+      reelHalo.position.set(0, 0.56, 0.12);
+      tilt.add(reelHalo);
+    }
     const bailArm = new THREE.Mesh(new THREE.TorusGeometry(0.085, 0.009, 6, 12, Math.PI), trimMat);
     bailArm.position.set(0, 0.56, 0.18);
     const crankArm = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.15, 0.025), trimMat);
@@ -1503,10 +1549,20 @@
     sc.add(rip);
     rippleMesh3D = rip;
 
+    const lineColMap = {
+      bamboo: 0xe2e8f0,
+      fiber: 0x93c5fd,
+      carbon: 0x22d3ee,
+      gold: 0xfacc15,
+      crystal: 0x38bdf8,
+      celestial: 0xe879f9,
+      galatama: 0xfb7185
+    };
     const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), bob.position.clone()]);
-    lineMesh3D = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0xe2e8f0 }));
+    lineMesh3D = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: lineColMap[rod.id] || 0xe2e8f0 }));
     sc.add(lineMesh3D);
     updateFishingLine(lineMesh3D, rodMesh3D, bobberMesh3D);
+    spawnRodWaterBurst(bx, pond.waterY, bz, rod.id, false);
 
     window.pirakuFishingSyncState = {
       state: "waiting",
@@ -1614,8 +1670,115 @@
     }
   };
 
+  function getRodAccentColor(rodId) {
+    const map = { bamboo: 0x94a3b8, fiber: 0x60a5fa, carbon: 0x22d3ee, gold: 0xfacc15, crystal: 0x38bdf8, celestial: 0xe879f9, galatama: 0xfb7185 };
+    return map[rodId] || 0x38bdf8;
+  }
+
+  function spawnRodWaterBurst(wx, wy, wz, rodId, isCatch) {
+    const sc = window.pirakuScene;
+    if (!sc || typeof THREE === "undefined") return;
+    const tierOrder = { bamboo: 0, fiber: 1, carbon: 2, gold: 3, crystal: 4, celestial: 5, galatama: 6 };
+    const lvl = tierOrder[rodId] || 0;
+    const col = getRodAccentColor(rodId);
+    const wave = new THREE.Mesh(
+      new THREE.RingGeometry(0.18, 0.30 + lvl * 0.03, 22),
+      new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: 0.85 })
+    );
+    wave.rotation.x = -Math.PI / 2;
+    wave.position.set(wx, wy + 0.04, wz);
+    sc.add(wave);
+    const pCount = isCatch ? (4 + lvl * 2) : (lvl >= 1 ? 2 + lvl * 2 : 0);
+    const parts = [];
+    for (let i = 0; i < pCount; i++) {
+      const a = (i / Math.max(1, pCount)) * Math.PI * 2 + Math.random() * 0.3;
+      const spd = 0.04 + lvl * 0.012;
+      const p = new THREE.Mesh(
+        lvl >= 4 ? new THREE.OctahedronGeometry(0.06, 0) : new THREE.SphereGeometry(0.045, 6, 6),
+        new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? col : 0xfde047, transparent: true, opacity: 0.95 })
+      );
+      p.position.set(wx, wy + 0.08, wz);
+      sc.add(p);
+      parts.push({ m: p, vx: Math.cos(a) * spd, vy: 0.07 + Math.random() * (0.05 + lvl * 0.01), vz: Math.sin(a) * spd });
+    }
+    const start = performance.now();
+    const dur = isCatch ? 850 : 620;
+    function step() {
+      const t = (performance.now() - start) / dur;
+      if (t >= 1) {
+        sc.remove(wave);
+        parts.forEach(pt => sc.remove(pt.m));
+        return;
+      }
+      wave.scale.setScalar(1 + t * (2.2 + lvl * 0.45));
+      wave.material.opacity = 0.85 * (1 - t);
+      parts.forEach(pt => {
+        pt.m.position.x += pt.vx;
+        pt.m.position.y += pt.vy;
+        pt.m.position.z += pt.vz;
+        pt.vy -= 0.004;
+        pt.m.rotation.y += 0.15;
+        pt.m.material.opacity = 0.95 * (1 - t);
+      });
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function playRodTierSfx(phase, rodId, extra) {
+    if (typeof window.playSynthTone !== "function") return;
+    const lvlMap = { bamboo: 0, fiber: 1, carbon: 2, gold: 3, crystal: 4, celestial: 5, galatama: 6 };
+    const lvl = lvlMap[rodId] || 0;
+    const play = (freq, type, dur, delayMs) => {
+      if (!delayMs) window.playSynthTone(freq, type, dur);
+      else setTimeout(() => { if (typeof window.playSynthTone === "function") window.playSynthTone(freq, type, dur); }, delayMs);
+    };
+    if (phase === "cast") {
+      const base = extra ? 740 : 500;
+      play(base + lvl * 45, lvl >= 3 ? "triangle" : "sine", 0.13, 0);
+      if (lvl >= 2) play(base + lvl * 85, "sine", 0.14, 65);
+      if (lvl >= 4) play(base + lvl * 130, "triangle", 0.16, 130);
+      if (lvl >= 6) play(1320, "sine", 0.22, 195);
+    } else if (phase === "bite") {
+      play(780 + lvl * 55, "triangle", 0.18, 0);
+      if (lvl >= 2) play(980 + lvl * 65, "triangle", 0.18, 70);
+      if (lvl >= 5) play(1318, "sine", 0.24, 140);
+    } else if (phase === "reelTick") {
+      const prog = Number(extra && extra.prog) || 0;
+      const perf = Boolean(extra && extra.perfect);
+      play((perf ? 540 : 420) + lvl * 28 + prog * 4.5, lvl >= 4 ? "triangle" : "sine", 0.045, 0);
+      if (lvl >= 5 && perf) play(1040 + prog * 4, "sine", 0.035, 25);
+    } else if (phase === "catch") {
+      if (lvl <= 1) {
+        play(784, "sine", 0.24, 0);
+      } else if (lvl === 2) {
+        play(784, "triangle", 0.16, 0);
+        play(1046, "sine", 0.24, 90);
+      } else if (lvl === 3) {
+        play(659, "triangle", 0.14, 0);
+        play(880, "triangle", 0.16, 80);
+        play(1175, "sine", 0.28, 165);
+      } else if (lvl === 4) {
+        play(784, "sine", 0.14, 0);
+        play(1046, "triangle", 0.16, 75);
+        play(1318, "sine", 0.28, 150);
+      } else if (lvl === 5) {
+        play(659, "triangle", 0.14, 0);
+        play(988, "triangle", 0.16, 70);
+        play(1318, "sine", 0.18, 140);
+        play(1568, "sine", 0.34, 215);
+      } else {
+        play(523, "triangle", 0.14, 0);
+        play(784, "triangle", 0.15, 65);
+        play(1046, "triangle", 0.16, 130);
+        play(1318, "sine", 0.18, 195);
+        play(1568, "sine", 0.40, 260);
+      }
+    }
+  }
+
   // ================= TURNAMEN GALATAMA 3 MENIT & BANNER HUJAN 2X LUCK =================
-  const galatamaEvent = { active: false, endsAt: 0, bestKg: 0, bestFishName: "", catches: 0, cooldownUntil: 0 };
+  const galatamaEvent = { active: false, endsAt: 0, bestKg: 0, bestFishName: "", bestCatcher: "", catches: 0, cooldownUntil: 0 };
 
   window.startPirakuGalatama = function () {
     const now = Date.now();
@@ -1632,6 +1795,7 @@
     galatamaEvent.endsAt = now + 180000;
     galatamaEvent.bestKg = 0;
     galatamaEvent.bestFishName = "";
+    galatamaEvent.bestCatcher = "";
     galatamaEvent.catches = 0;
     lastPondSig = "";
     if (typeof window.playSynthTone === "function") window.playSynthTone(880, "triangle", 0.22);
@@ -1653,17 +1817,18 @@
       if (pill) pill.style.display = "none";
       if (galatamaEvent.catches > 0 && galatamaEvent.bestKg > 0) {
         const reward = Math.min(250, Math.round(60 + galatamaEvent.bestKg * 4));
+        const winnerName = galatamaEvent.bestCatcher || (localStorage.getItem("piraku_my_ig") || "Warga");
         if (window.PirakuEconomy && typeof window.PirakuEconomy.addCoins === "function") {
           window.PirakuEconomy.addCoins(reward, "Hadiah Turnamen Galatama");
         }
         if (typeof window.grantPirakuXP === "function") window.grantPirakuXP(50, "Turnamen Galatama");
-        if (typeof window.playSynthTone === "function") window.playSynthTone(1046, "sine", 0.35);
+        playRodTierSfx("catch", "galatama");
+        showGalatamaWinnerBanner(winnerName, galatamaEvent.bestFishName, galatamaEvent.bestKg, galatamaEvent.catches, reward);
         if (typeof window.showToast === "function") {
-          window.showToast(`🏆 Galatama Selesai! Terberat: ${galatamaEvent.bestFishName} (${galatamaEvent.bestKg.toFixed(1)} kg) → +${reward} 🪙 & +50 XP!`);
+          window.showToast(`🏆 Juara Galatama: ${winnerName} (${galatamaEvent.bestFishName} ${galatamaEvent.bestKg.toFixed(1)} kg) → +${reward} 🪙!`);
         }
-        if (galatamaEvent.bestKg >= 10 && typeof window.broadcastChatMessage === "function") {
-          const myIg = localStorage.getItem("piraku_my_ig") || "Warga";
-          window.broadcastChatMessage(`🏆 ${myIg} menuntaskan Lomba Galatama dengan rekor ${galatamaEvent.bestFishName} (${galatamaEvent.bestKg.toFixed(1)} kg)!`);
+        if (typeof window.broadcastWargaChat === "function") {
+          window.broadcastWargaChat("@System", `🏆 PEMENANG GALATAMA: ${winnerName} dengan ${galatamaEvent.bestFishName} (${galatamaEvent.bestKg.toFixed(1)} kg)!`);
         }
       } else if (typeof window.showToast === "function") {
         window.showToast("🏆 Waktu Galatama habis! Belum ada ikan yang tertangkap.");
@@ -1679,8 +1844,32 @@
     const sec = Math.ceil(remMs / 1000);
     const mm = String(Math.floor(sec / 60)).padStart(2, "0");
     const ss = String(sec % 60).padStart(2, "0");
-    pill.innerHTML = `🏆 Galatama ${mm}:${ss} • Rekor: <span style="color:#4ade80;">${galatamaEvent.bestKg.toFixed(1)} kg</span> (${galatamaEvent.catches} ikan)`;
+    const leaderTxt = galatamaEvent.bestCatcher ? ` • Juara Sementara: ${galatamaEvent.bestCatcher}` : "";
+    pill.innerHTML = `🏆 Galatama ${mm}:${ss} • Rekor: <span style="color:#4ade80;">${galatamaEvent.bestKg.toFixed(1)} kg</span> (${galatamaEvent.catches} ikan)${leaderTxt}`;
     pill.style.display = "block";
+  }
+
+  function showGalatamaWinnerBanner(winnerName, fishName, kg, catches, reward) {
+    let b = document.getElementById("piraku-galatama-winner-banner");
+    if (!b && document.body) {
+      b = document.createElement("div");
+      b.id = "piraku-galatama-winner-banner";
+      b.style.cssText = "position:fixed;top:106px;left:50%;transform:translateX(-50%);z-index:9600;background:linear-gradient(135deg,rgba(120,53,15,0.96),rgba(15,23,42,0.96));border:2px solid #facc15;color:#fef08a;padding:10px 18px;border-radius:16px;font-size:12px;font-weight:900;box-shadow:0 14px 36px rgba(0,0,0,0.65);pointer-events:none;text-align:center;max-width:90vw;transition:opacity 0.35s;";
+      document.body.appendChild(b);
+    }
+    if (!b) return;
+    b.innerHTML = `
+      <div style="font-size:13.5px;color:#fde047;margin-bottom:2px;">🏆 PEMENANG TURNAMEN GALATAMA!</div>
+      <div style="font-size:12px;color:#fff;">Juara: <span style="color:#4ade80;">${winnerName}</span> • 🐟 ${fishName} (${kg.toFixed(1)} kg)</div>
+      <div style="font-size:10.5px;color:#cbd5e1;margin-top:2px;">Total ${catches} tangkapan • Hadiah +${reward} 🪙 &amp; +50 XP</div>
+    `;
+    b.style.opacity = "1";
+    b.style.display = "block";
+    clearTimeout(b._hideT);
+    b._hideT = setTimeout(() => {
+      b.style.opacity = "0";
+      setTimeout(() => { if (b) b.style.display = "none"; }, 360);
+    }, 6500);
   }
 
   let _lastWasRainEvent = false;
@@ -1792,7 +1981,7 @@
       castLuckBonus = isPerfectCast ? 0.30 : (isGoodCast ? 0.10 : 0);
       fishState = "waiting";
       spawn3DFishingVisuals(pond);
-      if (typeof window.playSynthTone === "function") window.playSynthTone(isPerfectCast ? 760 : 520, "sine", 0.14);
+      playRodTierSfx("cast", rod.id, isPerfectCast);
 
       const delayMs = (1500 + Math.random() * 1400) * (bobber.biteSpeed || 1.0) * (isPerfectCast ? 0.8 : 1.0);
 
@@ -1801,7 +1990,7 @@
         clearTimeout(waitTimer);
         fishState = "bite";
         if (window.pirakuFishingSyncState) window.pirakuFishingSyncState.state = "bite";
-        if (typeof window.playSynthTone === "function") window.playSynthTone(880, "triangle", 0.24);
+        playRodTierSfx("bite", rod.id);
         if (navigator && typeof navigator.vibrate === "function") {
           try { navigator.vibrate([45, 30, 70]); } catch (_) {}
         }
@@ -1940,9 +2129,9 @@
       catchProgress += (isPerfect ? 30 : inside ? 22 : -5) * dt;
       catchProgress = Math.max(0, Math.min(100, catchProgress));
 
-      if (inside && now - lastTickSound > 160 && typeof window.playSynthTone === "function") {
+      if (inside && now - lastTickSound > 160) {
         lastTickSound = now;
-        window.playSynthTone((isPerfect ? 520 : 420) + catchProgress * 4.5, "sine", 0.04);
+        playRodTierSfx("reelTick", rod.id, { prog: catchProgress, perfect: isPerfect });
       }
 
       const barEl = document.getElementById("pf-bar");
@@ -2038,8 +2227,9 @@
       if (kg > galatamaEvent.bestKg) {
         galatamaEvent.bestKg = kg;
         galatamaEvent.bestFishName = fish.name;
+        galatamaEvent.bestCatcher = localStorage.getItem("piraku_my_ig") || "Warga";
         if (typeof window.showToast === "function") {
-          window.showToast(`🏆 Rekor Galatama Baru: ${fish.name} (${kg} kg)!`);
+          window.showToast(`🏆 Rekor Galatama Baru (${galatamaEvent.bestCatcher}): ${fish.name} (${kg} kg)!`);
         }
       }
     }
@@ -2068,7 +2258,10 @@
     saveDex(dex);
 
     try {
-      if (typeof window.playSynthTone === "function") window.playSynthTone(980, "sine", 0.35);
+      playRodTierSfx("catch", rod.id);
+      if (bobberMesh3D && bobberMesh3D.position) {
+        spawnRodWaterBurst(bobberMesh3D.position.x, bobberMesh3D.position.y, bobberMesh3D.position.z, rod.id, true);
+      }
       if (typeof window.grantPirakuXP === "function") {
         const xpAmt = fish.rarity === "Mythic" ? 60 : fish.rarity === "Epic" ? 35 : fish.rarity === "Rare" ? 22 : 10;
         window.grantPirakuXP(xpAmt, "Mancing " + fish.name);
