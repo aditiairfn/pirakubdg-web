@@ -713,7 +713,8 @@
             jump: isJump,
             fishing: fishObj,
             showFish: showFishObj,
-            rodCarry: rodCarryObj
+            rodCarry: rodCarryObj,
+            mapId: currentWorldRoomId
           }
         });
       }
@@ -838,7 +839,7 @@
     const x = am && am.position ? Number(am.position.x.toFixed(3)) : defaultX;
     const z = am && am.position ? Number(am.position.z.toFixed(3)) : defaultZ;
     const rotY = am && am.rotation ? Number(am.rotation.y.toFixed(3)) : 0;
-    mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x, z, rotY } });
+    mpChannel.send({ type: "broadcast", event: "pos", payload: { sessionId: id.sessionId, ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x, z, rotY, mapId: currentWorldRoomId } });
   }
   window.forceBroadcastMyAppearance = async function() {
     lastBroadcastTime = 0;
@@ -849,7 +850,7 @@
       const px = am && am.position ? Number(am.position.x.toFixed(2)) : 0;
       const pz = am && am.position ? Number(am.position.z.toFixed(2)) : 2.5;
       try {
-        await mpChannel.track({ ig: id.ig, kecamatan: id.kecamatan, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x: px, z: pz, rotY: 0, online_at: new Date().toISOString() });
+        await mpChannel.track({ ig: id.ig, kecamatan: id.kecamatan, mapId: currentWorldRoomId, color: id.color, acc: id.acc, role: id.role, tierId: id.tierId, tierName: id.tierName, tierBadge: id.tierBadge, shopOutfit: id.shopOutfit, shopVehicle: id.shopVehicle, x: px, z: pz, rotY: 0, online_at: new Date().toISOString() });
       } catch (_) {}
     }
   };
@@ -1040,6 +1041,11 @@
     });
     remoteAudioEls.clear();
 
+    if (useCloudflareRealtime() && mpChannel && mpChannel.state === "joined") {
+      if (typeof window.forceBroadcastMyAppearance === "function") window.forceBroadcastMyAppearance();
+      return;
+    }
+
     if (mpChannel) {
       try {
         if (typeof mpChannel.unsubscribe === "function") mpChannel.unsubscribe();
@@ -1060,7 +1066,7 @@
 
     const myInfo = getMyIdentity();
     mpChannel = useCf
-      ? createCloudflareChannel('/ws/room/' + encodeURIComponent(currentWorldRoomId), mySessionId)
+      ? createCloudflareChannel('/ws/room/bandung_wetan', mySessionId)
       : supabaseClient.channel(getRoomChannelName(), {
           config: {
             presence: { key: mySessionId },
@@ -1075,8 +1081,13 @@
           if (sid === mySessionId) return;
           const info = Array.isArray(st[sid]) && st[sid].length ? st[sid][st[sid].length - 1] : null;
           if (info) {
-            const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, tierId: info.tierId, tierName: info.tierName, tierBadge: info.tierBadge, shopOutfit: info.shopOutfit || null, shopVehicle: info.shopVehicle || null, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
-            if (en) en.lastSeen = Date.now();
+            const infoMap = String(info.mapId || "bandung_wetan").toLowerCase();
+            if (infoMap === currentWorldRoomId) {
+              const en = getOrCreateRemoteAvatar({ sessionId: sid, ig: info.ig, kecamatan: info.kecamatan, color: info.color, acc: info.acc, role: info.role, tierId: info.tierId, tierName: info.tierName, tierBadge: info.tierBadge, shopOutfit: info.shopOutfit || null, shopVehicle: info.shopVehicle || null, x: info.x ?? 0, z: info.z ?? 2.5, rotY: info.rotY ?? 0 });
+              if (en) en.lastSeen = Date.now();
+            } else {
+              removeRemoteAvatar(sid);
+            }
           }
         });
         const state = mpChannel.presenceState();
@@ -1101,6 +1112,12 @@
         }
       })
       .on('broadcast', { event: 'pos' }, ({ payload }) => {
+        if (!payload) return;
+        const pMap = String(payload.mapId || "bandung_wetan").toLowerCase();
+        if (pMap !== currentWorldRoomId) {
+          if (payload.sessionId) removeRemoteAvatar(payload.sessionId);
+          return;
+        }
         const entry = getOrCreateRemoteAvatar(payload);
         if (entry) {
           entry.targetX = payload.x;
@@ -1231,6 +1248,7 @@
           await mpChannel.track({
             ig: myInfo.ig,
             kecamatan: myInfo.kecamatan,
+            mapId: currentWorldRoomId,
             online_at: new Date().toISOString()
           });
         }
