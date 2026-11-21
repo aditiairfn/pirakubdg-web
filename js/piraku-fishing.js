@@ -1225,20 +1225,32 @@
         const wingMat = new THREE.MeshBasicMaterial({
           color: isGalatama ? 0xfb7185 : 0xe879f9,
           transparent: true,
-          opacity: 0.92
+          opacity: 0.94
         });
-        const bladeCount = isGalatama ? 4 : 2;
+        const bladeCount = isGalatama ? 6 : 4;
         for (let i = 0; i < bladeCount; i++) {
           const a = (i / bladeCount) * Math.PI * 2;
-          const wing = new THREE.Mesh(new THREE.ConeGeometry(0.055, isGalatama ? 0.34 : 0.28, 4), i % 2 === 0 ? trimMat : wingMat);
-          wing.position.set(Math.cos(a) * 0.15, 0.08, Math.sin(a) * 0.15);
-          wing.rotation.z = -Math.cos(a) * 0.95;
-          wing.rotation.x = Math.sin(a) * 0.95;
+          const wing = new THREE.Mesh(
+            new THREE.ConeGeometry(isGalatama ? 0.065 : 0.055, isGalatama ? 0.42 : 0.34, 4),
+            i % 2 === 0 ? trimMat : wingMat
+          );
+          wing.position.set(Math.cos(a) * (isGalatama ? 0.19 : 0.16), 0.10, Math.sin(a) * (isGalatama ? 0.19 : 0.16));
+          wing.rotation.z = -Math.cos(a) * 1.02;
+          wing.rotation.x = Math.sin(a) * 1.02;
           collarGroup.add(wing);
         }
-        const crownRing = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.016, 8, 20), trimMat);
+        const crownRing = new THREE.Mesh(new THREE.TorusGeometry(isGalatama ? 0.18 : 0.15, 0.018, 8, 22), trimMat);
         crownRing.rotation.x = Math.PI / 2;
         collarGroup.add(crownRing);
+        if (isGalatama) {
+          const innerCrownRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.13, 0.015, 8, 20),
+            new THREE.MeshBasicMaterial({ color: 0xfb7185, transparent: true, opacity: 0.92 })
+          );
+          innerCrownRing.rotation.x = Math.PI / 2;
+          innerCrownRing.position.y = 0.08;
+          collarGroup.add(innerCrownRing);
+        }
       }
       tilt.add(collarGroup);
     }
@@ -1266,10 +1278,22 @@
 
     const tipColor = isGalatama ? 0xfb7185 : (isCelestial ? 0xf0abfc : (isCrystal ? 0x38bdf8 : (isGold ? 0xfde047 : (isCarbon ? 0x22d3ee : (isFiber ? 0x60a5fa : 0x38bdf8)))));
     const tipGeo = isGalatama
-      ? new THREE.IcosahedronGeometry(0.135, 0)
-      : ((isCrystal || isCelestial) ? new THREE.OctahedronGeometry(0.115, 0) : new THREE.SphereGeometry(isGold ? 0.085 : (isCarbon ? 0.058 : 0.042), 10, 10));
+      ? new THREE.IcosahedronGeometry(0.16, 0)
+      : ((isCrystal || isCelestial) ? new THREE.OctahedronGeometry(isCelestial ? 0.135 : 0.115, 0) : new THREE.SphereGeometry(isGold ? 0.085 : (isCarbon ? 0.058 : 0.042), 10, 10));
     const tipGlow = new THREE.Mesh(tipGeo, new THREE.MeshBasicMaterial({ color: tipColor }));
     tipGlow.position.set(0, 0.96, 0);
+    if (isCelestial || isGalatama) {
+      // Tanduk Naga / Cakar Mahkota Emas mengapit kristal ujung joran
+      const prongCount = isGalatama ? 4 : 2;
+      for (let pi = 0; pi < prongCount; pi++) {
+        const pa = (pi / prongCount) * Math.PI * 2;
+        const prong = new THREE.Mesh(new THREE.ConeGeometry(0.025, isGalatama ? 0.22 : 0.18, 4), trimMat);
+        prong.position.set(Math.cos(pa) * 0.10, 0.94, Math.sin(pa) * 0.10);
+        prong.rotation.z = -Math.cos(pa) * 0.45;
+        prong.rotation.x = Math.sin(pa) * 0.45;
+        tipSection.add(prong);
+      }
+    }
     const tipMarker = new THREE.Object3D();
     tipMarker.position.set(0, 0.96, 0);
     tipSection.add(tipGlow, tipMarker);
@@ -1359,15 +1383,15 @@
       // Kristal / Bintang / Permata Mahkota mengorbit di ujung joran
       orbitGroup = new THREE.Group();
       orbitGroup.position.set(0, 0.96, 0);
-      const orbCount = isGalatama ? 6 : (isCelestial ? 5 : (isCrystal ? 4 : 3));
-      const orbDist = isGalatama ? 0.32 : (isCelestial ? 0.28 : 0.22);
+      const orbCount = isGalatama ? 8 : (isCelestial ? 6 : (isCrystal ? 4 : 3));
+      const orbDist = isGalatama ? 0.36 : (isCelestial ? 0.31 : 0.22);
       for (let oi = 0; oi < orbCount; oi++) {
         const oa = (oi / orbCount) * Math.PI * 2;
         const orb = new THREE.Mesh(
-          new THREE.OctahedronGeometry(isGalatama ? 0.048 : 0.042, 0),
+          new THREE.OctahedronGeometry(isGalatama ? 0.054 : (isCelestial ? 0.046 : 0.042), 0),
           new THREE.MeshBasicMaterial({ color: oi % 2 === 0 ? tipColor : 0xfde047 })
         );
-        orb.position.set(Math.cos(oa) * orbDist, Math.sin(oa * 2) * 0.06, Math.sin(oa) * orbDist);
+        orb.position.set(Math.cos(oa) * orbDist, Math.sin(oa * 2) * 0.07, Math.sin(oa) * orbDist);
         orbitGroup.add(orb);
       }
       tipSection.add(orbitGroup);
@@ -1376,35 +1400,35 @@
     // Referensi Fish It: Spiral Energy Coil & Dorsal Crystal/Dragon Fins untuk joran mahal
     if (isGold || isCrystal || isCelestial || isGalatama) {
       const helixPts = [];
-      const helixTurns = isGalatama ? 5.5 : (isCelestial ? 4.5 : (isCrystal ? 3.5 : 2.5));
-      const helixSteps = 28;
+      const helixTurns = isGalatama ? 6.0 : (isCelestial ? 5.0 : (isCrystal ? 3.5 : 2.5));
+      const helixSteps = 30;
       for (let hi = 0; hi <= helixSteps; hi++) {
         const u = hi / helixSteps;
         const ang = u * Math.PI * 2 * helixTurns;
-        const rad = 0.068 - u * 0.022;
+        const rad = 0.070 - u * 0.022;
         helixPts.push(new THREE.Vector3(Math.cos(ang) * rad, 0.62 + u * 0.90, Math.sin(ang) * rad));
       }
-      const helixGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts), 28, isGalatama ? 0.012 : 0.009, 5, false);
-      const helixMat = new THREE.MeshBasicMaterial({ color: isGalatama ? 0xfde047 : tipColor, transparent: true, opacity: 0.9 });
+      const helixGeo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts), 30, isGalatama ? 0.013 : 0.010, 5, false);
+      const helixMat = new THREE.MeshBasicMaterial({ color: isGalatama ? 0xfde047 : tipColor, transparent: true, opacity: 0.92 });
       tilt.add(new THREE.Mesh(helixGeo, helixMat));
 
-      if (isGalatama) {
+      if (isGalatama || isCelestial) {
         const helixPts2 = helixPts.map(p => new THREE.Vector3(-p.x, p.y, -p.z));
-        const helixGeo2 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts2), 28, 0.011, 5, false);
-        tilt.add(new THREE.Mesh(helixGeo2, new THREE.MeshBasicMaterial({ color: 0xfb7185, transparent: true, opacity: 0.9 })));
+        const helixGeo2 = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(helixPts2), 30, 0.011, 5, false);
+        tilt.add(new THREE.Mesh(helixGeo2, new THREE.MeshBasicMaterial({ color: isGalatama ? 0xfb7185 : 0xfde047, transparent: true, opacity: 0.92 })));
       }
     }
     if (isCrystal || isCelestial || isGalatama) {
-      const finCount = isGalatama ? 5 : (isCelestial ? 4 : 3);
+      const finCount = isGalatama ? 7 : (isCelestial ? 5 : 3);
       for (let fi = 0; fi < finCount; fi++) {
-        const fy = 0.16 + fi * (0.68 / finCount);
-        const finLen = (isGalatama ? 0.20 : 0.15) - fi * 0.014;
+        const fy = 0.12 + fi * (0.74 / finCount);
+        const finLen = (isGalatama ? 0.24 : (isCelestial ? 0.19 : 0.15)) - fi * 0.012;
         const finMesh = new THREE.Mesh(
-          new THREE.ConeGeometry(0.026, finLen, 4),
-          new THREE.MeshBasicMaterial({ color: fi % 2 === 0 ? tipColor : 0xfde047, transparent: true, opacity: 0.92 })
+          new THREE.ConeGeometry(isGalatama ? 0.032 : 0.026, finLen, 4),
+          new THREE.MeshBasicMaterial({ color: fi % 2 === 0 ? tipColor : 0xfde047, transparent: true, opacity: 0.94 })
         );
-        finMesh.position.set(0, fy, -0.05 - fi * 0.004);
-        finMesh.rotation.x = -1.05;
+        finMesh.position.set(0, fy, -0.052 - fi * 0.004);
+        finMesh.rotation.x = -1.08;
         midSection.add(finMesh);
       }
     }
@@ -1933,6 +1957,7 @@
       return;
     }
     const pond = getActivePond();
+    const rod = getEquippedRod();
     const bobber = getEquippedBobber();
     fishState = "casting";
     setMobileControlsHidden(true);
