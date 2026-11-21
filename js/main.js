@@ -4939,11 +4939,15 @@ let activeQuestSystem = null;
 
   function applyBatterySaverState(isOn) {
     window.pirakuPotatoMode = !!isOn;
+    document.body.classList.toggle('piraku-anti-lag', !!isOn);
     if (typeof renderer !== 'undefined' && renderer) {
-      renderer.setPixelRatio(isOn ? 0.75 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.15 : 1.35));
+      renderer.setPixelRatio(isOn ? 0.75 : Math.min(window.devicePixelRatio, isPirakuMobile ? 1.1 : 1.35));
       renderer.setSize(window.innerWidth, window.innerHeight, false);
-      renderer.shadowMap.autoUpdate = false;
-      if (!isOn) renderer.shadowMap.needsUpdate = true;
+      if (renderer.shadowMap) {
+        renderer.shadowMap.enabled = !isOn;
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = true;
+      }
     }
     const badge = document.getElementById('battery-saver-badge');
     if (badge) {

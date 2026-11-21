@@ -1504,19 +1504,25 @@
 
   
   (function startOnlineNameTagLoop() {
-    function tickTags() {
-      try {
-        injectBubbleLayer();
-        const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
-        if (selfMesh) {
-          syncOnlineNameTag("self", selfMesh, getMyIdentity().ig, true);
-        }
-        remotePlayers.forEach((en, sid) => {
-          if (en && en.mesh) {
-            syncOnlineNameTag(sid, en.mesh, en.ig || "Wargi", false);
+    const isMobTag = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 820;
+    let lastTagTs = 0;
+    function tickTags(now) {
+      const tagInterval = window.pirakuPotatoMode ? 66 : (isMobTag ? 32 : 0);
+      if (!document.hidden && (!tagInterval || (now || 0) - lastTagTs >= tagInterval)) {
+        lastTagTs = now || 0;
+        try {
+          injectBubbleLayer();
+          const selfMesh = typeof window.getMyActivePlayerMesh === "function" ? window.getMyActivePlayerMesh() : null;
+          if (selfMesh) {
+            syncOnlineNameTag("self", selfMesh, getMyIdentity().ig, true);
           }
-        });
-      } catch (_) {}
+          remotePlayers.forEach((en, sid) => {
+            if (en && en.mesh) {
+              syncOnlineNameTag(sid, en.mesh, en.ig || "Wargi", false);
+            }
+          });
+        } catch (_) {}
+      }
       requestAnimationFrame(tickTags);
     }
     requestAnimationFrame(tickTags);

@@ -19,16 +19,22 @@
     if (!isTabHidden) markActive();
   });
 
-  // Optimasi CSS ringan di mobile agar GPU tidak panas karena backdrop-filter berlapis
-  if (isMobile) {
+  // Optimasi CSS ringan di mobile & Mode Anti Lag agar GPU tidak panas karena backdrop-filter berlapis
+  if (isMobile || true) {
     const style = document.createElement("style");
     style.id = "piraku-mobile-thermal-css";
     style.textContent = `
       @media (max-width: 820px) {
-        .bottom-nav-dock, #piraku-civic-modal, #bottom-control-panel {
-          backdrop-filter: blur(4px) !important;
-          -webkit-backdrop-filter: blur(4px) !important;
+        .bottom-nav-dock, #piraku-civic-modal, #bottom-control-panel,
+        #piraku-minimap-radar, #piraku-guided-quest-hud, #piraku-fishing-prompt,
+        #hud-top, .hud-panel, .hud-card, .top-bar {
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
         }
+      }
+      body.piraku-anti-lag * {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
       }
     `;
     document.head.appendChild(style);
@@ -41,7 +47,7 @@
     renderer.__pirakuThermalPatched = true;
 
     // 1. Batasi pixelRatio agar GPU HP tidak merender 3x-4x lipat piksel
-    const maxDpr = isMobile ? 1.35 : 1.75;
+    const maxDpr = isMobile ? 1.1 : 1.75;
     const targetDpr = Math.min(window.devicePixelRatio || 1, maxDpr);
     renderer.setPixelRatio(targetDpr);
     renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -70,9 +76,9 @@
       // - Modal terbuka / idle > 4.5 detik: 15 FPS (66ms) -> HP langsung dingin
       // - Aktif di Mobile: 36 FPS (27ms) -> mulus tapi hemat GPU
       // - Aktif di Desktop: 60 FPS (16ms)
-      let minFrameInterval = isMobile ? 27 : 15;
+      let minFrameInterval = window.pirakuPotatoMode ? 33 : (isMobile ? 27 : 15);
       if (isModalOpen || isIdle) {
-        minFrameInterval = 66;
+        minFrameInterval = window.pirakuPotatoMode ? 85 : 66;
       }
 
       if (now - lastRenderTimestamp < minFrameInterval) {
@@ -83,7 +89,7 @@
     };
 
     window.addEventListener("resize", function () {
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxDpr));
+      renderer.setPixelRatio(window.pirakuPotatoMode ? 0.75 : Math.min(window.devicePixelRatio || 1, maxDpr));
     }, { passive: true });
   }
 
@@ -100,13 +106,21 @@
 (function () {
   const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) || window.innerWidth <= 820;
 
+  let lastCullX = 999999;
+  let lastCullZ = 999999;
   function runSceneCulling() {
+    if (document.hidden) return;
     const scene = window.pirakuScene;
     const cam = window.pirakuCamera || window.camera;
     if (!scene || !cam) return;
 
     const camPos = cam.position;
-    const maxDistSq = isMobileDevice ? 68 * 68 : 115 * 115;
+    const moveDx = camPos.x - lastCullX;
+    const moveDz = camPos.z - lastCullZ;
+    if (moveDx * moveDx + moveDz * moveDz < 12.25) return; // Skip jika kamera belum pindah > 3.5 unit
+    lastCullX = camPos.x;
+    lastCullZ = camPos.z;
+    const maxDistSq = window.pirakuPotatoMode ? (44 * 44) : (isMobileDevice ? 68 * 68 : 115 * 115);
 
     scene.traverse(function (obj) {
       if (!obj.isMesh && !obj.isGroup) return;
@@ -139,6 +153,6 @@
     }
   }
 
-  // Jalankan distance culling tiap 600ms (ringan di CPU, hemat besar di GPU)
-  setInterval(runSceneCulling, 600);
+  // Jalankan distance culling tiap 1500ms hanya saat kamera berpindah
+  setInterval(runSceneCulling, 1500);
 })();
