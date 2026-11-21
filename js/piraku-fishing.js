@@ -1129,36 +1129,124 @@
     const rodGrp = new THREE.Group();
     const tilt = new THREE.Group();
     tilt.rotation.x = 0.76;
+    const isBamboo = !rodId || rodId === "bamboo";
+    const isFiber = rodId === "fiber";
+    const isCarbon = rodId === "carbon";
     const isCrystal = rodId === "crystal";
     const isCelestial = rodId === "celestial";
     const isGalatama = rodId === "galatama";
     const isHighTier = isGold || isCrystal || isCelestial || isGalatama;
+
     const blankMat = new THREE.MeshStandardMaterial({
       color: rodColor || 0xa16207,
-      metalness: isHighTier ? 0.75 : 0.3,
-      roughness: isHighTier ? 0.2 : 0.42,
-      emissive: isGalatama ? 0xbe123c : (isCelestial ? 0x581c87 : (isCrystal ? 0x0369a1 : 0x000000)),
-      emissiveIntensity: isGalatama ? 0.52 : (isCelestial ? 0.45 : (isCrystal ? 0.35 : 0))
+      metalness: isGalatama ? 0.92 : (isCelestial ? 0.85 : (isCrystal ? 0.65 : (isGold ? 0.92 : (isCarbon ? 0.55 : 0.25)))),
+      roughness: isHighTier ? 0.14 : (isCarbon ? 0.28 : 0.48),
+      emissive: isGalatama ? 0xe11d48 : (isCelestial ? 0x7e22ce : (isCrystal ? 0x0284c7 : (isGold ? 0x854d0e : (isCarbon ? 0x082f49 : 0x000000)))),
+      emissiveIntensity: isGalatama ? 0.65 : (isCelestial ? 0.55 : (isCrystal ? 0.42 : (isGold ? 0.28 : (isCarbon ? 0.22 : 0))))
     });
+    const trimColor = (isGold || isGalatama) ? 0xfef08a : (isCelestial ? 0xf5d0fe : (isCrystal ? 0xbae6fd : (isCarbon ? 0x38bdf8 : (isFiber ? 0x93c5fd : 0xd6d3d1))));
     const trimMat = new THREE.MeshStandardMaterial({
-      color: (isGold || isGalatama) ? 0xfef08a : (isCelestial ? 0xf5d0fe : (isCrystal ? 0xbae6fd : 0xe2e8f0)),
-      metalness: 0.88,
-      roughness: 0.18
+      color: trimColor,
+      metalness: 0.9,
+      roughness: 0.15,
+      emissive: isHighTier ? trimColor : 0x000000,
+      emissiveIntensity: isGalatama ? 0.45 : (isCelestial ? 0.35 : (isHighTier ? 0.2 : 0))
     });
 
-    // Butt cap & gagang ergonomis dua lapis
-    const buttCap = new THREE.Mesh(new THREE.SphereGeometry(0.068, 8, 8), trimMat);
-    buttCap.position.set(0, -0.06, 0);
+    // Butt cap & gagang ergonomis
+    const buttCap = new THREE.Mesh(
+      isHighTier ? new THREE.OctahedronGeometry(0.08, 0) : new THREE.SphereGeometry(0.068, 8, 8),
+      trimMat
+    );
+    buttCap.position.set(0, -0.07, 0);
+    const gripColor = isGalatama ? 0x4c0519 : (isCelestial ? 0x2e1065 : (isCrystal ? 0x0c4a6e : (isGold ? 0x451a03 : (isCarbon ? 0x0f172a : (isFiber ? 0x1e3a8a : 0x78350f)))));
     const grip = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.058, 0.065, 0.58, 10),
-      new THREE.MeshStandardMaterial({ color: isHighTier ? 0x0f172a : 0x78350f, roughness: 0.85 })
+      new THREE.CylinderGeometry(0.06, 0.068, 0.58, 10),
+      new THREE.MeshStandardMaterial({ color: gripColor, roughness: isHighTier ? 0.45 : 0.85, metalness: isHighTier ? 0.35 : 0.05 })
     );
     grip.position.set(0, 0.24, 0);
+
+    // Ruas bambu (khusus Bamboo) atau cincin dekorasi gagang (Fiber+)
+    if (isBamboo) {
+      [0.82, 1.22].forEach(by => {
+        const nodeRing = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.054, 0.054, 0.04, 10),
+          new THREE.MeshStandardMaterial({ color: 0x713f12, roughness: 0.7 })
+        );
+        nodeRing.position.set(0, by, 0);
+        tilt.add(nodeRing);
+      });
+    } else {
+      // Cincin aksen di gagang & collar atas grip
+      const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.078, 0.068, 0.07, 12), trimMat);
+      collar.position.set(0, 0.54, 0);
+      tilt.add(collar);
+      if (isCarbon || isHighTier) {
+        [0.14, 0.34, 0.76, 1.18].forEach(by => {
+          const band = new THREE.Mesh(new THREE.TorusGeometry(0.056, 0.011, 6, 14), trimMat);
+          band.rotation.x = Math.PI / 2;
+          band.position.set(0, by, 0);
+          tilt.add(band);
+        });
+      }
+    }
+
+    // Ornamen khusus tiap tier mahal di collar pangkal joran (y = 0.58)
+    let collarGroup = null;
+    if (isGold || isCrystal || isCelestial || isGalatama) {
+      collarGroup = new THREE.Group();
+      collarGroup.position.set(0, 0.58, 0);
+      if (isGold) {
+        // Mahkota emas 4-titik di pangkal joran
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2;
+          const spike = new THREE.Mesh(new THREE.ConeGeometry(0.036, 0.14, 5), trimMat);
+          spike.position.set(Math.cos(a) * 0.085, 0.05, Math.sin(a) * 0.085);
+          spike.rotation.z = -Math.cos(a) * 0.55;
+          spike.rotation.x = Math.sin(a) * 0.55;
+          collarGroup.add(spike);
+        }
+      } else if (isCrystal) {
+        // Kluster kristal es mencuat di pangkal
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const shard = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.058, 0),
+            new THREE.MeshBasicMaterial({ color: i % 2 === 0 ? 0x38bdf8 : 0xe0f2fe, transparent: true, opacity: 0.92 })
+          );
+          shard.scale.set(0.65, 1.9, 0.65);
+          shard.position.set(Math.cos(a) * 0.1, 0.06, Math.sin(a) * 0.1);
+          shard.rotation.z = -Math.cos(a) * 0.7;
+          shard.rotation.x = Math.sin(a) * 0.7;
+          collarGroup.add(shard);
+        }
+      } else if (isCelestial || isGalatama) {
+        // Sayap Naga / Sayap Sultan Emas & Ruby di pangkal joran
+        const wingMat = new THREE.MeshBasicMaterial({
+          color: isGalatama ? 0xfb7185 : 0xe879f9,
+          transparent: true,
+          opacity: 0.92
+        });
+        const bladeCount = isGalatama ? 4 : 2;
+        for (let i = 0; i < bladeCount; i++) {
+          const a = (i / bladeCount) * Math.PI * 2;
+          const wing = new THREE.Mesh(new THREE.ConeGeometry(0.055, isGalatama ? 0.34 : 0.28, 4), i % 2 === 0 ? trimMat : wingMat);
+          wing.position.set(Math.cos(a) * 0.15, 0.08, Math.sin(a) * 0.15);
+          wing.rotation.z = -Math.cos(a) * 0.95;
+          wing.rotation.x = Math.sin(a) * 0.95;
+          collarGroup.add(wing);
+        }
+        const crownRing = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.016, 8, 20), trimMat);
+        crownRing.rotation.x = Math.PI / 2;
+        collarGroup.add(crownRing);
+      }
+      tilt.add(collarGroup);
+    }
 
     // 3-section parabolic rod blank (pangkal -> tengah -> ujung lentur)
     const basePole = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.05, 1.05, 10), blankMat);
     basePole.position.set(0, 1.02, 0);
-    const ferrule1 = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.042, 0.07, 10), trimMat);
+    const ferrule1 = new THREE.Mesh(new THREE.CylinderGeometry(0.044, 0.044, 0.075, 10), trimMat);
     ferrule1.position.set(0, 1.54, 0);
 
     const midSection = new THREE.Group();
@@ -1166,7 +1254,7 @@
     midSection.rotation.x = 0.09;
     const midPole = new THREE.Mesh(new THREE.CylinderGeometry(0.024, 0.034, 0.92, 10), blankMat);
     midPole.position.set(0, 0.46, 0);
-    const ferrule2 = new THREE.Mesh(new THREE.CylinderGeometry(0.029, 0.029, 0.06, 10), trimMat);
+    const ferrule2 = new THREE.Mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.065, 10), trimMat);
     ferrule2.position.set(0, 0.92, 0);
     midSection.add(midPole, ferrule2);
 
@@ -1176,8 +1264,10 @@
     const tipPole = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.022, 0.95, 8), blankMat);
     tipPole.position.set(0, 0.475, 0);
 
-    const tipColor = isCelestial ? 0xf0abfc : (isCrystal ? 0x38bdf8 : (isGold ? 0xfde047 : 0x38bdf8));
-    const tipGeo = (isCrystal || isCelestial) ? new THREE.OctahedronGeometry(0.105, 0) : new THREE.SphereGeometry(isGold ? 0.075 : 0.042, 10, 10);
+    const tipColor = isGalatama ? 0xfb7185 : (isCelestial ? 0xf0abfc : (isCrystal ? 0x38bdf8 : (isGold ? 0xfde047 : (isCarbon ? 0x22d3ee : (isFiber ? 0x60a5fa : 0x38bdf8)))));
+    const tipGeo = isGalatama
+      ? new THREE.IcosahedronGeometry(0.135, 0)
+      : ((isCrystal || isCelestial) ? new THREE.OctahedronGeometry(0.115, 0) : new THREE.SphereGeometry(isGold ? 0.085 : (isCarbon ? 0.058 : 0.042), 10, 10));
     const tipGlow = new THREE.Mesh(tipGeo, new THREE.MeshBasicMaterial({ color: tipColor }));
     tipGlow.position.set(0, 0.96, 0);
     const tipMarker = new THREE.Object3D();
@@ -1203,36 +1293,62 @@
       tipSection.add(r);
     });
 
-    // Efek ala Roblox Fish It untuk joran mahal (Karbon, Emas, Kristal, Naga Siliwangi)
+    // Efek bertingkat makin mahal makin megah (Karbon -> Emas -> Kristal -> Naga Siliwangi -> Galatama Sultan)
     const animRings = [];
     let orbitGroup = null;
     let auraSphere = null;
-    if (rodId === "carbon" || isHighTier) {
-      const auraMat = new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: isHighTier ? 0.36 : 0.25 });
-      auraSphere = new THREE.Mesh(new THREE.SphereGeometry(isHighTier ? 0.19 : 0.09, 12, 12), auraMat);
+    if (isCarbon || isHighTier) {
+      const auraRadius = isGalatama ? 0.25 : (isCelestial ? 0.22 : (isCrystal ? 0.19 : (isGold ? 0.16 : 0.10)));
+      const auraMat = new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: isGalatama ? 0.42 : (isHighTier ? 0.34 : 0.24) });
+      auraSphere = new THREE.Mesh(new THREE.SphereGeometry(auraRadius, 12, 12), auraMat);
       auraSphere.position.set(0, 0.96, 0);
       tipSection.add(auraSphere);
     }
+    if (isCarbon) {
+      const carbonRing = new THREE.Mesh(
+        new THREE.TorusGeometry(0.13, 0.012, 8, 20),
+        new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.85 })
+      );
+      carbonRing.position.set(0, 0.96, 0);
+      carbonRing.rotation.set(1.1, 0, 0.4);
+      tipSection.add(carbonRing);
+      animRings.push(carbonRing);
+    }
     if (isHighTier) {
-      // Lapisan aura energi menyala di sepanjang batang joran
-      const sheathMat = new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: 0.22 });
-      const sheathBase = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.078, 1.05, 10), sheathMat);
+      // Lapisan aura energi menyala di sepanjang batang joran (lebih tebal & berlapis di Galatama/Celestial)
+      const sheathMat = new THREE.MeshBasicMaterial({ color: tipColor, transparent: true, opacity: isGalatama ? 0.28 : 0.20 });
+      const sheathBase = new THREE.Mesh(new THREE.CylinderGeometry(0.062, 0.080, 1.05, 10), sheathMat);
       sheathBase.position.set(0, 1.02, 0);
-      const sheathMid = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.06, 0.92, 10), sheathMat);
+      const sheathMid = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.062, 0.92, 10), sheathMat);
       sheathMid.position.set(0, 0.46, 0);
       tilt.add(sheathBase);
       midSection.add(sheathMid);
 
-      // 3 Cincin energi berputar (gyro rings) di ujung & tengah joran
+      if (isGalatama || isCelestial) {
+        const outerSheathMat = new THREE.MeshBasicMaterial({ color: 0xfde047, transparent: true, opacity: 0.16 });
+        const outerSheath = new THREE.Mesh(new THREE.CylinderGeometry(0.082, 0.105, 1.05, 10), outerSheathMat);
+        outerSheath.position.set(0, 1.02, 0);
+        tilt.add(outerSheath);
+      }
+
+      // Cincin energi berputar (gyro rings): 2 untuk Gold, 3 untuk Crystal, 4 untuk Celestial, 5 untuk Galatama
       const ringSpecs = [
-        { parent: tipSection, y: 0.96, rad: isCelestial ? 0.24 : 0.19, col: tipColor, rx: 1.1, rz: 0.4 },
-        { parent: tipSection, y: 0.96, rad: isCelestial ? 0.30 : 0.23, col: isCelestial ? 0xfde047 : 0xffffff, rx: -0.9, rz: 1.0 },
-        { parent: midSection, y: 0.65, rad: 0.15, col: tipColor, rx: 1.5, rz: 0.0 }
+        { parent: tipSection, y: 0.96, rad: isGalatama ? 0.27 : (isCelestial ? 0.24 : 0.19), col: tipColor, rx: 1.1, rz: 0.4 },
+        { parent: tipSection, y: 0.96, rad: isGalatama ? 0.34 : (isCelestial ? 0.30 : 0.23), col: (isGalatama || isCelestial) ? 0xfde047 : 0xffffff, rx: -0.9, rz: 1.0 }
       ];
+      if (isCrystal || isCelestial || isGalatama) {
+        ringSpecs.push({ parent: midSection, y: 0.65, rad: 0.16, col: tipColor, rx: 1.5, rz: 0.0 });
+      }
+      if (isCelestial || isGalatama) {
+        ringSpecs.push({ parent: tipSection, y: 0.96, rad: 0.38, col: isGalatama ? 0xfb7185 : 0xc084fc, rx: 0.4, rz: -1.2 });
+      }
+      if (isGalatama) {
+        ringSpecs.push({ parent: midSection, y: 0.45, rad: 0.21, col: 0xfde047, rx: -1.2, rz: 0.6 });
+      }
       ringSpecs.forEach(rs => {
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(rs.rad, 0.015, 8, 22),
-          new THREE.MeshBasicMaterial({ color: rs.col, transparent: true, opacity: 0.9 })
+          new THREE.TorusGeometry(rs.rad, isGalatama ? 0.017 : 0.014, 8, 22),
+          new THREE.MeshBasicMaterial({ color: rs.col, transparent: true, opacity: 0.92 })
         );
         ring.position.set(0, rs.y, 0);
         ring.rotation.set(rs.rx, 0, rs.rz);
@@ -1240,15 +1356,15 @@
         animRings.push(ring);
       });
 
-      // Kristal / Bintang mengorbit di ujung joran
+      // Kristal / Bintang / Permata Mahkota mengorbit di ujung joran
       orbitGroup = new THREE.Group();
       orbitGroup.position.set(0, 0.96, 0);
-      const orbCount = isCelestial ? 5 : (isCrystal ? 4 : 3);
-      const orbDist = isCelestial ? 0.28 : 0.22;
+      const orbCount = isGalatama ? 6 : (isCelestial ? 5 : (isCrystal ? 4 : 3));
+      const orbDist = isGalatama ? 0.32 : (isCelestial ? 0.28 : 0.22);
       for (let oi = 0; oi < orbCount; oi++) {
         const oa = (oi / orbCount) * Math.PI * 2;
         const orb = new THREE.Mesh(
-          new THREE.OctahedronGeometry(0.042, 0),
+          new THREE.OctahedronGeometry(isGalatama ? 0.048 : 0.042, 0),
           new THREE.MeshBasicMaterial({ color: oi % 2 === 0 ? tipColor : 0xfde047 })
         );
         orb.position.set(Math.cos(oa) * orbDist, Math.sin(oa * 2) * 0.06, Math.sin(oa) * orbDist);
@@ -1258,6 +1374,7 @@
     }
     rodGrp.userData.animRings = animRings;
     rodGrp.userData.orbitGroup = orbitGroup;
+    rodGrp.userData.collarGroup = collarGroup;
     rodGrp.userData.auraSphere = auraSphere;
     rodGrp.userData.tipGlow = tipGlow;
 
@@ -3121,6 +3238,9 @@
     }
     if (rodGrp.userData.orbitGroup) {
       rodGrp.userData.orbitGroup.rotation.y = t * 1.8;
+    }
+    if (rodGrp.userData.collarGroup) {
+      rodGrp.userData.collarGroup.rotation.y = -t * 0.9;
     }
     if (rodGrp.userData.tipGlow) {
       rodGrp.userData.tipGlow.rotation.y = t * 1.3;
