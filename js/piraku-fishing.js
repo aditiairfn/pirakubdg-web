@@ -300,9 +300,27 @@
     markLocalFishTs();
     syncFishingToCloud();
   }
+  window.getPirakuFishingCatalog = function () {
+    return {
+      rods: RODS.filter(r => r.cost > 0),
+      bobbers: BOBBERS.filter(b => b.cost > 0)
+    };
+  };
+
   function getOwnedRods() {
     const arr = loadJson("piraku_fish_rods" + getUserSuf(), ["bamboo"]);
-    return Array.isArray(arr) && arr.length ? arr : ["bamboo"];
+    const base = Array.isArray(arr) && arr.length ? [...arr] : ["bamboo"];
+    const eco = window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function" ? window.PirakuEconomy.getState() : null;
+    if (eco && Array.isArray(eco.owned)) {
+      eco.owned.forEach(tag => {
+        const s = String(tag || "");
+        if (s.startsWith("fish_rod:")) {
+          const rid = s.slice("fish_rod:".length);
+          if (rid && !base.includes(rid)) base.push(rid);
+        }
+      });
+    }
+    return base;
   }
   function saveOwnedRods(arr) {
     localStorage.setItem("piraku_fish_rods" + getUserSuf(), JSON.stringify(arr));
@@ -319,7 +337,18 @@
 
   function getOwnedBobbers() {
     const arr = loadJson("piraku_fish_bobbers" + getUserSuf(), ["classic"]);
-    return Array.isArray(arr) && arr.length ? arr : ["classic"];
+    const base = Array.isArray(arr) && arr.length ? [...arr] : ["classic"];
+    const eco = window.PirakuEconomy && typeof window.PirakuEconomy.getState === "function" ? window.PirakuEconomy.getState() : null;
+    if (eco && Array.isArray(eco.owned)) {
+      eco.owned.forEach(tag => {
+        const s = String(tag || "");
+        if (s.startsWith("fish_bobber:")) {
+          const bid = s.slice("fish_bobber:".length);
+          if (bid && !base.includes(bid)) base.push(bid);
+        }
+      });
+    }
+    return base;
   }
   function saveOwnedBobbers(arr) {
     localStorage.setItem("piraku_fish_bobbers" + getUserSuf(), JSON.stringify(arr));

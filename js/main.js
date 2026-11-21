@@ -4362,13 +4362,25 @@ let activeQuestSystem = null;
     const cat = (window.PirakuEconomy && typeof window.PirakuEconomy.getCatalog === 'function')
       ? window.PirakuEconomy.getCatalog()
       : { outfit: [], mobility: [], tier: [] };
+    const fishCat = (typeof window.getPirakuFishingCatalog === 'function')
+      ? window.getPirakuFishingCatalog()
+      : { rods: [], bobbers: [] };
     const allItems = [
-      ...cat.outfit.map(i => ({ ...i, catType: 'outfit' })),
-      ...cat.mobility.map(i => ({ ...i, catType: 'mobility' })),
-      ...cat.tier.filter(i => i.id !== 'tier_1').map(i => ({ ...i, catType: 'tier' }))
+      ...cat.outfit.map(i => ({ ...i, catType: 'outfit', dispIcon: i.icon || '👕', group: 'Outfit & Aksesoris' })),
+      ...cat.mobility.map(i => ({ ...i, catType: 'mobility', dispIcon: i.icon || '🛵', group: 'Kendaraan Kota' })),
+      ...cat.tier.filter(i => i.id !== 'tier_1').map(i => ({ ...i, catType: 'tier', dispIcon: i.icon || i.badge || '👑', group: 'Gelar Warga' })),
+      ...(fishCat.rods || []).map(i => ({ ...i, catType: 'fish_rod', dispIcon: i.badge || '🎣', group: 'Joran Mancing' })),
+      ...(fishCat.bobbers || []).map(i => ({ ...i, catType: 'fish_bobber', dispIcon: i.icon || '🔴', group: 'Umbul-umbul Mancing' }))
     ];
     const citizens = (Array.isArray(registeredCitizensList) ? registeredCitizensList : [])
       .filter(c => c && c.ig && String(c.ig).toLowerCase().replace(/^@/, '') !== 'yelclaw');
+
+    const groupNames = Array.from(new Set(allItems.map(i => i.group)));
+    const itemsOptHtml = groupNames.map(g => {
+      const opts = allItems.filter(i => i.group === g)
+        .map(i => `<option value="${i.id}" data-cat="${i.catType}">${i.dispIcon} ${i.name}</option>`).join('');
+      return `<optgroup label="${g}">${opts}</optgroup>`;
+    }).join('');
 
     modal.innerHTML = `
       <div style="width:100%;max-width:410px;background:linear-gradient(180deg,#0f172a,#1e293b);border:1.5px solid rgba(250,204,21,0.65);border-radius:22px;padding:18px;color:#f8fafc;box-shadow:0 24px 60px rgba(0,0,0,0.85);max-height:86dvh;overflow-y:auto;">
@@ -4381,6 +4393,7 @@ let activeQuestSystem = null;
         </div>
 
         <label style="display:block;font-size:11px;font-weight:800;color:#94a3b8;margin-bottom:4px;">PILIH WARGA PENERIMA</label>
+        <input id="fa-target-search" type="text" placeholder="🔍 Cari @username / nama / kecamatan..." style="width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:1px solid rgba(250,204,21,0.45);background:#090d16;color:#f8fafc;font-size:12.5px;margin-bottom:6px;">
         <select id="fa-target-select" style="width:100%;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12.5px;margin-bottom:6px;">
           <option value="">-- Pilih dari daftar warga (${citizens.length}) --</option>
           ${citizens.map(c => `<option value="${String(c.ig).replace(/^@/, '')}">${c.ig} (${c.kecamatan || 'Bandung'})</option>`).join('')}
@@ -4401,7 +4414,7 @@ let activeQuestSystem = null;
         <div style="padding:12px;border-radius:14px;background:rgba(15,23,42,0.75);border:1px solid rgba(56,189,248,0.3);margin-bottom:10px;">
           <div style="font-size:12px;font-weight:800;color:#7dd3fc;margin-bottom:8px;">🎁 Kirim Item / Kendaraan / Gelar</div>
           <select id="fa-item-select" style="width:100%;padding:9px 10px;border-radius:10px;border:1px solid #334155;background:#090d16;color:#f8fafc;font-size:12px;margin-bottom:8px;">
-            ${allItems.map(i => `<option value="${i.id}" data-cat="${i.catType}">${i.icon} ${i.name}</option>`).join('')}
+            ${itemsOptHtml}
           </select>
           <button id="fa-send-item" style="width:100%;padding:9px;border-radius:10px;border:none;background:linear-gradient(135deg,#38bdf8,#2563eb);color:#fff;font-weight:900;font-size:12.5px;cursor:pointer;">Kirim Item ke Warga 🎁</button>
         </div>
@@ -4416,8 +4429,29 @@ let activeQuestSystem = null;
       </div>`;
     modal.style.display = 'flex';
     modal.querySelector('#fa-close').onclick = () => { modal.style.display = 'none'; };
+    const searchEl = modal.querySelector('#fa-target-search');
     const selEl = modal.querySelector('#fa-target-select');
     const inpEl = modal.querySelector('#fa-target-ig');
+    if (searchEl) {
+      searchEl.oninput = () => {
+        const q = (searchEl.value || '').trim().toLowerCase().replace(/^@/, '');
+        const filtered = q
+          ? citizens.filter(c =>
+              String(c.ig || '').toLowerCase().includes(q) ||
+              String(c.nama || '').toLowerCase().includes(q) ||
+              String(c.kecamatan || '').toLowerCase().includes(q)
+            )
+          : citizens;
+        const placeholder = q ? `-- Hasil pencarian (${filtered.length}) --` : `-- Pilih dari daftar warga (${citizens.length}) --`;
+        selEl.innerHTML = `<option value="">${placeholder}</option>` +
+          filtered.slice(0, 200).map(c => `<option value="${String(c.ig).replace(/^@/, '')}">${c.ig} (${c.kecamatan || 'Bandung'})</option>`).join('');
+        if (filtered.length === 1) {
+          const onlyVal = String(filtered[0].ig).replace(/^@/, '');
+          selEl.value = onlyVal;
+          inpEl.value = '@' + onlyVal;
+        }
+      };
+    }
     selEl.onchange = () => { if (selEl.value) inpEl.value = '@' + selEl.value; };
     modal.querySelectorAll('.fa-quick-coin').forEach(b => { b.onclick = () => { modal.querySelector('#fa-coin-amt').value = b.dataset.v; }; });
 
@@ -4468,17 +4502,26 @@ let activeQuestSystem = null;
       if (!targetKey) { showToast('Pilih/ketik @username penerima dulu!'); return; }
       const itemSel = modal.querySelector('#fa-item-select');
       const itemId = itemSel.value;
-      const itemObj = allItems.find(x => x.id === itemId);
+      const itemCat = itemSel.options[itemSel.selectedIndex]?.dataset?.cat || '';
+      const itemObj = allItems.find(x => x.id === itemId && (!itemCat || x.catType === itemCat));
       if (!itemObj) return;
       await upsertGiftToCitizen(targetKey, (w) => {
-        if (!w.owned_items.includes(itemId)) w.owned_items.push(itemId);
-        if (itemObj.catType === 'outfit') w.equipped_outfit = itemId;
-        else if (itemObj.catType === 'tier') w.tier_id = itemId;
-        else if (itemObj.catType === 'mobility') {
-          w.equipped_vehicle = itemId;
-          w.rental_expires_at = Math.max(Date.now(), Number(w.rental_expires_at || 0)) + (itemObj.durationMin || 10) * 60 * 1000;
+        if (itemObj.catType === 'fish_rod') {
+          const tag = 'fish_rod:' + itemId;
+          if (!w.owned_items.includes(tag)) w.owned_items.push(tag);
+        } else if (itemObj.catType === 'fish_bobber') {
+          const tag = 'fish_bobber:' + itemId;
+          if (!w.owned_items.includes(tag)) w.owned_items.push(tag);
+        } else {
+          if (!w.owned_items.includes(itemId)) w.owned_items.push(itemId);
+          if (itemObj.catType === 'outfit') w.equipped_outfit = itemId;
+          else if (itemObj.catType === 'tier') w.tier_id = itemId;
+          else if (itemObj.catType === 'mobility') {
+            w.equipped_vehicle = itemId;
+            w.rental_expires_at = Math.max(Date.now(), Number(w.rental_expires_at || 0)) + (itemObj.durationMin || 10) * 60 * 1000;
+          }
         }
-      }, `${itemObj.icon} ${itemObj.name}`);
+      }, `${itemObj.dispIcon} ${itemObj.name}`);
     };
 
     modal.querySelector('#fa-send-announce').onclick = async () => {
