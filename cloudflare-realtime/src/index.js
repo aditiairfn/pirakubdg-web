@@ -157,7 +157,6 @@ export class PirakuRoomDO extends DurableObject {
     try {
       const att = ws.deserializeAttachment();
       hadPresence = Boolean(att && att.presence);
-      ws.serializeAttachment(null);
     } catch (_) {}
     if (hadPresence) this.broadcastPresenceSync(ws);
   }
@@ -167,7 +166,6 @@ export class PirakuRoomDO extends DurableObject {
     try {
       const att = ws.deserializeAttachment();
       hadPresence = Boolean(att && att.presence);
-      ws.serializeAttachment(null);
     } catch (_) {}
     if (hadPresence) this.broadcastPresenceSync(ws);
   }

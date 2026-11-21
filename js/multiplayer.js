@@ -10,7 +10,7 @@
   function useCloudflareRealtime() {
     return /^https?:\/\/|^wss?:\/\//i.test(getCfRealtimeBaseUrl());
   }
-  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 320 : 650;
+  const SEND_INTERVAL_MS = useCloudflareRealtime() ? 1200 : 1200;
   let currentWorldRoomId = 'bandung_wetan';
   function getRoomChannelName() { return 'pirakubdg-world-' + currentWorldRoomId; }
   const VOICE_MAX_DIST = 24;
@@ -677,16 +677,16 @@
       const idNow = getMyIdentity();
       const shopSig = `${idNow.shopOutfit || ""}|${idNow.shopVehicle || ""}|${idNow.tierId || ""}`;
       const moved = !mpChannel._lastSentPos ||
-        Math.abs(px - mpChannel._lastSentPos.x) > 0.30 ||
-        Math.abs(py - mpChannel._lastSentPos.y) > 0.14 ||
-        Math.abs(pz - mpChannel._lastSentPos.z) > 0.30 ||
-        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.18 ||
+        Math.abs(px - mpChannel._lastSentPos.x) > 1.0 ||
+        Math.abs(py - mpChannel._lastSentPos.y) > 0.30 ||
+        Math.abs(pz - mpChannel._lastSentPos.z) > 1.0 ||
+        Math.abs(prot - mpChannel._lastSentPos.rot) > 0.45 ||
         isJump !== mpChannel._lastSentPos.jump ||
         fishSig !== mpChannel._lastSentPos.fishSig ||
         showFishSig !== mpChannel._lastSentPos.showFishSig ||
         rodCarrySig !== mpChannel._lastSentPos.rodCarrySig ||
         shopSig !== mpChannel._lastSentPos.shopSig ||
-        (now - (mpChannel._lastSentPos.ts || 0) >= 40000);
+        (now - (mpChannel._lastSentPos.ts || 0) >= 300000);
       if (moved) {
         lastBroadcastTime = now;
         mpChannel._lastSentPos = { x: px, y: py, z: pz, rot: prot, jump: isJump, fishSig, showFishSig, rodCarrySig, shopSig, ts: now };
@@ -940,10 +940,10 @@
         }
         if (pingTimer) clearInterval(pingTimer);
         pingTimer = setInterval(() => {
-          if (ws && ws.readyState === WebSocket.OPEN) {
+          if (ws && ws.readyState === WebSocket.OPEN && !document.hidden) {
             try { ws.send('{"type":"ping"}'); } catch (_) {}
           }
-        }, 45000);
+        }, 180000);
         if (typeof subscribeCb === "function") {
           try { subscribeCb("SUBSCRIBED"); } catch (_) {}
         }
@@ -986,12 +986,37 @@
     }
 
     function scheduleReconnect() {
-      if (closedByClient || reconnectTimer) return;
+      if (closedByClient || reconnectTimer || document.hidden) return;
+      const waitMs = Math.min(60000, 2000 * Math.pow(2, Math.min(failCount, 5)));
       reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
-        connectWs();
-      }, 1500);
+        if (!document.hidden && !closedByClient) connectWs();
+      }, waitMs);
     }
+
+    let hiddenSleepTimer = null;
+    let pausedForHidden = false;
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        if (hiddenSleepTimer) clearTimeout(hiddenSleepTimer);
+        hiddenSleepTimer = setTimeout(() => {
+          if (document.hidden && ws && ws.readyState === WebSocket.OPEN) {
+            pausedForHidden = true;
+            closedByClient = true;
+            if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+            try { ws.close(1000, "idle_hidden"); } catch (_) {}
+          }
+        }, 10000);
+      } else {
+        if (hiddenSleepTimer) { clearTimeout(hiddenSleepTimer); hiddenSleepTimer = null; }
+        if (pausedForHidden) {
+          pausedForHidden = false;
+          closedByClient = false;
+          failCount = 0;
+          connectWs();
+        }
+      }
+    });
 
     return channelObj;
   }
@@ -1054,11 +1079,10 @@
             if (en) en.lastSeen = Date.now();
           }
         });
-        sendMyLiveSnapshot();
-        lastBroadcastTime = 0;
         const state = mpChannel.presenceState();
         const sids = Object.keys(state);
-        updateOnlineCount(Math.max(globalOnlineCount || 1, sids.length));
+        globalOnlineCount = Math.max(1, sids.length);
+        updateOnlineCount(globalOnlineCount);
         remotePlayers.forEach((_, sid) => {
           if (!state[sid]) removeRemoteAvatar(sid);
         });
@@ -1424,7 +1448,8 @@
   let globalOnlineCount = 1;
   function connectGlobalPresenceCount() {
     const useCf = useCloudflareRealtime();
-    if ((!useCf && (typeof supabaseClient === 'undefined' || !supabaseClient)) || globalPresenceChannel) return;
+    if (useCf) return; // Room global sudah menghitung seluruh pemain online via presence_sync (hemat 1 WebSocket/user!)
+    if ((typeof supabaseClient === 'undefined' || !supabaseClient) || globalPresenceChannel) return;
     const myInfo = getMyIdentity();
     globalPresenceChannel = useCf
       ? createCloudflareChannel('/ws/global', mySessionId)
