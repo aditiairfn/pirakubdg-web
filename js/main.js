@@ -4606,7 +4606,7 @@ let activeQuestSystem = null;
       setTimeout(() => modal.style.display = 'none', 280);
     }
   };
-  function likeEsc(s) { return String(s || '').replace(/[\\%_]/g, '\\$&amp;'); }
+  function likeEsc(s) { return String(s || '').replace(/[\\%_]/g, m => '\\' + m); }
   const esc = s => String(s || '').replace(/[&<>"']/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]));
   let activeLeaderboardTab = 'level';
   window.setLeaderboardTab = function(tab) {
