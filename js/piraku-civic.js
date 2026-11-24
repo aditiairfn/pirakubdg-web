@@ -83,7 +83,10 @@
     const sb = window.pirakuSupabase;
     if (sb && myIg) {
       try {
-        await sb.from("warga_piraku").update({ xp: totalXp, level: newInfo.level }).ilike("ig", myIg);
+        const { error } = await sb.from("warga_piraku").update({ xp: totalXp, level: newInfo.level }).ilike("ig", myIg);
+        if (error && (error.code === "23514" || (error.message && error.message.includes("chk_warga_piraku_xp_range")))) {
+          await sb.from("warga_piraku").update({ xp: 200000, level: newInfo.level }).ilike("ig", myIg);
+        }
       } catch (e) {}
     }
     return newInfo;
