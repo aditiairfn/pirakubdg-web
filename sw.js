@@ -1,4 +1,4 @@
-const CACHE_NAME = 'piraku-pwa-v1';
+const CACHE_NAME = 'piraku-pwa-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());

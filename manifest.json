@@ -4,10 +4,11 @@
   "description": "Simulasi Tata Kota Bandung 3D interaktif @pirakubdg — jelajahi Gedung Sate, Gasibu, 30 Kecamatan, mancing 3D, dan bangun kotamu!",
   "start_url": "./?source=pwa",
   "scope": "./",
+  "display_override": ["fullscreen", "standalone"],
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0e2f2a",
-  "theme_color": "#0e2f2a",
+  "background_color": "#0f172a",
+  "theme_color": "#131b2e",
   "lang": "id",
   "categories": ["games", "entertainment"],
   "icons": [

@@ -529,7 +529,7 @@ let activeQuestSystem = null;
   const renderer = new THREE.WebGLRenderer({ antialias: window.innerWidth > 820, powerPreference: "high-performance", preserveDrawingBuffer: true }); window.pirakuRenderer = renderer;
   const isPirakuMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 820;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, isPirakuMobile ? 1.15 : 1.35));
-  renderer.setSize(W, H);
+  renderer.setSize(W, H, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.autoUpdate = false;
   renderer.shadowMap.needsUpdate = true;
@@ -543,6 +543,21 @@ let activeQuestSystem = null;
 
   const cam = new THREE.PerspectiveCamera(40, W / H, 0.5, 1600);
   cam.position.set(-26, 26, -55);
+
+  function syncPirakuViewportSize() {
+    const vw = Math.max(container.clientWidth || 0, window.innerWidth || 0);
+    const vh = Math.max(container.clientHeight || 0, window.innerHeight || 0);
+    if (!vw || !vh) return;
+    W = vw;
+    H = vh;
+    cam.aspect = W / H;
+    cam.updateProjectionMatrix();
+    renderer.setSize(W, H, false);
+  }
+  window.addEventListener('resize', syncPirakuViewportSize, { passive: true });
+  window.addEventListener('orientationchange', () => setTimeout(syncPirakuViewportSize, 180), { passive: true });
+  window.addEventListener('load', syncPirakuViewportSize, { once: true });
+  setTimeout(syncPirakuViewportSize, 350);
 
   const controls = new THREE.OrbitControls(cam, renderer.domElement);
   controls.enableDamping = true;
