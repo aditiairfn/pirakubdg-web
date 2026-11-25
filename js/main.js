@@ -2692,14 +2692,28 @@ let activeQuestSystem = null;
   const nengRaraAudio = new Audio('./assets/neng-rara-ukulele.mp3');
   nengRaraAudio.loop = true;
   nengRaraAudio.volume = 0;
+  let nengRaraCurVol = 0;
   let nengRaraMuted = localStorage.getItem('piraku_mute_rara') === '1';
+
+  window.syncNengRaraAudioState = function() {
+    if (window.pirakuSoundMuted || nengRaraMuted) {
+      nengRaraCurVol = 0;
+      nengRaraAudio.muted = true;
+      nengRaraAudio.volume = 0;
+      if (!nengRaraAudio.paused) nengRaraAudio.pause();
+    }
+  };
 
   window.toggleNengRaraMute = function() {
     nengRaraMuted = !nengRaraMuted;
     localStorage.setItem('piraku_mute_rara', nengRaraMuted ? '1' : '0');
     if (nengRaraMuted) {
+      nengRaraCurVol = 0;
+      nengRaraAudio.muted = true;
       nengRaraAudio.volume = 0;
-      nengRaraAudio.pause();
+      if (!nengRaraAudio.paused) nengRaraAudio.pause();
+    } else if (!window.pirakuSoundMuted) {
+      nengRaraAudio.muted = false;
     }
     if (typeof window.showToast === 'function') {
       window.showToast(nengRaraMuted ? '🔇 Musik Neng Rara dimute' : '🎸 Musik Neng Rara dinyalakan');
@@ -2730,18 +2744,35 @@ let activeQuestSystem = null;
       pill.style.display = 'none';
     }
 
-    if (!inMainCity || nengRaraMuted || pDist >= 11.5) {
+    if (window.pirakuSoundMuted || nengRaraMuted) {
+      nengRaraCurVol = 0;
+      nengRaraAudio.muted = true;
+      nengRaraAudio.volume = 0;
+      if (!nengRaraAudio.paused) nengRaraAudio.pause();
+      return;
+    }
+
+    if (!inMainCity || pDist >= 11.5) {
       if (!nengRaraAudio.paused) {
-        nengRaraAudio.volume = Math.max(0, nengRaraAudio.volume - 0.02);
-        if (nengRaraAudio.volume <= 0.01) { nengRaraAudio.volume = 0; nengRaraAudio.pause(); }
+        nengRaraCurVol = Math.max(0, nengRaraCurVol - 0.04);
+        nengRaraAudio.volume = nengRaraCurVol;
+        if (nengRaraCurVol <= 0.01) {
+          nengRaraCurVol = 0;
+          nengRaraAudio.muted = true;
+          nengRaraAudio.volume = 0;
+          nengRaraAudio.pause();
+        }
       }
       return;
     }
+
     const targetVol = 0.22 * Math.max(0, Math.min(1, 1 - pDist / 11.5));
+    nengRaraAudio.muted = false;
     if (nengRaraAudio.paused && targetVol > 0.015) {
       nengRaraAudio.play().catch(() => {});
     }
-    nengRaraAudio.volume += (targetVol - nengRaraAudio.volume) * 0.12;
+    nengRaraCurVol += (targetVol - nengRaraCurVol) * 0.12;
+    nengRaraAudio.volume = nengRaraCurVol;
   }
 
   function playNpcRoleSfx(roleType, isProximity) {

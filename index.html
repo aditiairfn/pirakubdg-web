@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Simulasi Tata Kota Bandung - @pirakubdg</title>
-  <meta name="theme-color" content="#0e2f2a">
+  <meta name="theme-color" content="#131b2e">
   <link rel="manifest" href="./manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap"></noscript>
-  <link rel="stylesheet" href="./css/style.css?v=20261121v3">
+  <link rel="stylesheet" href="./css/style.css?v=20261125v1">
 
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -47,10 +47,10 @@
   
   
   <style id="piraku-hud-layout-fix">
-    /* 1. Sejajarkan tinggi top kedua sisi HUD (66px) & samakan padding pill */
+    /* 1. Sejajarkan tinggi top kedua sisi HUD (safe-area aware) & samakan padding pill */
     .hud-side-left {
       position: fixed !important;
-      top: 66px !important;
+      top: calc(56px + env(safe-area-inset-top, 0px)) !important;
       left: 16px !important;
       display: flex !important;
       flex-direction: column !important;
@@ -62,7 +62,7 @@
 
     .hud-side-right {
       position: fixed !important;
-      top: 66px !important;
+      top: calc(56px + env(safe-area-inset-top, 0px)) !important;
       right: 16px !important;
       display: flex !important;
       flex-direction: column !important;
@@ -99,10 +99,14 @@
       z-index: 24 !important;
     }
 
-    /* 3. Pill Koin & Toko tetap rapi di kiri bawah minimap */
+    /* 3. Minimap & Pill Koin/Toko tetap rapi mengikuti safe-area iOS */
+    #piraku-minimap-radar {
+      top: calc(96px + env(safe-area-inset-top, 0px)) !important;
+    }
+
     #piraku-wallet-pill {
       position: fixed !important;
-      top: 222px !important;
+      top: calc(214px + env(safe-area-inset-top, 0px)) !important;
       left: 16px !important;
       right: auto !important;
       bottom: auto !important;
@@ -112,10 +116,14 @@
       z-index: 20 !important;
     }
 
+    .bottom-nav-dock {
+      box-sizing: border-box !important;
+    }
+
     /* 4. Mobile: cegah guided-quest-hud menumpuk di atas tombol kiri/kanan & minimap */
     @media (max-width: 900px) {
       #piraku-guided-quest-hud {
-        top: 52px !important;
+        top: calc(48px + env(safe-area-inset-top, 0px)) !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
         max-width: calc(100vw - 20px) !important;
@@ -125,13 +133,13 @@
       }
       body.has-guided-quest-hud .hud-side-left,
       body.has-guided-quest-hud .hud-side-right {
-        top: 96px !important;
+        top: calc(92px + env(safe-area-inset-top, 0px)) !important;
       }
       body.has-guided-quest-hud #piraku-minimap-radar {
-        top: 132px !important;
+        top: calc(130px + env(safe-area-inset-top, 0px)) !important;
       }
       body.has-guided-quest-hud #piraku-wallet-pill {
-        top: 248px !important;
+        top: calc(246px + env(safe-area-inset-top, 0px)) !important;
       }
     }
 
@@ -200,6 +208,7 @@
     window.pirakuVoiceMuted = (mode === "sfx_only" || mode === "mute_all");
 
     if (typeof window.syncAmbienceAudioState === "function") window.syncAmbienceAudioState();
+    if (typeof window.syncNengRaraAudioState === "function") window.syncNengRaraAudioState();
     if (window.audioCtx && !window.pirakuSoundMuted && window.audioCtx.state === "suspended") {
       window.audioCtx.resume().catch(() => {});
     }
@@ -1339,7 +1348,7 @@
   <div id="webgl-canvas"></div>
 
   <!-- quests.js disabled -->
-  <script defer src="./js/main.js?v=20261123v76"></script>
+  <script defer src="./js/main.js?v=20261125v1"></script>
   <script defer src="js/multiplayer.js?v=20261121v50"></script>
   <script defer src="./js/rpg-ui.js?v=20261118v98"></script>
   <script defer src="js/gedungsate-horizon.js?v=20261118v98"></script>
