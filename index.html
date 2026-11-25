@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Simulasi Tata Kota Bandung - @pirakubdg</title>
   <meta name="theme-color" content="#0e2f2a">
+  <link rel="manifest" href="./manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Piraku BDG">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icon-192.png">
   <meta name="description" content="Simulasi Tata Kota Bandung 3D interaktif @pirakubdg — jelajahi Gedung Sate, Gasibu, 30 Kecamatan, mancing 3D ala Fish It, dan bangun kotamu!">
   <meta property="og:title" content="Simulasi Tata Kota Bandung">
   <meta property="og:description" content="Eksplorasi Bandung Reborn, mainkan karaktermu, dan bangun kotamu!">
@@ -430,6 +437,7 @@
           <button class="menu-item-btn" id="btn-menu-battery" onclick="toggleBatterySaverMode(); closeHudMenu();" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:8px;"><span>⚡</span> Mode Anti Lag</span><span id="battery-saver-badge" style="font-size:10px;padding:2px 6px;border-radius:999px;background:rgba(148,163,184,0.22);color:#cbd5e1;">OFF</span></button>
           <button class="menu-item-btn" onclick="toggleCleanHudMode(); closeHudMenu();"><span>🙈</span> Mode Layar Bersih</button>
           <button class="menu-item-btn" onclick="openGuideModal(); closeHudMenu();"><span>❓</span> Panduan &amp; Kontrol</button>
+          <button class="menu-item-btn" id="btn-menu-pwa-install" onclick="if(typeof openPirakuInstallGuide==='function')openPirakuInstallGuide(); closeHudMenu();"><span>📲</span> Cara Pasang ke Home Screen</button>
           <button class="menu-item-btn" onclick="openFeedbackModal(); closeHudMenu();"><span>📣</span> Kirim Masukan / Lapor Bug</button>
         </div>
       </div>
@@ -1780,5 +1788,6 @@
     window.addEventListener('load', hidePirakuLoader, { once: true });
   })();
 </script>
+<script defer src="js/piraku-pwa.js?v=20261125v2"></script>
 </body>
 </html>
